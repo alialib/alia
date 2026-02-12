@@ -14,7 +14,7 @@ struct flare_group_animation_data
 {
     static constexpr unsigned capacity = 7;
     unsigned flare_count = 0;
-    nanosecond_count flares[capacity];
+    alia_nanosecond_count flares[capacity];
 };
 
 using flare_map = std::map<uintptr_t, flare_group_animation_data>;
@@ -29,7 +29,7 @@ pop_flare(flare_group_animation_data& group)
 }
 
 inline void
-push_flare(flare_group_animation_data& group, nanosecond_count end_time)
+push_flare(flare_group_animation_data& group, alia_nanosecond_count end_time)
 {
     if (group.flare_count == flare_group_animation_data::capacity)
         pop_flare(group);
@@ -49,7 +49,8 @@ concept flare_animation_context
 
 template<flare_animation_context Context>
 void
-fire_flare(Context& ctx, bitref<flare_bitfield> bit, nanosecond_count duration)
+fire_flare(
+    Context& ctx, bitref<flare_bitfield> bit, alia_nanosecond_count duration)
 {
     push_flare(
         get_animation_system(ctx).flares[make_animation_id(bit)],
@@ -67,7 +68,7 @@ process_flares(Context& ctx, bitref<flare_bitfield> bit, Processor&& processor)
         unsigned flare_index = 0;
         while (flare_index < group.flare_count)
         {
-            nanosecond_count ticks_left
+            alia_nanosecond_count ticks_left
                 = get_animation_ticks_left(ctx, group.flares[flare_index]);
             if (ticks_left > 0)
             {

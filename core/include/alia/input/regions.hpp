@@ -1,9 +1,8 @@
 #pragma once
 
-#include <alia/abi/ui/input/constants.h>
-#include <alia/abi/ui/input/regions.h>
-
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/elements.h>
+#include <alia/abi/ui/input/constants.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
 
@@ -14,15 +13,11 @@ namespace alia {
 // This will handle all region-related events for a widget that occupies a
 // rectangular region on the surface.
 void
-box_region(
+do_box_region(
     ephemeral_context& ctx,
     alia_element_id id,
     alia_box const& region,
     alia_cursor_t cursor = ALIA_CURSOR_DEFAULT);
-
-// Detect if the mouse is inside the given box.
-bool
-is_mouse_inside_box(ephemeral_context& ctx, alia_box const& box);
 
 // Handle hit testing for a rectangular region of the surface.
 void
@@ -59,6 +54,15 @@ override_cursor(
 
 #if 0
 
+// Set the tooltip associated with the given region ID.
+// Note that this must be called AFTER hit testing has been performed on the
+// region.
+void
+set_tooltip_message(
+    ephemeral_context& ctx,
+    alia_element_id region_id,
+    readable<std::string> const& tooltip_message);
+
 // Call this to request that a given widget be made visible.
 // If the widget is scrolled off screen, this will trigger the containing
 // scrollable regions to scroll such that the region is visible.
@@ -72,15 +76,6 @@ make_widget_visible(
 box<2, double>
 region_to_surface_coordinates(
     ephemeral_context& ctx, box<2, double> const& region);
-
-// Set the tooltip associated with the given region ID.
-// Note that this must be called AFTER hit testing has been performed on the
-// region.
-void
-set_tooltip_message(
-    ephemeral_context& ctx,
-    alia_element_id region_id,
-    readable<std::string> const& tooltip_message);
 
 #endif
 

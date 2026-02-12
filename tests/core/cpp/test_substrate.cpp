@@ -3,7 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/base/arena.h>
 
-#include <alia/arena.hpp>
+#include <alia/impl/base/arena.hpp>
 #include <doctest/doctest.h>
 
 #include <cstdio>

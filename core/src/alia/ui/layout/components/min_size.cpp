@@ -1,37 +1,16 @@
-#include <alia/layout/modifiers/min_size.hpp>
-
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 namespace alia {
 
-void
-begin_min_size_constraint(
-    context& ctx, layout_container_scope& scope, alia_vec2f min_size)
+struct min_size_node
 {
-    if (is_refresh_event(ctx))
-    {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        min_size_node* node = arena_alloc<min_size_node>(*layout.arena);
-        *node = min_size_node{
-            .container
-            = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
-               .flags = 0,
-               .first_child = 0},
-            .min_size = min_size};
-        scope.container = &node->container;
-        *layout.next_ptr = &node->container.base;
-        layout.next_ptr = &node->container.first_child;
-    }
-}
-
-void
-end_min_size_constraint(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+    alia_layout_container container;
+    alia_vec2f min_size;
+};
 
 alia_horizontal_requirements
 min_size_measure_horizontal(
@@ -97,3 +76,43 @@ alia_layout_node_vtable min_size_vtable
        nullptr};
 
 } // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+struct alia_layout_min_size_scope
+{
+    min_size_node* node;
+};
+
+void
+alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_push<alia_layout_min_size_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto* node = arena_alloc<min_size_node>(*layout.arena);
+        *node = min_size_node{
+            .container
+            = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
+               .flags = 0,
+               .first_child = 0},
+            .min_size = min_size};
+        scope.node = node;
+        alia_layout_container_activate(ctx, &node->container);
+    }
+}
+
+void
+alia_layout_min_size_end(alia_context* ctx)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_pop<alia_layout_min_size_scope>(ctx);
+        alia_layout_container_deactivate(ctx, &scope.node->container);
+    }
+}
+
+} // extern "C"

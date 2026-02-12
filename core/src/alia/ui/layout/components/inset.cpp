@@ -1,44 +1,19 @@
-#include <alia/layout/modifiers/inset.hpp>
-
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
-#include <alia/arena.hpp>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
+#include <alia/impl/base/arena.hpp>
+#include <alia/impl/base/stack.hpp>
 
 using namespace alia::operators;
 
 namespace alia {
 
-void
-begin_inset(
-    context& ctx,
-    layout_container_scope& scope,
-    alia_insets insets,
-    alia_layout_flags_t flags)
+struct inset_layout_node
 {
-    if (is_refresh_event(ctx))
-    {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        inset_layout_node* node
-            = arena_alloc<inset_layout_node>(*layout.arena);
-        *node = inset_layout_node{
-            .container
-            = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
-               .flags = flags,
-               .first_child = 0},
-            .insets = insets};
-        scope.container = &node->container;
-        *layout.next_ptr = &node->container.base;
-        layout.next_ptr = &node->container.first_child;
-    }
-}
-
-void
-end_inset(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+    alia_layout_container container;
+    alia_insets insets;
+};
 
 alia_horizontal_requirements
 inset_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
@@ -199,3 +174,45 @@ alia_layout_node_vtable inset_vtable
        inset_assign_wrapped_boxes};
 
 } // namespace alia
+
+extern "C" {
+
+using namespace alia;
+
+struct alia_layout_inset_scope
+{
+    inset_layout_node* node;
+};
+
+void
+alia_layout_inset_begin(
+    alia_context* ctx, alia_insets insets, alia_layout_flags_t flags)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_push<alia_layout_inset_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        inset_layout_node* node
+            = arena_alloc<inset_layout_node>(*layout.arena);
+        *node = inset_layout_node{
+            .container
+            = {.base = {.vtable = &inset_vtable, .next_sibling = 0},
+               .flags = flags,
+               .first_child = 0},
+            .insets = insets};
+        scope.node = node;
+        alia_layout_container_activate(ctx, &node->container);
+    }
+}
+
+void
+alia_layout_inset_end(alia_context* ctx)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_pop<alia_layout_inset_scope>(ctx);
+        alia_layout_container_deactivate(ctx, &scope.node->container);
+    }
+}
+
+} // extern "C"

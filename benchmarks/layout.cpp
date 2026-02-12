@@ -6,10 +6,6 @@
 
 #include <alia/arenas.hpp>
 #include <alia/context.hpp>
-#include <alia/layout/compositors/column.hpp>
-#include <alia/layout/compositors/row.hpp>
-#include <alia/layout/container.hpp>
-#include <alia/layout/leaf.hpp>
 #include <alia/system/object.hpp>
 
 using namespace alia;

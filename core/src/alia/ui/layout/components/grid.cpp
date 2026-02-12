@@ -1,11 +1,33 @@
-#include <alia/layout/compositors/grid.hpp>
-
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/utilities.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/ui/layout.hpp>
+#include <alia/ui/layout/components/column.h>
 
 namespace alia {
+
+struct grid_row_layout_node;
+
+struct grid_scratch;
+
+struct grid_layout_node
+{
+    alia_layout_node base = {};
+    grid_row_layout_node* first_row = nullptr;
+    grid_scratch* scratch = nullptr;
+    column_layout_node column = {};
+    alia_arena_marker scratch_marker = {};
+};
+
+struct grid_row_layout_node
+{
+    alia_layout_container container = {};
+    grid_layout_node* grid = nullptr;
+    alia_arena_marker scratch_marker = {};
+    grid_row_layout_node* next_row = nullptr;
+};
 
 struct grid_scratch
 {
@@ -265,12 +287,25 @@ alia_layout_node_vtable grid_row_vtable = {
     grid_row_assign_boxes,
 };
 
-void
-begin_grid(context& ctx, grid_scope& scope, alia_layout_flags_t flags)
+} // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+typedef struct alia_layout_grid_scope
 {
-    if (is_refresh_event(ctx))
+    grid_layout_node* grid = nullptr;
+    grid_row_layout_node** next_row_ptr = nullptr;
+} alia_layout_grid_scope;
+
+alia_layout_grid_handle
+alia_layout_grid_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    if (is_refresh_event(*ctx))
     {
-        auto& layout = as_refresh_event(ctx).layout_emission;
+        auto& scope = stack_push<alia_layout_grid_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
         grid_layout_node* node = arena_alloc<grid_layout_node>(*layout.arena);
         scope.grid = node;
         scope.next_row_ptr = &node->first_row;
@@ -279,63 +314,67 @@ begin_grid(context& ctx, grid_scope& scope, alia_layout_flags_t flags)
             .first_row = nullptr,
             .scratch = nullptr,
             .column
-            = {.base = {.vtable = &column_vtable, .next_sibling = nullptr},
+            = {.base
+               = {.vtable = &alia::column_vtable, .next_sibling = nullptr},
                .flags = flags,
                .first_child = nullptr},
         };
         *layout.next_ptr = &node->base;
         layout.next_ptr = &node->column.first_child;
+        return &scope;
     }
+    return nullptr;
 }
 
 void
-end_grid(context& ctx, grid_scope& scope)
+alia_layout_grid_end(alia_context* ctx)
 {
-    if (is_refresh_event(ctx))
+    if (is_refresh_event(*ctx))
     {
+        auto& scope = stack_pop<alia_layout_grid_scope>(ctx);
         *scope.next_row_ptr = 0;
-        auto& layout = as_refresh_event(ctx).layout_emission;
+        auto& layout = as_refresh_event(*ctx).layout_emission;
         *layout.next_ptr = 0;
         layout.next_ptr = &scope.grid->base.next_sibling;
     }
 }
 
-void
-begin_grid_row(
-    context& ctx,
-    grid_handle grid,
-    layout_container_scope& scope,
-    alia_layout_flags_t flags)
+struct grid_row_layout_node_scope
 {
-    if (is_refresh_event(ctx))
+    grid_row_layout_node* node;
+};
+
+void
+alia_layout_grid_row_begin(
+    alia_context* ctx, alia_layout_grid_handle grid, alia_layout_flags_t flags)
+{
+    if (is_refresh_event(*ctx))
     {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        grid_row_layout_node* node
-            = arena_alloc<grid_row_layout_node>(*layout.arena);
-        scope.container = &node->container;
-        *node = grid_row_layout_node{
+        auto& scope = stack_push<grid_row_layout_node_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto& node = *arena_alloc<grid_row_layout_node>(*layout.arena);
+        node = grid_row_layout_node{
             .container
             = {.base = {.vtable = &grid_row_vtable, .next_sibling = nullptr},
                .flags = flags,
                .first_child = nullptr},
             .grid = grid->grid,
             .next_row = nullptr};
-        *layout.next_ptr = &node->container.base;
-        layout.next_ptr = &node->container.first_child;
-        *grid->next_row_ptr = node;
-        grid->next_row_ptr = &node->next_row;
+        scope.node = &node;
+        alia_layout_container_activate(ctx, &node.container);
+        *grid->next_row_ptr = &node;
+        grid->next_row_ptr = &node.next_row;
     }
 }
 
 void
-end_grid_row(context& ctx, layout_container_scope& scope)
+alia_layout_grid_row_end(alia_context* ctx)
 {
-    if (is_refresh_event(ctx))
+    if (is_refresh_event(*ctx))
     {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        *layout.next_ptr = nullptr;
-        layout.next_ptr = &scope.container->base.next_sibling;
+        auto& scope = stack_pop<grid_row_layout_node_scope>(ctx);
+        alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }
 
-} // namespace alia
+} // extern "C"

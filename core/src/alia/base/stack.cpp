@@ -250,14 +250,14 @@ alia_stack_peek_header(alia_stack const* s)
     return alia_stack_header_at(entry_start);
 }
 
-void const*
+void*
 alia_stack_peek_payload(alia_stack const* s)
 {
     alia_stack_entry_header const* h = alia_stack_peek_header(s);
     if (!h)
         return nullptr;
 
-    uint8_t const* entry_start = alia_stack_top_entry_start(s);
+    uint8_t* entry_start = alia_stack_top_entry_start(s);
     return entry_start + h->payload_offset;
 }
 

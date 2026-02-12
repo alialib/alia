@@ -1,5 +1,7 @@
 #include <alia/input/pointer.hpp>
 
+#include <alia/abi/ui/elements.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 
 // TODO: API shouldn't be needed here.
@@ -13,20 +15,8 @@ alia_vec2f
 get_mouse_position(ephemeral_context& ctx)
 {
     return alia_affine2_transform_point(
-        alia_affine2_invert(get_transformation(ctx)),
+        alia_affine2_invert(alia_geometry_get_transform(&ctx)),
         ctx.system->input.mouse_position);
-}
-
-bool
-is_element_hot(ui_system& sys, alia_element_id id)
-{
-    return sys.input.hot_element.element == id;
-}
-
-bool
-element_has_capture(ui_system& sys, alia_element_id id)
-{
-    return sys.input.element_with_capture.element == id;
 }
 
 bool
@@ -58,7 +48,7 @@ detect_mouse_press(ephemeral_context& ctx, button button)
 bool
 detect_mouse_press(ephemeral_context& ctx, alia_element_id id, button button)
 {
-    if (detect_mouse_press(ctx, button) && is_element_hot(ctx, id))
+    if (detect_mouse_press(ctx, button) && alia_element_is_hovered(&ctx, id))
     {
         set_element_with_capture(
             get_system(ctx), make_routable_element_id(ctx, id));
@@ -80,15 +70,17 @@ detect_mouse_release(ephemeral_context& ctx, button button)
 bool
 detect_mouse_release(ephemeral_context& ctx, alia_element_id id, button button)
 {
-    return detect_mouse_release(ctx, button) && element_has_capture(ctx, id);
+    return detect_mouse_release(ctx, button)
+        && alia_element_has_capture(&ctx, id);
 }
 
 bool
 detect_mouse_motion(ephemeral_context& ctx, alia_element_id id)
 {
     return (get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
-            && element_has_capture(ctx, id))
-        || (no_element_has_capture(ctx) && is_element_hot(ctx, id));
+            && alia_element_has_capture(&ctx, id))
+        || (alia_no_element_has_capture(&ctx)
+            && alia_element_is_hovered(&ctx, id));
 }
 
 bool
@@ -101,27 +93,30 @@ detect_double_click(ephemeral_context& ctx, button button)
 bool
 detect_double_click(ephemeral_context& ctx, alia_element_id id, button button)
 {
-    return detect_double_click(ctx, button) && is_element_hot(ctx, id);
+    return detect_double_click(ctx, button)
+        && alia_element_is_hovered(&ctx, id);
 }
 
 bool
 detect_click(ephemeral_context& ctx, alia_element_id id, button button)
 {
     detect_mouse_press(ctx, id, button);
-    return detect_mouse_release(ctx, id, button) && is_element_hot(ctx, id);
+    return detect_mouse_release(ctx, id, button)
+        && alia_element_is_hovered(&ctx, id);
 }
 
 bool
-is_click_possible(ui_system& sys, alia_element_id id)
+is_click_possible(ephemeral_context& ctx, alia_element_id id)
 {
-    return is_element_hot(sys, id) && no_element_has_capture(sys);
+    return alia_element_is_hovered(&ctx, id)
+        && alia_no_element_has_capture(&ctx);
 }
-
 bool
-is_click_in_progress(ui_system& sys, alia_element_id id, button button)
+is_click_in_progress(ephemeral_context& ctx, alia_element_id id, button button)
 {
-    return is_element_hot(sys, id) && element_has_capture(sys, id)
-        && is_mouse_button_pressed(sys, button);
+    return alia_element_is_hovered(&ctx, id)
+        && alia_element_has_capture(&ctx, id)
+        && alia_button_is_down(&ctx, alia_button_t(button));
 }
 
 bool
@@ -129,8 +124,8 @@ detect_drag(ephemeral_context& ctx, alia_element_id id, button button)
 {
     detect_mouse_press(ctx, id, button);
     return get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
-        && is_mouse_button_pressed(ctx, button)
-        && element_has_capture(ctx, id);
+        && alia_button_is_down(&ctx, alia_button_t(button))
+        && alia_element_has_capture(&ctx, id);
 }
 
 bool
@@ -138,8 +133,8 @@ detect_press_or_drag(ephemeral_context& ctx, alia_element_id id, button button)
 {
     return (detect_mouse_press(ctx, id, button)
             || (get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
-                && is_mouse_button_pressed(ctx, button)))
-        && element_has_capture(ctx, id);
+                && alia_button_is_down(&ctx, alia_button_t(button))))
+        && alia_element_has_capture(&ctx, id);
 }
 
 alia_vec2f
@@ -161,10 +156,11 @@ get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-is_drag_in_progress(ui_system& sys, alia_element_id id, button button)
+is_drag_in_progress(ephemeral_context& ctx, alia_element_id id, button button)
 {
-    return is_mouse_button_pressed(sys, button) && element_has_capture(sys, id)
-        && sys.input.dragging;
+    return alia_button_is_down(&ctx, alia_button_t(button))
+        && alia_element_has_capture(&ctx, id)
+        && get_system(ctx).input.dragging;
 }
 
 bool

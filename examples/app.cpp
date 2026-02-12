@@ -17,29 +17,17 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/events.h>
+#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/style.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
-#include <alia/drawing.hpp>
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
+#include <alia/impl/ui/layout.hpp>
 #include <alia/input/elements.hpp>
 #include <alia/input/pointer.hpp>
 #include <alia/input/regions.hpp>
-#include <alia/layout/compositors/column.hpp>
-#include <alia/layout/compositors/flow.hpp>
-#include <alia/layout/compositors/grid.hpp>
-#include <alia/layout/compositors/hyperflow.hpp>
-#include <alia/layout/compositors/row.hpp>
-#include <alia/layout/container.hpp>
-#include <alia/layout/leaf.hpp>
-#include <alia/layout/modifiers/alignment_override.hpp>
-#include <alia/layout/modifiers/growth_override.hpp>
-#include <alia/layout/modifiers/inset.hpp>
-#include <alia/layout/modifiers/min_size.hpp>
-#include <alia/layout/modifiers/placement_hook.hpp>
-#include <alia/layout/system.hpp>
-#include <alia/layout/utilities.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/system/api.hpp>
 #include <alia/system/input_processing.hpp>
@@ -48,9 +36,8 @@
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
 #include <alia/ui/drawing.h>
-#include <alia/ui/layout/containers.hpp>
+#include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
-#include <alia/ui/layout/wrappers.hpp>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -116,31 +103,16 @@ do_rect(
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            auto& layout = as_refresh_event(ctx).layout_emission;
-            layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(
-                *alia_arena_get_view(&ctx.system->layout.node_arena));
-            *layout.next_ptr = &new_node->base;
-            layout.next_ptr = &new_node->base.next_sibling;
-            *new_node = layout_leaf_node{
-                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-                .flags = raw_code(flags),
-                .padding = ctx.style->padding,
-                .size = size};
+            alia_layout_leaf_emit(&ctx, size, raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box = {
-                .min = leaf_placement.position, .size = leaf_placement.size};
-            box_region(ctx, id, box);
+            alia_box box = alia_layout_leaf_read(&ctx);
+            do_box_region(ctx, id, box);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box = {
-                .min = leaf_placement.position, .size = leaf_placement.size};
+            alia_box box = alia_layout_leaf_read(&ctx);
             auto status = get_interaction_status(ctx, id);
             if (status & ELEMENT_HOVERED)
             {
@@ -155,10 +127,7 @@ do_rect(
             break;
         }
         case ALIA_CATEGORY_INPUT: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box = {
-                .min = leaf_placement.position, .size = leaf_placement.size};
+            alia_box box = alia_layout_leaf_read(&ctx);
             if (detect_click(ctx, id, button::left))
                 return true;
             break;
@@ -179,42 +148,22 @@ do_rect_with_offset(
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            auto& layout = as_refresh_event(ctx).layout_emission;
-            layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(
-                *alia_arena_get_view(&ctx.system->layout.node_arena));
-            *layout.next_ptr = &new_node->base;
-            layout.next_ptr = &new_node->base.next_sibling;
-            *new_node = layout_leaf_node{
-                .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-                .flags = raw_code(flags),
-                .padding = ctx.style->padding,
-                .size = size};
+            alia_layout_leaf_emit(&ctx, size, raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box = {
-                .min = leaf_placement.position, .size = leaf_placement.size};
+            alia_box box = alia_layout_leaf_read(&ctx);
             // box_region(ctx, id, box);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box
-                = {.min = leaf_placement.position + offset,
-                   .size = leaf_placement.size};
+            alia_box box = alia_layout_leaf_read(&ctx);
             alia_draw_box(
                 as_draw_event(ctx).context, z_index, box, color, 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
-            auto& leaf_placement = *arena_alloc<leaf_layout_placement>(
-                *alia_arena_get_view(&ctx.system->layout.placement_arena));
-            alia_box box
-                = {.min = leaf_placement.position + offset,
-                   .size = leaf_placement.size};
+            alia_box box = alia_layout_leaf_read(&ctx);
             if (detect_click(
                     ctx, box.min.x, box.min.y, box.size.x, box.size.y))
                 return true;
@@ -1736,7 +1685,8 @@ update()
 
         alia_arena_reset(
             alia_arena_get_view(&the_system.layout.placement_arena));
-        resolve_layout(the_system.layout, the_system.surface_size);
+        alia_layout_system_resolve(
+            &the_system.layout, the_system.surface_size);
 
         layout_finished_time = std::chrono::high_resolution_clock::now();
 

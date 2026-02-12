@@ -1,23 +1,11 @@
 #pragma once
 
-#include <utility>
-
-#include <alia/abi/ui/layout/flags.h>
-#include <alia/layout/container.hpp>
-
-// TODO: Use forward declarations once those are sorted out.
-#include <alia/context.hpp>
+#include <alia/abi/ui/layout/protocol.h>
+#include <alia/abi/ui/layout/utilities.h>
 
 namespace alia {
 
-using column_layout_node = layout_container;
-
-void
-begin_column(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags);
-
-void
-end_column(context& ctx, layout_container_scope& scope);
+using column_layout_node = alia_layout_container;
 
 extern alia_layout_node_vtable column_vtable;
 

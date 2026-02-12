@@ -25,7 +25,7 @@ animation_curve const ease_in_out_curve = {0.42, 0, 0.58, 1};
 struct animated_transition
 {
     animation_curve curve;
-    nanosecond_count duration;
+    alia_nanosecond_count duration;
 };
 animated_transition const default_transition
     = {default_curve, milliseconds(250)};
@@ -33,7 +33,7 @@ animated_transition const default_transition
 struct transition_animation_data
 {
     bool direction;
-    nanosecond_count transition_end;
+    alia_nanosecond_count transition_end;
 };
 
 using transition_animation_map
@@ -108,7 +108,7 @@ smooth_between_values(
         case 0b01: {
             auto& animation = get_animation_system(ctx)
                                   .transitions[make_animation_id(bits)];
-            nanosecond_count ticks_left
+            alia_nanosecond_count ticks_left
                 = get_animation_ticks_left(ctx, animation.transition_end);
             if (ticks_left > 0)
             {
@@ -127,7 +127,7 @@ smooth_between_values(
                     // will take to get back here.
                     animation.transition_end
                         = get_animation_tick_count(ctx)
-                        + nanosecond_count(
+                        + alia_nanosecond_count(
                               transition.duration
                               * (1
                                  - eval_curve_at_x(

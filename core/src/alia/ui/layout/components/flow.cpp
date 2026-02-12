@@ -1,22 +1,9 @@
-#include <alia/layout/compositors/flow.hpp>
-
 #include <alia/abi/ui/style.h>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 namespace alia {
 
-void
-begin_flow(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags)
-{
-    begin_container(ctx, scope, &flow_vtable, flags);
-}
-
-void
-end_flow(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+using flow_layout_node = alia_layout_container;
 
 struct flow_scratch
 {
@@ -523,3 +510,19 @@ alia_layout_node_vtable flow_vtable = {
 };
 
 } // namespace alia
+
+extern "C" {
+
+void
+alia_layout_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    alia_layout_container_simple_begin(ctx, &alia::flow_vtable, flags);
+}
+
+void
+alia_layout_flow_end(alia_context* ctx)
+{
+    alia_layout_container_simple_end(ctx);
+}
+
+} // extern "C"

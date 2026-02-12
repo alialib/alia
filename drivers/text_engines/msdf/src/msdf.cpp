@@ -12,7 +12,7 @@
 #include <vector>
 
 // TODO: Remove these.
-#include <alia/arena.hpp>
+#include <alia/impl/base/arena.hpp>
 #include <alia/ui/drawing.h>
 #include <iostream>
 

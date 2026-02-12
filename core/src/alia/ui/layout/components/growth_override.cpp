@@ -1,39 +1,17 @@
-#include <alia/layout/modifiers/growth_override.hpp>
-
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
-#include <alia/arena.hpp>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
+#include <alia/impl/base/arena.hpp>
+#include <alia/impl/base/stack.hpp>
 
 namespace alia {
 
-void
-begin_growth_override(
-    context& ctx, layout_container_scope& scope, float growth)
+struct growth_override_node
 {
-    if (is_refresh_event(ctx))
-    {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        growth_override_node* node
-            = arena_alloc<growth_override_node>(*layout.arena);
-        *node = growth_override_node{
-            .container
-            = {.base = {.vtable = &growth_override_vtable, .next_sibling = 0},
-               .flags = 0,
-               .first_child = 0},
-            .growth = growth};
-        scope.container = &node->container;
-        *layout.next_ptr = &node->container.base;
-        layout.next_ptr = &node->container.first_child;
-    }
-}
-
-void
-end_growth_override(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+    alia_layout_container container;
+    float growth;
+};
 
 alia_horizontal_requirements
 growth_override_measure_horizontal(
@@ -138,3 +116,43 @@ alia_layout_node_vtable growth_override_vtable
        growth_override_assign_wrapped_boxes};
 
 } // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+struct alia_layout_growth_override_scope
+{
+    growth_override_node* node;
+};
+
+void
+alia_layout_growth_override_begin(alia_context* ctx, float growth)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_push<alia_layout_growth_override_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto* node = arena_alloc<growth_override_node>(*layout.arena);
+        *node = growth_override_node{
+            .container
+            = {.base = {.vtable = &growth_override_vtable, .next_sibling = 0},
+               .flags = 0,
+               .first_child = 0},
+            .growth = growth};
+        scope.node = node;
+        alia_layout_container_activate(ctx, &node->container);
+    }
+}
+
+void
+alia_layout_growth_override_end(alia_context* ctx)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_pop<alia_layout_growth_override_scope>(ctx);
+        alia_layout_container_deactivate(ctx, &scope.node->container);
+    }
+}
+
+} // extern "C"

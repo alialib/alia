@@ -182,4 +182,14 @@ alia_min_aligned_size(size_t n)
     return ((n) + ALIA_MIN_ALIGN - 1) & ~(ALIA_MIN_ALIGN - 1);
 }
 
+/* TIME */
+
+typedef int64_t alia_nanosecond_count;
+
+static inline alia_nanosecond_count
+alia_milliseconds(uint32_t ms)
+{
+    return alia_nanosecond_count(ms) * 1'000'000;
+}
+
 #endif

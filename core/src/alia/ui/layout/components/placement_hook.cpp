@@ -1,42 +1,15 @@
-#include <alia/layout/modifiers/placement_hook.hpp>
-
+#include <alia/abi/ui/layout/components.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/base/arena.hpp>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/ui/layout.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
 
-void
-begin_placement_hook(
-    context& ctx, placement_hook_scope& scope, alia_layout_flags_t flags)
-{
-    if (is_refresh_event(ctx))
-    {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        placement_hook_node* node
-            = arena_alloc<placement_hook_node>(*layout.arena);
-        *node = placement_hook_node{
-            .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
-            .flags = flags,
-            .first_child = 0};
-        scope.container.container = node;
-        *layout.next_ptr = &node->base;
-        layout.next_ptr = &node->first_child;
-    }
-    else
-    {
-        scope.placement = *arena_alloc<placement_info>(
-            *alia_arena_get_view(&ctx.system->layout.placement_arena));
-    }
-}
-
-void
-end_placement_hook(context& ctx, placement_hook_scope& scope)
-{
-    end_container(ctx, scope.container);
-}
+using placement_hook_node = alia_layout_container;
 
 alia_horizontal_requirements
 placement_hook_measure_horizontal(
@@ -80,7 +53,8 @@ placement_hook_assign_boxes(
 {
     auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
 
-    placement_info* placement = arena_alloc<placement_info>(*ctx->arena);
+    alia_layout_placement* placement
+        = arena_alloc<alia_layout_placement>(*ctx->arena);
     placement->box = box;
     placement->baseline = baseline;
 
@@ -98,3 +72,48 @@ alia_layout_node_vtable placement_hook_vtable
        nullptr};
 
 } // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+struct alia_layout_placement_hook_scope
+{
+    placement_hook_node* node;
+    alia_layout_placement placement;
+};
+
+alia_layout_placement*
+alia_layout_placement_hook_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    auto& scope = stack_push<alia_layout_placement_hook_scope>(ctx);
+    if (is_refresh_event(*ctx))
+    {
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto* node = arena_alloc<placement_hook_node>(*layout.arena);
+        *node = placement_hook_node{
+            .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
+            .flags = flags,
+            .first_child = 0};
+        scope.node = node;
+        alia_layout_container_activate(ctx, node);
+    }
+    else
+    {
+        scope.placement = *arena_alloc<alia_layout_placement>(
+            *alia_arena_get_view(&ctx->system->layout.placement_arena));
+    }
+    return &scope.placement;
+}
+
+void
+alia_layout_placement_hook_end(alia_context* ctx)
+{
+    auto& scope = stack_pop<alia_layout_placement_hook_scope>(ctx);
+    if (is_refresh_event(*ctx))
+    {
+        alia_layout_container_deactivate(ctx, scope.node);
+    }
+}
+
+} // extern "C"

@@ -17,7 +17,8 @@ is_mouse_inside_box(ephemeral_context& ctx, alia_box const& box)
     return get_system(ctx).input.mouse_inside_window
         && alia_box_contains(box, get_mouse_position(ctx))
         && alia_box_contains(
-               get_clip_region(ctx), get_system(ctx).input.mouse_position);
+               alia_geometry_get_clip_region(&ctx),
+               ctx.system->input.mouse_position);
 }
 
 void
@@ -65,7 +66,7 @@ handle_region_visibility(
     {
         auto& e = as_make_widget_visible_event(ctx);
         e.region = alia_affine2_transform_aabb(
-            get_transformation(ctx),
+            alia_geometry_get_transform(&ctx),
             // TODO: Do we really want to expand here?
             alia_box_expand(
                 region,
@@ -76,7 +77,7 @@ handle_region_visibility(
 }
 
 void
-box_region(
+do_box_region(
     ephemeral_context& ctx,
     alia_element_id id,
     alia_box const& region,

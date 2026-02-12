@@ -1,49 +1,25 @@
-#include <alia/layout/modifiers/alignment_override.hpp>
-
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/layout/container.hpp>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 using namespace alia::operators;
 
 namespace alia {
+
+struct alignment_override_node
+{
+    alia_layout_container container;
+    alia_layout_flags_t flags;
+};
 
 struct alignment_override_scratch
 {
     alia_horizontal_requirements horizontal;
     alia_vertical_requirements vertical;
 };
-
-void
-begin_alignment_override(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags)
-{
-    if (is_refresh_event(ctx))
-    {
-        auto& layout = as_refresh_event(ctx).layout_emission;
-        alignment_override_node* node
-            = arena_alloc<alignment_override_node>(*layout.arena);
-        *node = alignment_override_node{
-            .container
-            = {.base
-               = {.vtable = &alignment_override_vtable, .next_sibling = 0},
-               .flags = 0,
-               .first_child = 0},
-            .flags = flags};
-        scope.container = &node->container;
-        *layout.next_ptr = &node->container.base;
-        layout.next_ptr = &node->container.first_child;
-    }
-}
-
-void
-end_alignment_override(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
 
 alia_horizontal_requirements
 alignment_override_measure_horizontal(
@@ -125,3 +101,45 @@ alia_layout_node_vtable alignment_override_vtable
        nullptr};
 
 } // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+struct alia_layout_alignment_override_scope
+{
+    alignment_override_node* node;
+};
+
+void
+alia_layout_alignment_override_begin(
+    alia_context* ctx, alia_layout_flags_t flags)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_push<alia_layout_alignment_override_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto* node = arena_alloc<alignment_override_node>(*layout.arena);
+        *node = alignment_override_node{
+            .container
+            = {.base
+               = {.vtable = &alignment_override_vtable, .next_sibling = 0},
+               .flags = 0,
+               .first_child = 0},
+            .flags = flags};
+        scope.node = node;
+        alia_layout_container_activate(ctx, &node->container);
+    }
+}
+
+void
+alia_layout_alignment_override_end(alia_context* ctx)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_pop<alia_layout_alignment_override_scope>(ctx);
+        alia_layout_container_deactivate(ctx, &scope.node->container);
+    }
+}
+
+} // extern "C"

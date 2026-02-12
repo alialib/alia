@@ -1,8 +1,65 @@
-#include <alia/layout/utilities.hpp>
+#include <alia/abi/ui/layout/utilities.h>
 
-#include <alia/base/arena.h>
+#include <alia/events.hpp>
+#include <alia/impl/base/arena.hpp>
+#include <alia/impl/base/stack.hpp>
+
+using namespace alia;
 
 extern "C" {
+
+void
+alia_layout_container_activate(
+    alia_context* ctx, alia_layout_container* container)
+{
+    auto& layout = alia::as_refresh_event(*ctx).layout_emission;
+    *layout.next_ptr = &container->base;
+    layout.next_ptr = &container->first_child;
+}
+
+void
+alia_layout_container_deactivate(
+    alia_context* ctx, alia_layout_container* container)
+{
+    auto& layout = alia::as_refresh_event(*ctx).layout_emission;
+    *layout.next_ptr = 0;
+    layout.next_ptr = &container->base.next_sibling;
+}
+
+struct alia_layout_container_scope
+{
+    alia_layout_container* container;
+};
+
+void
+alia_layout_container_simple_begin(
+    alia_context* ctx,
+    alia_layout_node_vtable* vtable,
+    alia_layout_flags_t flags)
+{
+    if (alia::is_refresh_event(*ctx))
+    {
+        auto& scope = stack_push<alia_layout_container_scope>(ctx);
+        auto& layout = as_refresh_event(*ctx).layout_emission;
+        auto* container = arena_alloc<alia_layout_container>(*layout.arena);
+        scope.container = container;
+        *container = alia_layout_container{
+            .base = {.vtable = vtable, .next_sibling = 0},
+            .flags = flags,
+            .first_child = 0};
+        alia_layout_container_activate(ctx, container);
+    }
+}
+
+void
+alia_layout_container_simple_end(alia_context* ctx)
+{
+    if (is_refresh_event(*ctx))
+    {
+        auto& scope = stack_pop<alia_layout_container_scope>(ctx);
+        alia_layout_container_deactivate(ctx, scope.container);
+    }
+}
 
 alia_layout_axis_placement
 alia_resolve_container_x(

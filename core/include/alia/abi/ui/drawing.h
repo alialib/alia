@@ -5,6 +5,7 @@
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/geometry.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -36,22 +37,6 @@ enum
 // Allocate IDs for custom materials.
 alia_draw_material_id
 alia_material_alloc_ids(alia_draw_system* system, uint32_t count);
-
-typedef int32_t alia_z_index;
-
-typedef uint32_t alia_clip_id;
-
-typedef struct alia_geometry_context
-{
-    // the transformation from the active frame of reference to surface space
-    alia_affine2 transform;
-
-    // the current clipping region ID - 0 represents the full surface.
-    alia_clip_id clip_id;
-
-    // the base z-index for the current context
-    alia_z_index z_base;
-} alia_geometry_context;
 
 typedef struct alia_draw_command
 {

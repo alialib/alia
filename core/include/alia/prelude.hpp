@@ -73,12 +73,10 @@ upcast(Outer const* outer_ptr)
     return &outer_ptr->base;
 }
 
-typedef int64_t nanosecond_count;
-
-constexpr nanosecond_count
+constexpr alia_nanosecond_count
 milliseconds(uint32_t ms)
 {
-    return nanosecond_count(ms * 1'000'000);
+    return alia_nanosecond_count(ms * 1'000'000);
 }
 
 } // namespace alia

@@ -1,23 +1,9 @@
-#include <alia/layout/compositors/row.hpp>
-
 #include <alia/abi/ui/style.h>
-#include <alia/layout/container.hpp>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 namespace alia {
 
-void
-begin_row(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags)
-{
-    begin_container(ctx, scope, &row_vtable, flags);
-}
-
-void
-end_row(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+using row_layout_node = alia_layout_container;
 
 struct row_scratch
 {
@@ -180,3 +166,19 @@ alia_layout_node_vtable row_vtable
        nullptr};
 
 } // namespace alia
+
+extern "C" {
+
+void
+alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    alia_layout_container_simple_begin(ctx, &alia::row_vtable, flags);
+}
+
+void
+alia_layout_row_end(alia_context* ctx)
+{
+    alia_layout_container_simple_end(ctx);
+}
+
+} // extern "C"

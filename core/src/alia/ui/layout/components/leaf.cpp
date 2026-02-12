@@ -1,10 +1,19 @@
-#include <alia/layout/leaf.hpp>
+#include <alia/abi/ui/layout/components.h>
 
-#include <alia/layout/utilities.hpp>
+#include <alia/events.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 using namespace alia::operators;
 
 namespace alia {
+
+struct layout_leaf_node
+{
+    alia_layout_node base;
+    alia_layout_flags_t flags;
+    float padding;
+    alia_vec2f size;
+};
 
 alia_horizontal_requirements
 leaf_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
@@ -48,8 +57,7 @@ leaf_assign_boxes(
     float baseline)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
-    leaf_layout_placement* placement
-        = arena_alloc<leaf_layout_placement>(*ctx->arena);
+    alia_box* placement = arena_alloc<alia_box>(*ctx->arena);
     auto const padded_placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(leaf.flags, main_axis),
         box.size,
@@ -57,7 +65,7 @@ leaf_assign_boxes(
         leaf.size,
         0,
         {leaf.padding, leaf.padding});
-    placement->position = box.min + padded_placement.min;
+    placement->min = box.min + padded_placement.min;
     placement->size = padded_placement.size;
 }
 
@@ -71,3 +79,31 @@ alia_layout_node_vtable leaf_vtable
        nullptr};
 
 } // namespace alia
+
+using namespace alia;
+
+extern "C" {
+
+void
+alia_layout_leaf_emit(
+    alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags)
+{
+    auto& layout = as_refresh_event(*ctx).layout_emission;
+    layout_leaf_node* new_node
+        = arena_alloc<layout_leaf_node>(*alia_layout_node_arena(ctx));
+    *layout.next_ptr = &new_node->base;
+    layout.next_ptr = &new_node->base.next_sibling;
+    *new_node = layout_leaf_node{
+        .base = {.vtable = &leaf_vtable, .next_sibling = 0},
+        .flags = flags,
+        .padding = ctx->style->padding,
+        .size = size};
+}
+
+alia_box
+alia_layout_leaf_read(alia_context* ctx)
+{
+    return *arena_alloc<alia_box>(*alia_layout_placement_arena(ctx));
+}
+
+} // extern "C"

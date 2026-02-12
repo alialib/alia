@@ -1,5 +1,6 @@
 #include <alia/flow/dispatch.hpp>
 
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
@@ -26,13 +27,29 @@ invoke_controller(ui_system& sys, event_traversal& events)
     // TODO
     static alia_style the_style = {.padding = 10.0f};
 
-    context event_ctx
-        = {.kernel = nullptr,
-           .events = &events,
-           .system = &sys,
-           .style = &the_style};
+    alia_geometry_context geometry = {
+        .transform = alia_affine2_identity(),
+        .clip_region = {{0, 0}, sys.surface_size},
+        .clip_id = 0,
+        .z_base = 0,
+    };
 
-    sys.controller(event_ctx);
+    alia_layout_context layout = {
+        .node_arena = alia_arena_get_view(&sys.layout.node_arena),
+        .placement_arena = alia_arena_get_view(&sys.layout.placement_arena),
+    };
+
+    alia_context ctx = {
+        .kernel = nullptr,
+        .events = &events,
+        .stack = &sys.stack,
+        .system = &sys,
+        .style = &the_style,
+        .geometry = &geometry,
+        .input = &sys.input,
+        .layout = &layout};
+
+    sys.controller(ctx);
 }
 
 namespace {

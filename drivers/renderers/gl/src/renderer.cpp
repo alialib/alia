@@ -1,8 +1,8 @@
 #include <alia/renderers/gl/renderer.hpp>
 
 #include <alia/abi/base/color.h>
-#include <alia/arena.hpp>
-#include <alia/drawing.hpp>
+#include <alia/abi/ui/drawing.h>
+#include <alia/impl/base/arena.hpp>
 
 // TODO: Remove these.
 #include <alia/ui/drawing.h>

@@ -1,22 +1,9 @@
-#include <alia/layout/compositors/column.hpp>
+#include <alia/ui/layout/components/column.h>
 
 #include <alia/abi/ui/style.h>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 namespace alia {
-
-void
-begin_column(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags)
-{
-    begin_container(ctx, scope, &column_vtable, flags);
-}
-
-void
-end_column(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
 
 struct column_scratch
 {
@@ -165,3 +152,19 @@ alia_layout_node_vtable column_vtable
        nullptr};
 
 } // namespace alia
+
+extern "C" {
+
+void
+alia_layout_column_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    alia_layout_container_simple_begin(ctx, &alia::column_vtable, flags);
+}
+
+void
+alia_layout_column_end(alia_context* ctx)
+{
+    alia_layout_container_simple_end(ctx);
+}
+
+} // extern "C"

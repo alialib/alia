@@ -75,7 +75,7 @@ ALIA_API alia_stack_entry_header const*
 alia_stack_peek_header(alia_stack const* s);
 
 // Peek at the payload of the top entry.
-ALIA_API void const*
+ALIA_API void*
 alia_stack_peek_payload(alia_stack const* s);
 
 // Pop the top entry.

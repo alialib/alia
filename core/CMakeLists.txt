@@ -10,18 +10,17 @@ add_library(alia_core STATIC
     src/alia/ui/input/pointer.cpp
     src/alia/ui/input/regions.cpp
     src/alia/ui/input/elements.cpp
-    src/alia/ui/layout/compositors/column.cpp
-    src/alia/ui/layout/compositors/flow.cpp
-    src/alia/ui/layout/compositors/grid.cpp
-    src/alia/ui/layout/compositors/hyperflow.cpp
-    src/alia/ui/layout/compositors/row.cpp
-    src/alia/ui/layout/modifiers/alignment_override.cpp
-    src/alia/ui/layout/modifiers/growth_override.cpp
-    src/alia/ui/layout/modifiers/min_size.cpp
-    src/alia/ui/layout/modifiers/inset.cpp
-    src/alia/ui/layout/modifiers/placement_hook.cpp
-    src/alia/ui/layout/container.cpp
-    src/alia/ui/layout/leaf.cpp
+    src/alia/ui/layout/components/column.cpp
+    src/alia/ui/layout/components/flow.cpp
+    src/alia/ui/layout/components/grid.cpp
+    src/alia/ui/layout/components/hyperflow.cpp
+    src/alia/ui/layout/components/row.cpp
+    src/alia/ui/layout/components/alignment_override.cpp
+    src/alia/ui/layout/components/growth_override.cpp
+    src/alia/ui/layout/components/min_size.cpp
+    src/alia/ui/layout/components/inset.cpp
+    src/alia/ui/layout/components/placement_hook.cpp
+    src/alia/ui/layout/components/leaf.cpp
     src/alia/ui/layout/system.cpp
     src/alia/ui/layout/utilities.cpp
     src/alia/ui/system/api.cpp

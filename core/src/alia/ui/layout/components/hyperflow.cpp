@@ -1,22 +1,10 @@
-#include <alia/layout/compositors/hyperflow.hpp>
-
+#include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
-#include <alia/layout/utilities.hpp>
+#include <alia/impl/ui/layout.hpp>
 
 namespace alia {
 
-void
-begin_hyperflow(
-    context& ctx, layout_container_scope& scope, alia_layout_flags_t flags)
-{
-    begin_container(ctx, scope, &hyperflow_vtable, flags);
-}
-
-void
-end_hyperflow(context& ctx, layout_container_scope& scope)
-{
-    end_container(ctx, scope);
-}
+using hyperflow_layout_node = alia_layout_container;
 
 struct child_requirements
 {
@@ -246,3 +234,19 @@ alia_layout_node_vtable hyperflow_vtable = {
 };
 
 } // namespace alia
+
+extern "C" {
+
+void
+alia_layout_hyperflow_begin(alia_context* ctx, alia_layout_flags_t flags)
+{
+    alia_layout_container_simple_begin(ctx, &alia::hyperflow_vtable, flags);
+}
+
+void
+alia_layout_hyperflow_end(alia_context* ctx)
+{
+    alia_layout_container_simple_end(ctx);
+}
+
+} // extern "C"
