@@ -26,7 +26,7 @@ alignment_override_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
-    auto& scratch = claim_scratch<alignment_override_scratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<alignment_override_scratch>(ctx->scratch);
     scratch.horizontal
         = alia_measure_horizontal(ctx, override.container.first_child);
     return scratch.horizontal;
@@ -40,7 +40,7 @@ alignment_override_assign_widths(
     float assigned_width)
 {
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
-    auto& scratch = use_scratch<alignment_override_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
     auto const assignment = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(override.flags, main_axis),
         assigned_width,
@@ -57,7 +57,7 @@ alignment_override_measure_vertical(
     float assigned_width)
 {
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
-    auto& scratch = use_scratch<alignment_override_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
     auto const assignment = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(override.flags, main_axis),
         assigned_width,
@@ -76,7 +76,7 @@ alignment_override_assign_boxes(
     float baseline)
 {
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
-    auto& scratch = use_scratch<alignment_override_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
     auto const placement = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(override.flags, main_axis),
         box.size,
@@ -118,8 +118,8 @@ alia_layout_alignment_override_begin(
     if (is_refresh_event(*ctx))
     {
         auto& scope = stack_push<alia_layout_alignment_override_scope>(ctx);
-        auto& layout = as_refresh_event(*ctx).layout_emission;
-        auto* node = arena_alloc<alignment_override_node>(*layout.arena);
+        auto* node = arena_alloc<alignment_override_node>(
+            ctx->layout->emission.arena);
         *node = alignment_override_node{
             .container
             = {.base

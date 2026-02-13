@@ -92,8 +92,7 @@ alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size)
     if (is_refresh_event(*ctx))
     {
         auto& scope = stack_push<alia_layout_min_size_scope>(ctx);
-        auto& layout = as_refresh_event(*ctx).layout_emission;
-        auto* node = arena_alloc<min_size_node>(*layout.arena);
+        auto* node = arena_alloc<min_size_node>(ctx->layout->emission.arena);
         *node = min_size_node{
             .container
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},

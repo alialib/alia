@@ -12,24 +12,30 @@ ALIA_EXTERN_C_BEGIN
 
 // ARENA UTILITIES
 
+typedef struct alia_layout_emission
+{
+    alia_bump_allocator arena;
+    alia_layout_node** next_ptr;
+} alia_layout_emission;
+
 struct alia_layout_context
 {
-    alia_arena_view* node_arena;
-    alia_arena_view* placement_arena;
+    alia_layout_emission emission;
+    alia_bump_allocator placement;
 };
 
-static inline alia_arena_view*
+static inline alia_bump_allocator*
 alia_layout_node_arena(alia_context* ctx)
 {
-    ALIA_ASSERT(alia_is_refresh_pass(ctx));
-    return ctx->layout->node_arena;
+    // TODO: ALIA_ASSERT(alia_is_refresh_pass(ctx));
+    return &ctx->layout->emission.arena;
 }
 
-static inline alia_arena_view*
+static inline alia_bump_allocator*
 alia_layout_placement_arena(alia_context* ctx)
 {
-    ALIA_ASSERT(!alia_is_refresh_pass(ctx));
-    return ctx->layout->placement_arena;
+    // TODO: ALIA_ASSERT(!alia_is_refresh_pass(ctx));
+    return &ctx->layout->placement;
 }
 
 // COMPONENT-SIDE CONTAINER UTILITIES

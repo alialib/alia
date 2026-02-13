@@ -1,13 +1,10 @@
-#include <alia/arena.hpp>
-
-#include <algorithm>
-#include <cassert>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-
 #include <alia/base/arena.h>
 #include <alia/prelude.hpp>
+
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
+#include <new>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -36,7 +33,8 @@ alia_arena_init(
     ALIA_ASSERT(
         (reinterpret_cast<uintptr_t>(base) & (ALIA_MAX_ALIGN - 1)) == 0);
     return new (mem) alia_arena{
-        .bump = {.base = static_cast<uint8_t*>(base), .capacity = capacity},
+        .base = static_cast<uint8_t*>(base),
+        .capacity = capacity,
         .controller = controller,
         .peak_usage = 0};
 }
@@ -47,58 +45,77 @@ alia_arena_cleanup(alia_arena* arena)
     if (arena->controller.free)
     {
         arena->controller.free(
-            arena->controller.user, arena->bump.base, arena->bump.capacity);
+            arena->controller.user, arena->base, arena->capacity);
     }
     static_assert(std::is_trivially_destructible_v<alia_arena>);
 }
 
-alia_arena_view*
-alia_arena_get_view(alia_arena* arena)
+void
+alia_bump_allocator_init(alia_bump_allocator* alloc, alia_arena* arena)
 {
-    return &arena->bump;
+    alloc->arena = arena;
+    alloc->base = arena->base;
+    alloc->capacity = arena->capacity;
+    alloc->offset = 0;
+    alloc->peak = 0;
 }
 
 void
-alia_update_peak_usage(alia_arena_view* view)
+alia_bump_allocator_commit_peak(alia_bump_allocator* alloc)
 {
-    alia_arena* arena = arena_from_view(view);
-    arena->peak_usage = (std::max) (arena->peak_usage, arena->bump.offset);
+    if (alloc->offset > alloc->peak)
+        alloc->peak = alloc->offset;
+    if (alloc->arena && alloc->peak > alloc->arena->peak_usage)
+        alloc->arena->peak_usage = alloc->peak;
 }
 
 void
-alia_arena_handle_out_of_memory(alia_arena_view* view, size_t bytes_requested)
+alia_update_peak_usage(alia_bump_allocator* alloc)
 {
-    alia_arena* arena = arena_from_view(view);
-    arena->bump.capacity = arena->controller.grow(
+    if (alloc->offset > alloc->peak)
+        alloc->peak = alloc->offset;
+}
+
+void
+alia_arena_handle_out_of_memory(
+    alia_bump_allocator* alloc, size_t bytes_requested)
+{
+    alia_arena* arena = alloc->arena;
+    ALIA_ASSERT(arena && arena->controller.grow);
+    arena->capacity = arena->controller.grow(
         arena->controller.user,
-        arena->bump.base,
-        arena->bump.capacity,
+        arena->base,
+        arena->capacity,
         bytes_requested);
+    alloc->base = arena->base;
+    alloc->capacity = arena->capacity;
 }
 
 alia_offset
-alia_arena_alloc_aligned(alia_arena_view* arena, size_t bytes, size_t align)
+alia_arena_alloc_aligned(
+    alia_bump_allocator* alloc, size_t bytes, size_t align)
 {
     ALIA_ASSERT((bytes & (align - 1)) == 0);
     ALIA_ASSERT(align <= ALIA_MAX_ALIGN);
 
     if (align <= ALIA_MIN_ALIGN)
-        return alia_arena_alloc(arena, bytes);
+        return alia_arena_alloc(alloc, bytes);
 
-    size_t aligned_offset = align_offset(arena->offset, align);
-    if (aligned_offset + bytes > arena->capacity)
-        alia_arena_handle_out_of_memory(arena, bytes);
+    size_t aligned_offset = align_offset(alloc->offset, align);
+    if (aligned_offset + bytes > alloc->capacity)
+        alia_arena_handle_out_of_memory(alloc, bytes);
 
-    arena->offset = aligned_offset + bytes;
+    alloc->offset = aligned_offset + bytes;
     return aligned_offset;
 }
 
 alia_arena_stats
 alia_arena_get_stats(alia_arena* arena)
 {
-    alia_update_peak_usage(alia_arena_get_view(arena));
     return {
-        .current_usage = arena->bump.offset, .peak_usage = arena->peak_usage};
+        .current_usage = 0,
+        .peak_usage = arena->peak_usage,
+    };
 }
 
 } // extern "C"

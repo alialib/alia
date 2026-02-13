@@ -1,5 +1,6 @@
 #include <alia/ui/layout/system.h>
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/base/arena.hpp>
@@ -24,29 +25,26 @@ void
 alia_layout_system_resolve(
     alia_layout_system* system, alia_vec2f available_space)
 {
-    alia_arena_reset(alia_arena_get_view(&system->scratch_arena));
     alia_layout_node* root_node = system->root.first_child;
     alia_vertical_requirements vertical;
     {
-        alia_measurement_context ctx{
-            alia_arena_get_view(&system->scratch_arena)};
+        alia_measurement_context ctx;
+        alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
         alia_measure_horizontal(&ctx, root_node);
-        alia_arena_reset(alia_arena_get_view(&system->scratch_arena));
+        alia_arena_reset(&ctx.scratch);
         vertical = alia_measure_vertical(
             &ctx, ALIA_MAIN_AXIS_X, root_node, available_space.x);
     }
     {
-        alia_placement_context ctx{
-            alia_arena_get_view(&system->scratch_arena),
-            alia_arena_get_view(&system->placement_arena)};
-        alia_arena_reset(alia_arena_get_view(&system->scratch_arena));
+        alia_placement_context ctx;
+        alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
+        alia_bump_allocator_init(&ctx.arena, &system->placement_arena);
         alia_assign_boxes(
             &ctx,
             ALIA_MAIN_AXIS_X,
             root_node,
             {.min = {0, 0}, .size = available_space},
             vertical.ascent);
-        alia_arena_reset(alia_arena_get_view(&system->scratch_arena));
     }
 }
 

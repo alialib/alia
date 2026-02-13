@@ -15,7 +15,7 @@ namespace alia {
 // Note that no destructor is ever called, so T must be trivially destructible.
 template<class T>
 T&
-claim_scratch(alia_arena_view& arena)
+claim_scratch(alia_bump_allocator& arena)
 {
     return *arena_new<T>(arena);
 }
@@ -26,7 +26,7 @@ claim_scratch(alia_arena_view& arena)
 // measurement step.
 template<class T>
 T&
-use_scratch(alia_arena_view& arena)
+use_scratch(alia_bump_allocator& arena)
 {
     return *arena_alloc<T>(arena);
 }

@@ -191,9 +191,8 @@ alia_layout_inset_begin(
     if (is_refresh_event(*ctx))
     {
         auto& scope = stack_push<alia_layout_inset_scope>(ctx);
-        auto& layout = as_refresh_event(*ctx).layout_emission;
         inset_layout_node* node
-            = arena_alloc<inset_layout_node>(*layout.arena);
+            = arena_alloc<inset_layout_node>(ctx->layout->emission.arena);
         *node = inset_layout_node{
             .container
             = {.base = {.vtable = &inset_vtable, .next_sibling = 0},

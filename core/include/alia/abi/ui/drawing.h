@@ -71,7 +71,7 @@ typedef struct alia_draw_context
 {
     alia_draw_system* system;
     alia_draw_bucket_table* buckets;
-    alia_arena_view* arena;
+    alia_bump_allocator arena;
 } alia_draw_context;
 
 // Allocate a draw command with `ALIA_MIN_ALIGN` alignment.

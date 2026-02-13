@@ -30,6 +30,7 @@ struct test_rig
 {
     void* storage = nullptr;
     alia_arena* arena = nullptr;
+    alia_bump_allocator alloc = {};
 
     void
     init(size_t initial_capacity)
@@ -43,6 +44,7 @@ struct test_rig
             initial_capacity,
             alia_arena_controller{
                 .user = nullptr, .grow = test_grow_fn, .free = test_free});
+        alia_bump_allocator_init(&this->alloc, this->arena);
     }
 
     void
@@ -55,10 +57,10 @@ struct test_rig
         this->storage = nullptr;
     }
 
-    alia_arena_view*
+    alia_bump_allocator*
     view()
     {
-        return alia_arena_get_view(this->arena);
+        return &this->alloc;
     }
 };
 
@@ -133,11 +135,12 @@ TEST_CASE("mark_jump_reset")
     alia_offset b1 = alia_arena_alloc(rig.view(), 80);
     CHECK(b1 == a1);
 
-    // Confirm that the peak usage is correct.
+    // Commit peak so get_stats returns it.
+    alia_bump_allocator_commit_peak(rig.view());
     auto stats = alia_arena_get_stats(rig.arena);
     CHECK(stats.peak_usage == 240);
 
-    // Reset the arena and confirm that the peak usage is correct.
+    // Reset the allocator and confirm peak is unchanged (still committed).
     alia_arena_reset(rig.view());
     stats = alia_arena_get_stats(rig.arena);
     CHECK(stats.peak_usage == 240);
@@ -154,17 +157,18 @@ TEST_CASE("stats")
     (void) alia_arena_alloc(rig.view(), 203);
 
     {
+        alia_bump_allocator_commit_peak(rig.view());
         auto stats = alia_arena_get_stats(rig.arena);
-        CHECK(stats.current_usage == 315);
         CHECK(stats.peak_usage == 315);
+        CHECK(rig.view()->offset == 315);
     }
 
     alia_arena_reset(rig.view());
 
     {
         auto stats = alia_arena_get_stats(rig.arena);
-        CHECK(stats.current_usage == 0);
         CHECK(stats.peak_usage == 315);
+        CHECK(rig.view()->offset == 0);
     }
 
     rig.destroy();

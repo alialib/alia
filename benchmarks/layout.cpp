@@ -40,7 +40,7 @@ do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
     {
         auto& layout = ctx.pass.refresh.layout_emission;
         LayoutLeafNode* new_node = arena_alloc<LayoutLeafNode>(
-            *ctx.pass.refresh.layout_emission.arena);
+            ctx.pass.refresh.layout_emission.arena);
         *layout.next_ptr = &new_node->base;
         layout.next_ptr = &new_node->base.next_sibling;
         *new_node = LayoutLeafNode{

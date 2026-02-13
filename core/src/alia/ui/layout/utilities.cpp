@@ -12,18 +12,18 @@ void
 alia_layout_container_activate(
     alia_context* ctx, alia_layout_container* container)
 {
-    auto& layout = alia::as_refresh_event(*ctx).layout_emission;
-    *layout.next_ptr = &container->base;
-    layout.next_ptr = &container->first_child;
+    auto& emission = ctx->layout->emission;
+    *emission.next_ptr = &container->base;
+    emission.next_ptr = &container->first_child;
 }
 
 void
 alia_layout_container_deactivate(
     alia_context* ctx, alia_layout_container* container)
 {
-    auto& layout = alia::as_refresh_event(*ctx).layout_emission;
-    *layout.next_ptr = 0;
-    layout.next_ptr = &container->base.next_sibling;
+    auto& emission = ctx->layout->emission;
+    *emission.next_ptr = 0;
+    emission.next_ptr = &container->base.next_sibling;
 }
 
 struct alia_layout_container_scope
@@ -40,8 +40,8 @@ alia_layout_container_simple_begin(
     if (alia::is_refresh_event(*ctx))
     {
         auto& scope = stack_push<alia_layout_container_scope>(ctx);
-        auto& layout = as_refresh_event(*ctx).layout_emission;
-        auto* container = arena_alloc<alia_layout_container>(*layout.arena);
+        auto& emission = ctx->layout->emission;
+        auto* container = arena_alloc<alia_layout_container>(emission.arena);
         scope.container = container;
         *container = alia_layout_container{
             .base = {.vtable = vtable, .next_sibling = 0},
@@ -189,9 +189,9 @@ alia_default_measure_wrapped_vertical(
     float current_x_offset,
     float line_width)
 {
-    auto const marker = alia_arena_mark(ctx->scratch);
+    auto const marker = alia_arena_mark(&ctx->scratch);
     auto horizontal = alia_measure_horizontal(ctx, node);
-    alia_arena_jump(ctx->scratch, marker);
+    alia_arena_jump(&ctx->scratch, marker);
     auto vertical
         = alia_measure_vertical(ctx, main_axis, node, horizontal.min_size);
     if (current_x_offset + horizontal.min_size > line_width)

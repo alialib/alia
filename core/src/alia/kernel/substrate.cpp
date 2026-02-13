@@ -24,10 +24,10 @@ void
 substrate_begin_traversal(
     substrate_traversal& traversal,
     substrate_system& system,
-    alia_arena_view* scratch)
+    alia_bump_allocator* scratch)
 {
     traversal.system = &system;
-    traversal.scratch = scratch;
+    traversal.scratch = *scratch;
     // TODO: Decide how to handle root block w.r.t. discovery and allocation.
     traversal.block.data = nullptr;
     traversal.block.parent = nullptr;
@@ -56,9 +56,9 @@ substrate_use_memory(
                 = std::max(alignment, traversal.block.discovery->alignment);
             return {
                 alia_arena_ptr(
-                    traversal.scratch,
+                    &traversal.scratch,
                     alia_arena_alloc_aligned(
-                        traversal.scratch, size, alignment)),
+                        &traversal.scratch, size, alignment)),
                 traversal.block.data->generation,
                 substrate_block_traversal_mode::DISCOVERY};
         }
@@ -153,9 +153,9 @@ substrate_begin_block(
     if (needs_discovery(spec))
     {
         substrate_block_discovery_state* discovery = new (alia_arena_ptr(
-            traversal.scratch,
+            &traversal.scratch,
             alia_arena_alloc_aligned(
-                traversal.scratch,
+                &traversal.scratch,
                 sizeof(substrate_block_discovery_state),
                 alignof(substrate_block_discovery_state))))
             substrate_block_discovery_state;

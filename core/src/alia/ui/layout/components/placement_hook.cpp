@@ -1,3 +1,4 @@
+#include <alia/abi/base/arena.h>
 #include <alia/abi/ui/layout/components.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
@@ -54,7 +55,7 @@ placement_hook_assign_boxes(
     auto& placement_hook = *reinterpret_cast<placement_hook_node*>(node);
 
     alia_layout_placement* placement
-        = arena_alloc<alia_layout_placement>(*ctx->arena);
+        = arena_alloc<alia_layout_placement>(ctx->arena);
     placement->box = box;
     placement->baseline = baseline;
 
@@ -89,8 +90,8 @@ alia_layout_placement_hook_begin(alia_context* ctx, alia_layout_flags_t flags)
     auto& scope = stack_push<alia_layout_placement_hook_scope>(ctx);
     if (is_refresh_event(*ctx))
     {
-        auto& layout = as_refresh_event(*ctx).layout_emission;
-        auto* node = arena_alloc<placement_hook_node>(*layout.arena);
+        auto* node
+            = arena_alloc<placement_hook_node>(ctx->layout->emission.arena);
         *node = placement_hook_node{
             .base = {.vtable = &placement_hook_vtable, .next_sibling = 0},
             .flags = flags,
@@ -101,7 +102,7 @@ alia_layout_placement_hook_begin(alia_context* ctx, alia_layout_flags_t flags)
     else
     {
         scope.placement = *arena_alloc<alia_layout_placement>(
-            *alia_arena_get_view(&ctx->system->layout.placement_arena));
+            *alia_layout_placement_arena(ctx));
     }
     return &scope.placement;
 }

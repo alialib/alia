@@ -18,7 +18,7 @@ column_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& column = *reinterpret_cast<column_layout_node*>(node);
-    auto& scratch = claim_scratch<column_scratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<column_scratch>(ctx->scratch);
 
     for (alia_layout_node* child = column.first_child; child != nullptr;
          child = child->next_sibling)
@@ -27,7 +27,7 @@ column_measure_horizontal(
     }
     alia_vertical_requirements* y_requirements
         = arena_alloc_array<alia_vertical_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
 
     for (alia_layout_node* child = column.first_child; child != nullptr;
          child = child->next_sibling)
@@ -48,10 +48,10 @@ column_assign_widths(
     float assigned_width)
 {
     auto& column = *reinterpret_cast<column_layout_node*>(node);
-    auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<column_scratch>(ctx->scratch);
     alia_vertical_requirements* y_requirements
         = arena_alloc_array<alia_vertical_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     auto const assignment = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(column.flags, main_axis),
         assigned_width,
@@ -71,10 +71,10 @@ column_measure_vertical(
     float assigned_width)
 {
     auto& column = *reinterpret_cast<column_layout_node*>(node);
-    auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<column_scratch>(ctx->scratch);
     alia_vertical_requirements* y_requirements
         = arena_alloc_array<alia_vertical_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     auto const assignment = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(column.flags, main_axis),
         assigned_width,
@@ -106,10 +106,10 @@ column_assign_boxes(
     float baseline)
 {
     auto& column = *reinterpret_cast<column_layout_node*>(node);
-    auto& scratch = use_scratch<column_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<column_scratch>(ctx->scratch);
     alia_vertical_requirements* y_requirements
         = arena_alloc_array<alia_vertical_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     auto const assignment = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(column.flags, main_axis),
         box.size,

@@ -1,5 +1,6 @@
 #include <alia/flow/dispatch.hpp>
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
@@ -34,10 +35,11 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .z_base = 0,
     };
 
-    alia_layout_context layout = {
-        .node_arena = alia_arena_get_view(&sys.layout.node_arena),
-        .placement_arena = alia_arena_get_view(&sys.layout.placement_arena),
-    };
+    alia_layout_context layout;
+    if (events.event->type == ALIA_EVENT_REFRESH)
+        layout.emission.next_ptr = &sys.layout.root.first_child;
+    alia_bump_allocator_init(&layout.emission.arena, &sys.layout.node_arena);
+    alia_bump_allocator_init(&layout.placement, &sys.layout.placement_arena);
 
     alia_context ctx = {
         .kernel = nullptr,
@@ -50,6 +52,9 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .layout = &layout};
 
     sys.controller(ctx);
+
+    if (events.event->type == ALIA_EVENT_REFRESH)
+        *layout.emission.next_ptr = 0;
 }
 
 namespace {

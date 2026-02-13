@@ -132,8 +132,8 @@ alia_layout_growth_override_begin(alia_context* ctx, float growth)
     if (is_refresh_event(*ctx))
     {
         auto& scope = stack_push<alia_layout_growth_override_scope>(ctx);
-        auto& layout = as_refresh_event(*ctx).layout_emission;
-        auto* node = arena_alloc<growth_override_node>(*layout.arena);
+        auto* node
+            = arena_alloc<growth_override_node>(ctx->layout->emission.arena);
         *node = growth_override_node{
             .container
             = {.base = {.vtable = &growth_override_vtable, .next_sibling = 0},

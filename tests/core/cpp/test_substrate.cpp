@@ -16,16 +16,18 @@ namespace {
 struct scratch_rig
 {
     alia_arena arena;
+    alia_bump_allocator alloc = {};
 
     scratch_rig()
     {
         alia::initialize_lazy_commit_arena(&this->arena);
+        alia_bump_allocator_init(&this->alloc, &this->arena);
     }
 
-    alia_arena_view*
+    alia_bump_allocator*
     view()
     {
-        return alia_arena_get_view(&this->arena);
+        return &this->alloc;
     }
 
     ~scratch_rig()

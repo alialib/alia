@@ -175,10 +175,7 @@ struct substrate_block_traversal_state
 // a `substrate_system`.
 struct substrate_traversal
 {
-    // TODO: Not sure if the traversal actually needs to store its own pointer
-    // to this.
-    // TODO: Also, it should use the C++ API.
-    alia_arena_view* scratch = nullptr;
+    alia_bump_allocator scratch{};
     substrate_system* system = nullptr;
     substrate_block_traversal_state block{};
 };
@@ -219,7 +216,7 @@ void
 substrate_begin_traversal(
     substrate_traversal& traversal,
     substrate_system& system,
-    alia_arena_view* scratch);
+    alia_bump_allocator* scratch);
 
 void
 substrate_end_traversal(substrate_traversal& traversal);

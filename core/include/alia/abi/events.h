@@ -124,15 +124,8 @@ enum
 // These are the event-specific data structures that correspond to the event
 // types in the table above...
 
-typedef struct alia_layout_emission
-{
-    alia_arena_view* arena;
-    alia_layout_node** next_ptr;
-} alia_layout_emission;
-
 typedef struct alia_refresh
 {
-    alia_layout_emission layout_emission;
 } alia_refresh;
 
 typedef struct alia_draw_context alia_draw_context;

@@ -1,5 +1,6 @@
 #include <alia/renderers/gl/renderer.hpp>
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/ui/drawing.h>
 #include <alia/impl/base/arena.hpp>
@@ -322,9 +323,10 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
     float clip_rect[4]
         = {0.f, 0.f, system.surface_size.x, system.surface_size.y};
 
-    alia_arena_reset(alia_arena_get_view(&renderer->rect_instance_arena));
-    rect_instance* rect_instances = arena_alloc_array<rect_instance>(
-        *alia_arena_get_view(&renderer->rect_instance_arena), boxes.count);
+    alia_bump_allocator rect_alloc;
+    alia_bump_allocator_init(&rect_alloc, &renderer->rect_instance_arena);
+    rect_instance* rect_instances
+        = arena_alloc_array<rect_instance>(rect_alloc, boxes.count);
     {
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
@@ -347,7 +349,7 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
         GL_ARRAY_BUFFER,
         sizeof(rect_instance) * boxes.count,
         rect_instances,
-        GL_STATIC_DRAW);
+        GL_STREAM_DRAW);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

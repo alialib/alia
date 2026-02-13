@@ -23,7 +23,7 @@ hyperflow_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = claim_scratch<hyperflow_scratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<hyperflow_scratch>(ctx->scratch);
 
     for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
          child = child->next_sibling)
@@ -32,7 +32,7 @@ hyperflow_measure_horizontal(
     }
 
     auto* child_requirements = arena_alloc_array<alia::child_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     float max_child_width = 0;
     for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
@@ -67,10 +67,10 @@ hyperflow_measure_vertical(
     float assigned_width)
 {
     auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = use_scratch<hyperflow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<hyperflow_scratch>(ctx->scratch);
 
     auto* child_requirements = arena_alloc_array<alia::child_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     float line_height = 0, line_ascent = 0, line_descent = 0;
     float overall_height = 0, overall_ascent = 0;
@@ -134,10 +134,10 @@ hyperflow_assign_boxes(
     float baseline)
 {
     auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = use_scratch<hyperflow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<hyperflow_scratch>(ctx->scratch);
 
     auto* child_requirements = arena_alloc_array<alia::child_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     if (scratch.child_count == 0)
         return;

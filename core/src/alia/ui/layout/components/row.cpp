@@ -16,7 +16,7 @@ alia_horizontal_requirements
 row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& row = *reinterpret_cast<row_layout_node*>(node);
-    auto& scratch = claim_scratch<row_scratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<row_scratch>(ctx->scratch);
     for (alia_layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -24,7 +24,7 @@ row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     }
     alia_horizontal_requirements* x_requirements
         = arena_alloc_array<alia_horizontal_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     for (alia_layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -46,10 +46,10 @@ row_assign_widths(
     float assigned_width)
 {
     auto& row = *reinterpret_cast<row_layout_node*>(node);
-    auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<row_scratch>(ctx->scratch);
     alia_horizontal_requirements* x_requirements
         = arena_alloc_array<alia_horizontal_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     auto const placement = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(row.flags, main_axis),
         assigned_width,
@@ -78,10 +78,10 @@ row_measure_vertical(
     float assigned_width)
 {
     auto& row = *reinterpret_cast<row_layout_node*>(node);
-    auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<row_scratch>(ctx->scratch);
     alia_horizontal_requirements* x_requirements
         = arena_alloc_array<alia_horizontal_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     // TODO: Stop repeating this logic everywhere.
     auto const placement = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(row.flags, main_axis),
@@ -123,10 +123,10 @@ row_assign_boxes(
     float baseline)
 {
     auto& row = *reinterpret_cast<row_layout_node*>(node);
-    auto& scratch = use_scratch<row_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<row_scratch>(ctx->scratch);
     alia_horizontal_requirements* x_requirements
         = arena_alloc_array<alia_horizontal_requirements>(
-            *ctx->scratch, scratch.child_count);
+            ctx->scratch, scratch.child_count);
     auto const placement = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(row.flags, main_axis),
         box.size,

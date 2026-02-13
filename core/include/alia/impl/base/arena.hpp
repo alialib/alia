@@ -23,7 +23,7 @@ align_up(std::size_t value)
 
 template<class T>
 T*
-arena_alloc(alia_arena_view& arena)
+arena_alloc(alia_bump_allocator& arena)
 {
     static_assert(alignof(T) <= ALIA_MIN_ALIGN, "ALIA_MIN_ALIGN exceeded");
     return reinterpret_cast<T*>(
@@ -32,7 +32,7 @@ arena_alloc(alia_arena_view& arena)
 
 template<class T>
 T*
-arena_alloc_trailing(alia_arena_view& arena, std::size_t trailing_bytes)
+arena_alloc_trailing(alia_bump_allocator& arena, std::size_t trailing_bytes)
 {
     return reinterpret_cast<T*>(alia_arena_ptr(
         &arena,
@@ -41,7 +41,7 @@ arena_alloc_trailing(alia_arena_view& arena, std::size_t trailing_bytes)
 
 template<class T>
 T*
-arena_alloc_array(alia_arena_view& arena, std::size_t count)
+arena_alloc_array(alia_bump_allocator& arena, std::size_t count)
 {
     static_assert(alignof(T) <= ALIA_MIN_ALIGN, "ALIA_MIN_ALIGN exceeded");
     return reinterpret_cast<T*>(alia_arena_ptr(
@@ -50,7 +50,7 @@ arena_alloc_array(alia_arena_view& arena, std::size_t count)
 
 template<class T>
 T*
-arena_new(alia_arena_view& arena)
+arena_new(alia_bump_allocator& arena)
 {
     static_assert(std::is_trivially_destructible_v<T>);
     static_assert(alignof(T) <= ALIA_MIN_ALIGN, "ALIA_MIN_ALIGN exceeded");

@@ -30,13 +30,13 @@ typedef struct alia_vertical_requirements
 
 typedef struct alia_placement_context
 {
-    alia_arena_view* scratch;
-    alia_arena_view* arena;
+    alia_bump_allocator scratch;
+    alia_bump_allocator arena;
 } alia_placement_context;
 
 typedef struct alia_measurement_context
 {
-    alia_arena_view* scratch;
+    alia_bump_allocator scratch;
 } alia_measurement_context;
 
 typedef struct alia_line_requirements

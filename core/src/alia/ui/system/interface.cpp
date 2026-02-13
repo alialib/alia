@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <alia/abi/base/arena.h>
+#include <alia/abi/events.h>
 #include <alia/flow/dispatch.hpp>
 #include <alia/system/object.hpp>
 
@@ -27,13 +29,8 @@ refresh_system(ui_system& sys)
     //     = std::chrono::steady_clock::now();
 
     {
-        alia_arena_reset(alia_arena_get_view(&sys.layout.node_arena));
-        auto refresh_event = alia_make_refresh_event(
-            {.layout_emission
-             = {alia_arena_get_view(&sys.layout.node_arena),
-                &sys.layout.root.first_child}});
+        auto refresh_event = alia_make_refresh_event({});
         dispatch_event(sys, refresh_event);
-        *as_refresh_event(refresh_event).layout_emission.next_ptr = 0;
     }
 
     // long long refresh_time;

@@ -80,7 +80,7 @@ alia_draw_command_alloc(
     size_t size)
 {
     auto* command = (alia_draw_command*) alia_arena_ptr(
-        ctx->arena, alia_arena_alloc(ctx->arena, size));
+        &ctx->arena, alia_arena_alloc(&ctx->arena, size));
     auto* bucket = find_or_create_draw_bucket(ctx, z_index, material_id);
     append_draw_command(bucket, command);
     return command;

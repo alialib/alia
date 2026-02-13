@@ -16,7 +16,7 @@ alia_horizontal_requirements
 flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = claim_scratch<flow_scratch>(*ctx->scratch);
+    auto& scratch = claim_scratch<flow_scratch>(ctx->scratch);
 
     float max_child_width = 0;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
@@ -30,7 +30,7 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     }
 
     scratch.child_requirements = arena_alloc_array<alia_wrapping_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     return alia_horizontal_requirements{
         .min_size = max_child_width,
@@ -71,7 +71,7 @@ flow_measure_vertical(
     float assigned_width)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -111,7 +111,7 @@ flow_measure_vertical(
     }
 
     arena_alloc_array<alia_wrapping_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     if (!wrapping_has_occurred)
         overall_ascent = line_ascent;
@@ -140,7 +140,7 @@ flow_assign_boxes(
     float baseline)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -265,7 +265,7 @@ flow_assign_boxes(
     }
 
     arena_alloc_array<alia_wrapping_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 }
 
 alia_wrapping_requirements
@@ -277,7 +277,7 @@ flow_measure_wrapped_vertical(
     float line_width)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -341,7 +341,7 @@ flow_measure_wrapped_vertical(
     }
 
     arena_alloc_array<alia_wrapping_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 
     scratch.total_height
         = (std::max) (first_line.height,
@@ -365,7 +365,7 @@ flow_assign_wrapped_boxes(
     alia_wrapping_assignment const* assignment)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(*ctx->scratch);
+    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     auto* child_requirements = scratch.child_requirements;
 
@@ -496,7 +496,7 @@ flow_assign_wrapped_boxes(
     }
 
     arena_alloc_array<alia_wrapping_requirements>(
-        *ctx->scratch, scratch.child_count);
+        ctx->scratch, scratch.child_count);
 }
 
 alia_layout_node_vtable flow_vtable = {

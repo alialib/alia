@@ -10,14 +10,14 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_arena alia_arena;
 
-typedef struct alia_bump_state
+typedef struct alia_bump_allocator
 {
+    struct alia_arena* arena;
     uint8_t* base;
     size_t capacity;
     size_t offset;
-} alia_bump_state;
-
-typedef alia_bump_state alia_arena_view;
+    size_t peak;
+} alia_bump_allocator;
 
 // a callback that can be used to grow the arena (in place)
 typedef size_t (*alia_arena_grow_fn)(
@@ -54,10 +54,13 @@ alia_arena_init(
 void
 alia_arena_cleanup(alia_arena* arena);
 
-// ALLOCATION
+// BUMP ALLOCATOR
 
-alia_arena_view*
-alia_arena_get_view(alia_arena* arena);
+void
+alia_bump_allocator_init(alia_bump_allocator* alloc, alia_arena* arena);
+
+void
+alia_bump_allocator_commit_peak(alia_bump_allocator* alloc);
 
 // Allocation gives offsets from the base, but these helpers can be used to
 // convert to/from pointers.
@@ -65,49 +68,49 @@ alia_arena_get_view(alia_arena* arena);
 typedef size_t alia_offset;
 
 static inline void*
-alia_arena_ptr(alia_arena_view const* arena, alia_offset offset)
+alia_arena_ptr(alia_bump_allocator const* alloc, alia_offset offset)
 {
-    return (uint8_t*) arena->base + offset;
+    return (uint8_t*) alloc->base + offset;
 }
 
 static inline alia_offset
-alia_arena_offset(alia_arena_view const* arena, void const* ptr)
+alia_arena_offset(alia_bump_allocator const* alloc, void const* ptr)
 {
-    return (alia_offset) ((uint8_t const*) ptr - (uint8_t const*) arena->base);
+    return (alia_offset) ((uint8_t const*) ptr - (uint8_t const*) alloc->base);
 }
 
 // Handle out-of-memory errors.
 // If this returns, the arena has sufficient capacity to satisfy the request.
 void
 alia_arena_handle_out_of_memory(
-    alia_arena_view* arena, size_t bytes_requested);
+    alia_bump_allocator* alloc, size_t bytes_requested);
 
-// Allocate bytes from the arena.
+// Allocate bytes from the allocator.
 // The requested size must be a multiple of ALIA_MIN_ALIGN.
 // Returns an offset from the base of the arena to the allocated bytes.
 static inline alia_offset
-alia_arena_alloc(alia_arena_view* arena, size_t bytes)
+alia_arena_alloc(alia_bump_allocator* alloc, size_t bytes)
 {
     ALIA_ASSERT((bytes & (ALIA_MIN_ALIGN - 1)) == 0);
 
-    if (bytes > arena->capacity - arena->offset)
-        alia_arena_handle_out_of_memory(arena, bytes);
+    if (bytes > alloc->capacity - alloc->offset)
+        alia_arena_handle_out_of_memory(alloc, bytes);
 
-    alia_offset offset = arena->offset;
-    arena->offset += bytes;
+    alia_offset offset = alloc->offset;
+    alloc->offset += bytes;
     return offset;
 }
 
-// Allocate bytes from the arena, with custom alignment.
+// Allocate bytes from the allocator, with custom alignment.
 alia_offset
-alia_arena_alloc_aligned(alia_arena_view* arena, size_t bytes, size_t align);
+alia_arena_alloc_aligned(
+    alia_bump_allocator* alloc, size_t bytes, size_t align);
 
 // NAVIGATION
 
-// Update the peak usage of the arena.
-// This is used internally to update the arena stats before rewinding.
+// Update the peak usage of the allocator (internal; no arena access).
 void
-alia_update_peak_usage(alia_arena_view* view);
+alia_update_peak_usage(alia_bump_allocator* alloc);
 
 struct alia_arena_marker
 {
@@ -115,23 +118,23 @@ struct alia_arena_marker
 };
 
 static inline alia_arena_marker
-alia_arena_mark(alia_arena_view* arena)
+alia_arena_mark(alia_bump_allocator* alloc)
 {
-    return alia_arena_marker{.offset = arena->offset};
+    return alia_arena_marker{.offset = alloc->offset};
 }
 
 static inline void
-alia_arena_jump(alia_arena_view* arena, alia_arena_marker marker)
+alia_arena_jump(alia_bump_allocator* alloc, alia_arena_marker marker)
 {
-    alia_update_peak_usage(arena);
-    arena->offset = marker.offset;
+    alia_update_peak_usage(alloc);
+    alloc->offset = marker.offset;
 }
 
 static inline void
-alia_arena_reset(alia_arena_view* arena)
+alia_arena_reset(alia_bump_allocator* alloc)
 {
-    alia_update_peak_usage(arena);
-    arena->offset = 0;
+    alia_update_peak_usage(alloc);
+    alloc->offset = 0;
 }
 
 // INTROSPECTION
@@ -143,7 +146,7 @@ typedef struct alia_arena_stats
 } alia_arena_stats;
 
 alia_arena_stats
-alia_arena_get_stats(alia_arena* view);
+alia_arena_get_stats(alia_arena* arena);
 
 ALIA_EXTERN_C_END
 

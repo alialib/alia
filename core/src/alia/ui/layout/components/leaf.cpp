@@ -57,7 +57,7 @@ leaf_assign_boxes(
     float baseline)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
-    alia_box* placement = arena_alloc<alia_box>(*ctx->arena);
+    alia_box* placement = arena_alloc<alia_box>(ctx->arena);
     auto const padded_placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(leaf.flags, main_axis),
         box.size,
@@ -88,11 +88,10 @@ void
 alia_layout_leaf_emit(
     alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags)
 {
-    auto& layout = as_refresh_event(*ctx).layout_emission;
-    layout_leaf_node* new_node
-        = arena_alloc<layout_leaf_node>(*alia_layout_node_arena(ctx));
-    *layout.next_ptr = &new_node->base;
-    layout.next_ptr = &new_node->base.next_sibling;
+    auto& emission = ctx->layout->emission;
+    layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(emission.arena);
+    *emission.next_ptr = &new_node->base;
+    emission.next_ptr = &new_node->base.next_sibling;
     *new_node = layout_leaf_node{
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
