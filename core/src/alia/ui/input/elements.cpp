@@ -27,7 +27,7 @@ get_interaction_status(
     }
     else
     {
-        if (is_click_in_progress(ctx, id, button::left)
+        if (is_click_in_progress(ctx, id, ALIA_BUTTON_LEFT)
             || is_active(overrides))
         {
             status = ELEMENT_ACTIVE;

@@ -32,21 +32,22 @@ is_mouse_in_surface(ui_system& sys)
 }
 
 bool
-is_mouse_button_pressed(ui_system& sys, button button)
+is_mouse_button_pressed(ui_system& sys, alia_button_t button)
 {
-    return (sys.input.mouse_button_state & (1 << int(button))) != 0;
+    return (sys.input.mouse_button_state & (1 << unsigned(button))) != 0;
 }
 
 bool
-detect_mouse_press(ephemeral_context& ctx, button button)
+detect_mouse_press(ephemeral_context& ctx, alia_button_t button)
 {
     return (get_event_type(ctx) == ALIA_EVENT_MOUSE_PRESS
             || get_event_type(ctx) == ALIA_EVENT_DOUBLE_CLICK)
-        && as_mouse_press_event(ctx).button == alia_button_t(button);
+        && as_mouse_press_event(ctx).button == button;
 }
 
 bool
-detect_mouse_press(ephemeral_context& ctx, alia_element_id id, button button)
+detect_mouse_press(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     if (detect_mouse_press(ctx, button) && alia_element_is_hovered(&ctx, id))
     {
@@ -61,14 +62,15 @@ detect_mouse_press(ephemeral_context& ctx, alia_element_id id, button button)
 }
 
 bool
-detect_mouse_release(ephemeral_context& ctx, button button)
+detect_mouse_release(ephemeral_context& ctx, alia_button_t button)
 {
     return get_event_type(ctx) == ALIA_EVENT_MOUSE_RELEASE
-        && as_mouse_release_event(ctx).button == alia_button_t(button);
+        && as_mouse_release_event(ctx).button == button;
 }
 
 bool
-detect_mouse_release(ephemeral_context& ctx, alia_element_id id, button button)
+detect_mouse_release(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return detect_mouse_release(ctx, button)
         && alia_element_has_capture(&ctx, id);
@@ -84,21 +86,22 @@ detect_mouse_motion(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-detect_double_click(ephemeral_context& ctx, button button)
+detect_double_click(ephemeral_context& ctx, alia_button_t button)
 {
     return get_event_type(ctx) == ALIA_EVENT_DOUBLE_CLICK
-        && as_double_click_event(ctx).button == alia_button_t(button);
+        && as_double_click_event(ctx).button == button;
 }
 
 bool
-detect_double_click(ephemeral_context& ctx, alia_element_id id, button button)
+detect_double_click(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return detect_double_click(ctx, button)
         && alia_element_is_hovered(&ctx, id);
 }
 
 bool
-detect_click(ephemeral_context& ctx, alia_element_id id, button button)
+detect_click(ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     detect_mouse_press(ctx, id, button);
     return detect_mouse_release(ctx, id, button)
@@ -112,28 +115,30 @@ is_click_possible(ephemeral_context& ctx, alia_element_id id)
         && alia_no_element_has_capture(&ctx);
 }
 bool
-is_click_in_progress(ephemeral_context& ctx, alia_element_id id, button button)
+is_click_in_progress(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return alia_element_is_hovered(&ctx, id)
         && alia_element_has_capture(&ctx, id)
-        && alia_button_is_down(&ctx, alia_button_t(button));
+        && alia_button_is_down(&ctx, button);
 }
 
 bool
-detect_drag(ephemeral_context& ctx, alia_element_id id, button button)
+detect_drag(ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     detect_mouse_press(ctx, id, button);
     return get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
-        && alia_button_is_down(&ctx, alia_button_t(button))
+        && alia_button_is_down(&ctx, button)
         && alia_element_has_capture(&ctx, id);
 }
 
 bool
-detect_press_or_drag(ephemeral_context& ctx, alia_element_id id, button button)
+detect_press_or_drag(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return (detect_mouse_press(ctx, id, button)
             || (get_event_type(ctx) == ALIA_EVENT_MOUSE_MOTION
-                && alia_button_is_down(&ctx, alia_button_t(button))))
+                && alia_button_is_down(&ctx, button)))
         && alia_element_has_capture(&ctx, id);
 }
 
@@ -156,15 +161,17 @@ get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id)
 }
 
 bool
-is_drag_in_progress(ephemeral_context& ctx, alia_element_id id, button button)
+is_drag_in_progress(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
-    return alia_button_is_down(&ctx, alia_button_t(button))
+    return alia_button_is_down(&ctx, button)
         && alia_element_has_capture(&ctx, id)
         && get_system(ctx).input.dragging;
 }
 
 bool
-detect_drag_release(ephemeral_context& ctx, alia_element_id id, button button)
+detect_drag_release(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return is_drag_in_progress(ctx, id, button)
         && detect_mouse_release(ctx, button);
@@ -172,7 +179,7 @@ detect_drag_release(ephemeral_context& ctx, alia_element_id id, button button)
 
 bool
 detect_stationary_click(
-    ephemeral_context& ctx, alia_element_id id, button button)
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button)
 {
     return detect_click(ctx, id, button) && !get_system(ctx).input.dragging;
 }

@@ -195,7 +195,7 @@ typedef struct
 typedef struct
 {
     alia_button_t button;
-    alia_kmod_t mods;
+    alia_kmods_t mods;
     float x;
     float y;
 } alia_mouse_button;

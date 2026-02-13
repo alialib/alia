@@ -1,9 +1,9 @@
 #pragma once
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/input/constants.h>
 #include <alia/context.hpp>
 #include <alia/events.hpp>
-#include <alia/input/constants.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -22,74 +22,78 @@ is_mouse_in_surface(ephemeral_context& ctx)
 }
 
 bool
-is_mouse_button_pressed(ui_system& sys, button button);
+is_mouse_button_pressed(ui_system& sys, alia_button_t button);
 
 inline bool
-is_mouse_button_pressed(ephemeral_context& ctx, button button)
+is_mouse_button_pressed(ephemeral_context& ctx, alia_button_t button)
 {
     return is_mouse_button_pressed(*ctx.system, button);
 }
 
 bool
-detect_mouse_press(ephemeral_context& ctx, button button);
+detect_mouse_press(ephemeral_context& ctx, alia_button_t button);
 
 bool
-detect_mouse_press(ephemeral_context& ctx, alia_element_id id, button button);
+detect_mouse_press(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
-detect_mouse_release(ephemeral_context& ctx, button button);
+detect_mouse_release(ephemeral_context& ctx, alia_button_t button);
 
 bool
 detect_mouse_release(
-    ephemeral_context& ctx, alia_element_id id, button button);
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
 detect_mouse_motion(ephemeral_context& ctx, alia_element_id id);
 
 bool
-detect_double_click(ephemeral_context& ctx, button button);
+detect_double_click(ephemeral_context& ctx, alia_button_t button);
 
 bool
-detect_double_click(ephemeral_context& ctx, alia_element_id id, button button);
+detect_double_click(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
-detect_click(ephemeral_context& ctx, alia_element_id id, button button);
+detect_click(ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
 is_click_possible(ephemeral_context& ctx, alia_element_id id);
 
 bool
 is_click_in_progress(
-    ephemeral_context& ctx, alia_element_id id, button button);
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
-detect_drag(ephemeral_context& ctx, alia_element_id id, button button);
+detect_drag(ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
 detect_press_or_drag(
-    ephemeral_context& ctx, alia_element_id id, button button);
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 alia_vec2f
 get_mouse_motion_delta(ephemeral_context& ctx, alia_element_id id);
 
 bool
-is_drag_in_progress(ephemeral_context& ctx, alia_element_id id, button button);
+is_drag_in_progress(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
-detect_drag_release(ephemeral_context& ctx, alia_element_id id, button button);
+detect_drag_release(
+    ephemeral_context& ctx, alia_element_id id, alia_button_t button);
 
 bool
 detect_scroll(
     ephemeral_context& ctx, alia_element_id id, alia_vec2f* out_delta);
 
 inline alia_nanosecond_count
-get_click_start_time(ui_system& sys, button button)
+get_click_start_time(ui_system& sys, alia_button_t button)
 {
     return sys.input.last_mouse_press_time[unsigned(button)];
 }
 
 inline alia_nanosecond_count
-get_click_start_time(ephemeral_context& ctx, button button)
+get_click_start_time(ephemeral_context& ctx, alia_button_t button)
 {
     return get_click_start_time(*ctx.system, button);
 }

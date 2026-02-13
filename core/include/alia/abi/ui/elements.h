@@ -59,18 +59,6 @@ alia_element_has_capture(alia_context* ctx, alia_element_id id)
     return ctx->input->element_with_capture.element == id;
 }
 
-static inline bool
-alia_surface_is_hovered(alia_context* ctx)
-{
-    return ctx->input->mouse_inside_window;
-}
-
-static inline bool
-alia_button_is_down(alia_context* ctx, alia_button_t button)
-{
-    return (ctx->input->mouse_button_state & (1 << int(button))) != 0;
-}
-
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_ELEMENTS_H */

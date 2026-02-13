@@ -1,7 +1,7 @@
 #include <alia/system/api.hpp>
 
+#include <alia/abi/ui/input/constants.h>
 #include <alia/flow/dispatch.hpp>
-#include <alia/input/constants.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -74,7 +74,7 @@ update(ui_system& ui)
 
     // routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
-    cursor resolved_cursor = cursor::DEFAULT;
+    alia_cursor_t resolved_cursor = ALIA_CURSOR_DEFAULT;
 
     // Determine which widget is under the mouse cursor.
     if (ui.input.mouse_inside_window)
@@ -90,8 +90,7 @@ update(ui_system& ui)
                 as_mouse_hit_test_event(event).result.id))
         {
             set_hot_element(ui, as_mouse_hit_test_event(event).result.id);
-            resolved_cursor
-                = cursor(as_mouse_hit_test_event(event).result.cursor);
+            resolved_cursor = as_mouse_hit_test_event(event).result.cursor;
             // record_tooltip(ui, hit_test);
         }
         else

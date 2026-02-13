@@ -130,7 +130,7 @@ do_rect(
         }
         case ALIA_CATEGORY_INPUT: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            if (detect_click(ctx, id, button::left))
+            if (detect_click(ctx, id, ALIA_BUTTON_LEFT))
                 return true;
             break;
         }
@@ -1478,10 +1478,10 @@ the_demo(context& ctx)
     }
 }
 
-alia_kmod_t
-to_alia_kmod_t(int mods)
+alia_kmods_t
+to_alia_kmods_t(int mods)
 {
-    alia_kmod_t result = 0;
+    alia_kmods_t result = 0;
     if (mods & GLFW_MOD_SHIFT)
         result |= ALIA_KMOD_SHIFT;
     if (mods & GLFW_MOD_CONTROL)
@@ -1517,16 +1517,16 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             process_mouse_press(
                 the_system,
                 {internal_x, internal_y},
-                alia::button(button),
-                key_modifiers(to_alia_kmod_t(mods)));
+                button,
+                to_alia_kmods_t(mods));
             break;
         }
         case GLFW_RELEASE: {
             process_mouse_release(
                 the_system,
                 {internal_x, internal_y},
-                alia::button(button),
-                key_modifiers(to_alia_kmod_t(mods)));
+                button,
+                to_alia_kmods_t(mods));
             break;
         }
     }

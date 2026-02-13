@@ -53,14 +53,17 @@ process_mouse_loss(ui_system& ui)
 
 void
 process_mouse_press(
-    ui_system& ui, alia_vec2f position, button button, key_modifiers mods)
+    ui_system& ui,
+    alia_vec2f position,
+    alia_button_t button,
+    alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_press_event(
-            {.button = alia_button_t(button),
-             .mods = raw_code(mods),
+            {.button = button,
+             .mods = mods,
              .x = position.x,
              .y = position.y});
         dispatch_targeted_event(ui, event, target);
@@ -78,14 +81,17 @@ process_mouse_press(
 
 void
 process_mouse_release(
-    ui_system& ui, alia_vec2f position, button button, key_modifiers mods)
+    ui_system& ui,
+    alia_vec2f position,
+    alia_button_t button,
+    alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_release_event(
-            {.button = alia_button_t(button),
-             .mods = raw_code(mods),
+            {.button = button,
+             .mods = mods,
              .x = position.x,
              .y = position.y});
         dispatch_targeted_event(ui, event, target);
@@ -101,14 +107,17 @@ process_mouse_release(
 
 void
 process_double_click(
-    ui_system& ui, alia_vec2f position, button button, key_modifiers mods)
+    ui_system& ui,
+    alia_vec2f position,
+    alia_button_t button,
+    alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
     if (alia_routable_element_id_is_valid(target))
     {
         alia_event event = alia_make_double_click_event(
-            {.button = alia_button_t(button),
-             .mods = raw_code(mods),
+            {.button = button,
+             .mods = mods,
              .x = position.x,
              .y = position.y});
         dispatch_targeted_event(ui, event, target);
@@ -136,10 +145,10 @@ process_scroll(ui_system& ui, alia_vec2f delta)
 #if 0
 
 bool
-process_focused_key_press(ui_system& ui, modded_key info)
+process_focused_key_press(ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
 {
     alia_event event = alia_make_key_press_event(
-        {.mods = raw_code(info.mods), .key = info.key});
+        {.mods = mods, .key = key});
     dispatch_targeted_event(ui, event, ui.input.widget_with_focus);
     if (event.key_press.acknowledged)
         refresh_system(ui);
@@ -147,9 +156,10 @@ process_focused_key_press(ui_system& ui, modded_key info)
 }
 
 bool
-process_background_key_press(ui_system& ui, modded_key info)
+process_background_key_press(ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    key_event event{{}, info};
+    alia_event event = alia_make_key_press_event(
+        {.mods = mods, .key = key});
     dispatch_event(ui, event, BACKGROUND_KEY_PRESS_EVENT);
     if (event.acknowledged)
         refresh_system(ui);

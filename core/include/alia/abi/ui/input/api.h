@@ -56,6 +56,18 @@ typedef struct alia_input_state
 alia_vec2f
 alia_input_pointer_position(alia_context* ctx);
 
+static inline bool
+alia_input_pointer_in_surface(alia_context* ctx)
+{
+    return ctx->input->mouse_inside_window;
+}
+
+static inline bool
+alia_input_button_is_down(alia_context* ctx, alia_button_t button)
+{
+    return (ctx->input->mouse_button_state & (1 << int(button))) != 0;
+}
+
 #if 0
 
 bool
