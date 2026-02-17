@@ -1,10 +1,10 @@
-#pragma once
+#ifndef ALIA_ABI_IDS_H
+#define ALIA_ABI_IDS_H
 
-#include <stdint.h>
+#include <alia/abi/context.h>
+#include <alia/abi/prelude.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ALIA_EXTERN_C_BEGIN
 
 typedef void* alia_element_id;
 
@@ -22,18 +22,28 @@ typedef struct alia_routable_element_id
     alia_route_node_id route;
 } alia_routable_element_id;
 
-inline bool
+static inline bool
 alia_element_id_is_valid(alia_element_id id)
 {
-    return id != nullptr;
+    return id != NULL;
 }
 
-inline bool
+static inline bool
 alia_routable_element_id_is_valid(alia_routable_element_id id)
 {
     return alia_element_id_is_valid(id.element);
 }
 
-#ifdef __cplusplus
+static inline bool
+alia_routable_element_id_matches(
+    alia_routable_element_id id, alia_element_id element)
+{
+    return id.element == element;
 }
-#endif
+
+alia_routable_element_id
+alia_make_routable_element_id(alia_context* ctx, alia_element_id id);
+
+ALIA_EXTERN_C_END
+
+#endif // ALIA_ABI_IDS_H

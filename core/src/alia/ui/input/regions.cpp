@@ -1,114 +1,105 @@
-#include <alia/input/regions.hpp>
+#include <alia/abi/ui/input/regions.h>
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/context.h>
+#include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/style.h>
 #include <alia/events.hpp>
-#include <alia/input/pointer.hpp>
 #include <alia/system/object.hpp>
 
 using namespace alia::operators;
+using namespace alia;
 
-namespace alia {
+extern "C" {
 
-bool
-is_mouse_inside_box(ephemeral_context& ctx, alia_box const& box)
+void
+alia_element_box_region(
+    alia_context* ctx,
+    alia_element_id id,
+    alia_box const* region,
+    alia_cursor_t cursor)
 {
-    return get_system(ctx).input.mouse_inside_window
-        && alia_box_contains(box, get_mouse_position(ctx))
-        && alia_box_contains(
-               alia_geometry_get_clip_region(&ctx),
-               ctx.system->input.mouse_position);
+    // TODO: Shouldn't this allow handling wheel hit tests too?
+    switch (get_event_type(*ctx))
+    {
+        case ALIA_EVENT_MOUSE_HIT_TEST:
+            alia_element_hit_test_box_region(
+                ctx, id, region, ALIA_HIT_TEST_MOUSE, cursor);
+            break;
+        case ALIA_EVENT_MAKE_WIDGET_VISIBLE:
+            alia_element_handle_visibility(ctx, id, region);
+            break;
+    }
 }
 
 void
-handle_mouse_hit(
-    ephemeral_context& ctx,
+alia_element_hit_test_box_region(
+    alia_context* ctx,
     alia_element_id id,
-    alia_box const& bounding_box,
+    alia_box const* box,
     alia_hit_test_flags_t flags,
     alia_cursor_t cursor)
 {
-    if (get_event_type(ctx) == ALIA_EVENT_MOUSE_HIT_TEST
+    if (alia_input_pointer_in_box(ctx, box))
+        alia_element_report_mouse_hit(ctx, id, box, flags, cursor);
+}
+
+void
+alia_element_report_mouse_hit(
+    alia_context* ctx,
+    alia_element_id id,
+    alia_box const* bounding_box,
+    alia_hit_test_flags_t flags,
+    alia_cursor_t cursor)
+{
+    if (get_event_type(*ctx) == ALIA_EVENT_MOUSE_HIT_TEST
         && (flags & ALIA_HIT_TEST_MOUSE))
     {
-        auto& e = as_mouse_hit_test_event(ctx);
-        e.result = {make_routable_element_id(ctx, id), cursor};
+        auto& e = as_mouse_hit_test_event(*ctx);
+        e.result = {make_routable_element_id(*ctx, id), cursor};
         // TODO: Do we need the region?
         // transform_aabb(get_transformation(ctx), bounding_box)
     }
     else if (
-        get_event_type(ctx) == ALIA_EVENT_WHEEL_HIT_TEST
+        get_event_type(*ctx) == ALIA_EVENT_WHEEL_HIT_TEST
         && (flags & ALIA_HIT_TEST_WHEEL))
     {
-        auto& e = as_wheel_hit_test_event(ctx);
-        e.result = make_routable_element_id(ctx, id);
+        auto& e = as_wheel_hit_test_event(*ctx);
+        e.result = make_routable_element_id(*ctx, id);
     }
 }
 
 void
-hit_test_box_region(
-    ephemeral_context& ctx,
-    alia_element_id id,
-    alia_box const& box,
-    alia_hit_test_flags_t flags,
-    alia_cursor_t cursor)
+alia_element_handle_visibility(
+    alia_context* ctx, alia_element_id id, alia_box const* region)
 {
-    if (is_mouse_inside_box(ctx, box))
-        handle_mouse_hit(ctx, id, box, flags, cursor);
-}
-
-void
-handle_region_visibility(
-    ephemeral_context& ctx, alia_element_id id, alia_box const& region)
-{
-    if (get_event_target(ctx) == id)
+    if (get_event_target(*ctx) == id)
     {
-        auto& e = as_make_widget_visible_event(ctx);
+        auto& e = as_make_widget_visible_event(*ctx);
         e.region = alia_affine2_transform_aabb(
-            alia_geometry_get_transform(&ctx),
+            alia_geometry_get_transform(ctx),
             // TODO: Do we really want to expand here?
             alia_box_expand(
-                region,
-                {alia_ctx_style(&ctx)->padding,
-                 alia_ctx_style(&ctx)->padding}));
+                *region,
+                {alia_ctx_style(ctx)->padding, alia_ctx_style(ctx)->padding}));
         e.acknowledged = true;
     }
 }
 
 void
-do_box_region(
-    ephemeral_context& ctx,
-    alia_element_id id,
-    alia_box const& region,
-    alia_cursor_t cursor)
+alia_element_override_cursor(
+    alia_context* ctx, alia_element_id id, alia_cursor_t cursor)
 {
-    // TODO: Shouldn't this allow handling wheel hit tests too?
-    switch (get_event_type(ctx))
+    if (get_event_type(*ctx) == ALIA_EVENT_MOUSE_HIT_TEST)
     {
-        case ALIA_EVENT_MOUSE_HIT_TEST:
-            hit_test_box_region(ctx, id, region, ALIA_HIT_TEST_MOUSE, cursor);
-            break;
-        case ALIA_EVENT_MAKE_WIDGET_VISIBLE:
-            handle_region_visibility(ctx, id, region);
-            break;
-    }
-}
-
-void
-override_cursor(
-    ephemeral_context& ctx, alia_element_id id, alia_cursor_t cursor)
-{
-    if (get_event_type(ctx) == ALIA_EVENT_MOUSE_HIT_TEST)
-    {
-        auto& e = as_mouse_hit_test_event(ctx);
-        if (get_event_target(ctx) == id)
+        auto& e = as_mouse_hit_test_event(*ctx);
+        if (get_event_target(*ctx) == id)
             e.result.cursor = cursor;
     }
-    else if (get_event_type(ctx) == ALIA_EVENT_CURSOR_QUERY)
+    else if (get_event_type(*ctx) == ALIA_EVENT_CURSOR_QUERY)
     {
-        auto& e = as_cursor_query_event(ctx);
-        if (get_event_target(ctx) == id)
+        auto& e = as_cursor_query_event(*ctx);
+        if (get_event_target(*ctx) == id)
             e.cursor = cursor;
     }
 }
@@ -163,4 +154,4 @@ set_tooltip_message(
 
 #endif
 
-} // namespace alia
+} // extern "C"

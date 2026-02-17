@@ -142,13 +142,61 @@ process_scroll(ui_system& ui, alia_vec2f delta)
     }
 }
 
+void
+set_focus(ui_system& sys, routable_widget_id widget)
+{
+    // TODO: Implement this logic once there is an internal event queue.
+
+    // bool different = sys.input.widget_with_focus.id != widget.id;
+    // if (different && sys.input.widget_with_focus)
+    // {
+    //         // A lot of code likes to call set_focus in response to events,
+    //         // which means that the following FOCUS_LOSS_EVENT could end up
+    //         // being invoked on a UI state that hasn't seen a refresh event
+    //         // yet, so do a refresh here just to be safe.
+    //         refresh_system(sys);
+    //
+    //     focus_notification_event event;
+    //     dispatch_targeted_event(
+    //         sys, event, sys.input.widget_with_focus, FOCUS_LOSS_EVENT);
+    //     refresh_system(sys);
+    // }
+
+    // sys.input.widget_with_focus = widget;
+
+    // // It's possible to have widgets that appear based on whether or not
+    // // another widget has the focus, so we need to refresh here.
+    // refresh_system(sys);
+
+    // TODO
+    // if (different && widget)
+    // {
+    //     // Make the new widget visible.
+    //     {
+    //         auto widget = element.widget.lock();
+    //         if (widget && widget->parent)
+    //         {
+    //             widget->parent->reveal_region(region_reveal_request{
+    //                 layout_box(transform_box(
+    //                     widget->transformation(),
+    //                     box2d(widget->bounding_box()))),
+    //                 false,
+    //                 false});
+    //         }
+    //     }
+
+    //     focus_notification_event event{{{}, ui_event_type::FOCUS_GAIN}};
+    //     deliver_input_event(sys, element.widget, event);
+    // }
+}
+
 #if 0
 
 bool
-process_focused_key_press(ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
+process_focused_key_press(
+    ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    alia_event event = alia_make_key_press_event(
-        {.mods = mods, .key = key});
+    alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
     dispatch_targeted_event(ui, event, ui.input.widget_with_focus);
     if (event.key_press.acknowledged)
         refresh_system(ui);
@@ -156,10 +204,10 @@ process_focused_key_press(ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
 }
 
 bool
-process_background_key_press(ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
+process_background_key_press(
+    ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    alia_event event = alia_make_key_press_event(
-        {.mods = mods, .key = key});
+    alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
     dispatch_event(ui, event, BACKGROUND_KEY_PRESS_EVENT);
     if (event.acknowledged)
         refresh_system(ui);

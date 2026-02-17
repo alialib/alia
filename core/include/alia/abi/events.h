@@ -92,8 +92,13 @@ enum
       NONE,                                                                   \
       FOCUS_PREDECESSOR,                                                      \
       focus_predecessor,                                                      \
-      alia_focus_query)                                                       \
-    X(0x53, INPUT, NONE, FOCUS_SUCCESSOR, focus_successor, alia_focus_query)  \
+      alia_focus_predecessor)                                                 \
+    X(0x53,                                                                   \
+      INPUT,                                                                  \
+      NONE,                                                                   \
+      FOCUS_SUCCESSOR,                                                        \
+      focus_successor,                                                        \
+      alia_focus_successor)                                                   \
     X(0x54, INPUT, NONE, FOCUS_RECOVERY, focus_recovery, alia_focus_recovery) \
     /* mouse / pointer */                                                     \
     X(0x60, INPUT, TARGETED, MOUSE_PRESS, mouse_press, alia_mouse_button)     \
@@ -136,102 +141,110 @@ typedef struct alia_draw
     alia_draw_context* context;
 } alia_draw;
 
-typedef struct
+typedef struct alia_nil
 {
-    int dummy;
 } alia_nil;
 
-typedef struct
+typedef struct alia_make_widget_visible
 {
     bool acknowledged;
     alia_box region;
 } alia_make_widget_visible;
 
-typedef struct
+typedef struct alia_mouse_hit_test_result
 {
     alia_routable_element_id id;
     alia_cursor_t cursor;
 } alia_mouse_hit_test_result;
-typedef struct
+
+typedef struct alia_mouse_hit_test
 {
     float x;
     float y;
     alia_mouse_hit_test_result result;
 } alia_mouse_hit_test;
-typedef struct
+
+typedef struct alia_wheel_hit_test
 {
     float x;
     float y;
     alia_routable_element_id result;
 } alia_wheel_hit_test;
-typedef struct
+
+typedef struct alia_cursor_query
 {
     alia_cursor_t cursor;
 } alia_cursor_query;
 
-typedef struct
+typedef struct alia_text_input
 {
-    int dummy;
+    char* text;
+    size_t text_length;
+    bool acknowledged;
 } alia_text_input;
-typedef struct
+
+typedef struct alia_key_input
 {
-    int key_code;
-    int modifiers;
+    alia_key_code_t code;
+    alia_kmods_t mods;
+    bool acknowledged;
 } alia_key_input;
 
-typedef struct
+typedef struct alia_focus_notification
 {
-    int dummy;
+    alia_element_id target;
 } alia_focus_notification;
-typedef struct
+
+typedef struct alia_focus_recovery
 {
-    int dummy;
-} alia_focus_query;
-typedef struct
-{
-    int dummy;
+    alia_element_id target;
 } alia_focus_recovery;
 
-typedef struct
+typedef struct alia_focus_successor
+{
+    alia_element_id target;
+    alia_routable_element_id successor;
+    bool just_saw_target;
+} alia_focus_successor;
+
+typedef struct alia_focus_predecessor
+{
+    alia_element_id target;
+    alia_routable_element_id predecessor;
+    bool saw_target;
+} alia_focus_predecessor;
+
+typedef struct alia_mouse_button
 {
     alia_button_t button;
     alia_kmods_t mods;
     float x;
     float y;
 } alia_mouse_button;
-typedef struct
+
+typedef struct alia_mouse_motion
 {
     float x;
     float y;
     float last_x;
     float last_y;
 } alia_mouse_motion;
-typedef struct
+
+typedef struct alia_wheel
 {
     alia_vec2f delta;
 } alia_wheel;
-typedef struct
+
+typedef struct alia_mouse_notification
 {
     int dummy;
 } alia_mouse_notification;
 
-typedef struct
+typedef struct alia_timer
 {
-    int dummy;
-} alia_wrapped_event;
-typedef struct
-{
-    int timer_id;
-    int milliseconds;
+    alia_element_id target;
+    alia_nanosecond_count fire_time;
 } alia_timer;
-typedef struct
-{
-    int dummy;
-} alia_resolve_location;
-typedef struct
-{
-    int dummy;
-} alia_custom_event;
 
 // EVENT CODES
 
@@ -244,8 +257,6 @@ enum
     #undef X
 };
 // clang-format on
-
-// EVENT STRUCT
 
 // CONSTRUCTORS
 

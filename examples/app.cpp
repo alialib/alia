@@ -19,6 +19,10 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/events.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/input/elements.h>
+#include <alia/abi/ui/input/keyboard.h>
+#include <alia/abi/ui/input/pointer.h>
+#include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
@@ -27,9 +31,6 @@
 #include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
 #include <alia/impl/ui/layout.hpp>
-#include <alia/input/elements.hpp>
-#include <alia/input/pointer.hpp>
-#include <alia/input/regions.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/system/api.hpp>
 #include <alia/system/input_processing.hpp>
@@ -110,17 +111,18 @@ do_rect(
         }
         case ALIA_CATEGORY_SPATIAL: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            do_box_region(ctx, id, box);
+            alia_element_box_region(&ctx, id, &box, ALIA_CURSOR_DEFAULT);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            auto status = get_interaction_status(ctx, id);
-            if (status & ELEMENT_HOVERED)
+            alia_interaction_status_t status
+                = alia_element_get_interaction_status(&ctx, id, 0);
+            if (status & ALIA_INTERACTION_STATUS_HOVERED)
             {
                 color = {0.0f, 0.0f, 1.0f, 1.0f};
             }
-            else if (status & ELEMENT_ACTIVE)
+            else if (status & ALIA_INTERACTION_STATUS_ACTIVE)
             {
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
@@ -130,7 +132,7 @@ do_rect(
         }
         case ALIA_CATEGORY_INPUT: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            if (detect_click(ctx, id, ALIA_BUTTON_LEFT))
+            if (alia_element_detect_click(&ctx, id, ALIA_BUTTON_LEFT))
                 return true;
             break;
         }

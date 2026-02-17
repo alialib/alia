@@ -1,231 +1,164 @@
-#include <alia/ui/input/keyboard.hpp>
+#include <alia/abi/ui/input/keyboard.h>
 
 #include <optional>
 
 #include <alia/abi/base/geometry.h>
-#include <alia/core/flow/events.hpp>
-#include <alia/core/flow/top_level.hpp>
-#include <alia/ui/events.hpp>
-#include <alia/ui/input/pointer.hpp>
-#include <alia/ui/system/api.hpp>
-#include <alia/ui/system/object.hpp>
+#include <alia/abi/ui/input/pointer.h>
+#include <alia/abi/ui/input/state.h>
+#include <alia/events.hpp>
+#include <alia/ids.hpp>
+#include <alia/system/api.hpp>
+#include <alia/system/input_processing.hpp>
 
-namespace alia {
+using namespace alia;
+
+extern "C" {
 
 void
-acknowledge_key_event(dataless_ui_context ctx)
+alia_input_acknowledge_key_event(alia_context* ctx)
 {
-    key_event* event;
-    if (detect_event(ctx, &event))
-        event->acknowledged = true;
+    if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS)
+        as_key_press_event(*ctx).acknowledged = true;
 }
 
 void
-add_to_focus_order(dataless_ui_context ctx, widget_id id)
+alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
 {
+    if (get_event_type(*ctx) == ALIA_EVENT_FOCUS_SUCCESSOR)
     {
-        focus_successor_event* event;
-        if (detect_event(ctx, &event))
+        auto& event = as_focus_successor_event(*ctx);
+        if (event.just_saw_target)
         {
-            if (event->just_saw_target)
-            {
-                event->successor = make_routable_widget_id(ctx, id);
-                event->just_saw_target = false;
-            }
-            if (id == event->target)
-            {
-                event->just_saw_target = true;
-            }
+            event.successor = make_routable_element_id(*ctx, id);
+            event.just_saw_target = false;
+        }
+        if (id == event.target)
+        {
+            event.just_saw_target = true;
         }
     }
+    else if (get_event_type(*ctx) == ALIA_EVENT_FOCUS_PREDECESSOR)
     {
-        focus_predecessor_event* event;
-        if (detect_event(ctx, &event))
+        auto& event = as_focus_predecessor_event(*ctx);
+        if (id == event.target
+            && alia_routable_element_id_is_valid(event.predecessor))
         {
-            if (id == event->target && event->predecessor)
-            {
-                event->saw_target = true;
-            }
-            if (!event->saw_target)
-            {
-                event->predecessor = make_routable_widget_id(ctx, id);
-            }
+            event.saw_target = true;
+        }
+        if (!event.saw_target)
+        {
+            event.predecessor = make_routable_element_id(*ctx, id);
         }
     }
 }
 
 bool
-widget_has_focus(ui_system& sys, widget_id id)
+alia_element_has_focus(alia_context* ctx, alia_element_id id)
 {
-    return sys.input.widget_with_focus.matches(id);
+    return alia_routable_element_id_matches(
+        ctx->input->element_with_focus, id);
+}
+
+bool
+alia_element_detect_focus_gain(alia_context* ctx, alia_element_id id)
+{
+    return get_event_type(*ctx) == ALIA_EVENT_FOCUS_GAIN
+        && as_focus_gain_event(*ctx).target == id;
+}
+
+bool
+alia_element_detect_focus_loss(alia_context* ctx, alia_element_id id)
+{
+    return get_event_type(*ctx) == ALIA_EVENT_FOCUS_LOSS
+        && as_focus_loss_event(*ctx).target == id;
 }
 
 void
-set_focus(ui_system& sys, routable_widget_id widget)
+alia_element_focus_on_click(alia_context* ctx, alia_element_id id)
 {
-    // TODO: Some of this logic seems to be asking for alia to have an internal
-    // event queue.
-
-    bool different = sys.input.widget_with_focus.id != widget.id;
-    if (different && sys.input.widget_with_focus)
+    if (alia_element_is_hovered(ctx, id)
+        && (get_event_type(*ctx) == ALIA_EVENT_MOUSE_PRESS
+            || get_event_type(*ctx) == ALIA_EVENT_DOUBLE_CLICK))
     {
-        // A lot of code likes to call set_focus in response to events, which
-        // means that the following FOCUS_LOSS_EVENT could end up being invoked
-        // on a UI state that hasn't seen a refresh event yet, so do a refresh
-        // here just to be safe.
-        refresh_system(sys);
-
-        focus_notification_event event;
-        dispatch_targeted_event(
-            sys, event, sys.input.widget_with_focus, FOCUS_LOSS_EVENT);
-        refresh_system(sys);
-    }
-
-    sys.input.widget_with_focus = widget;
-
-    // It's possible to have widgets that appear based on whether or not
-    // another widget has the focus, so we need to refresh here.
-    refresh_system(sys);
-
-    // TODO
-    // if (different && widget)
-    // {
-    //     // Make the new widget visible.
-    //     {
-    //         auto widget = element.widget.lock();
-    //         if (widget && widget->parent)
-    //         {
-    //             widget->parent->reveal_region(region_reveal_request{
-    //                 layout_box(transform_box(
-    //                     widget->transformation(),
-    //                     box2d(widget->bounding_box()))),
-    //                 false,
-    //                 false});
-    //         }
-    //     }
-
-    //     focus_notification_event event{{{}, ui_event_type::FOCUS_GAIN}};
-    //     deliver_input_event(sys, element.widget, event);
-    // }
-}
-
-void
-focus_on_click(dataless_ui_context ctx, widget_id id)
-{
-    if (is_widget_hot(ctx, id)
-        && (get_event_type(ctx) == MOUSE_PRESS_EVENT
-            || get_event_type(ctx) == DOUBLE_CLICK_EVENT))
-    {
-        set_focus(get_system(ctx), make_routable_widget_id(ctx, id));
+        set_focus(*ctx->system, make_routable_element_id(*ctx, id));
     }
 }
 
 bool
-detect_focus_gain(dataless_ui_context ctx, widget_id id)
+alia_element_detect_key_press(
+    alia_context* ctx, alia_element_id id, alia_modded_key* out)
 {
-    return get_event_type(ctx) == FOCUS_GAIN_EVENT
-        && cast_event<focus_notification_event>(ctx).target == id;
-}
-
-bool
-detect_focus_loss(dataless_ui_context ctx, widget_id id)
-{
-    return get_event_type(ctx) == FOCUS_LOSS_EVENT
-        && cast_event<focus_notification_event>(ctx).target == id;
-}
-
-std::optional<modded_key>
-detect_key_press(dataless_ui_context ctx, widget_id id)
-{
-    focus_on_click(ctx, id);
-
-    if (get_event_type(ctx) == KEY_PRESS_EVENT && widget_has_focus(ctx, id))
+    alia_element_focus_on_click(ctx, id);
+    // TODO: The event should be targeted to the element.
+    if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS
+        && alia_element_has_focus(ctx, id))
     {
-        auto const& event = cast_event<key_event>(ctx);
+        auto const& event = as_key_press_event(*ctx);
         if (!event.acknowledged)
-            return event.key;
-    }
-    return std::nullopt;
-}
-
-std::optional<modded_key>
-detect_key_press(dataless_ui_context ctx)
-{
-    key_event* event;
-    if (detect_event(ctx, &event)
-        && get_event_type(ctx) == BACKGROUND_KEY_PRESS_EVENT)
-    {
-        if (!event->acknowledged)
-            return event->key;
-    }
-    return std::nullopt;
-}
-
-bool
-detect_key_press(
-    dataless_ui_context ctx,
-    widget_id id,
-    key_code code,
-    key_modifiers modifiers)
-{
-    auto key = detect_key_press(ctx, id);
-    if (key && key->code == code && key->mods == modifiers)
-    {
-        acknowledge_key_event(ctx);
-        return true;
-    }
-    return false;
-}
-bool
-detect_key_press(
-    dataless_ui_context ctx, key_code code, key_modifiers modifiers)
-{
-    auto key = detect_key_press(ctx);
-    if (key && key->code == code && key->mods == modifiers)
-    {
-        acknowledge_key_event(ctx);
-        return true;
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
     }
     return false;
 }
 
-std::optional<modded_key>
-detect_key_release(dataless_ui_context ctx, widget_id id)
+bool
+alia_element_detect_key_release(
+    alia_context* ctx, alia_element_id id, alia_modded_key* out)
 {
-    focus_on_click(ctx, id);
-
-    if (widget_has_focus(ctx, id) && get_event_type(ctx) == KEY_RELEASE_EVENT)
+    alia_element_focus_on_click(ctx, id);
+    // TODO: The event should be targeted to the element.
+    if (get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE
+        && alia_element_has_focus(ctx, id))
     {
-        auto const& event = cast_event<key_event>(ctx);
+        auto const& event = as_key_release_event(*ctx);
         if (!event.acknowledged)
-            return event.key;
-    }
-    return std::nullopt;
-}
-
-bool
-detect_key_release(
-    dataless_ui_context ctx,
-    widget_id id,
-    key_code code,
-    key_modifiers modifiers)
-{
-    auto key = detect_key_release(ctx, id);
-    if (key && key->code == code && key->mods == modifiers)
-    {
-        acknowledge_key_event(ctx);
-        return true;
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
     }
     return false;
 }
 
 bool
-detect_keyboard_click(
-    dataless_ui_context,
-    keyboard_click_state&,
-    widget_id,
-    key_code,
-    key_modifiers)
+alia_input_detect_key_press(alia_context* ctx, alia_modded_key* out)
+{
+    if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS)
+    {
+        auto const& event = as_key_press_event(*ctx);
+        if (!event.acknowledged)
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+alia_input_detect_key_release(alia_context* ctx, alia_modded_key* out)
+{
+    if (get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE)
+    {
+        auto const& event = as_key_release_event(*ctx);
+        if (!event.acknowledged)
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+alia_element_detect_keyboard_click(
+    alia_context* ctx,
+    alia_keyboard_click_state* state,
+    alia_element_id id,
+    alia_key_code_t code,
+    alia_kmods_t mods)
 {
     // TODO: This is broken somehow.
     // auto key = detect_key_press(ctx, id);
@@ -256,4 +189,4 @@ detect_keyboard_click(
     return false;
 }
 
-} // namespace alia
+} // extern "C"

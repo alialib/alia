@@ -10,6 +10,7 @@ add_library(alia_core STATIC
     src/alia/ui/input/pointer.cpp
     src/alia/ui/input/regions.cpp
     src/alia/ui/input/elements.cpp
+    src/alia/ui/input/keyboard.cpp
     src/alia/ui/layout/components/column.cpp
     src/alia/ui/layout/components/flow.cpp
     src/alia/ui/layout/components/grid.cpp

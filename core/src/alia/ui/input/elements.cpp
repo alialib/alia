@@ -1,50 +1,52 @@
-#include <alia/input/elements.hpp>
+#include <alia/abi/ui/input/elements.h>
 
-#include <alia/input/pointer.hpp>
+#include <alia/abi/ui/input/pointer.h>
 
+using namespace alia;
 using namespace alia::operators;
 
-namespace alia {
+extern "C" {
+
+alia_interaction_status_t
+alia_element_get_interaction_status(
+    alia_context* ctx, alia_element_id id, alia_interaction_status_t overrides)
+{
+    alia_interaction_status_t status = 0;
+
+    if (overrides & ALIA_INTERACTION_STATUS_DISABLED)
+    {
+        status = ALIA_INTERACTION_STATUS_DISABLED;
+    }
+    else if (
+        alia_element_is_click_in_progress(ctx, id, ALIA_BUTTON_LEFT)
+        || (overrides & ALIA_INTERACTION_STATUS_ACTIVE))
+    {
+        status = ALIA_INTERACTION_STATUS_ACTIVE;
+    }
+    else if (alia_element_is_hovered(ctx, id))
+    {
+        status = ALIA_INTERACTION_STATUS_HOVERED;
+    }
+
+    // TODO: Implement focus.
+    // if (element_has_focus(ctx, id)
+    //     && get_system(ctx).input.window_has_focus
+    //     && get_system(ctx).input.keyboard_interaction)
+    // {
+    //     status = status | ELEMENT_FOCUSED;
+    // }
+
+    return status;
+}
 
 alia_element_id
-get_element_id(ephemeral_context& ctx)
+alia_element_get_identity(alia_context* ctx)
 {
-    element_identity* id;
+    alia_element_id id;
     // TODO
     id = nullptr;
     // get_cached_data(ctx, &id);
     return id;
 }
 
-interaction_status
-get_interaction_status(
-    ephemeral_context& ctx, alia_element_id id, interaction_status overrides)
-{
-    interaction_status status = NO_FLAGS;
-    if (is_disabled(overrides))
-    {
-        status = ELEMENT_DISABLED;
-    }
-    else
-    {
-        if (is_click_in_progress(ctx, id, ALIA_BUTTON_LEFT)
-            || is_active(overrides))
-        {
-            status = ELEMENT_ACTIVE;
-        }
-        else if (is_click_possible(ctx, id))
-        {
-            status = ELEMENT_HOVERED;
-        }
-        // TODO: Implement focus.
-        // if (element_has_focus(ctx, id)
-        //     && get_system(ctx).input.window_has_focus
-        //     && get_system(ctx).input.keyboard_interaction)
-        // {
-        //     status = status | ELEMENT_FOCUSED;
-        // }
-    }
-    return status;
-}
-
-} // namespace alia
+} // extern "C"
