@@ -3,13 +3,14 @@
 // #include <alia/core/system/internals.hpp>
 // #include <alia/core/timing/ticks.hpp>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/substrate/types.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/animation/flares.hpp>
 #include <alia/animation/transitions.hpp>
 #include <alia/base/stack.h>
 #include <alia/context.hpp>
-#include <alia/events.hpp>
 #include <alia/ids.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
@@ -49,6 +50,9 @@ struct alia_ui_system
     alia_input_state input;
 
     alia_layout_system layout;
+
+    alia_substrate_system substrate;
+    alia_arena substrate_discovery_arena;
 
     // the current time, as a millisecond tick counter with an arbitrary start
     // point and the possibility of wraparound

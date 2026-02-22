@@ -13,11 +13,13 @@ typedef struct alia_style alia_style;
 typedef struct alia_geometry_context alia_geometry_context;
 typedef struct alia_input_state alia_input_state;
 typedef struct alia_layout_context alia_layout_context;
+typedef struct alia_substrate_traversal alia_substrate_traversal;
 
 typedef struct alia_context
 {
     // kernel-level capabilities
     alia_kernel* kernel;
+    alia_substrate_traversal* substrate;
     alia_event_traversal* events;
     alia_stack* stack;
 

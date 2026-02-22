@@ -4,7 +4,8 @@
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
-#include <alia/events.hpp>
+#include <alia/impl/events.hpp>
+#include <alia/substrate.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -41,8 +42,18 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_bump_allocator_init(&layout.emission.arena, &sys.layout.node_arena);
     alia_bump_allocator_init(&layout.placement, &sys.layout.placement_arena);
 
+    alia_stack_reset(&sys.stack);
+
+    alia_substrate_traversal substrate_traversal;
+    alia_bump_allocator substrate_bump_allocator;
+    alia_bump_allocator_init(
+        &substrate_bump_allocator, &sys.substrate_discovery_arena);
+    substrate_begin_traversal(
+        substrate_traversal, sys.substrate, &substrate_bump_allocator);
+
     alia_context ctx = {
         .kernel = nullptr,
+        .substrate = &substrate_traversal,
         .events = &events,
         .stack = &sys.stack,
         .system = &sys,

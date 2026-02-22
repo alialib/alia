@@ -4,8 +4,8 @@
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
-#include <alia/events.hpp>
 #include <alia/ids.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/system/api.hpp>
 
 using namespace alia::operators;

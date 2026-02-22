@@ -8,31 +8,37 @@
 ALIA_EXTERN_C_BEGIN
 
 // sRGB
-typedef struct
+typedef struct alia_srgb8
 {
     uint8_t r, g, b;
 } alia_srgb8;
 
+// sRGBA
+typedef struct alia_srgba8
+{
+    uint8_t r, g, b, a;
+} alia_srgba8;
+
 // linear RGB
-typedef struct
+typedef struct alia_rgb
 {
     float r, g, b;
 } alia_rgb;
 
 // linear RGBA, premultiplied alpha
-typedef struct
+typedef struct alia_rgba
 {
     float r, g, b, a;
 } alia_rgba;
 
 // OKLab
-typedef struct
+typedef struct alia_oklab
 {
     float l, a, b;
 } alia_oklab;
 
 // OKLCH
-typedef struct
+typedef struct alia_oklch
 {
     float l, c, h;
 } alia_oklch;

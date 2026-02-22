@@ -1,8 +1,8 @@
 #include <alia/system/input_processing.hpp>
 
 #include <alia/abi/base/geometry.h>
-#include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/system/interface.hpp>
 #include <alia/system/object.hpp>
 

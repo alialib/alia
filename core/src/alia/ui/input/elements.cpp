@@ -1,6 +1,7 @@
 #include <alia/abi/ui/input/elements.h>
 
 #include <alia/abi/ui/input/pointer.h>
+#include <alia/substrate.hpp>
 
 using namespace alia;
 using namespace alia::operators;
@@ -42,11 +43,7 @@ alia_element_get_interaction_status(
 alia_element_id
 alia_element_get_identity(alia_context* ctx)
 {
-    alia_element_id id;
-    // TODO
-    id = nullptr;
-    // get_cached_data(ctx, &id);
-    return id;
+    return substrate_use_memory(*ctx->substrate, 1, 1).ptr;
 }
 
 } // extern "C"

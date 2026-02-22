@@ -28,8 +28,8 @@
 #include <alia/abi/ui/style.h>
 #include <alia/color.hpp>
 #include <alia/context.hpp>
-#include <alia/events.hpp>
 #include <alia/flow/dispatch.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/system/api.hpp>
@@ -98,11 +98,12 @@ bool
 do_rect(
     context& ctx,
     alia_z_index z_index,
-    alia_element_id id,
     alia_vec2f size,
     alia_rgba color,
     layout_flag_set flags)
 {
+    alia_element_id id = alia_element_get_identity(&ctx);
+
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
@@ -388,13 +389,11 @@ void
 do_rect(
     context& ctx,
     alia_z_index z_index,
-    alia_element_id id,
     alia_vec2f size,
     alia_rgba color,
     LayoutMods mods)
 {
-    apply_mods(
-        ctx, mods, [&] { do_rect(ctx, z_index, id, size, color, FILL); });
+    apply_mods(ctx, mods, [&] { do_rect(ctx, z_index, size, color, FILL); });
 }
 
 template<class Content>
@@ -819,12 +818,6 @@ char const* lorem_ipsum
       "ex at pulvinar volutpat, ligula nulla pellentesque tellus, vel aliquam "
       "nunc dolor eu risus.";
 
-alia_element_id
-make_fake_element_id(context& ctx)
-{
-    return reinterpret_cast<alia_element_id>(the_element_counter++);
-}
-
 void
 rectangle_demo(context& ctx)
 {
@@ -846,7 +839,6 @@ rectangle_demo(context& ctx)
                             if (do_rect(
                                     ctx,
                                     rect_z_index,
-                                    make_fake_element_id(ctx),
                                     {24, 24},
                                     invert ? color{f, 0.1f, 1.0f - f, 1}
                                            : color{1.0f - f, 0.1f, f, 1},
@@ -967,12 +959,7 @@ mixed_flow_demo(context& ctx)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx,
-                        0,
-                        make_fake_element_id(ctx),
-                        {72, 72},
-                        color{f, 0.1f, 1.0f - f, 1},
-                        CENTER);
+                        ctx, 0, {72, 72}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
                     x += 0.1f;
                 }
 
@@ -1023,7 +1010,6 @@ layout_demo_flow(context& ctx)
                                     do_rect(
                                         ctx,
                                         1,
-                                        make_fake_element_id(ctx),
                                         {24, float((i & 7) * 12 + 12)},
                                         color{f, 0.1f, 1.0f - f, 1},
                                         layout_flag_set(
@@ -1050,7 +1036,6 @@ layout_growth_demo(context& ctx)
                 do_rect(
                     ctx,
                     0,
-                    make_fake_element_id(ctx),
                     {6, 12},
                     color{f, 0.1f, 1.0f - f, 1},
                     FILL | (i & 1 ? GROW : NO_FLAGS));
@@ -1104,7 +1089,6 @@ alignment_override_demo(context& ctx)
                 if (do_rect(
                         ctx,
                         1,
-                        make_fake_element_id(ctx),
                         {24, 24},
                         invert ? color{1, 1, 1, 1} : color{0, 0, 0, 0},
                         CENTER))
@@ -1172,7 +1156,6 @@ layout_mods_demo(context& ctx)
                     do_rect(
                         ctx,
                         1,
-                        make_fake_element_id(ctx),
                         {float(4 * i), float(4 * i)},
                         color{f, 0.1f, 1.0f - f, 1},
                         align_right | center_y);
@@ -1199,7 +1182,6 @@ grid_demo(context& ctx)
                     do_rect(
                         ctx,
                         0,
-                        make_fake_element_id(ctx),
                         {size, size},
                         color{f, 0.1f, 1.0f - f, 1},
                         CENTER);
@@ -1228,7 +1210,6 @@ layout_demo(context& ctx)
                                 do_rect(
                                     ctx,
                                     0,
-                                    make_fake_element_id(ctx),
                                     {float((j & 7) * 12 + 12), 24},
                                     color{f, 0.1f, 1.0f - f, 1},
                                     layout_flag_set(
@@ -1264,7 +1245,6 @@ show_color_ramp(context& ctx, color_ramp ramp)
             do_rect(
                 ctx,
                 1,
-                make_fake_element_id(ctx),
                 {36, 36},
                 alia_rgba_from_rgb_alpha(
                     alia_rgb_from_srgb8(ramp[i].rgb), 1.0f),
@@ -1286,7 +1266,6 @@ show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
                 do_rect(
                     ctx,
                     1,
-                    make_fake_element_id(ctx),
                     {10, 10},
                     alia_rgba_from_rgb_alpha(
                         alia_rgb_from_srgb8(pair.contrasting), 1.0f),
@@ -1317,12 +1296,7 @@ color_ramp(context& ctx, alia_srgb8 seed)
             oklch.l = i * 0.1f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx,
-                1,
-                make_fake_element_id(ctx),
-                {36, 36},
-                alia_rgba_from_rgb_alpha(rgb, 1.0f),
-                CENTER);
+                ctx, 1, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
         }
     });
 }
@@ -1339,12 +1313,7 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
             oklch.h = start.h + (end.h - start.h) * i * 0.01f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
             do_rect(
-                ctx,
-                1,
-                make_fake_element_id(ctx),
-                {36, 36},
-                alia_rgba_from_rgb_alpha(rgb, 1.0f),
-                CENTER);
+                ctx, 1, {36, 36}, alia_rgba_from_rgb_alpha(rgb, 1.0f), CENTER);
         }
     });
 }
@@ -1362,7 +1331,6 @@ color_demo(context& ctx)
                 do_rect(
                     ctx,
                     1,
-                    make_fake_element_id(ctx),
                     {24, 24},
                     alia_rgba_from_rgb_alpha(rgb, 1.0f),
                     CENTER);
@@ -1424,7 +1392,6 @@ the_demo(context& ctx)
                         if (do_rect(
                                 ctx,
                                 1,
-                                make_fake_element_id(ctx),
                                 {40, 40},
                                 (active_demo == i) ? color{1, 1, 1, 1}
                                                    : color{0, 0, 0, 0},
@@ -1434,12 +1401,7 @@ the_demo(context& ctx)
                             abort_pass();
                         }
                         do_rect(
-                            ctx,
-                            1,
-                            make_fake_element_id(ctx),
-                            {1, 1},
-                            color{0.4f, 0.4f, 0.4f, 1},
-                            FILL);
+                            ctx, 1, {1, 1}, color{0.4f, 0.4f, 0.4f, 1}, FILL);
                     }
                 });
                 column(ctx, GROW, [&]() {

@@ -1,7 +1,7 @@
 #include <alia/flow/traversal.hpp>
 
 #include <alia/abi/ui/style.h>
-#include <alia/events.hpp>
+#include <alia/impl/events.hpp>
 
 namespace alia {
 

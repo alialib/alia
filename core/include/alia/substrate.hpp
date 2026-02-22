@@ -1,9 +1,7 @@
 #pragma once
 
-#include <cassert>
-#include <cstdint>
-
 #include <alia/abi/base/arena.h>
+#include <alia/abi/kernel/substrate/types.h>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with Alia components. It is designed so that each
@@ -57,176 +55,36 @@
 
 namespace alia {
 
-// enum alia_key_kind
-// {
-//     ALIA_KEY_NONE = 0,
-//     ALIA_KEY_U64 = 1,
-//     ALIA_KEY_I64 = 2,
-//     ALIA_KEY_PTR = 3, // address identity; beware lifetimes/reuse
-//     ALIA_KEY_UUID = 4, // 128-bit (hi, lo)
-//     ALIA_KEY_STR = 5, // UTF-8 bytes (case-sensitive)
-//     ALIA_KEY_BYTES = 6, // arbitrary bytes
-//     ALIA_KEY_TUPLE = 7, // canonical composite produced by builder
-// };
-
-// struct alia_key_view
-// {
-//     uint64_t hash64; // hash of the canonical bytes (see below)
-//     alia_key_kind kind;
-//     uint32_t size; // bytes in canonical payload
-//     union
-//     {
-//         // Small canonical payload fits here (e.g., u64, i64, ptr, uuid,
-//         short
-//         // strings)
-//         uint8_t small[16];
-//         // For longer payloads (str/bytes/tuple), point at caller memory;
-//         graph
-//         // copies it.
-//         struct
-//         {
-//             const void* ptr;
-//         } ext;
-//     } payload;
-// };
-
-struct substrate_allocator
-{
-    void* (*alloc)(void* user_data, size_t size, size_t alignment) = nullptr;
-    void (*free)(void* user_data, void* ptr) = nullptr;
-    void* user_data = nullptr;
-};
-
-struct substrate_destructor_record
-{
-    substrate_destructor_record* next = nullptr;
-    void (*destructor)(void*) = nullptr;
-    void* ptr = nullptr;
-};
-
-struct substrate_system;
-
-using generation_counter = std::uint32_t;
-
-// A substrate_block represents a block of execution. During a single traversal
-// of the substrate system, either all nodes in the block are executed or all
-// nodes are bypassed, and, if executed, they are always executed in the same
-// order.
-//
-// The block is a contiguous region of memory that is allocated from the
-// substrate's allocator. It stores the data for nodes in the block as well as
-// any destructors registered for those nodes.
-//
-struct substrate_block
-{
-    // the system that owns this block - This is needed to destruct the block
-    // using only a pointer to the block itself.
-    substrate_system* system = nullptr;
-    std::uint8_t* storage = nullptr;
-    substrate_destructor_record* destructors = nullptr;
-    // the generation ID for this block - assigned at allocation time
-    generation_counter generation = 0;
-};
-
-struct substrate_system
-{
-    substrate_allocator allocator{};
-    substrate_block root_block{};
-    // incremented whenever a block is freed (and thus might be reused)
-    generation_counter current_generation = 0;
-};
-
-struct substrate_block_discovery_state
-{
-    size_t offset = 0;
-    size_t alignment = 0;
-};
-
-enum class substrate_block_traversal_mode
-{
-    // normal mode
-    NORMAL = 0,
-    // initialization mode - This is set for the first pass over a freshly
-    // allocated block.
-    INIT = 1,
-    // discovery mode - This is used to discover the
-    // shape of the graph. Specifically, when traversing a block, this is used
-    // to measure the total size of data used by nodes in the block.
-    DISCOVERY = 2,
-};
-
-struct substrate_block_traversal_state
-{
-    substrate_block* data = nullptr;
-
-    // used for reconstructing the full path to nodes in this block
-    substrate_block_traversal_state* parent = nullptr;
-    size_t offset_in_parent = 0;
-
-    // used for assigning memory in non-discovery passes
-    size_t current_offset = 0;
-
-    substrate_block_traversal_mode mode{};
-
-    substrate_block_discovery_state* discovery = nullptr;
-};
-
-// `substrate_traversal` stores the state associated with a single traversal of
-// a `substrate_system`.
-struct substrate_traversal
-{
-    alia_bump_allocator scratch{};
-    substrate_system* system = nullptr;
-    substrate_block_traversal_state block{};
-};
-
 // TODO: Revisit naming consistency here.
 
 // Construct a substrate system.
 void
 construct_substrate_system(
-    substrate_system& system, substrate_allocator allocator);
+    alia_substrate_system& system, alia_substrate_allocator allocator);
 
 // Destruct a substrate system.
 void
-destruct_substrate_system(substrate_system& system);
+destruct_substrate_system(alia_substrate_system& system);
 
 // Destruct a substrate block and invoke all registered destructors.
 void
-destruct_substrate_block(substrate_system& system, substrate_block& block);
-
-// TODO: Revisit all this...
-// The utilities here operate on `substrate_traversal`s. However, the library
-// is intended to be used in scenarios where the `substrate_traversal` object
-// is part of a larger context. Thus, any utilities here that are intended to
-// be used directly by the application developer are designed to accept a
-// generic context parameter. The only requirement on that paramater is that it
-// defines the function `get_substrate_traversal(ctx)`, which returns a
-// reference to a `substrate_traversal`.
-
-// If using the substrate functionality directly, the substrate_traversal
-// itself can serve as the context.
-inline substrate_traversal&
-get_substrate_traversal(substrate_traversal& ctx)
-{
-    return ctx;
-}
+destruct_substrate_block(
+    alia_substrate_system& system, alia_substrate_block& block);
 
 void
 substrate_begin_traversal(
-    substrate_traversal& traversal,
-    substrate_system& system,
+    alia_substrate_traversal& traversal,
+    alia_substrate_system& system,
     alia_bump_allocator* scratch);
 
 void
-substrate_end_traversal(substrate_traversal& traversal);
+substrate_end_traversal(alia_substrate_traversal& traversal);
 
-struct substrate_usage_result
+struct alia_substrate_usage_result
 {
-    void* ptr = nullptr;
-    generation_counter generation = 0;
-    substrate_block_traversal_mode mode
-        = substrate_block_traversal_mode::NORMAL;
+    void* ptr;
+    alia_generation_counter generation;
+    alia_substrate_block_traversal_mode mode;
 };
 
 // 'Use' memory from the current substrate block.
@@ -241,9 +99,9 @@ struct substrate_usage_result
 //   only need to initialize the memory to the extent that the calling function
 //   and/or the associated destructor require it.
 //
-substrate_usage_result
+alia_substrate_usage_result
 substrate_use_memory(
-    substrate_traversal& traversal, size_t size, size_t alignment);
+    alia_substrate_traversal& traversal, size_t size, size_t alignment);
 
 // 'Use' an 'object' from the current substrate block.
 //
@@ -251,44 +109,39 @@ substrate_use_memory(
 // providing a destructor that will be called when the memory is freed.
 //
 // Note that currently, the destructor is called even when cleaning up after
-// discovery. TODO: Add an flag to disable this.
+// discovery. TODO: Maybe the caller can pass a null destructor to disable
+// this.
 //
-substrate_usage_result
+alia_substrate_usage_result
 substrate_use_object(
-    substrate_traversal& traversal,
+    alia_substrate_traversal& traversal,
     size_t size,
     size_t alignment,
     void (*destructor)(void*));
 
-substrate_block*
-substrate_use_block(substrate_traversal& traversal);
+alia_substrate_block*
+substrate_use_block(alia_substrate_traversal& traversal);
 
-using substrate_block_scope = substrate_block_traversal_state;
-
-struct substrate_block_spec
-{
-    size_t size = 0;
-    size_t alignment = 0;
-};
+using alia_substrate_block_scope = alia_substrate_block_traversal_state;
 
 inline bool
-needs_discovery(substrate_block_spec& spec)
+needs_discovery(alia_substrate_block_spec& spec)
 {
     return spec.alignment == 0;
 }
 
 void
 substrate_begin_block(
-    substrate_traversal& traversal,
-    substrate_block_scope& scope,
-    substrate_block& block,
-    substrate_block_spec spec);
+    alia_substrate_traversal& traversal,
+    alia_substrate_block_scope& scope,
+    alia_substrate_block& block,
+    alia_substrate_block_spec spec);
 
-substrate_block_spec
-substrate_get_block_spec(substrate_traversal& traversal);
+alia_substrate_block_spec
+substrate_get_block_spec(alia_substrate_traversal& traversal);
 
 void
 substrate_end_block(
-    substrate_traversal& traversal, substrate_block_scope& scope);
+    alia_substrate_traversal& traversal, alia_substrate_block_scope& scope);
 
 } // namespace alia

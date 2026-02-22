@@ -1,7 +1,7 @@
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
-#include <alia/events.hpp>
 #include <alia/impl/base/stack.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 
 namespace alia {

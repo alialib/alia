@@ -1,8 +1,8 @@
 #pragma once
 
 #include <alia/context.hpp>
-#include <alia/events.hpp>
 #include <alia/ids.hpp>
+#include <alia/impl/events.hpp>
 
 namespace alia {
 
