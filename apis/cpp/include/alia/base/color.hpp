@@ -4,10 +4,10 @@
 
 namespace alia {
 
-using color = alia_rgba;
-
 using srgb8 = alia_srgb8;
+using srgba8 = alia_srgba8;
 using rgb = alia_rgb;
+using rgba = alia_rgba;
 using oklab = alia_oklab;
 using oklch = alia_oklch;
 
@@ -50,9 +50,5 @@ hex_color(const char* hex)
 
     return srgb8{r, g, b};
 }
-
-constexpr color RED = {1.f, 0.f, 0.f, 1.f};
-constexpr color BLUE = {0.f, 0.f, 1.f, 1.f};
-constexpr color GRAY = {0.5f, 0.5f, 0.5f, 1.f};
 
 } // namespace alia

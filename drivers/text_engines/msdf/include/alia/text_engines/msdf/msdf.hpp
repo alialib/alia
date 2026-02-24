@@ -5,7 +5,6 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/drawing.h>
-#include <alia/color.hpp>
 
 // TODO: Split up this file.
 

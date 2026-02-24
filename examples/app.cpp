@@ -26,7 +26,7 @@
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/style.h>
-#include <alia/color.hpp>
+#include <alia/base/color.hpp>
 #include <alia/context.hpp>
 #include <alia/flow/dispatch.hpp>
 #include <alia/impl/events.hpp>
@@ -49,6 +49,8 @@
 
 using namespace alia;
 using namespace alia::operators;
+
+constexpr rgba GRAY = {0.5f, 0.5f, 0.5f, 1.0f};
 
 seed_colors const seed_sets[] = {
     {.primary = hex_color("#154DCF"),
@@ -425,7 +427,7 @@ void
 panel(
     context& ctx,
     alia_z_index z_index,
-    color color,
+    alia_rgba color,
     LayoutMods mods,
     Content&& content)
 {
@@ -730,7 +732,7 @@ bool
 do_text(
     context& ctx,
     alia_z_index z_index,
-    color color,
+    alia_rgba color,
     float scale,
     char const* text,
     layout_flag_set flags = NO_FLAGS)
@@ -840,8 +842,8 @@ rectangle_demo(context& ctx)
                                     ctx,
                                     rect_z_index,
                                     {24, 24},
-                                    invert ? color{f, 0.1f, 1.0f - f, 1}
-                                           : color{1.0f - f, 0.1f, f, 1},
+                                    invert ? rgba{f, 0.1f, 1.0f - f, 1}
+                                           : rgba{1.0f - f, 0.1f, f, 1},
                                     ALIGN_TOP | ALIGN_LEFT))
                             {
                                 invert = !invert;
@@ -959,14 +961,14 @@ mixed_flow_demo(context& ctx)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx, 0, {72, 72}, color{f, 0.1f, 1.0f - f, 1}, CENTER);
+                        ctx, 0, {72, 72}, rgba{f, 0.1f, 1.0f - f, 1}, CENTER);
                     x += 0.1f;
                 }
 
                 panel(
                     ctx,
                     1,
-                    color{0.05f, 0.05f, 0.06f, 1},
+                    rgba{0.05f, 0.05f, 0.06f, 1},
                     min_size({0, 0})
                         | margins(
                             {.left = 10,
@@ -997,7 +999,7 @@ layout_demo_flow(context& ctx)
                     concrete_panel(
                         ctx,
                         0,
-                        color{
+                        rgba{
                             0.03f + intensity,
                             0.03f + intensity,
                             0.04f + intensity,
@@ -1011,7 +1013,7 @@ layout_demo_flow(context& ctx)
                                         ctx,
                                         1,
                                         {24, float((i & 7) * 12 + 12)},
-                                        color{f, 0.1f, 1.0f - f, 1},
+                                        rgba{f, 0.1f, 1.0f - f, 1},
                                         layout_flag_set(
                                             (i & 3)
                                             << ALIA_CROSS_ALIGNMENT_BIT_OFFSET));
@@ -1037,7 +1039,7 @@ layout_growth_demo(context& ctx)
                     ctx,
                     0,
                     {6, 12},
-                    color{f, 0.1f, 1.0f - f, 1},
+                    rgba{f, 0.1f, 1.0f - f, 1},
                     FILL | (i & 1 ? GROW : NO_FLAGS));
             });
             x += 0.08f;
@@ -1084,13 +1086,13 @@ alignment_override_demo(context& ctx)
     static alia_vec2f offsets[12] = {0};
     float x = 0.0f;
     row(ctx, [&]() {
-        concrete_panel(ctx, 0, color{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
+        concrete_panel(ctx, 0, rgba{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
             inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
                         1,
                         {24, 24},
-                        invert ? color{1, 1, 1, 1} : color{0, 0, 0, 0},
+                        invert ? rgba{1, 1, 1, 1} : rgba{0, 0, 0, 0},
                         CENTER))
                 {
                     invert = !invert;
@@ -1108,7 +1110,7 @@ alignment_override_demo(context& ctx)
                         concrete_panel(
                             ctx,
                             0,
-                            color{
+                            rgba{
                                 0.03f + 0.02f * f,
                                 0.03f + 0.02f * f,
                                 0.04f + 0.02f * f,
@@ -1121,7 +1123,7 @@ alignment_override_demo(context& ctx)
                                     initialized[i],
                                     offsets[i],
                                     {24, 24},
-                                    color{f, 0.1f, 1.0f - f, 1},
+                                    rgba{f, 0.1f, 1.0f - f, 1},
                                     (i & 1) == (invert ? 0 : 1)
                                         ? ALIGN_TOP
                                         : ALIGN_BOTTOM);
@@ -1144,7 +1146,7 @@ layout_mods_demo(context& ctx)
             panel(
                 ctx,
                 0,
-                color{
+                rgba{
                     0.03f + 0.02f * f,
                     0.03f + 0.02f * f,
                     0.04f + 0.02f * f,
@@ -1157,7 +1159,7 @@ layout_mods_demo(context& ctx)
                         ctx,
                         1,
                         {float(4 * i), float(4 * i)},
-                        color{f, 0.1f, 1.0f - f, 1},
+                        rgba{f, 0.1f, 1.0f - f, 1},
                         align_right | center_y);
                 });
             x += 0.2f;
@@ -1183,7 +1185,7 @@ grid_demo(context& ctx)
                         ctx,
                         0,
                         {size, size},
-                        color{f, 0.1f, 1.0f - f, 1},
+                        rgba{f, 0.1f, 1.0f - f, 1},
                         CENTER);
                     x += 0.2f;
                 }
@@ -1211,7 +1213,7 @@ layout_demo(context& ctx)
                                     ctx,
                                     0,
                                     {float((j & 7) * 12 + 12), 24},
-                                    color{f, 0.1f, 1.0f - f, 1},
+                                    rgba{f, 0.1f, 1.0f - f, 1},
                                     layout_flag_set(
                                         (j & 3)
                                         << ALIA_X_ALIGNMENT_BIT_OFFSET));
@@ -1393,15 +1395,15 @@ the_demo(context& ctx)
                                 ctx,
                                 1,
                                 {40, 40},
-                                (active_demo == i) ? color{1, 1, 1, 1}
-                                                   : color{0, 0, 0, 0},
+                                (active_demo == i) ? rgba{1, 1, 1, 1}
+                                                   : rgba{0, 0, 0, 0},
                                 FILL))
                         {
                             active_demo = i;
                             abort_pass();
                         }
                         do_rect(
-                            ctx, 1, {1, 1}, color{0.4f, 0.4f, 0.4f, 1}, FILL);
+                            ctx, 1, {1, 1}, rgba{0.4f, 0.4f, 0.4f, 1}, FILL);
                     }
                 });
                 column(ctx, GROW, [&]() {

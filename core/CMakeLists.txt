@@ -5,7 +5,7 @@ add_library(alia_core STATIC
     src/alia/kernel/substrate.cpp
     src/alia/kernel/flow/dispatch.cpp
     src/alia/kernel/flow/traversal.cpp
-    src/alia/ui/animation/cubic_bezier.cpp
+    src/alia/ui/animation/unit_cubic_bezier.cpp
     src/alia/ui/drawing.cpp
     src/alia/ui/input/pointer.cpp
     src/alia/ui/input/regions.cpp

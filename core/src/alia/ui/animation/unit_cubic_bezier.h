@@ -1,5 +1,4 @@
-#ifndef ALIA_CORE_TIMING_CUBIC_BEZIER_HPP
-#define ALIA_CORE_TIMING_CUBIC_BEZIER_HPP
+#pragma once
 
 namespace alia {
 
@@ -44,5 +43,3 @@ eval_curve_at_x(
     unit_cubic_bezier const& curve, double x, double error_tolerance);
 
 } // namespace alia
-
-#endif

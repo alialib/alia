@@ -5,10 +5,10 @@
 #include <map>
 
 #include <alia/animation/context.hpp>
-#include <alia/animation/cubic_bezier.hpp>
 #include <alia/animation/ids.hpp>
 #include <alia/impl/base/bit_packing.hpp>
 #include <alia/prelude.hpp>
+#include <alia/ui/animation/unit_cubic_bezier.h>
 
 namespace alia {
 

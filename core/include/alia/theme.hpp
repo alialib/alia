@@ -3,18 +3,18 @@
 #include <array>
 #include <optional>
 
-#include <alia/color.hpp>
+#include <alia/abi/base/color.h>
 
 namespace alia {
 
 struct seed_colors
 {
-    srgb8 primary;
-    srgb8 secondary;
-    srgb8 tertiary;
-    srgb8 neutral;
-    srgb8 warning;
-    srgb8 danger;
+    alia_srgb8 primary;
+    alia_srgb8 secondary;
+    alia_srgb8 tertiary;
+    alia_srgb8 neutral;
+    alia_srgb8 warning;
+    alia_srgb8 danger;
 };
 
 enum class ui_lightness_mode
@@ -42,23 +42,23 @@ is_dark_mode(ui_lightness_mode mode) noexcept
 // compatibility.
 struct augmented_color_info
 {
-    srgb8 rgb;
-    alia::oklch oklch;
+    alia_srgb8 rgb;
+    alia_oklch lch;
     float relative_luminance;
 };
 
 augmented_color_info
-make_augmented_color_info(srgb8 color);
+make_augmented_color_info(alia_srgb8 color);
 
 augmented_color_info
-make_augmented_color_info(oklch color);
+make_augmented_color_info(alia_oklch color);
 
 constexpr int color_ramp_step_count = 11;
 
 using color_ramp = std::array<augmented_color_info, color_ramp_step_count>;
 
 color_ramp
-generate_linear_color_ramp(srgb8 color);
+generate_linear_color_ramp(alia_srgb8 color);
 
 struct color_palette
 {
@@ -75,17 +75,17 @@ generate_color_palette(seed_colors const& seeds);
 
 struct contrasting_color_pair
 {
-    srgb8 main;
-    srgb8 contrasting;
+    alia_srgb8 main;
+    alia_srgb8 contrasting;
 };
 
 std::optional<int>
 find_darkest_contrasting_index(
-    color_ramp const& ramp, srgb8 color, float minimum_contrast_ratio);
+    color_ramp const& ramp, alia_srgb8 color, float minimum_contrast_ratio);
 
 std::optional<int>
 find_lightest_contrasting_index(
-    color_ramp const& ramp, srgb8 color, float minimum_contrast_ratio);
+    color_ramp const& ramp, alia_srgb8 color, float minimum_contrast_ratio);
 
 struct color_swatch
 {

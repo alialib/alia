@@ -1,4 +1,4 @@
-#include <alia/animation/cubic_bezier.hpp>
+#include <alia/ui/animation/unit_cubic_bezier.h>
 
 #include <cmath>
 

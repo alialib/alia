@@ -45,15 +45,21 @@ typedef struct alia_oklch
 
 // sRGB transfer (single component in [0,1])
 float
-alia_srgb_to_linear(float cs);
+alia_linear_component_from_srgb(float cs);
 float
-alia_linear_to_srgb(float cl);
+alia_srgb_component_from_linear(float cl);
 
 // sRGB <-> linear RGB
 alia_rgb
 alia_rgb_from_srgb8(alia_srgb8 c);
 alia_srgb8
 alia_srgb8_from_rgb(alia_rgb c);
+
+// sRGBA <-> linear RGBA
+alia_rgba
+alia_rgba_from_srgba8(alia_srgba8 c);
+alia_srgba8
+alia_srgba8_from_rgba(alia_rgba c);
 
 // linear RGB <-> OKLab
 alia_oklab
@@ -66,6 +72,10 @@ alia_oklch
 alia_oklch_from_oklab(alia_oklab lab);
 alia_oklab
 alia_oklab_from_oklch(alia_oklch lch);
+
+// perceptual chroma clipper
+alia_oklab
+alia_oklab_clip_chroma_to_srgb(alia_oklab color);
 
 // linear RGB <-> OKLCH
 alia_oklch
@@ -83,13 +93,12 @@ alia_srgb8_from_hex(const char* hex6_or_hash_hex6);
 
 // alpha / compositing helpers (linear premultiplied)
 
-// premultiply
 alia_rgba
-alia_rgba_from_rgb_alpha(alia_rgb c, float a); // premultiply
+alia_rgba_from_rgb_alpha(alia_rgb c, float a);
 
 // modulate (rgb*a, a*a)
 alia_rgba
-alia_apply_alpha_rgba(alia_rgba c, float a); // modulate (rgb*a, a*a)
+alia_apply_alpha_rgba(alia_rgba c, float a);
 
 // lerp
 alia_rgb

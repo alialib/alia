@@ -1,8 +1,8 @@
 #include <alia/text_engines/msdf/msdf.hpp>
 
+#include <alia/abi/base/color.h>
 #include <alia/abi/ui/drawing.h>
 #include <alia/base/arena.h>
-#include <alia/color.hpp>
 #include <alia/renderers/gl/renderer.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -448,7 +448,7 @@ draw_text(
     size_t length,
     float scale,
     alia_vec2f position,
-    color color)
+    alia_rgba color)
 {
     auto* command = downcast<msdf_draw_command>(alia_draw_command_alloc(
         ctx,
@@ -529,7 +529,7 @@ render_command(
         auto& cached_glyph = engine->glyph_cache[unicode];
 
         engine->gpu.glyph_instances[glyph_instance_count] = {
-            color{0.9, 0.9, 0.9, 1},
+            alia_rgba{0.9f, 0.9f, 0.9f, 1.0f},
             position,
             scale,
             cached_glyph.uv_rect[0],

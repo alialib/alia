@@ -3,7 +3,7 @@
 namespace alia {
 
 augmented_color_info
-make_augmented_color_info(srgb8 color)
+make_augmented_color_info(alia_srgb8 color)
 {
     return augmented_color_info{
         color,
@@ -12,7 +12,7 @@ make_augmented_color_info(srgb8 color)
 }
 
 augmented_color_info
-make_augmented_color_info(oklch color)
+make_augmented_color_info(alia_oklch color)
 {
     auto const rgb = alia_rgb_from_oklch(color);
     return augmented_color_info{
@@ -20,7 +20,7 @@ make_augmented_color_info(oklch color)
 }
 
 color_ramp
-generate_linear_color_ramp(srgb8 color)
+generate_linear_color_ramp(alia_srgb8 color)
 {
     auto base = alia_oklch_from_srgb8(color);
     color_ramp ramp;
@@ -28,7 +28,8 @@ generate_linear_color_ramp(srgb8 color)
     {
         float const lightness
             = static_cast<float>(i + 1) / (color_ramp_step_count + 1);
-        ramp[i] = make_augmented_color_info(oklch{lightness, base.c, base.h});
+        ramp[i]
+            = make_augmented_color_info(alia_oklch{lightness, base.c, base.h});
     }
     return ramp;
 }
@@ -49,7 +50,7 @@ generate_linear_color_ramp(srgb8 color)
 // }
 
 color_ramp
-generate_neutral_ramp(srgb8 color)
+generate_neutral_ramp(alia_srgb8 color)
 {
     auto base = alia_oklch_from_srgb8(color);
 
@@ -71,7 +72,8 @@ generate_neutral_ramp(srgb8 color)
     for (int i = 0; i != color_ramp_step_count; ++i)
     {
         float const lightness = steps[i];
-        ramp[i] = make_augmented_color_info(oklch{lightness, base.c, base.h});
+        ramp[i]
+            = make_augmented_color_info(alia_oklch{lightness, base.c, base.h});
     }
     return ramp;
 }
@@ -100,7 +102,7 @@ relative_luminance_ratio(float luminance_a, float luminance_b)
 
 std::optional<int>
 find_darkest_contrasting_index(
-    color_ramp const& ramp, srgb8 color, float minimum_contrast_ratio)
+    color_ramp const& ramp, alia_srgb8 color, float minimum_contrast_ratio)
 {
     auto relative_luminance = alia_relative_luminance_srgb8(color);
     for (int i = 0; i != color_ramp_step_count; ++i)
@@ -117,7 +119,7 @@ find_darkest_contrasting_index(
 
 std::optional<int>
 find_lightest_contrasting_index(
-    color_ramp const& ramp, srgb8 color, float minimum_contrast_ratio)
+    color_ramp const& ramp, alia_srgb8 color, float minimum_contrast_ratio)
 {
     auto relative_luminance = alia_relative_luminance_srgb8(color);
     for (int i = color_ramp_step_count - 1; i >= 0; --i)
@@ -139,16 +141,16 @@ make_contrasting_color_pair(
     color_ramp const& contrasting_ramp,
     contrast_parameters const& contrast)
 {
-    srgb8 main_color;
+    alia_srgb8 main_color;
     float main_luminance;
     if (index < 0)
     {
-        main_color = srgb8{0x00, 0x00, 0x00};
+        main_color = alia_srgb8{0x00, 0x00, 0x00};
         main_luminance = 0;
     }
     else if (index >= color_ramp_step_count)
     {
-        main_color = srgb8{0xff, 0xff, 0xff};
+        main_color = alia_srgb8{0xff, 0xff, 0xff};
         main_luminance = 1;
     }
     else
@@ -156,7 +158,7 @@ make_contrasting_color_pair(
         main_color = main_ramp[index].rgb;
         main_luminance = main_ramp[index].relative_luminance;
     }
-    srgb8 contrasting_color;
+    alia_srgb8 contrasting_color;
     if (main_luminance < 0.2291f)
     {
         auto const contrasting_index = find_darkest_contrasting_index(
@@ -167,7 +169,7 @@ make_contrasting_color_pair(
         }
         else
         {
-            contrasting_color = srgb8{0xff, 0xff, 0xff};
+            contrasting_color = alia_srgb8{0xff, 0xff, 0xff};
         }
     }
     else
@@ -180,7 +182,7 @@ make_contrasting_color_pair(
         }
         else
         {
-            contrasting_color = srgb8{0x00, 0x00, 0x00};
+            contrasting_color = alia_srgb8{0x00, 0x00, 0x00};
         }
     }
     return contrasting_color_pair{main_color, contrasting_color};
