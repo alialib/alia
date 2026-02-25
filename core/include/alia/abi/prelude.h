@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* C / C++ LINKAGE */
+// C / C++ LINKAGE
 
 #ifdef __cplusplus
 #define ALIA_EXTERN_C_BEGIN extern "C" {
@@ -15,10 +15,10 @@
 #define ALIA_EXTERN_C_END
 #endif
 
-/* EXPORT / IMPORT */
+// EXPORT / IMPORT
 
-/* Define ALIA_BUILD_SHARED when building the Alia shared library.
-   Consumers should NOT define this. */
+// Define ALIA_BUILD_SHARED when building the Alia shared library.
+// Consumers should NOT define this.
 
 // TODO: Sort this out.
 #define ALIA_API
@@ -32,7 +32,7 @@
 // #define ALIA_API __attribute__((visibility("default")))
 // #endif
 
-/* DEBUG / ASSERT */
+// DEBUG / ASSERT
 
 #include <assert.h>
 
@@ -42,7 +42,7 @@
 #define ALIA_ASSERT(expr) assert(expr)
 #endif
 
-/* BRACED INITIALIZATION */
+// BRACED INITIALIZATION
 
 // clang-format off
 #ifdef __cplusplus
@@ -52,7 +52,7 @@
 #endif
 // clang-format on
 
-/* INLINE C++ */
+// INLINE C++
 
 // Add C++ interface code inline in a C ABI file.
 #ifdef __cplusplus
@@ -66,7 +66,7 @@
 #define ALIA_INLINE_CPP(...)
 #endif
 
-/* OPERATORS - These are used to define C++ operator overloads for C types. */
+// OPERATORS - These are used to define C++ operator overloads for C types.
 
 // Using this tricks clang-format into doing top-level alignment on the macro
 // code below.
@@ -144,7 +144,7 @@
 #define ALIA_DEFINE_SCALE_OPERATOR(type, scalar)
 #endif
 
-/* OPAQUE OBJECT INITIALIZATION */
+// OPAQUE OBJECT INITIALIZATION
 
 // `alia_struct_spec` defines the size and alignment of an opaque object.
 typedef struct alia_struct_spec
@@ -153,7 +153,7 @@ typedef struct alia_struct_spec
     size_t align;
 } alia_struct_spec;
 
-/* ALIGNMENT */
+// ALIGNMENT
 
 // `ALIA_MIN_ALIGN` is the global minimum and *default* alignment for all
 // allocations done by Alia. All allocations are aligned to at least this
@@ -182,14 +182,22 @@ alia_min_aligned_size(size_t n)
     return ((n) + ALIA_MIN_ALIGN - 1) & ~(ALIA_MIN_ALIGN - 1);
 }
 
-/* TIME */
+// COUNTERS
 
 typedef int64_t alia_nanosecond_count;
 
 static inline alia_nanosecond_count
-alia_milliseconds(uint32_t ms)
+alia_nanoseconds(int64_t ns)
 {
-    return alia_nanosecond_count(ms) * 1'000'000;
+    return (alia_nanosecond_count) ns;
 }
+
+static inline alia_nanosecond_count
+alia_milliseconds(int32_t ms)
+{
+    return (alia_nanosecond_count) ms * 1000000;
+}
+
+typedef int32_t alia_generation_counter;
 
 #endif

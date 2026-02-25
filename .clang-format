@@ -142,12 +142,6 @@ IndentWrappedFunctionNames: false
 InsertBraces: false
 InsertNewlineAtEOF: false
 InsertTrailingCommas: None
-IntegerLiteralSeparator:
-  Binary: 0
-  Decimal: 3
-  DecimalMinDigits: 5
-  Hex: 4
-  HexMinDigits: 6
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true

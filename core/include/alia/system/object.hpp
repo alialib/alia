@@ -3,7 +3,6 @@
 // #include <alia/core/system/internals.hpp>
 // #include <alia/core/timing/ticks.hpp>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/kernel/substrate/types.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/animation/flares.hpp>
 #include <alia/animation/transitions.hpp>
@@ -11,6 +10,7 @@
 #include <alia/context.hpp>
 #include <alia/ids.hpp>
 #include <alia/impl/events.hpp>
+#include <alia/kernel/substrate.h>
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>

@@ -1,11 +1,11 @@
 #include <alia/flow/dispatch.hpp>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.hpp>
 #include <alia/impl/events.hpp>
-#include <alia/substrate.hpp>
 #include <alia/system/object.hpp>
 
 namespace alia {
@@ -48,7 +48,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_bump_allocator substrate_bump_allocator;
     alia_bump_allocator_init(
         &substrate_bump_allocator, &sys.substrate_discovery_arena);
-    substrate_begin_traversal(
+    substrate_traversal_init(
         substrate_traversal, sys.substrate, &substrate_bump_allocator);
 
     alia_context ctx = {
@@ -62,7 +62,12 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .input = &sys.input,
         .layout = &layout};
 
+    alia_substrate_begin_block(
+        &ctx, &sys.substrate.root_block, &sys.substrate.root_block_spec);
+
     sys.controller(ctx);
+
+    sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;

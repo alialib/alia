@@ -1,7 +1,7 @@
 #include <alia/system/object.hpp>
 
 #include <alia/abi/ui/layout/system.h>
-#include <alia/substrate.hpp>
+#include <alia/kernel/substrate.h>
 
 #include <alia/impl/base/arena.hpp>
 
@@ -40,7 +40,7 @@ initialize_ui_system(alia_ui_system* system, alia_vec2f surface_size)
     allocator.user_data = nullptr;
     allocator.alloc = block_alloc;
     allocator.free = block_free;
-    construct_substrate_system(system->substrate, allocator);
+    substrate_system_init(system->substrate, allocator);
 }
 
 // TODO: cleanup function

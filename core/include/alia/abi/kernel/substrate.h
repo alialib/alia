@@ -1,7 +1,8 @@
-#pragma once
+#ifndef ALIA_ABI_KERNEL_SUBSTRATE_H
+#define ALIA_ABI_KERNEL_SUBSTRATE_H
 
 #include <alia/abi/base/arena.h>
-#include <alia/abi/kernel/substrate/types.h>
+#include <alia/abi/prelude.h>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with Alia components. It is designed so that each
@@ -53,39 +54,40 @@
 // representing the evaluation of that expression, and we ensure that that
 // subgraph is always used where that name is encountered.
 
-namespace alia {
+ALIA_EXTERN_C_BEGIN
 
-// TODO: Revisit naming consistency here.
+// TODO: Fix forward declarations.
+typedef struct alia_substrate_system alia_substrate_system;
+typedef struct alia_substrate_block alia_substrate_block;
+typedef struct alia_substrate_traversal alia_substrate_traversal;
+typedef struct alia_context alia_context;
 
-// Construct a substrate system.
-void
-construct_substrate_system(
-    alia_substrate_system& system, alia_substrate_allocator allocator);
+struct alia_substrate_allocator
+{
+    void* (*alloc)(void* user_data, size_t size, size_t alignment);
+    void (*free)(void* user_data, void* ptr);
+    void* user_data;
+};
 
-// Destruct a substrate system.
-void
-destruct_substrate_system(alia_substrate_system& system);
+enum alia_substrate_block_traversal_mode
+{
+    // normal mode
+    ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL = 0,
+    // initialization mode - This is set for the first pass over a freshly
+    // allocated block.
+    ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT = 1,
+    // discovery mode - This is used to discover the shape of the graph.
+    // Specifically, when traversing a block, this is used to measure the total
+    // size of data used by nodes in the block.
+    ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY = 2,
+};
 
-// Destruct a substrate block and invoke all registered destructors.
-void
-destruct_substrate_block(
-    alia_substrate_system& system, alia_substrate_block& block);
-
-void
-substrate_begin_traversal(
-    alia_substrate_traversal& traversal,
-    alia_substrate_system& system,
-    alia_bump_allocator* scratch);
-
-void
-substrate_end_traversal(alia_substrate_traversal& traversal);
-
-struct alia_substrate_usage_result
+typedef struct alia_substrate_usage_result
 {
     void* ptr;
     alia_generation_counter generation;
     alia_substrate_block_traversal_mode mode;
-};
+} alia_substrate_usage_result;
 
 // 'Use' memory from the current substrate block.
 //
@@ -100,8 +102,7 @@ struct alia_substrate_usage_result
 //   and/or the associated destructor require it.
 //
 alia_substrate_usage_result
-substrate_use_memory(
-    alia_substrate_traversal& traversal, size_t size, size_t alignment);
+alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment);
 
 // 'Use' an 'object' from the current substrate block.
 //
@@ -113,35 +114,37 @@ substrate_use_memory(
 // this.
 //
 alia_substrate_usage_result
-substrate_use_object(
-    alia_substrate_traversal& traversal,
+alia_substrate_use_object(
+    alia_context* ctx,
     size_t size,
     size_t alignment,
     void (*destructor)(void*));
 
+// 'Use' a child block from the active substrate block.
+// This is the primary way to anchor conditional blocks within their parents.
 alia_substrate_block*
-substrate_use_block(alia_substrate_traversal& traversal);
-
-using alia_substrate_block_scope = alia_substrate_block_traversal_state;
+alia_substrate_use_block(alia_context* ctx);
 
 inline bool
-needs_discovery(alia_substrate_block_spec& spec)
+alia_substrate_block_needs_discovery(alia_struct_spec* spec)
 {
-    return spec.alignment == 0;
+    return spec->align == 0;
 }
 
+// Begin the scope of a child substrate block.
+// `spec` is the memoized memory layout specification of the block.
+// If `alia_substrate_block_needs_discovery` returns true on the spec, the
+// traversal will enter discovery mode for the block.
 void
-substrate_begin_block(
-    alia_substrate_traversal& traversal,
-    alia_substrate_block_scope& scope,
-    alia_substrate_block& block,
-    alia_substrate_block_spec spec);
+alia_substrate_begin_block(
+    alia_context* ctx, alia_substrate_block* block, alia_struct_spec* spec);
 
-alia_substrate_block_spec
-substrate_get_block_spec(alia_substrate_traversal& traversal);
+// End the scope of the current substrate block.
+// Returns the layout specification of the block. - If the block was in
+// discovery mode, this should be used to update the memoized spec value.
+alia_struct_spec
+alia_substrate_end_block(alia_context* ctx);
 
-void
-substrate_end_block(
-    alia_substrate_traversal& traversal, alia_substrate_block_scope& scope);
+ALIA_EXTERN_C_END
 
-} // namespace alia
+#endif // ALIA_ABI_KERNEL_SUBSTRATE_H
