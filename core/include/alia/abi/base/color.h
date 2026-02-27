@@ -80,13 +80,26 @@ alia_oklab_clip_chroma_to_srgb(alia_oklab color);
 // linear RGB <-> OKLCH
 alia_oklch
 alia_oklch_from_rgb(alia_rgb c);
-alia_rgb
-alia_rgb_from_oklch(alia_oklch lch);
 
 // convenience
 
-alia_oklch
-alia_oklch_from_srgb8(alia_srgb8 c);
+static inline alia_oklch
+alia_oklch_from_rgb(alia_rgb c)
+{
+    return alia_oklch_from_oklab(alia_oklab_from_rgb(c));
+}
+
+static inline alia_oklch
+alia_oklch_from_srgb8(alia_srgb8 c)
+{
+    return alia_oklch_from_rgb(alia_rgb_from_srgb8(c));
+}
+
+static inline alia_srgb8
+alia_srgb8_from_oklab(alia_oklab lab)
+{
+    return alia_srgb8_from_rgb(alia_rgb_from_oklab(lab));
+}
 
 alia_srgb8
 alia_srgb8_from_hex(const char* hex6_or_hash_hex6);
@@ -100,11 +113,20 @@ alia_rgba_from_rgb_alpha(alia_rgb c, float a);
 alia_rgba
 alia_apply_alpha_rgba(alia_rgba c, float a);
 
-// lerp
+alia_oklch
+alia_lerp_oklch(alia_oklch a, alia_oklch b, float t);
+
+// raw lerp - Just does the raw math in linear RGB space.
 alia_rgb
-alia_lerp_rgb(alia_rgb a, alia_rgb b, float t);
+alia_lerp_rgb_raw(alia_rgb a, alia_rgb b, float t);
 alia_rgba
-alia_lerp_rgba(alia_rgba a, alia_rgba b, float t);
+alia_lerp_rgba_raw(alia_rgba a, alia_rgba b, float t);
+
+// lerp via OKLCH
+alia_rgb
+alia_lerp_rgb_via_oklch(alia_rgb a, alia_rgb b, float t);
+alia_rgba
+alia_lerp_rgba_via_oklch(alia_rgba a, alia_rgba b, float t);
 
 // relative luminance
 float

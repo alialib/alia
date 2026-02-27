@@ -14,7 +14,9 @@ make_augmented_color_info(alia_srgb8 color)
 augmented_color_info
 make_augmented_color_info(alia_oklch color)
 {
-    auto const rgb = alia_rgb_from_oklch(color);
+    auto const lab = alia_oklab_from_oklch(color);
+    auto const clipped_lab = alia_oklab_clip_chroma_to_srgb(lab);
+    auto const rgb = alia_rgb_from_oklab(clipped_lab);
     return augmented_color_info{
         alia_srgb8_from_rgb(rgb), color, alia_relative_luminance_rgb(rgb)};
 }

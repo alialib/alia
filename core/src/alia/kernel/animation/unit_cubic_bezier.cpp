@@ -1,4 +1,4 @@
-#include <alia/ui/animation/unit_cubic_bezier.h>
+#include <alia/kernel/animation/unit_cubic_bezier.h>
 
 #include <cmath>
 
@@ -6,20 +6,20 @@ namespace alia {
 
 namespace {
 
-double
-sample_curve_x(unit_cubic_bezier_coefficients const& coeff, double t)
+float
+sample_curve_x(unit_cubic_bezier_coefficients const& coeff, float t)
 {
     return ((coeff.ax * t + coeff.bx) * t + coeff.cx) * t;
 }
 
-double
-sample_curve_y(unit_cubic_bezier_coefficients const& coeff, double t)
+float
+sample_curve_y(unit_cubic_bezier_coefficients const& coeff, float t)
 {
     return ((coeff.ay * t + coeff.by) * t + coeff.cy) * t;
 }
 
-double
-sample_curve_derivative(unit_cubic_bezier_coefficients const& coeff, double t)
+float
+sample_curve_derivative(unit_cubic_bezier_coefficients const& coeff, float t)
 {
     return (3 * coeff.ax * t + 2 * coeff.bx) * t + coeff.cx;
 }
@@ -39,18 +39,18 @@ compute_curve_coefficients(unit_cubic_bezier const& bezier)
     return coeff;
 }
 
-double
+float
 solve_for_t_at_x_with_bisection_search(
     unit_cubic_bezier_coefficients const& coeff,
-    double x,
-    double error_tolerance)
+    float x,
+    float error_tolerance)
 {
-    double lower = 0.0;
-    double upper = 1.0;
-    double t = x;
+    float lower = 0.0;
+    float upper = 1.0;
+    float t = x;
     while (true)
     {
-        double x_at_t = sample_curve_x(coeff, t);
+        float x_at_t = sample_curve_x(coeff, t);
         if (std::fabs(x_at_t - x) < error_tolerance)
             return t;
         if (x > x_at_t)
@@ -61,20 +61,20 @@ solve_for_t_at_x_with_bisection_search(
     }
 }
 
-double
+float
 solve_for_t_at_x(
     unit_cubic_bezier_coefficients const& coeff,
-    double x,
-    double error_tolerance)
+    float x,
+    float error_tolerance)
 {
     // Newton's method should be faster, so try that first.
-    double t = x;
+    float t = x;
     for (int i = 0; i != 8; ++i)
     {
-        double x_error = sample_curve_x(coeff, t) - x;
+        float x_error = sample_curve_x(coeff, t) - x;
         if (std::fabs(x_error) < error_tolerance)
             return t;
-        double dx = sample_curve_derivative(coeff, t);
+        float dx = sample_curve_derivative(coeff, t);
         if (std::fabs(dx) < 1e-6)
             break;
         t -= x_error / dx;
@@ -84,8 +84,8 @@ solve_for_t_at_x(
     return solve_for_t_at_x_with_bisection_search(coeff, x, error_tolerance);
 }
 
-double
-eval_curve_at_x(unit_cubic_bezier const& curve, double x, double epsilon)
+float
+eval_curve_at_x(unit_cubic_bezier const& curve, float x, float epsilon)
 {
     if (x <= 0)
         return 0;

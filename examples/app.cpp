@@ -42,6 +42,8 @@
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
 
+#include <chrono>
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -1630,10 +1632,24 @@ probe_allocations(F&& f)
 
 #endif
 
+int64_t
+get_nanosecond_count()
+{
+    // Get the current time from the steady clock
+    auto now = std::chrono::steady_clock::now();
+
+    // Get the duration since the clock's epoch
+    auto duration = now.time_since_epoch();
+
+    // Cast the duration to nanoseconds and extract the 64-bit integer count
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
+        .count();
+}
+
 void
 update()
 {
-    the_time = glfwGetTime();
+    the_system.tick_count = get_nanosecond_count();
 
     static std::chrono::time_point<std::chrono::high_resolution_clock>
         last_frame_time = std::chrono::high_resolution_clock::now();

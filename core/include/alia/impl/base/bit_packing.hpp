@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <type_traits>
 
+#include <alia/abi/bits.h>
+
 // This file provides utilities for composing bit fields into a single uint32_t
 // value.
 //
@@ -70,6 +72,11 @@ struct bitref
     constexpr static unsigned width = Tag::width;
     uint32_t& storage;
     unsigned index;
+
+    operator alia_bitref() const
+    {
+        return (alia_bitref) {&storage, index};
+    }
 
     // Allow: "auto x = ref;"
     operator uint32_t() const
@@ -155,7 +162,7 @@ bool
 is_set(bitref<Tag> ref)
 {
     static_assert(Tag::width == 1, "is_set requires a one-bit field");
-    return (ref.storage & (1u << ref.index)) != 0;
+    return alia_bitref_is_set(ref);
 }
 
 template<class Tag>
@@ -163,7 +170,7 @@ void
 clear_bit(bitref<Tag> ref)
 {
     static_assert(Tag::width == 1, "clear_bit requires a one-bit field");
-    ref.storage &= ~(1u << ref.index);
+    alia_bitref_clear(ref);
 }
 
 template<class Tag>
@@ -171,7 +178,7 @@ void
 set_bit(bitref<Tag> ref)
 {
     static_assert(Tag::width == 1, "set_bit requires a one-bit field");
-    ref.storage |= (1u << ref.index);
+    alia_bitref_set(ref);
 }
 
 template<class Tag>
@@ -179,7 +186,7 @@ void
 toggle_bit(bitref<Tag> ref)
 {
     static_assert(Tag::width == 1, "toggle_bit requires a one-bit field");
-    ref.storage ^= (1u << ref.index);
+    alia_bitref_toggle(ref);
 }
 
 } // namespace alia

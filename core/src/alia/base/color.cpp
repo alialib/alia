@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <numbers>
 
+ALIA_EXTERN_C_BEGIN
+
+// TODO: Move these somewhere in base/.
 static inline float
 clamp01(float x)
 {
@@ -12,14 +15,14 @@ clamp01(float x)
 
 // sRGB transfer
 
-extern "C" float
+float
 alia_linear_component_from_srgb(float cs)
 {
     cs = clamp01(cs);
     return (cs <= 0.04045f) ? (cs / 12.92f)
                             : std::pow((cs + 0.055f) / 1.055f, 2.4f);
 }
-extern "C" float
+float
 alia_srgb_component_from_linear(float cl)
 {
     cl = clamp01(cl);
@@ -84,7 +87,7 @@ const float alia_srgb_to_linear_lut[256] = {
 
 // authoring helpers
 
-extern "C" alia_srgb8
+alia_srgb8
 alia_srgb8_from_hex(const char* s)
 {
     if (!s)
@@ -109,7 +112,7 @@ alia_srgb8_from_hex(const char* s)
 
 // sRGB <-> linear RGB
 
-extern "C" alia_rgb
+alia_rgb
 alia_rgb_from_srgb8(alia_srgb8 c)
 {
     return alia_rgb{
@@ -117,7 +120,7 @@ alia_rgb_from_srgb8(alia_srgb8 c)
         alia_srgb_to_linear_lut[c.g],
         alia_srgb_to_linear_lut[c.b]};
 }
-extern "C" alia_srgb8
+alia_srgb8
 alia_srgb8_from_rgb(alia_rgb c)
 {
     float r = alia_srgb_component_from_linear(clamp01(c.r));
@@ -131,7 +134,7 @@ alia_srgb8_from_rgb(alia_rgb c)
 
 // sRGBA <-> linear RGBA
 
-extern "C" alia_rgba
+alia_rgba
 alia_rgba_from_srgba8(alia_srgba8 c)
 {
     return alia_rgba{
@@ -140,7 +143,7 @@ alia_rgba_from_srgba8(alia_srgba8 c)
         alia_srgb_to_linear_lut[c.b],
         c.a * (1.f / 255.f)};
 }
-extern "C" alia_srgba8
+alia_srgba8
 alia_srgba8_from_rgba(alia_rgba c)
 {
     float r = alia_srgb_component_from_linear(clamp01(c.r));
@@ -156,7 +159,7 @@ alia_srgba8_from_rgba(alia_rgba c)
 // Linear RGB <-> OKLab
 
 // Björn Ottosson’s reference matrices (linear RGB D65 <-> OKLab)
-extern "C" alia_oklab
+alia_oklab
 alia_oklab_from_rgb(alia_rgb c)
 {
     const float r = clamp01(c.r), g = clamp01(c.g), b = clamp01(c.b);
@@ -175,7 +178,7 @@ alia_oklab_from_rgb(alia_rgb c)
     lab.b = 0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_;
     return lab;
 }
-extern "C" alia_rgb
+alia_rgb
 alia_rgb_from_oklab(alia_oklab lab)
 {
     const float l_ = lab.l + 0.3963377774f * lab.a + 0.2158037573f * lab.b;
@@ -196,7 +199,7 @@ alia_rgb_from_oklab(alia_oklab lab)
 
 // OKLab <-> OKLCH
 
-extern "C" alia_oklch
+alia_oklch
 alia_oklch_from_oklab(alia_oklab lab)
 {
     alia_oklch lch;
@@ -207,7 +210,7 @@ alia_oklch_from_oklab(alia_oklab lab)
         lch.h += 2.f * std::numbers::pi_v<float>;
     return lch;
 }
-extern "C" alia_oklab
+alia_oklab
 alia_oklab_from_oklch(alia_oklch lch)
 {
     alia_oklab lab;
@@ -249,7 +252,7 @@ alia_oklab_channel_err(
     return channel_val - target;
 }
 
-extern "C" alia_oklab
+alia_oklab
 alia_oklab_clip_chroma_to_srgb(alia_oklab color)
 {
     // Fast Path: Check if we are already inside the sRGB gamut
@@ -365,33 +368,9 @@ alia_oklab_clip_chroma_to_srgb(alia_oklab color)
     return result;
 }
 
-// convenience: sRGB8 -> OKLCH
-
-extern "C" alia_oklch
-alia_oklch_from_srgb8(alia_srgb8 c)
-{
-    return alia_oklch_from_oklab(alia_oklab_from_rgb(alia_rgb_from_srgb8(c)));
-}
-
-// convenience: linear RGB -> OKLCH
-
-extern "C" alia_oklch
-alia_oklch_from_rgb(alia_rgb c)
-{
-    return alia_oklch_from_oklab(alia_oklab_from_rgb(c));
-}
-
-// convenience: OKLCH -> linear RGB
-
-extern "C" alia_rgb
-alia_rgb_from_oklch(alia_oklch lch)
-{
-    return alia_rgb_from_oklab(alia_oklab_from_oklch(lch));
-}
-
 // alpha / compositing (linear premultiplied)
 
-extern "C" alia_rgba
+alia_rgba
 alia_rgba_from_rgb_alpha(alia_rgb c, float a)
 {
     a = clamp01(a);
@@ -399,7 +378,7 @@ alia_rgba_from_rgb_alpha(alia_rgb c, float a)
 }
 
 // modulate (rgb*a, a*a)
-extern "C" alia_rgba
+alia_rgba
 alia_apply_alpha_rgba(alia_rgba c, float a)
 {
     a = clamp01(a);
@@ -408,14 +387,14 @@ alia_apply_alpha_rgba(alia_rgba c, float a)
 
 // lerp
 
-extern "C" alia_rgb
-alia_lerp_rgb(alia_rgb a, alia_rgb b, float t)
+alia_rgb
+alia_lerp_rgb_raw(alia_rgb a, alia_rgb b, float t)
 {
     return alia_rgb{
         a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t};
 }
-extern "C" alia_rgba
-alia_lerp_rgba(alia_rgba a, alia_rgba b, float t)
+alia_rgba
+alia_lerp_rgba_raw(alia_rgba a, alia_rgba b, float t)
 {
     return alia_rgba{
         a.r + (b.r - a.r) * t,
@@ -424,7 +403,27 @@ alia_lerp_rgba(alia_rgba a, alia_rgba b, float t)
         a.a + (b.a - a.a) * t};
 }
 
-extern "C" alia_oklch
+alia_rgb
+alia_lerp_rgb_via_oklch(alia_rgb a, alia_rgb b, float t)
+{
+    alia_oklch a_oklch = alia_oklch_from_rgb(a);
+    alia_oklch b_oklch = alia_oklch_from_rgb(b);
+    alia_oklch lerped_oklch = alia_lerp_oklch(a_oklch, b_oklch, t);
+    alia_oklab lerped_oklab = alia_oklab_from_oklch(lerped_oklch);
+    alia_oklab clipped_oklab = alia_oklab_clip_chroma_to_srgb(lerped_oklab);
+    return alia_rgb_from_oklab(clipped_oklab);
+}
+
+alia_rgba
+alia_lerp_rgba_via_oklch(alia_rgba a, alia_rgba b, float t)
+{
+    alia_rgb lerped_rgb = alia_lerp_rgb_via_oklch(
+        alia_rgb{a.r, a.g, a.b}, alia_rgb{b.r, b.g, b.b}, t);
+    return alia_rgba{
+        lerped_rgb.r, lerped_rgb.g, lerped_rgb.b, a.a + (b.a - a.a) * t};
+}
+
+alia_oklch
 alia_lerp_oklch(alia_oklch a, alia_oklch b, float t)
 {
     alia_oklch res;
@@ -462,13 +461,15 @@ alia_lerp_oklch(alia_oklch a, alia_oklch b, float t)
 
 // relative luminance (W3C)
 
-extern "C" float
+float
 alia_relative_luminance_rgb(alia_rgb c)
 {
     return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 }
-extern "C" float
+float
 alia_relative_luminance_rgba(alia_rgba c)
 {
     return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 }
+
+ALIA_EXTERN_C_END

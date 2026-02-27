@@ -4,12 +4,11 @@
 // #include <alia/core/timing/ticks.hpp>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/input/state.h>
-#include <alia/animation/flares.hpp>
-#include <alia/animation/transitions.hpp>
 #include <alia/base/stack.h>
 #include <alia/context.hpp>
 #include <alia/ids.hpp>
 #include <alia/impl/events.hpp>
+#include <alia/kernel/animation.h>
 #include <alia/kernel/substrate.h>
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
@@ -18,23 +17,11 @@
 
 #include <functional>
 
-namespace alia {
-
-struct animation_tracking_system
-{
-    // active transitions
-    // transition_animation_map transitions;
-    // active flare groups
-    flare_map flares;
-};
-
-} // namespace alia
-
 extern "C" {
 
 struct alia_ui_system
 {
-    alia::animation_tracking_system animation;
+    alia::animation_system animation;
 
     std::function<void(alia::context&)> controller;
 

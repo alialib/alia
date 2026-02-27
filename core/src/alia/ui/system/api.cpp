@@ -50,8 +50,6 @@ update(ui_system& ui)
     // TODO?
     // refresh_ui(ui);
 
-    // ui.tick_count = ui.external->get_tick_count();
-
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
     // if (!ui.pending_visibility_requests.empty())

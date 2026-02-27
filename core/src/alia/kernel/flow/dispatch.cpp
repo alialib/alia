@@ -56,6 +56,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .substrate = &substrate_traversal,
         .events = &events,
         .stack = &sys.stack,
+        .tick_count = sys.tick_count,
         .system = &sys,
         .style = &the_style,
         .geometry = &geometry,

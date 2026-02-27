@@ -22,6 +22,7 @@ typedef struct alia_context
     alia_substrate_traversal* substrate;
     alia_event_traversal* events;
     alia_stack* stack;
+    alia_nanosecond_count tick_count;
 
     // UI-level capabilities
     alia_ui_system* system;
