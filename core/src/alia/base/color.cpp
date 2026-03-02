@@ -369,19 +369,20 @@ alia_oklab_clip_chroma_to_srgb(alia_oklab color)
 }
 
 // alpha / compositing (linear premultiplied)
-
+// TODO: Inline this.
 alia_rgba
 alia_rgba_from_rgb_alpha(alia_rgb c, float a)
 {
-    a = clamp01(a);
+    a = clamp01(a); // TODO: Is this necessary?
     return alia_rgba{c.r * a, c.g * a, c.b * a, a};
 }
 
 // modulate (rgb*a, a*a)
+// TODO: Inline this.
 alia_rgba
 alia_apply_alpha_rgba(alia_rgba c, float a)
 {
-    a = clamp01(a);
+    a = clamp01(a); // TODO: Is this necessary?
     return alia_rgba{c.r * a, c.g * a, c.b * a, c.a * a};
 }
 
@@ -403,24 +404,15 @@ alia_lerp_rgba_raw(alia_rgba a, alia_rgba b, float t)
         a.a + (b.a - a.a) * t};
 }
 
-alia_rgb
-alia_lerp_rgb_via_oklch(alia_rgb a, alia_rgb b, float t)
+alia_srgb8
+alia_lerp_srgb8_via_oklch(alia_srgb8 a, alia_srgb8 b, float t)
 {
-    alia_oklch a_oklch = alia_oklch_from_rgb(a);
-    alia_oklch b_oklch = alia_oklch_from_rgb(b);
+    alia_oklch a_oklch = alia_oklch_from_srgb8(a);
+    alia_oklch b_oklch = alia_oklch_from_srgb8(b);
     alia_oklch lerped_oklch = alia_lerp_oklch(a_oklch, b_oklch, t);
     alia_oklab lerped_oklab = alia_oklab_from_oklch(lerped_oklch);
     alia_oklab clipped_oklab = alia_oklab_clip_chroma_to_srgb(lerped_oklab);
-    return alia_rgb_from_oklab(clipped_oklab);
-}
-
-alia_rgba
-alia_lerp_rgba_via_oklch(alia_rgba a, alia_rgba b, float t)
-{
-    alia_rgb lerped_rgb = alia_lerp_rgb_via_oklch(
-        alia_rgb{a.r, a.g, a.b}, alia_rgb{b.r, b.g, b.b}, t);
-    return alia_rgba{
-        lerped_rgb.r, lerped_rgb.g, lerped_rgb.b, a.a + (b.a - a.a) * t};
+    return alia_srgb8_from_oklab(clipped_oklab);
 }
 
 alia_oklch

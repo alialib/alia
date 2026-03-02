@@ -67,6 +67,14 @@ alia_element_detect_keyboard_click(
     alia_key_code_t code,
     alia_kmods_t mods);
 
+static inline bool
+alia_element_detect_space_bar_click(
+    alia_context* ctx, alia_keyboard_click_state* state, alia_element_id id)
+{
+    return alia_element_detect_keyboard_click(
+        ctx, state, id, ALIA_KEY_SPACE, 0);
+}
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_INPUT_KEYBOARD_H */

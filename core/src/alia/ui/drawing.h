@@ -17,6 +17,7 @@ struct alia_draw_material
 struct alia_draw_system
 {
     alia_vec2f surface_size;
+    alia_vec2f ppi;
     alia_draw_material_id next_material_id;
     std::vector<alia_draw_material> materials;
 };

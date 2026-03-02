@@ -13,6 +13,7 @@
 
 // TODO: Remove these.
 #include <alia/impl/base/arena.hpp>
+#include <alia/system/object.hpp>
 #include <alia/ui/drawing.h>
 #include <iostream>
 
@@ -72,7 +73,7 @@ void main() {
     // float glow = smoothstep(-0.5, 0.0, sd); // 0.0 at glyph edge
     opacity *= smoothstep(0.05, 0.2, opacity);
     opacity = pow(opacity, 1.0 / 2.2);
-    vec4 glyph_color = vec4(v_color.rgb, v_color.a * opacity);
+    vec4 glyph_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
     // vec4 glow_color = vec4(1, 0.2, 0.2, v_color.a * glow);
     // out_color = mix(glow_color, glyph_color, opacity);
     out_color = glyph_color;

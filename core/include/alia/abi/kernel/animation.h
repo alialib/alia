@@ -35,7 +35,7 @@ typedef uintptr_t alia_animation_id;
 static inline alia_animation_id
 alia_make_animation_id(alia_bitref bit)
 {
-    return (alia_animation_id) &bit.storage
+    return (alia_animation_id) bit.storage
          ^ ((alia_animation_id) bit.offset
             << (sizeof(alia_animation_id) * CHAR_BIT - CHAR_BIT));
 }
@@ -43,11 +43,11 @@ alia_make_animation_id(alia_bitref bit)
 // FLARES
 
 void
-alia_fire_flare(
+alia_animation_fire_flare(
     alia_context* ctx, alia_bitref bit, alia_nanosecond_count duration);
 
 unsigned
-alia_process_flares(
+alia_animation_process_flares(
     alia_context* ctx, alia_bitref bit, alia_nanosecond_count* tick_counts);
 
 // TRANSITIONS

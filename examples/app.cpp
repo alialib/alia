@@ -25,6 +25,7 @@
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/library.h>
 #include <alia/abi/ui/style.h>
 #include <alia/base/color.hpp>
 #include <alia/context.hpp>
@@ -954,6 +955,8 @@ nested_flow_demo(context& ctx)
 void
 mixed_flow_demo(context& ctx)
 {
+    static bool invert = false;
+    alia_do_switch(&ctx, &invert, 0);
     with_padding(ctx, 10, [&] {
         flow(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
@@ -1676,7 +1679,7 @@ update()
         // glfwMakeContextCurrent(the_window);
         glViewport(0, 0, the_system.surface_size.x, the_system.surface_size.y);
 
-        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x1f, 0x21, 0x2a});
+        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x32, 0x33, 0x39});
         glClearColor(c.r, c.g, c.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1736,16 +1739,12 @@ update()
         std::chrono::duration<int64_t, std::micro>>(
         start_time - last_frame_time);
 
-    if (external_frame_time > std::chrono::milliseconds(20))
-    {
-        std::cout << "FRAME_TIME_SLOW" << std::endl;
-    }
-
-    std::cout
-        << "frame_time: " // << std::setw(6) << external_frame_time << ": "
-        << std::setw(6) << frame_time << ": " << std::setw(6) << refresh_time
-        << " / " << std::setw(6) << layout_time << " / " << std::setw(6)
-        << render_time << std::endl;
+    // std::cout
+    //     << "frame_time: " // << std::setw(6) << external_frame_time << ": "
+    //     << std::setw(6) << frame_time << ": " << std::setw(6) <<
+    //     refresh_time
+    //     << " / " << std::setw(6) << layout_time << " / " << std::setw(6)
+    //     << render_time << std::endl;
 
     // std::cout << "allocation count: " << result.count << std::endl;
 
@@ -1766,6 +1765,14 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     the_system.surface_size = {float(width), float(height)};
     the_draw_system.surface_size = {float(width), float(height)};
+    update();
+}
+
+void
+content_scale_callback(GLFWwindow* window, float xscale, float yscale)
+{
+    the_system.ppi = {xscale * 96.f, yscale * 96.f};
+    the_draw_system.ppi = the_system.ppi;
     update();
 }
 
@@ -1904,6 +1911,13 @@ main()
     glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
     glfwSetCursorPosCallback(the_window, cursor_position_callback);
 
+    float xscale, yscale;
+    glfwGetWindowContentScale(the_window, &xscale, &yscale);
+    the_system.ppi = {xscale * 96.f, yscale * 96.f};
+    the_draw_system.ppi = the_system.ppi;
+
+    glfwSetWindowContentScaleCallback(the_window, content_scale_callback);
+
 #ifndef __EMSCRIPTEN__
     glfwMakeContextCurrent(the_window);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
@@ -1975,7 +1989,7 @@ main()
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(main_loop_step, 0, 1);

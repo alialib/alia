@@ -26,7 +26,7 @@ push_flare(flare_group_animation_data& group, alia_nanosecond_count end_time)
 ALIA_EXTERN_C_BEGIN
 
 void
-alia_fire_flare(
+alia_animation_fire_flare(
     alia_context* ctx, alia_bitref bit, alia_nanosecond_count duration)
 {
     push_flare(
@@ -36,7 +36,7 @@ alia_fire_flare(
 }
 
 unsigned
-alia_process_flares(
+alia_animation_process_flares(
     alia_context* ctx, alia_bitref bit, alia_nanosecond_count* tick_counts)
 {
     if (!alia_bitref_is_set(bit))

@@ -105,11 +105,29 @@ typedef struct alia_box_draw_command
 
 void
 alia_draw_box(
-    alia_draw_context* ctx,
+    alia_draw_context* ctx, // TODO: Use `alia_context*` instead.
     alia_z_index z_index,
     alia_box box,
     alia_rgba color,
     float radius);
+
+static inline void
+alia_draw_circle(
+    alia_draw_context* ctx, // TODO: Use `alia_context*` instead.
+    alia_z_index z_index,
+    alia_vec2f center,
+    float radius,
+    alia_rgba color)
+{
+    alia_draw_box(
+        ctx,
+        z_index,
+        alia_box{
+            alia_vec2f_sub(center, alia_vec2f{radius, radius}),
+            alia_vec2f{2 * radius, 2 * radius}},
+        color,
+        radius);
+}
 
 ALIA_EXTERN_C_END
 

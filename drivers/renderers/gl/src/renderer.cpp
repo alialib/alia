@@ -92,7 +92,7 @@ void main() {
     float aa = fwidth(d);                    // ~ size of one pixel in distance units
     float alpha = smoothstep(0.0, -aa, d);   // 1 inside, 0 outside
 
-    frag_color = vec4(v_color.rgb, v_color.a * alpha);
+    frag_color = vec4(v_color.rgb * alpha, v_color.a * alpha);
 }
 )";
 

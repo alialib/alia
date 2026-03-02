@@ -1,8 +1,17 @@
 #pragma once
 
 #include <alia/abi/kernel/animation.h>
+#include <alia/impl/base/bit_packing.hpp>
 
 namespace alia { namespace impl {
+
+struct flare_bitfield : bitfield<1>
+{
+};
+
+struct smoothing_bitfield : bitfield<2>
+{
+};
 
 void
 start_transition(

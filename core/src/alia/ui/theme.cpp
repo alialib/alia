@@ -208,6 +208,8 @@ generate_color_swatch(
         main_ramp, base_index + 2 * offset, contrasting_ramp, contrast);
     swatch.weaker[0] = make_contrasting_color_pair(
         main_ramp, base_index - offset, contrasting_ramp, contrast);
+    swatch.weaker[1] = make_contrasting_color_pair(
+        main_ramp, base_index - 2 * offset, contrasting_ramp, contrast);
     return swatch;
 }
 

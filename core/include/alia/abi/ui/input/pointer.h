@@ -4,6 +4,7 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/context.h>
 #include <alia/abi/ids.h>
+#include <alia/abi/kernel/timing.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/input/state.h>
 
@@ -26,6 +27,19 @@ static inline bool
 alia_input_button_is_down(alia_context* ctx, alia_button_t button)
 {
     return (ctx->input->mouse_button_state & (1u << (unsigned) button)) != 0;
+}
+
+inline alia_nanosecond_count
+alia_input_click_start_time(alia_context* ctx, alia_button_t button)
+{
+    return ctx->input->last_mouse_press_time[unsigned(button)];
+}
+
+static inline alia_nanosecond_count
+alia_input_click_duration(alia_context* ctx, alia_button_t button)
+{
+    return alia_timing_tick_count(ctx)
+         - alia_input_click_start_time(ctx, button);
 }
 
 // Detect if the element with the given ID is under the pointer.

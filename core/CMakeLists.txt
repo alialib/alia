@@ -9,6 +9,7 @@ add_library(alia_core STATIC
     src/alia/kernel/flow/traversal.cpp
     src/alia/kernel/animation/unit_cubic_bezier.cpp
     src/alia/ui/drawing.cpp
+    src/alia/ui/animation.cpp
     src/alia/ui/input/pointer.cpp
     src/alia/ui/input/regions.cpp
     src/alia/ui/input/elements.cpp
@@ -26,6 +27,7 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/leaf.cpp
     src/alia/ui/layout/system.cpp
     src/alia/ui/layout/utilities.cpp
+    src/alia/ui/library/switch.cpp
     src/alia/ui/system/api.cpp
     src/alia/ui/system/input_processing.cpp
     src/alia/ui/system/object.cpp

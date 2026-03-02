@@ -90,7 +90,7 @@ find_lightest_contrasting_index(
 struct color_swatch
 {
     static constexpr int stronger_count = 2;
-    static constexpr int weaker_count = 1;
+    static constexpr int weaker_count = 2;
 
     contrasting_color_pair base;
     contrasting_color_pair stronger[stronger_count];

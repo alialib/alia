@@ -200,4 +200,12 @@ alia_milliseconds(int32_t ms)
 
 typedef int32_t alia_generation_counter;
 
+// MATH - TODO: Move these to a separate file?
+
+static inline float
+alia_lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
 #endif

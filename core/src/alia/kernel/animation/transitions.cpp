@@ -8,6 +8,8 @@
 #include <alia/kernel/animation/unit_cubic_bezier.h>
 #include <alia/system/object.hpp>
 
+#include <iostream>
+
 namespace alia { namespace impl {
 
 void
@@ -36,40 +38,44 @@ update_transition(
         = ctx->system->animation.transitions[alia_make_animation_id(bits)];
     alia_nanosecond_count ticks_left
         = alia_animation_ticks_left(ctx, animation.transition_end);
-    if (ticks_left > 0)
+    if (current_state != animation.direction)
     {
-        double fraction = eval_curve_at_x(
+        float fraction = eval_curve_at_x(
             transition.curve,
-            1. - double(ticks_left) / transition.duration,
-            1. / transition.duration);
-        if (current_state != animation.direction)
-        {
-            // Go back in the same amount of time it took to get here.
-            // In order to do this, we have to solve for the time it
-            // will take to get back here.
-            animation.transition_end
-                = alia_animation_tick_count(ctx)
-                + alia_nanosecond_count(
-                      transition.duration
-                      * (1
-                         - eval_curve_at_x(
-                             unit_cubic_bezier{
-                                 1 - transition.curve.p1x,
-                                 1 - transition.curve.p1y,
-                                 1 - transition.curve.p2x,
-                                 1 - transition.curve.p2y},
-                             1 - fraction,
-                             1. / transition.duration)));
-            animation.direction = current_state;
-        }
-        return fraction;
+            1. - float(ticks_left) / float(transition.duration),
+            0.00001);
+        // Go back in the same amount of time it took to get here.
+        // In order to do this, we have to solve for the time it
+        // will take to get back here.
+        animation.transition_end
+            = alia_animation_tick_count(ctx)
+            + alia_nanosecond_count(
+                  transition.duration
+                  * (1
+                     - eval_curve_at_x(
+                         unit_cubic_bezier{
+                             1 - transition.curve.p1x,
+                             1 - transition.curve.p1y,
+                             1 - transition.curve.p2x,
+                             1 - transition.curve.p2y},
+                         1 - fraction,
+                         0.00001)));
+        animation.direction = current_state;
+        return current_state ? 1.f - fraction : fraction;
+    }
+    else if (ticks_left > 0)
+    {
+        float fraction = eval_curve_at_x(
+            transition.curve,
+            1. - float(ticks_left) / float(transition.duration),
+            0.00001);
+        return current_state ? fraction : 1.f - fraction;
     }
     else
     {
-        auto end_state = animation.direction;
         ctx->system->animation.transitions.erase(alia_make_animation_id(bits));
-        alia_bitref_write_pair(bits, end_state ? 0b11 : 0b10);
-        return end_state ? 1.f : 0.f;
+        alia_bitref_write_pair(bits, current_state ? 0b11 : 0b10);
+        return current_state ? 1.f : 0.f;
     }
 }
 
@@ -117,7 +123,7 @@ alia_smooth_rgb(
     return impl::smooth(
         ctx,
         *transition,
-        alia_lerp_rgb_via_oklch,
+        alia_lerp_rgb_raw,
         bits,
         current_state,
         true_value,
@@ -136,7 +142,7 @@ alia_smooth_rgba(
     return impl::smooth(
         ctx,
         *transition,
-        alia_lerp_rgba_via_oklch,
+        alia_lerp_rgba_raw,
         bits,
         current_state,
         true_value,

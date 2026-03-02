@@ -75,7 +75,7 @@ struct bitref
 
     operator alia_bitref() const
     {
-        return (alia_bitref) {&storage, index};
+        return alia_bitref{&storage, index};
     }
 
     // Allow: "auto x = ref;"
@@ -101,6 +101,21 @@ struct bitref
     }
 };
 
+// bitpack_ref is a reference to a (possibly nested) bitpack.
+// This is used to reference members within composite layouts.
+template<class Layout>
+struct bitpack_ref
+{
+    using layout_t = Layout;
+    uint32_t& bits;
+    unsigned offset;
+
+    operator alia_bitref() const
+    {
+        return alia_bitref{&bits, offset};
+    }
+};
+
 // bitpack is used to store the actual bits for a layout.
 template<class Layout>
 struct bitpack
@@ -113,22 +128,17 @@ struct bitpack
     static_assert(
         std::is_standard_layout_v<Layout>,
         "bitpack: `Layout` must be a standard-layout type");
+
+    operator bitpack_ref<Layout>()
+    {
+        return bitpack_ref<Layout>{bits, 0};
+    }
 };
 
-// nested_bitpack_ref is a reference to a nested pack of bits within a bitpack.
-// This is used to reference members within composite layouts.
-template<class Layout>
-struct nested_bitpack_ref
-{
-    using layout_t = Layout;
-    uint32_t& bits;
-    unsigned offset;
-};
-
-// helper function to adjust the offset of a `nested_bitpack_ref` member
+// helper function to adjust the offset of a `bitpack_ref` member
 template<class Layout>
 unsigned
-adjust_offset(nested_bitpack_ref<Layout> const& pack, unsigned offset)
+adjust_offset(bitpack_ref<Layout> const& pack, unsigned offset)
 {
     return pack.offset + offset;
 }
@@ -148,8 +158,7 @@ adjust_offset(bitpack<Layout> const&, unsigned offset)
             (pack), offsetof(decltype(pack)::layout_t, member))})
 
 #define ALIA_NESTED_BITPACK(parent_pack, member)                              \
-    (alia::nested_bitpack_ref<                                                \
-        decltype(decltype(parent_pack)::layout_t().member)>{                  \
+    (alia::bitpack_ref<decltype(decltype(parent_pack)::layout_t().member)>{   \
         (parent_pack).bits,                                                   \
         alia::adjust_offset(                                                  \
             (parent_pack),                                                    \

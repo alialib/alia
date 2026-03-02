@@ -123,10 +123,8 @@ alia_rgba
 alia_lerp_rgba_raw(alia_rgba a, alia_rgba b, float t);
 
 // lerp via OKLCH
-alia_rgb
-alia_lerp_rgb_via_oklch(alia_rgb a, alia_rgb b, float t);
-alia_rgba
-alia_lerp_rgba_via_oklch(alia_rgba a, alia_rgba b, float t);
+alia_srgb8
+alia_lerp_srgb8_via_oklch(alia_srgb8 a, alia_srgb8 b, float t);
 
 // relative luminance
 float
