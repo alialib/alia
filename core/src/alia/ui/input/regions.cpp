@@ -76,12 +76,12 @@ alia_element_handle_visibility(
     if (get_event_target(*ctx) == id)
     {
         auto& e = as_make_widget_visible_event(*ctx);
-        e.region = alia_affine2_transform_aabb(
-            alia_geometry_get_transform(ctx),
+        e.region = alia_box_translate(
             // TODO: Do we really want to expand here?
             alia_box_expand(
                 *region,
-                {alia_ctx_style(ctx)->padding, alia_ctx_style(ctx)->padding}));
+                {alia_ctx_style(ctx)->padding, alia_ctx_style(ctx)->padding}),
+            ctx->geometry->offset);
         e.acknowledged = true;
     }
 }

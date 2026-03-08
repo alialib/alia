@@ -95,25 +95,67 @@ alia_draw_command_alloc_aligned(
 
 // BOXES
 
-typedef struct alia_box_draw_command
+typedef struct alia_box_paint
+{
+    alia_rgba fill_color;
+    float corner_radius;
+    float border_width;
+    alia_rgba border_color;
+} alia_box_paint;
+
+typedef struct alia_draw_box_command
 {
     alia_draw_command base;
     alia_box box;
-    alia_rgba color;
-    float radius;
-} alia_box_draw_command;
+    alia_box_paint paint;
+} alia_draw_box_command;
 
-void
+// TODO: Provide specific overloads for drawing filled/outlined
+// rounded/non-rounded boxes.
+
+static inline void
 alia_draw_box(
-    alia_draw_context* ctx, // TODO: Use `alia_context*` instead.
+    alia_context* ctx,
+    alia_z_index z_index,
+    alia_box box,
+    alia_box_paint paint)
+{
+    {
+        alia_draw_box_command* command
+            = (alia_draw_box_command*) alia_draw_command_alloc(
+                ctx->draw,
+                z_index,
+                ALIA_BOX_MATERIAL_ID,
+                ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_box_command)));
+
+        command->box = box;
+        if (paint.border_width == 0)
+            paint.border_color = paint.fill_color;
+        command->paint = paint;
+    }
+}
+
+static inline void
+alia_draw_rounded_box(
+    alia_context* ctx,
     alia_z_index z_index,
     alia_box box,
     alia_rgba color,
-    float radius);
+    float radius)
+{
+    alia_draw_box(
+        ctx,
+        z_index,
+        box,
+        {.fill_color = color,
+         .corner_radius = radius,
+         .border_width = 0,
+         .border_color = color});
+}
 
 static inline void
 alia_draw_circle(
-    alia_draw_context* ctx, // TODO: Use `alia_context*` instead.
+    alia_context* ctx,
     alia_z_index z_index,
     alia_vec2f center,
     float radius,
@@ -125,8 +167,10 @@ alia_draw_circle(
         alia_box{
             alia_vec2f_sub(center, alia_vec2f{radius, radius}),
             alia_vec2f{2 * radius, 2 * radius}},
-        color,
-        radius);
+        {.fill_color = color,
+         .corner_radius = radius,
+         .border_width = 0,
+         .border_color = color});
 }
 
 ALIA_EXTERN_C_END

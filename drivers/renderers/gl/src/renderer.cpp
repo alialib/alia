@@ -29,46 +29,48 @@ const char* vanilla_vertex_shader_source = R"(
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
-layout (location = 3) in vec4 i_color;
-layout (location = 4) in float i_radius;
-layout (location = 5) in vec4 i_clip_rect;
+layout (location = 3) in vec4 i_fill_color;
+layout (location = 4) in float i_corner_radius;
+layout (location = 5) in float i_border_width;
+layout (location = 6) in vec4 i_border_color;
 
 uniform mat4 u_projection;
 
-out vec4 v_color;
+out vec4 v_fill_color;
 out vec2 v_pos;
-out vec2 v_rect_center;
-out vec2 v_rect_half_size;
-flat out float v_radius;
-flat out vec4 v_clip_rect;
+flat out vec2 v_rect_center;
+flat out vec2 v_rect_half_size;
+flat out float v_corner_radius;
+flat out float v_border_width;
+flat out vec4 v_border_color;
 
 void main() {
-    vec2 scaled = a_pos * i_size + i_pos;
+    vec2 scaled = a_pos * (i_size + vec2(2.0f)) + i_pos - vec2(1.0f);
     gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
-    v_color = i_color;
+    v_fill_color = i_fill_color;
     v_pos = scaled;
     v_rect_center = i_pos + i_size * 0.5;
     v_rect_half_size = i_size * 0.5;
-    v_radius = i_radius;
-    v_clip_rect = i_clip_rect;
+    v_corner_radius =
+        min(i_corner_radius, min(v_rect_half_size.x, v_rect_half_size.y));
+    v_border_width = i_border_width;
+    v_border_color = i_border_color;
 }
 )";
 
 const char* vanilla_fragment_shader_source = R"(
-in vec4 v_color;
+in vec4 v_fill_color;
 in vec2 v_pos;
-in vec2 v_rect_center;
-in vec2 v_rect_half_size;
-flat in float v_radius;
-flat in vec4 v_clip_rect;
+flat in vec2 v_rect_center;
+flat in vec2 v_rect_half_size;
+flat in float v_corner_radius;
+flat in float v_border_width;
+flat in vec4 v_border_color;
 out vec4 frag_color;
 
 float sd_round_rect(vec2 p, vec2 b, float r)
 {
-    // Clamp radius so it can't exceed the half-size in either axis.
-    r = min(r, min(b.x, b.y));
-
-    // q is how far we are outside the inner rectangle (with corners cut out)
+    // `q` is how far we are outside the inner rectangle (with corners cut out)
     vec2 q = abs(p) - (b - vec2(r));
 
     // Outside distance: length of positive part
@@ -80,19 +82,24 @@ float sd_round_rect(vec2 p, vec2 b, float r)
     return outside + inside - r; // negative inside, 0 on boundary
 }
 
+vec4 sample_pixel(vec2 p) {
+    float d =
+        sd_round_rect(
+            v_pos - v_rect_center,
+            v_rect_half_size,
+            v_corner_radius);
+
+    // TODO: Take into account UI scaling if applicable.
+    float aa = 0.5;
+    float alpha_inner = smoothstep(-aa, aa, d + v_border_width);
+    float alpha_outer = smoothstep(aa, -aa, d);
+
+    vec4 mix_color = mix(v_fill_color, v_border_color, alpha_inner);
+    return mix_color * alpha_outer;
+}
+
 void main() {
-    if (v_pos.x < v_clip_rect.x || v_pos.y < v_clip_rect.y ||
-        v_pos.x > v_clip_rect.z || v_pos.y > v_clip_rect.w)
-    {
-        discard;
-    }
-
-    float d = sd_round_rect(v_pos - v_rect_center, v_rect_half_size, v_radius);
-
-    float aa = fwidth(d);                    // ~ size of one pixel in distance units
-    float alpha = smoothstep(0.0, -aa, d);   // 1 inside, 0 outside
-
-    frag_color = vec4(v_color.rgb * alpha, v_color.a * alpha);
+    frag_color = sample_pixel(v_pos);
 }
 )";
 
@@ -100,9 +107,10 @@ struct rect_instance
 {
     alia_vec2f min;
     alia_vec2f size;
-    alia_rgba color;
-    float radius;
-    float clip_rect[4];
+    alia_rgba fill_color;
+    alia_rgba border_color;
+    float corner_radius;
+    float border_width;
 };
 
 GLuint
@@ -220,31 +228,42 @@ init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
         GL_FLOAT,
         GL_FALSE,
         sizeof(rect_instance),
-        (void*) offsetof(rect_instance, color));
+        (void*) offsetof(rect_instance, fill_color));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    // radius (location = 4)
+    // corner radius (location = 4)
     glVertexAttribPointer(
         4,
         1,
         GL_FLOAT,
         GL_FALSE,
         sizeof(rect_instance),
-        (void*) offsetof(rect_instance, radius));
+        (void*) offsetof(rect_instance, corner_radius));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
-    // clip rect (location = 5)
+    // border width (location = 5)
     glVertexAttribPointer(
         5,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(rect_instance),
+        (void*) offsetof(rect_instance, border_width));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+
+    // border color (location = 6)
+    glVertexAttribPointer(
+        6,
         4,
         GL_FLOAT,
         GL_FALSE,
         sizeof(rect_instance),
-        (void*) offsetof(rect_instance, clip_rect));
-    glEnableVertexAttribArray(5);
-    glVertexAttribDivisor(5, 1);
+        (void*) offsetof(rect_instance, border_color));
+    glEnableVertexAttribArray(6);
+    glVertexAttribDivisor(6, 1);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -320,9 +339,6 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    float clip_rect[4]
-        = {0.f, 0.f, system.surface_size.x, system.surface_size.y};
-
     alia_bump_allocator rect_alloc;
     alia_bump_allocator_init(&rect_alloc, &renderer->rect_instance_arena);
     rect_instance* rect_instances
@@ -331,15 +347,13 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
         rect_instance* instance = rect_instances;
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
-            auto const* box_cmd = downcast<alia_box_draw_command>(cmd);
+            auto const* box_cmd = downcast<alia_draw_box_command>(cmd);
             instance->min = box_cmd->box.min;
             instance->size = box_cmd->box.size;
-            instance->color = box_cmd->color;
-            instance->radius = box_cmd->radius;
-            instance->clip_rect[0] = clip_rect[0];
-            instance->clip_rect[1] = clip_rect[1];
-            instance->clip_rect[2] = clip_rect[2];
-            instance->clip_rect[3] = clip_rect[3];
+            instance->fill_color = box_cmd->paint.fill_color;
+            instance->border_color = box_cmd->paint.border_color;
+            instance->corner_radius = box_cmd->paint.corner_radius;
+            instance->border_width = box_cmd->paint.border_width;
             ++instance;
         }
     }

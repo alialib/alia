@@ -64,6 +64,12 @@ alia_box_contains(alia_box box, alia_vec2f p)
         && p.y < box.min.y + box.size.y;
 }
 
+static inline alia_box
+alia_box_translate(alia_box box, alia_vec2f v)
+{
+    return alia_box_make(alia_vec2f_add(box.min, v), box.size);
+}
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_BASE_GEOMETRY_BOX_H */

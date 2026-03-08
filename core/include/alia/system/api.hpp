@@ -21,7 +21,7 @@ initialize(
     std::shared_ptr<window_interface> window*/);
 // TODO: Add other initialization arguments...
 //     // alia__shared_ptr<alia::surface> const& surface,
-//     vector<2, float> const& ppi,
+//     float dpi,
 //     alia__shared_ptr<style_tree> const& style);
 
 // Update the UI system.

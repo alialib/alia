@@ -407,6 +407,11 @@ alia_lerp_rgba_raw(alia_rgba a, alia_rgba b, float t)
 alia_srgb8
 alia_lerp_srgb8_via_oklch(alia_srgb8 a, alia_srgb8 b, float t)
 {
+    // TODO: Should this be here?
+    if (t == 0.0f)
+        return a;
+    if (t == 1.0f)
+        return b;
     alia_oklch a_oklch = alia_oklch_from_srgb8(a);
     alia_oklch b_oklch = alia_oklch_from_srgb8(b);
     alia_oklch lerped_oklch = alia_lerp_oklch(a_oklch, b_oklch, t);

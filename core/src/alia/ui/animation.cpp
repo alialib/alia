@@ -65,7 +65,7 @@ render_click_flares(
                                        - milliseconds(300)))),
                 0.00001));
             alia_draw_circle(
-                as_draw_event(*ctx).context,
+                ctx,
                 ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
                 position,
                 radius * radius_scale_factor,
@@ -82,7 +82,7 @@ render_click_flares(
             alia_nanosecond_count ticks_left = flare_ticks_left[i];
             float intensity = float(ticks_left) / float(milliseconds(200));
             alia_draw_circle(
-                as_draw_event(*ctx).context,
+                ctx,
                 ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
                 position,
                 radius,
@@ -103,7 +103,7 @@ render_click_flares(
         scale_factor = eval_curve_at_x(
             alia_animation_curve{0.2, 0, 1, 1}, scale_factor, 0.00001);
         alia_draw_circle(
-            as_draw_event(*ctx).context,
+            ctx,
             ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
             position,
             scale_factor * radius,

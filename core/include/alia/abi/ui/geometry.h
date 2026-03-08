@@ -13,10 +13,13 @@ typedef int32_t alia_z_index;
 
 typedef struct alia_geometry_context
 {
-    // the transformation from the active frame of reference to surface space
-    alia_affine2 transform;
+    // the current scale - logical pixels per physical pixel
+    float scale;
 
-    // the current clipping region
+    // the current offset in physical pixels
+    alia_vec2f offset;
+
+    // the current clipping region in physical pixels
     alia_box clip_region;
     // TODO: index of the current clipping region in the pass's clip array
     alia_clip_id clip_id;
@@ -25,10 +28,10 @@ typedef struct alia_geometry_context
     alia_z_index z_base;
 } alia_geometry_context;
 
-static inline alia_affine2
-alia_geometry_get_transform(alia_context* ctx)
+static inline float
+alia_px(alia_context* ctx, float logical_px)
 {
-    return ctx->geometry->transform;
+    return logical_px * ctx->geometry->scale;
 }
 
 static inline alia_box

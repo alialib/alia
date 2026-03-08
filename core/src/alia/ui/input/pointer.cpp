@@ -16,9 +16,7 @@ extern "C" {
 alia_vec2f
 alia_input_pointer_position(alia_context* ctx)
 {
-    return alia_affine2_transform_point(
-        alia_affine2_invert(alia_geometry_get_transform(ctx)),
-        ctx->input->mouse_position);
+    return ctx->input->mouse_position - ctx->geometry->offset;
 }
 
 bool

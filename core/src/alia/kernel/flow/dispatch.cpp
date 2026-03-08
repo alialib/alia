@@ -30,7 +30,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
     static alia_style the_style = {.padding = 10.0f};
 
     alia_geometry_context geometry = {
-        .transform = alia_affine2_identity(),
+        .scale = sys.magnification * sys.dpi / 96.0f,
+        .offset = {0, 0},
         .clip_region = {{0, 0}, sys.surface_size},
         .clip_id = 0,
         .z_base = 0,
@@ -43,6 +44,11 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_bump_allocator_init(&layout.placement, &sys.layout.placement_arena);
 
     alia_stack_reset(&sys.stack);
+
+    // TODO: Not this?
+    alia_draw_context* draw = (events.event->type == ALIA_EVENT_DRAW)
+                                ? as_draw_event(*events.event).context
+                                : nullptr;
 
     alia_substrate_traversal substrate_traversal;
     alia_bump_allocator substrate_bump_allocator;
@@ -61,7 +67,9 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .style = &the_style,
         .geometry = &geometry,
         .input = &sys.input,
-        .layout = &layout};
+        .layout = &layout,
+        .draw = draw,
+    };
 
     alia_substrate_begin_block(
         &ctx, &sys.substrate.root_block, &sys.substrate.root_block_spec);

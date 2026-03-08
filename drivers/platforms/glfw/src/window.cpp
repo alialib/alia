@@ -20,7 +20,7 @@ update_glfw_window_info(ui_system& system, GLFWwindow* window)
 
     // float xscale, yscale;
     // glfwGetWindowContentScale(window, &xscale, &yscale);
-    // auto const ppi = Vec2{xscale * 96.f, yscale * 96.f};
+    // auto const dpi = Vec2{xscale * 96.f, yscale * 96.f};
 }
 
 } // namespace alia

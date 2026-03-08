@@ -86,23 +86,4 @@ alia_draw_command_alloc(
     return command;
 }
 
-void
-alia_draw_box(
-    alia_draw_context* ctx,
-    alia_z_index z_index,
-    alia_box box,
-    alia_rgba color,
-    float radius)
-{
-    auto* command
-        = alia::downcast<alia_box_draw_command>(alia_draw_command_alloc(
-            ctx,
-            z_index,
-            ALIA_BOX_MATERIAL_ID,
-            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_box_draw_command))));
-    command->box = box;
-    command->color = color;
-    command->radius = radius;
-}
-
 } // extern "C"

@@ -26,14 +26,14 @@ initialize(
 //     ui_system& ui,
 //     alia__shared_ptr<ui_controller> const& controller,
 //     alia__shared_ptr<alia::surface> const& surface,
-//     vector<2,float> const& ppi,
+//     float dpi,
 //     alia__shared_ptr<os_interface> const& os,
 //     alia__shared_ptr<style_tree> const& style)
 // {
 //     ui.controller = controller;
 //     ui.surface = surface;
 //     ui.surface_size = make_vector<unsigned>(0, 0);
-//     ui.ppi = ppi;
+//     ui.dpi = dpi;
 //     ui.os = os;
 //     ui.millisecond_tick_count = 0;
 //     ui.timer_event_counter = 0;
@@ -379,9 +379,9 @@ issue_event(
     scoped_layout_refresh slr;
     scoped_layout_traversal slt;
     if (is_refresh)
-        slr.begin(system.layout, layout, system.ppi);
+        slr.begin(system.layout, layout, system.dpi);
     else
-        slt.begin(system.layout, layout, geometry, system.ppi);
+        slt.begin(system.layout, layout, geometry, system.dpi);
 
     ctx.event = &event;
 

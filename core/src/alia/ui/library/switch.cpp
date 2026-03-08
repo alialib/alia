@@ -81,24 +81,25 @@ render_switch(
     if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
     {
         {
-            alia_draw_box(
-                as_draw_event(*ctx).context,
+            alia_draw_rounded_box(
+                ctx,
                 ctx->geometry->z_base + 2, // TODO: Proper z offset.
                 alia_box{
-                    center - alia_vec2f{placement.size.x * 0.25f, 8},
-                    alia_vec2f{placement.size.x * 0.5f, 16}},
+                    center
+                        - alia_vec2f{placement.size.x * 0.25f, alia_px(ctx, 7)},
+                    alia_vec2f{placement.size.x * 0.5f, alia_px(ctx, 14)}},
                 alia_rgba_from_rgb_alpha(
                     alia_rgb_from_srgb8(style.disabled_track_color), 1.f),
-                8);
+                alia_px(ctx, 7));
         }
 
         {
             float const dot_x_offset = state ? 0.75f : 0.25f;
 
-            float dot_radius = state ? 16.f : 14.f;
+            float dot_radius = state ? alia_px(ctx, 11) : alia_px(ctx, 13);
 
             alia_draw_circle(
-                as_draw_event(*ctx).context,
+                ctx,
                 ctx->geometry->z_base + 2, // TODO: Proper z offset.
                 {placement.min.x + dot_x_offset * placement.size.x, center.y},
                 dot_radius,
@@ -119,7 +120,7 @@ render_switch(
         1.f,
         0.f);
 
-    float dot_radius = alia_lerp(14.f, 16.f, switch_position);
+    float dot_radius = alia_px(ctx, alia_lerp(12, 13, switch_position));
 
     float const dot_x_offset = alia_lerp(0.25f, 0.75f, switch_position);
 
@@ -129,21 +130,21 @@ render_switch(
     alia_srgb8 const track_color = alia_lerp_srgb8_via_oklch(
         style.off_track_color, style.on_track_color, switch_position);
 
-    alia_draw_box(
-        as_draw_event(*ctx).context,
+    alia_draw_rounded_box(
+        ctx,
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         alia_box{
-            center - alia_vec2f{placement.size.x * 0.25f, 8},
-            alia_vec2f{placement.size.x * 0.5f, 16}},
+            center - alia_vec2f{placement.size.x * 0.25f, alia_px(ctx, 7)},
+            alia_vec2f{placement.size.x * 0.5f, alia_px(ctx, 14)}},
         alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(track_color), 1.f),
-        8);
+        alia_px(ctx, 7));
 
     // TODO: Add blur.
     // float const blur_sigma = 4.0f;
     // float const x_drop = 2.0f;
     // float const y_drop = 2.0f;
     // alia_draw_blurred_box(
-    //     as_draw_event(*ctx).context,
+    //     ctx,
     //     ctx->geometry->z_base + 2, // TODO: Proper z offset.
     //     {placement.min.x + dot_x_offset * placement.size.x + x_drop,
     //      center.y + y_drop},
@@ -152,7 +153,7 @@ render_switch(
     //     blur_sigma);
 
     alia_draw_circle(
-        as_draw_event(*ctx).context,
+        ctx,
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         {placement.min.x + dot_x_offset * placement.size.x, center.y},
         dot_radius,
@@ -163,10 +164,10 @@ render_switch(
         != 0)
     {
         alia_draw_circle(
-            as_draw_event(*ctx).context,
+            ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             {placement.min.x + dot_x_offset * placement.size.x, center.y},
-            24,
+            alia_px(ctx, 20),
             alia_rgba_from_rgb_alpha(
                 alia_rgb_from_srgb8(style.highlight_color), 0.2f));
     }
@@ -177,7 +178,7 @@ render_switch(
         interaction_status,
         {placement.min.x + dot_x_offset * placement.size.x, center.y},
         alia_rgb_from_srgb8(dot_color),
-        24);
+        alia_px(ctx, 20));
 }
 
 } // namespace alia
@@ -186,7 +187,7 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
-void
+alia_element_id
 alia_do_switch(
     alia_context* ctx,
     bool* state, // TODO: Use `alia_signal_bool` instead.
@@ -213,7 +214,10 @@ alia_do_switch(
         case ALIA_CATEGORY_REFRESH:
             // TODO: Incorporate baseline logic somehow.
             // TODO: Default alignment?
-            alia_layout_leaf_emit(ctx, alia_vec2f{65, 35}, layout_flags);
+            alia_layout_leaf_emit(
+                ctx,
+                alia_vec2f{alia_px(ctx, 55), alia_px(ctx, 30)},
+                layout_flags);
             break;
 
         case ALIA_CATEGORY_SPATIAL: {
@@ -267,6 +271,7 @@ alia_do_switch(
             render_switch(ctx, box, *data, *state, interaction_status, style);
         }
     }
+    return id;
 }
 
 ALIA_EXTERN_C_END

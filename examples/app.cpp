@@ -132,8 +132,7 @@ do_rect(
             {
                 color = {1.0f, 0.0f, 1.0f, 1.0f};
             }
-            alia_draw_box(
-                as_draw_event(ctx).context, z_index, box, color, 10.0f);
+            alia_draw_rounded_box(&ctx, z_index, box, color, 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -168,8 +167,7 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_DRAWING: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            alia_draw_box(
-                as_draw_event(ctx).context, z_index, box, color, 0.0f);
+            alia_draw_rounded_box(&ctx, z_index, box, color, 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -413,12 +411,7 @@ concrete_panel(
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
-            alia_draw_box(
-                as_draw_event(ctx).context,
-                z_index,
-                placement.box,
-                color,
-                0.0f);
+            alia_draw_rounded_box(&ctx, z_index, placement.box, color, 0.0f);
         }
 
         std::forward<Content>(content)();
@@ -452,8 +445,7 @@ concrete_button(
     placement_hook(ctx, flags, [&](auto const& placement) {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
-            alia_draw_box(
-                as_draw_event(ctx).context, z_index, placement.box, color);
+            alia_draw_rounded_box(&ctx, z_index, placement.box, color, 0.0f);
         }
 
         std::forward<Content>(content)();
@@ -955,8 +947,23 @@ nested_flow_demo(context& ctx)
 void
 mixed_flow_demo(context& ctx)
 {
-    static bool invert = false;
-    alia_do_switch(&ctx, &invert, 0);
+    static bool invert[10] = {false};
+    with_padding(ctx, 10, [&] {
+        column(ctx, [&]() {
+            for (int i = 0; i < 10; ++i)
+            {
+                placement_hook(ctx, [&](auto const& placement) {
+                    alia_element_id id;
+                    row(ctx, [&]() {
+                        do_text(ctx, 2, GRAY, 24, "Test", CENTER);
+                        id = alia_do_switch(&ctx, &invert[i], 0);
+                    });
+                    alia_element_box_region(
+                        &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+                });
+            }
+        });
+    });
     with_padding(ctx, 10, [&] {
         flow(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
@@ -1407,8 +1414,9 @@ the_demo(context& ctx)
                             active_demo = i;
                             abort_pass();
                         }
-                        do_rect(
-                            ctx, 1, {1, 1}, rgba{0.4f, 0.4f, 0.4f, 1}, FILL);
+                        // do_rect(
+                        //     ctx, 1, {1, 1}, rgba{0.4f, 0.4f, 0.4f, 1},
+                        //     FILL);
                     }
                 });
                 column(ctx, GROW, [&]() {
@@ -1644,7 +1652,8 @@ get_nanosecond_count()
     // Get the duration since the clock's epoch
     auto duration = now.time_since_epoch();
 
-    // Cast the duration to nanoseconds and extract the 64-bit integer count
+    // Cast the duration to nanoseconds and extract the 64-bit integer
+    // count
     return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
         .count();
 }
@@ -1740,7 +1749,8 @@ update()
         start_time - last_frame_time);
 
     // std::cout
-    //     << "frame_time: " // << std::setw(6) << external_frame_time << ": "
+    //     << "frame_time: " // << std::setw(6) << external_frame_time <<
+    //     ": "
     //     << std::setw(6) << frame_time << ": " << std::setw(6) <<
     //     refresh_time
     //     << " / " << std::setw(6) << layout_time << " / " << std::setw(6)
@@ -1771,8 +1781,9 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void
 content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
-    the_system.ppi = {xscale * 96.f, yscale * 96.f};
-    the_draw_system.ppi = the_system.ppi;
+    // TODO: Support 2D DPI?
+    the_system.dpi = ((xscale + yscale) / 2.0f) * 96.f;
+    the_draw_system.dpi = the_system.dpi;
     update();
 }
 
@@ -1913,8 +1924,9 @@ main()
 
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);
-    the_system.ppi = {xscale * 96.f, yscale * 96.f};
-    the_draw_system.ppi = the_system.ppi;
+    // TODO: Support 2D DPI?
+    the_system.dpi = ((xscale + yscale) / 2.0f) * 96.f;
+    the_draw_system.dpi = the_system.dpi;
 
     glfwSetWindowContentScaleCallback(the_window, content_scale_callback);
 

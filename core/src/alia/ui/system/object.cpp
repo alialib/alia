@@ -120,7 +120,7 @@ invoke_controller(ui_system& system, context& ctx)
     //     is_refresh_event(vanilla_ctx),
     //     is_refresh_event(vanilla_ctx) ? nullptr : &geometry,
     //     &style_info,
-    //     this->ppi);
+    //     this->dpi);
 
     // auto ctx = add_context_object<ui_traversal_tag>(
     //     add_context_object<ui_system_tag>(vanilla_ctx, std::ref(*this)),
