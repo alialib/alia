@@ -5,9 +5,6 @@
 #include <alia/base/arena.h>
 #include <alia/renderers/gl/renderer.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <unordered_map>
 #include <vector>
 
@@ -259,43 +256,6 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
     return vao;
 }
 
-GLuint
-create_msdf_texture(char const* texture_atlas_path)
-{
-    GLuint texture;
-    glGenTextures(1, &texture);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    int atlas_width, atlas_height, channels;
-    unsigned char* msdf_data = stbi_load(
-        texture_atlas_path, &atlas_width, &atlas_height, &channels, 3);
-    if (!msdf_data)
-    {
-        // TODO: Add proper error reporting.
-        std::cerr << "load failed: " << stbi_failure_reason() << "\n";
-        return 0;
-    }
-
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB8,
-        atlas_width,
-        atlas_height,
-        0,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        msdf_data);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    stbi_image_free(msdf_data);
-
-    return texture;
-}
-
-// Per-channel RLE: only 0x00 and 0xff are run-length encoded as (value_byte, run_length_byte). Any other byte is a single literal. Decode each channel into interleaved out_rgb.
 void
 alia_msdf_atlas_rle_decompress(
     std::uint8_t const* rle_r,
@@ -307,31 +267,33 @@ alia_msdf_atlas_rle_decompress(
     std::uint8_t* out_rgb,
     std::size_t out_size)
 {
-    auto decode_channel = [](std::uint8_t const* rle,
-                             std::size_t rle_size,
-                             std::uint8_t* out,
-                             std::size_t out_count,
-                             int stride) {
-        std::size_t out_pos = 0;
-        std::size_t i = 0;
-        while (i < rle_size && out_pos < out_count)
-        {
-            std::uint8_t v = rle[i++];
-            if (v == 0x00 || v == 0xff)
-            {
-                if (i >= rle_size)
-                    break;
-                std::uint8_t run = rle[i++];
-                for (std::uint8_t k = 0; k < run && out_pos < out_count; ++k, ++out_pos)
-                    out[out_pos * stride] = v;
-            }
-            else
-            {
-                out[out_pos * stride] = v;
-                ++out_pos;
-            }
-        }
-    };
+    auto decode_channel
+        = [](std::uint8_t const* rle,
+             std::size_t rle_size,
+             std::uint8_t* out,
+             std::size_t out_count,
+             int stride) {
+              std::size_t out_pos = 0;
+              std::size_t i = 0;
+              while (i < rle_size && out_pos < out_count)
+              {
+                  std::uint8_t v = rle[i++];
+                  if (v == 0x00 || v == 0xff)
+                  {
+                      if (i >= rle_size)
+                          break;
+                      std::uint8_t run = rle[i++];
+                      for (std::uint8_t k = 0; k < run && out_pos < out_count;
+                           ++k, ++out_pos)
+                          out[out_pos * stride] = v;
+                  }
+                  else
+                  {
+                      out[out_pos * stride] = v;
+                      ++out_pos;
+                  }
+              }
+          };
     std::size_t plane_size = out_size / 3;
     decode_channel(rle_r, rle_r_size, out_rgb + 0, plane_size, 3);
     decode_channel(rle_g, rle_g_size, out_rgb + 1, plane_size, 3);
@@ -339,10 +301,7 @@ alia_msdf_atlas_rle_decompress(
 }
 
 inline GLuint
-create_msdf_texture_from_memory(
-    unsigned char const* atlas_rgb,
-    int width,
-    int height)
+create_msdf_texture(unsigned char const* atlas_rgb, int width, int height)
 {
     GLuint texture;
     glGenTextures(1, &texture);
@@ -362,12 +321,16 @@ create_msdf_texture_from_memory(
     return texture;
 }
 
-static msdf_text_engine*
-create_msdf_text_engine_impl(
+msdf_text_engine*
+create_msdf_text_engine(
     alia_draw_system* system,
     msdf_font_description const& font,
-    GLuint texture)
+    std::uint8_t const* atlas_rgb,
+    int width,
+    int height)
 {
+    GLuint texture = create_msdf_texture(atlas_rgb, width, height);
+
     GLuint shader_program = create_shader_program(
         msdf_vertex_shader_source, msdf_fragment_shader_source);
     GLint matrix_location
@@ -449,28 +412,6 @@ create_msdf_text_engine_impl(
         engine);
 
     return engine;
-}
-
-msdf_text_engine*
-create_msdf_text_engine(
-    alia_draw_system* system,
-    msdf_font_description const& font,
-    char const* texture_atlas_path)
-{
-    GLuint texture = create_msdf_texture(texture_atlas_path);
-    return create_msdf_text_engine_impl(system, font, texture);
-}
-
-msdf_text_engine*
-create_msdf_text_engine_from_memory(
-    alia_draw_system* system,
-    msdf_font_description const& font,
-    std::uint8_t const* atlas_rgb,
-    int width,
-    int height)
-{
-    GLuint texture = create_msdf_texture_from_memory(atlas_rgb, width, height);
-    return create_msdf_text_engine_impl(system, font, texture);
 }
 
 void
@@ -617,7 +558,7 @@ render_command(
 
         auto& cached_glyph = engine->glyph_cache[unicode];
 
-        alia_vec2f draw_pos = { position.x, surface_h - position.y };
+        alia_vec2f draw_pos = {position.x, surface_h - position.y};
         engine->gpu.glyph_instances[glyph_instance_count] = {
             alia_rgba{0.9f, 0.9f, 0.9f, 1.0f},
             draw_pos,

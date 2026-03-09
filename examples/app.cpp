@@ -1978,7 +1978,7 @@ main()
         alia::alia_atlas_rle_b_size,
         atlas_rgb.data(),
         atlas_rgb.size());
-    the_msdf_text_engine = alia::create_msdf_text_engine_from_memory(
+    the_msdf_text_engine = alia::create_msdf_text_engine(
         &the_draw_system,
         alia::alia_font_description(0),
         atlas_rgb.data(),
