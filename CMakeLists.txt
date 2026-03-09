@@ -19,10 +19,35 @@ add_subdirectory(drivers/text_engines/msdf)
 
 add_subdirectory(apis/cpp)
 
+# --- Font asset pipeline (build-time atlas generation) ---
+# Single YAML manifest; asset_builder reads it and resolves path/url (downloads via libcurl, optional cache).
+set(ALIA_FONT_MANIFEST "${CMAKE_SOURCE_DIR}/assets/fonts.yaml")
+
+add_subdirectory(tools)
+
+set(ALIA_GEN_DIR "${CMAKE_BINARY_DIR}/gen")
+file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
+set(ALIA_FONTS_H "${ALIA_GEN_DIR}/alia_fonts.h")
+set(ALIA_FONTS_CPP "${ALIA_GEN_DIR}/alia_fonts.cpp")
+add_custom_command(
+    OUTPUT "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
+    COMMAND $<TARGET_FILE:alia_asset_builder> "${ALIA_FONT_MANIFEST}" "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}" --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
+    DEPENDS alia_asset_builder "${ALIA_FONT_MANIFEST}"
+    COMMENT "Generating alia_fonts.h / alia_fonts.cpp"
+)
+add_library(alia_font_assets STATIC "${ALIA_FONTS_CPP}")
+set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
+target_include_directories(alia_font_assets PUBLIC
+    "${ALIA_GEN_DIR}"
+    ${CMAKE_SOURCE_DIR}/drivers/text_engines/msdf/include
+    ${CMAKE_SOURCE_DIR}/core/include)
+target_link_libraries(alia_font_assets PUBLIC alia_core)
+
 add_executable(alia_app ${PROJECT_SOURCE_DIR}/examples/app.cpp)
 target_link_libraries(alia_app PRIVATE
     alia_cpp alia_core alia_gl_renderer alia_glfw_platform
-    alia_msdf_text_engine)
+    alia_msdf_text_engine alia_font_assets)
+target_include_directories(alia_app PRIVATE "${ALIA_GEN_DIR}")
 
 # --- Linking & Flags ---
 if(EMSCRIPTEN)

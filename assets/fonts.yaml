@@ -1,0 +1,8 @@
+# Use static Roboto (has kern table). Variable Roboto[wdth,wght] uses GPOS-only
+# kerning; FreeType's TT_CONFIG_OPTION_GPOS_KERNING has limited variable font
+# support. Static Roboto-Regular from googlefonts/roboto has a kern table.
+fonts:
+  - id: Roboto
+    url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
+    weight: 400
+    slant: normal

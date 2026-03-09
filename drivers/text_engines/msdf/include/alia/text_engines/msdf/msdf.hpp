@@ -59,12 +59,31 @@ struct msdf_font_description
     size_t kerning_pair_count;
 };
 
-// TODO: Don't assume that the atlas will be loaded from a file.
+// Creates engine from an in-memory RGB atlas.
 msdf_text_engine*
-create_msdf_text_engine(
+create_msdf_text_engine_from_memory(
     alia_draw_system* system,
     msdf_font_description const& font_description,
-    char const* texture_atlas_path);
+    std::uint8_t const* atlas_rgb,
+    int width,
+    int height);
+
+// Decompress per-channel RLE into interleaved RGB.
+// NOTE:
+// - In the this RLE format, only 0x00 and 0xff are run-length encoded as
+//   `(value_byte, run_length_byte)`. Any other byte is a raw value.
+// - `out_size` is the full size of the output buffer
+//   (i.e., `width * height * 3`).
+void
+alia_msdf_atlas_rle_decompress(
+    std::uint8_t const* rle_r,
+    std::size_t rle_r_size,
+    std::uint8_t const* rle_g,
+    std::size_t rle_g_size,
+    std::uint8_t const* rle_b,
+    std::size_t rle_b_size,
+    std::uint8_t* out_rgb,
+    std::size_t out_size);
 
 void
 destroy_msdf_text_engine(msdf_text_engine* engine);

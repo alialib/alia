@@ -11,9 +11,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "roboto-msdf.h"
+#include "alia_fonts.h"
 
 #include <alia/renderers/gl/renderer.hpp>
+#include <vector>
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/geometry.h>
@@ -955,7 +956,7 @@ mixed_flow_demo(context& ctx)
                 placement_hook(ctx, [&](auto const& placement) {
                     alia_element_id id;
                     row(ctx, [&]() {
-                        do_text(ctx, 2, GRAY, 24, "Test", CENTER);
+                        do_text(ctx, 2, GRAY, 24, "Roboto", CENTER);
                         id = alia_do_switch(&ctx, &invert[i], 0);
                     });
                     alia_element_box_region(
@@ -1966,31 +1967,23 @@ main()
 
     the_draw_system.surface_size = the_system.surface_size;
 
-    // TODO
-    the_msdf_text_engine = create_msdf_text_engine(
+    std::vector<std::uint8_t> atlas_rgb(
+        static_cast<std::size_t>(alia::alia_atlas_decompressed_size));
+    alia::alia_msdf_atlas_rle_decompress(
+        alia::alia_atlas_rle_r,
+        alia::alia_atlas_rle_r_size,
+        alia::alia_atlas_rle_g,
+        alia::alia_atlas_rle_g_size,
+        alia::alia_atlas_rle_b,
+        alia::alia_atlas_rle_b_size,
+        atlas_rgb.data(),
+        atlas_rgb.size());
+    the_msdf_text_engine = alia::create_msdf_text_engine_from_memory(
         &the_draw_system,
-        msdf_font_description{
-            .metrics = {
-                .em_size = 1,
-                .line_height = 1.171875,
-                .ascender = 0.927734375,
-                .descender = -0.244140625,
-                .underline_y = -0.09765625,
-                .underline_thickness = 0.048828125,
-            },
-            .atlas = {
-                .distance_range = 4,
-                .distance_range_middle = 0,
-                .font_size = 48,
-                .width = 320,
-                .height = 320,
-            },
-            .glyphs = roboto_glyphs,
-            .glyph_count = roboto_glyph_count,
-            .kerning_pairs = roboto_kerning_pairs,
-            .kerning_pair_count = roboto_kerning_pair_count,
-        },
-        "assets/roboto-msdf.png");
+        alia::alia_font_description(0),
+        atlas_rgb.data(),
+        alia::alia_atlas_width,
+        alia::alia_atlas_height);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

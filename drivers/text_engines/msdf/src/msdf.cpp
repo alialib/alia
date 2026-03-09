@@ -295,14 +295,79 @@ create_msdf_texture(char const* texture_atlas_path)
     return texture;
 }
 
-msdf_text_engine*
-create_msdf_text_engine(
+// Per-channel RLE: only 0x00 and 0xff are run-length encoded as (value_byte, run_length_byte). Any other byte is a single literal. Decode each channel into interleaved out_rgb.
+void
+alia_msdf_atlas_rle_decompress(
+    std::uint8_t const* rle_r,
+    std::size_t rle_r_size,
+    std::uint8_t const* rle_g,
+    std::size_t rle_g_size,
+    std::uint8_t const* rle_b,
+    std::size_t rle_b_size,
+    std::uint8_t* out_rgb,
+    std::size_t out_size)
+{
+    auto decode_channel = [](std::uint8_t const* rle,
+                             std::size_t rle_size,
+                             std::uint8_t* out,
+                             std::size_t out_count,
+                             int stride) {
+        std::size_t out_pos = 0;
+        std::size_t i = 0;
+        while (i < rle_size && out_pos < out_count)
+        {
+            std::uint8_t v = rle[i++];
+            if (v == 0x00 || v == 0xff)
+            {
+                if (i >= rle_size)
+                    break;
+                std::uint8_t run = rle[i++];
+                for (std::uint8_t k = 0; k < run && out_pos < out_count; ++k, ++out_pos)
+                    out[out_pos * stride] = v;
+            }
+            else
+            {
+                out[out_pos * stride] = v;
+                ++out_pos;
+            }
+        }
+    };
+    std::size_t plane_size = out_size / 3;
+    decode_channel(rle_r, rle_r_size, out_rgb + 0, plane_size, 3);
+    decode_channel(rle_g, rle_g_size, out_rgb + 1, plane_size, 3);
+    decode_channel(rle_b, rle_b_size, out_rgb + 2, plane_size, 3);
+}
+
+inline GLuint
+create_msdf_texture_from_memory(
+    unsigned char const* atlas_rgb,
+    int width,
+    int height)
+{
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB8,
+        width,
+        height,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        atlas_rgb);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    return texture;
+}
+
+static msdf_text_engine*
+create_msdf_text_engine_impl(
     alia_draw_system* system,
     msdf_font_description const& font,
-    char const* texture_atlas_path)
+    GLuint texture)
 {
-    GLuint texture = create_msdf_texture(texture_atlas_path);
-
     GLuint shader_program = create_shader_program(
         msdf_vertex_shader_source, msdf_fragment_shader_source);
     GLint matrix_location
@@ -359,7 +424,7 @@ create_msdf_text_engine(
         auto& cached_glyph = engine->glyph_cache[font.glyphs[i].unicode];
         cached_glyph.uv_rect[0] = font.glyphs[i].atlas_left / font.atlas.width;
         cached_glyph.uv_rect[1]
-            = 1.0f - (font.glyphs[i].atlas_top / font.atlas.height);
+            = font.glyphs[i].atlas_bottom / font.atlas.height;
         cached_glyph.uv_rect[2]
             = (font.glyphs[i].atlas_right - font.glyphs[i].atlas_left)
             / font.atlas.width;
@@ -367,11 +432,11 @@ create_msdf_text_engine(
             = (font.glyphs[i].atlas_top - font.glyphs[i].atlas_bottom)
             / font.atlas.height;
         cached_glyph.plane_rect[0] = font.glyphs[i].plane_left;
-        cached_glyph.plane_rect[1] = -font.glyphs[i].plane_top;
+        cached_glyph.plane_rect[1] = font.glyphs[i].plane_bottom;
         cached_glyph.plane_rect[2]
             = font.glyphs[i].plane_right - font.glyphs[i].plane_left;
         cached_glyph.plane_rect[3]
-            = -font.glyphs[i].plane_bottom + font.glyphs[i].plane_top;
+            = font.glyphs[i].plane_top - font.glyphs[i].plane_bottom;
     }
 
     engine->material_id = alia_material_alloc_ids(system, 1);
@@ -384,6 +449,28 @@ create_msdf_text_engine(
         engine);
 
     return engine;
+}
+
+msdf_text_engine*
+create_msdf_text_engine(
+    alia_draw_system* system,
+    msdf_font_description const& font,
+    char const* texture_atlas_path)
+{
+    GLuint texture = create_msdf_texture(texture_atlas_path);
+    return create_msdf_text_engine_impl(system, font, texture);
+}
+
+msdf_text_engine*
+create_msdf_text_engine_from_memory(
+    alia_draw_system* system,
+    msdf_font_description const& font,
+    std::uint8_t const* atlas_rgb,
+    int width,
+    int height)
+{
+    GLuint texture = create_msdf_texture_from_memory(atlas_rgb, width, height);
+    return create_msdf_text_engine_impl(system, font, texture);
 }
 
 void
@@ -517,6 +604,7 @@ render_command(
     // TODO: Culling.
     alia_vec2f position = command.position;
     float scale = command.scale;
+    float surface_h = engine->system->surface_size.y;
     for (size_t i = 0; i < command.length; ++i)
     {
         char const c = command.text[i];
@@ -529,9 +617,10 @@ render_command(
 
         auto& cached_glyph = engine->glyph_cache[unicode];
 
+        alia_vec2f draw_pos = { position.x, surface_h - position.y };
         engine->gpu.glyph_instances[glyph_instance_count] = {
             alia_rgba{0.9f, 0.9f, 0.9f, 1.0f},
-            position,
+            draw_pos,
             scale,
             cached_glyph.uv_rect[0],
             cached_glyph.uv_rect[1],
@@ -578,8 +667,8 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 
     float l = 0.f; // left
     float r = surface_size.x; // right
-    float t = 0.f; // top
-    float b = surface_size.y; // bottom
+    float t = surface_size.y; // top (world Y up = screen Y up)
+    float b = 0.f; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 
