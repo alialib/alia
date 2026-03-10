@@ -1,12 +1,32 @@
 {
     "name": "alia-dev-deps",
     "version": "0.1.0",
-    "dependencies": [
-        "glfw3",
-        "glad",
-        "curl",
-        "yaml-cpp"
-    ],
+    "dependencies": [],
+    "features": {
+        "asset-pipeline": {
+            "description": "asset prep pipeline - Disable when cross-compiling",
+            "dependencies": [
+                "curl",
+                "yaml-cpp"
+            ]
+        },
+        "opengl": {
+            "description": "OpenGL renderer",
+            "dependencies": [
+                "glad"
+            ]
+        },
+        "glfw": {
+            "description": "GLFW backend",
+            "dependencies": [
+                "glfw3"
+            ]
+        },
+        "tests": {
+            "description": "tests",
+            "dependencies": []
+        }
+    },
     "overrides": [],
     "builtin-baseline": "41c447cc210dc39aa85d4a5f58b4a1b9e573b3dc"
 }

@@ -1,91 +1,9 @@
-cmake_minimum_required(VERSION 3.16)
-
-include(cmake/utilities.cmake)
-
-# ALIA_IS_MAIN_PROJECT defines whether we are building alia as the main
-# project or as a dependency of another project.
-if(NOT DEFINED ALIA_IS_MAIN_PROJECT)
-    if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-        set(ALIA_IS_MAIN_PROJECT ON)
-    else()
-        set(ALIA_IS_MAIN_PROJECT OFF)
-    endif()
-endif()
-
-alia_detect_emscripten()
-
-# Set VCPKG target triplet to support the Skia build.
-if (ALIA_IS_MAIN_PROJECT AND WIN32)
-    # This assumes we're doing a 64-bit build. It seems impossible to verify
-    # that at this point in the CMake execution - it's possible after the call
-    # to `project()`, but we need to set these variables before that - but we
-    # could add an option to support 32-bit builds.
-    set(VCPKG_TARGET_TRIPLET x64-windows-mixed)
-    set(VCPKG_HOST_TRIPLET x64-windows-mixed)
-endif()
-
-# Define our options...
-# As we define the options, we also add the corresponding vcpkg options.
-
-option(
-    ALIA_ENABLE_TESTING
-    "Generate targets for testing alia"
-    ${ALIA_IS_MAIN_PROJECT})
-if(ALIA_ENABLE_TESTING)
-  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
-endif()
-
-include(CMakeDependentOption)
-
-option(
-    ALIA_ENABLE_UI
-    "Enable the UI library"
-    ON)
-if(ALIA_ENABLE_UI)
-  list(APPEND VCPKG_MANIFEST_FEATURES "ui")
-endif()
-
-cmake_dependent_option(
-    ALIA_ENABLE_WXWIDGETS
-    "Enable the wxWidgets backend for the UI library"
-    ON
-    "ALIA_ENABLE_UI"
-    OFF)
-if(ALIA_ENABLE_WXWIDGETS)
-  list(APPEND VCPKG_MANIFEST_FEATURES "wx")
-endif()
-
-cmake_dependent_option(
-    ALIA_ENABLE_GLFW
-    "Enable the GLFW backend for the UI library"
-    ON
-    "ALIA_ENABLE_UI"
-    OFF)
-if(ALIA_ENABLE_GLFW)
-  list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
-endif()
-
-cmake_dependent_option(
-    ALIA_ENABLE_SDL
-    "Enable the SDL backend for the UI library"
-    ON
-    "ALIA_ENABLE_UI"
-    OFF)
-if(ALIA_ENABLE_SDL)
-  list(APPEND VCPKG_MANIFEST_FEATURES "sdl")
-endif()
-
 cmake_dependent_option(
     ALIA_BUILD_DOCS
     "Build the docs"
     ${ALIA_IS_MAIN_PROJECT}
     "IS_EMSCRIPTEN"
     OFF)
-
-option(
-    ALIA_BUILD_EXAMPLES
-    "Build examples"
-    ${ALIA_IS_MAIN_PROJECT})
 
 cmake_dependent_option(
     ALIA_ENABLE_HTML
@@ -96,11 +14,6 @@ cmake_dependent_option(
 if(ALIA_ENABLE_HTML)
   list(APPEND VCPKG_MANIFEST_FEATURES "html")
 endif()
-
-# We can only declare the project after we've set the vcpkg manifest features.
-project(alia)
-
-alia_detect_compiler()
 
 # If alia is the main project, set some global development flags.
 if (ALIA_IS_MAIN_PROJECT)
@@ -154,110 +67,44 @@ add_library(alia_core STATIC ${ALIA_CORE_SRC_FILES})
 target_include_directories(alia_core PUBLIC src)
 target_compile_features(alia_core PUBLIC cxx_std_23)
 
-# Add the UI library.
-if (ALIA_ENABLE_UI)
-    find_package(unofficial-skia CONFIG REQUIRED)
+if (IS_EMSCRIPTEN)
+    target_link_options(alia_ui PUBLIC
+        "-sFULL_ES3"
+        "-sTOTAL_MEMORY=64MB")
 
-    file(GLOB_RECURSE ALIA_UI_SOURCES ${ALIA_GLOB_OPTIONS}
-        "src/alia/ui/*.cpp")
-    foreach(file ${ALIA_UI_SOURCES})
-        if(${file} MATCHES "/ui/backends/")
-            list(REMOVE_ITEM ALIA_UI_SOURCES ${file})
-        endif()
-    endforeach()
+    # TODO...
+    # target_compile_options(alia_ui PUBLIC "-fwasm-exceptions")
+    # target_link_options(alia_ui PUBLIC "-fwasm-exceptions")
+    # Restore pre-3.1.27 stack size for Emscripten.
+    target_link_options(alia_ui PUBLIC "-sSTACK_SIZE=5MB")
 
-    add_library(alia_ui STATIC ${ALIA_UI_SOURCES})
-    target_include_directories(alia_ui PUBLIC
+    # target_compile_options(alia_core PUBLIC "-fwasm-exceptions")
+    # target_link_options(alia_core PUBLIC "-fwasm-exceptions")
+    target_link_options(alia_core PUBLIC "-sSTACK_SIZE=5MB")
+
+    # Set various other Emscripten options...
+    target_link_options(alia_ui PUBLIC
+        "-sENVIRONMENT=web")
+    target_link_options(alia_ui PUBLIC
+        "-sWASM=1")
+    target_link_options(alia_ui PUBLIC
+        "--bind")
+    target_link_options(alia_ui PUBLIC
+        "-sMIN_WEBGL_VERSION=2")
+    target_link_options(alia_ui PUBLIC
+        "-sMAX_WEBGL_VERSION=2")
+
+    target_link_options(alia_ui PUBLIC
+        "-Oz"
+        "-sELIMINATE_DUPLICATE_FUNCTIONS=1")
+
+    add_library(alia_emscripten_ui STATIC "src/alia/ui/backends/emscripten.cpp")
+    target_include_directories(alia_emscripten_ui PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src")
-    target_link_libraries(alia_ui PUBLIC
-        alia_core
-        unofficial::skia::skia
-        unofficial::skia::modules::skshaper)
-        # unofficial::skia::modules::svg)
-    if (IS_EMSCRIPTEN)
-        target_link_options(alia_ui PUBLIC
-            "-sFULL_ES3"
-            "-sTOTAL_MEMORY=64MB")
+    target_link_libraries(alia_emscripten_ui PUBLIC alia_ui)
+    target_link_options(alia_emscripten_ui PUBLIC "-sERROR_ON_UNDEFINED_SYMBOLS=0")
 
-        # TODO...
-        # target_compile_options(alia_ui PUBLIC "-fwasm-exceptions")
-        # target_link_options(alia_ui PUBLIC "-fwasm-exceptions")
-        # Restore pre-3.1.27 stack size for Emscripten.
-        target_link_options(alia_ui PUBLIC "-sSTACK_SIZE=5MB")
-
-        # target_compile_options(alia_core PUBLIC "-fwasm-exceptions")
-        # target_link_options(alia_core PUBLIC "-fwasm-exceptions")
-        target_link_options(alia_core PUBLIC "-sSTACK_SIZE=5MB")
-
-        # Set various other Emscripten options...
-        target_link_options(alia_ui PUBLIC
-            "-sENVIRONMENT=web")
-        target_link_options(alia_ui PUBLIC
-            "-sWASM=1")
-        target_link_options(alia_ui PUBLIC
-            "--bind")
-        target_link_options(alia_ui PUBLIC
-            "-sMIN_WEBGL_VERSION=2")
-        target_link_options(alia_ui PUBLIC
-            "-sMAX_WEBGL_VERSION=2")
-
-        target_link_options(alia_ui PUBLIC
-            "-Oz"
-            "-sELIMINATE_DUPLICATE_FUNCTIONS=1")
-
-        add_library(alia_emscripten_ui STATIC "src/alia/ui/backends/emscripten.cpp")
-        target_include_directories(alia_emscripten_ui PUBLIC
-            "${CMAKE_CURRENT_SOURCE_DIR}/src")
-        target_link_libraries(alia_emscripten_ui PUBLIC alia_ui)
-        target_link_options(alia_emscripten_ui PUBLIC "-sERROR_ON_UNDEFINED_SYMBOLS=0")
-
-        set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    endif()
-    target_include_directories(alia_ui PUBLIC
-        "${dmilos_color_SOURCE_DIR}/src")
-    target_precompile_headers(alia_ui PUBLIC
-        src/alia/ui.hpp)
-
-endif()
-
-# Add the wxWidgets backend.
-if (ALIA_ENABLE_WXWIDGETS)
-    find_package(OpenGL QUIET)
-    find_package(wxWidgets CONFIG REQUIRED)
-    add_library(alia_wx STATIC "src/alia/ui/backends/wx.cpp")
-    target_include_directories(alia_wx PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/src")
-    target_link_libraries(alia_wx PUBLIC alia_ui wx::core wx::base wx::wxgl)
-endif()
-
-# Add the GLFW3 backend.
-if (ALIA_ENABLE_GLFW)
-    find_package(glfw3 3.3 CONFIG REQUIRED)
-    add_library(alia_glfw STATIC "src/alia/ui/backends/glfw.cpp")
-    target_include_directories(alia_glfw PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/src")
-    target_link_libraries(alia_glfw PUBLIC alia_ui glfw)
-endif()
-
-# Add the SDL backend.
-if (ALIA_ENABLE_SDL)
-    find_package(SDL2 CONFIG REQUIRED)
-    add_library(alia_sdl STATIC "src/alia/ui/backends/sdl.cpp")
-    target_include_directories(alia_sdl PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/src")
-    target_link_libraries(alia_sdl PUBLIC alia_ui
-        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-        $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>)
-endif()
-
-# Add the tests.
-if (ALIA_ENABLE_TESTING)
-    add_subdirectory("tests")
-endif()
-
-# Add the examples.
-if (ALIA_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
 
 # Add alia/HTML.
