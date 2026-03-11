@@ -3,6 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/system/api.h>
 #include <alia/impl/base/arena.hpp>
 
 // TODO: Remove these.
@@ -157,7 +158,7 @@ create_shader_program(
 }
 
 void
-init_gl_renderer(alia_draw_system* system, gl_renderer* renderer)
+init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
 {
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
@@ -297,17 +298,19 @@ void
 render_box_command_list(void* user, alia_draw_bucket const* bucket)
 {
     gl_renderer* renderer = static_cast<gl_renderer*>(user);
-    auto const& system = *renderer->system;
     alia_draw_bucket const& boxes = *bucket;
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
+    alia_vec2f surface_size
+        = alia_ui_system_get_surface_size(renderer->system);
+
     float l = 0.f; // left
-    float r = system.surface_size.x; // right
+    float r = surface_size.x; // right
     float t = 0.f; // top
-    float b = system.surface_size.y; // bottom
+    float b = surface_size.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 

@@ -5,10 +5,10 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/base/stack.h>
-#include <alia/context.hpp>
-#include <alia/ids.hpp>
+#include <alia/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/animation.h>
+#include <alia/kernel/flow/ids.h>
 #include <alia/kernel/substrate.h>
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
@@ -64,12 +64,3 @@ struct alia_ui_system
 };
 
 } // extern "C"
-
-namespace alia {
-
-void
-initialize_ui_system(alia_ui_system* system, alia_vec2f surface_size);
-
-// TODO: cleanup function
-
-} // namespace alia

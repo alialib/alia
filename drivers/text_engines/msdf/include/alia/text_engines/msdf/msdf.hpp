@@ -62,7 +62,9 @@ struct msdf_font_description
 // Creates engine from an in-memory RGB atlas.
 msdf_text_engine*
 create_msdf_text_engine(
-    alia_draw_system* system,
+    alia_ui_system* ui,
+    // TODO: Don't have a separate draw system object.
+    alia_draw_system* draw_system,
     msdf_font_description const& font_description,
     std::uint8_t const* atlas_rgb,
     int width,

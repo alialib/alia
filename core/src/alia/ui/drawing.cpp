@@ -1,7 +1,7 @@
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing.h>
 
-#include <alia/context.hpp>
+#include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing.h>

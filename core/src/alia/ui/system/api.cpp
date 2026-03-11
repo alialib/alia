@@ -1,54 +1,99 @@
-#include <alia/system/api.hpp>
+#include <alia/abi/ui/system/api.h>
+#include <alia/ui/system/internal_api.h>
+
+#include <chrono>
 
 #include <alia/abi/ui/input/constants.h>
-#include <alia/flow/dispatch.hpp>
-#include <alia/system/object.hpp>
+#include <alia/abi/ui/layout/system.h>
+#include <alia/impl/base/arena.hpp>
+#include <alia/kernel/flow/dispatch.h>
+#include <alia/ui/system/object.h>
 
 namespace alia {
 
-void
-initialize(
-    ui_system& ui,
-    std::function<void(context&)> controller/*,
-    external_interface* external,
+alia_struct_spec
+alia_ui_system_object_spec(void)
+{
+    return alia_struct_spec{
+        .size = sizeof(alia_ui_system), .align = alignof(alia_ui_system)};
+}
+
+// TODO: Sort this out.
+void*
+allocate_virtual_block(std::size_t size);
+
+// TODO: Sort this out too.
+static void*
+block_alloc(void* user, size_t size, size_t alignment)
+{
+    return malloc(size);
+}
+static void
+block_free(void* user, void* ptr)
+{
+    free(ptr);
+}
+
+alia_ui_system*
+alia_ui_system_init(
+    void* object_storage,
+    std::function<void(context&)> controller,
+    alia_vec2f surface_size
+    /*external_interface* external,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window*/)
 {
-    // initialize_core_system<vanilla_ui_context>(ui, external);
-    ui.controller = std::move(controller);
+    alia_ui_system* ui = new (object_storage) alia_ui_system;
+
+    ui->controller = std::move(controller);
+
+    // TODO: Sort this out.
+    void* block = allocate_virtual_block(1024 * 1024);
+    alia_stack_init(&ui->stack, block, 1024 * 1024);
+
+    alia_layout_system_init(&ui->layout);
+    ui->surface_size = surface_size;
+
+    // TODO: Sort this out.
+    alia::initialize_lazy_commit_arena(&ui->substrate_discovery_arena);
+
+    alia_substrate_allocator allocator;
+    allocator.user_data = nullptr;
+    allocator.alloc = block_alloc;
+    allocator.free = block_free;
+    substrate_system_init(ui->substrate, allocator);
+
     // ui.os = std::move(os);
     // ui.window = std::move(window);
     // TODO
     // ui.theme = blue_dark_theme;
+
+    return ui;
 }
 
-// void initialize_ui(
-//     ui_system& ui,
-//     alia__shared_ptr<ui_controller> const& controller,
-//     alia__shared_ptr<alia::surface> const& surface,
-//     float dpi,
-//     alia__shared_ptr<os_interface> const& os,
-//     alia__shared_ptr<style_tree> const& style)
-// {
-//     ui.controller = controller;
-//     ui.surface = surface;
-//     ui.surface_size = make_vector<unsigned>(0, 0);
-//     ui.dpi = dpi;
-//     ui.os = os;
-//     ui.millisecond_tick_count = 0;
-//     ui.timer_event_counter = 0;
-//     ui.style.styles = style;
-//     ui.menu_bar.parent = 0;
-//     ui.menu_bar.children = 0;
-//     ui.menu_bar.last_change = 0;
-//     ui.last_refresh_duration = 0;
-// }
+int64_t
+get_nanosecond_count()
+{
+    // Get the current time from the steady clock
+    auto now = std::chrono::steady_clock::now();
+
+    // Get the duration since the clock's epoch
+    auto duration = now.time_since_epoch();
+
+    // Cast the duration to nanoseconds and extract the 64-bit integer
+    // count
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
+        .count();
+}
 
 void
-update(ui_system& ui)
+alia_ui_system_update(alia_ui_system* ui)
 {
-    // TODO?
-    // refresh_ui(ui);
+    ui->tick_count = get_nanosecond_count();
+
+    refresh_system(*ui);
+
+    alia_layout_system_resolve(&ui->layout, ui->surface_size);
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
@@ -75,30 +120,30 @@ update(ui_system& ui)
     alia_cursor_t resolved_cursor = ALIA_CURSOR_DEFAULT;
 
     // Determine which widget is under the mouse cursor.
-    if (ui.input.mouse_inside_window)
+    if (ui->input.mouse_inside_window)
     {
         alia_event event = alia_make_mouse_hit_test_event(
-            {.x = ui.input.mouse_position.x,
-             .y = ui.input.mouse_position.y,
+            {.x = ui->input.mouse_position.x,
+             .y = ui->input.mouse_position.y,
              .result
              = {.id = alia_routable_element_id{},
                 .cursor = ALIA_CURSOR_DEFAULT}});
-        dispatch_event(ui, event);
+        dispatch_event(*ui, event);
         if (alia_routable_element_id_is_valid(
                 as_mouse_hit_test_event(event).result.id))
         {
-            set_hot_element(ui, as_mouse_hit_test_event(event).result.id);
+            set_hot_element(*ui, as_mouse_hit_test_event(event).result.id);
             resolved_cursor = as_mouse_hit_test_event(event).result.cursor;
             // record_tooltip(ui, hit_test);
         }
         else
         {
-            set_hot_element(ui, alia_routable_element_id{});
+            set_hot_element(*ui, alia_routable_element_id{});
         }
     }
     else
     {
-        set_hot_element(ui, alia_routable_element_id{});
+        set_hot_element(*ui, alia_routable_element_id{});
     }
 
     // The block above gives us the mouse cursor that's been requested by the
@@ -146,14 +191,32 @@ update(ui_system& ui)
 }
 
 void
-update_window_size(ui_system& ui, alia_vec2f new_size)
+alia_ui_system_set_surface_size(alia_ui_system* ui, alia_vec2f new_size)
 {
     // // If the surface changes size, that could invalidate popup positioning,
     // // so close any active popups.
     // if (ui.surface_size != new_size)
     //     ui.overlay_id = null_widget_id;
 
-    ui.surface_size = new_size;
+    ui->surface_size = new_size;
+}
+
+alia_vec2f
+alia_ui_system_get_surface_size(alia_ui_system* ui)
+{
+    return ui->surface_size;
+}
+
+void
+alia_ui_system_set_dpi(alia_ui_system* ui, float dpi)
+{
+    ui->dpi = dpi;
+}
+
+float
+alia_ui_system_get_dpi(alia_ui_system* ui)
+{
+    return ui->dpi;
 }
 
 // struct initial_styling_data
@@ -190,6 +253,46 @@ update_window_size(ui_system& ui, alia_vec2f new_size)
 //     ctx.style.id = &data->id.get();
 //     ctx.style.theme = &ctx.system->style.theme;
 // }
+
+bool
+system_needs_refresh(ui_system& sys)
+{
+    // TODO
+    // return sys.refresh_needed;
+    return true;
+}
+
+void
+refresh_system(ui_system& sys)
+{
+    // TODO
+
+    // sys.refresh_needed = false;
+    // ++sys.refresh_counter;
+
+    // std::chrono::steady_clock::time_point begin
+    //     = std::chrono::steady_clock::now();
+
+    {
+        auto refresh_event = alia_make_refresh_event({});
+        dispatch_event(sys, refresh_event);
+    }
+
+    // long long refresh_time;
+    // {
+    //     std::chrono::steady_clock::time_point end
+    //         = std::chrono::steady_clock::now();
+    //     refresh_time =
+    //     std::chrono::duration_cast<std::chrono::microseconds>(
+    //                        end - begin)
+    //                        .count();
+    // }
+
+    // static long long max_refresh_time = 0;
+    // max_refresh_time = (std::max)(refresh_time, max_refresh_time);
+    // std::cout << "refresh: " << refresh_time << "[us]\n";
+    // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
+}
 
 #if 0
 

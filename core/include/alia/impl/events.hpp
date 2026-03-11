@@ -1,8 +1,8 @@
 #pragma once
 
+#include <alia/abi/context.h>
 #include <alia/abi/events.h>
-#include <alia/context.hpp>
-#include <alia/flow/traversal.hpp>
+#include <alia/kernel/flow/traversal.h>
 
 namespace alia {
 
@@ -34,7 +34,7 @@ template<class Context>
 component_container_ptr const
 get_active_component_container(Context& ctx)
 {
-    return *get_event_traversal(ctx).active_container;
+    return *ctx.events->active_container;
 }
 
 typedef component_container_ptr::weak_type component_identity;
@@ -49,25 +49,25 @@ abort_traversal(ephemeral_context& ctx);
 inline bool
 traversal_was_aborted(ephemeral_context& ctx)
 {
-    return get_event_traversal(ctx).aborted;
+    return ctx.events->aborted;
 }
 
 inline alia_event_category
 get_event_category(ephemeral_context& ctx)
 {
-    return get_event_traversal(ctx).event->category;
+    return ctx.events->event->category;
 }
 
 inline alia_event_type
 get_event_type(ephemeral_context& ctx)
 {
-    return get_event_traversal(ctx).event->type;
+    return ctx.events->event->type;
 }
 
 inline alia_element_id
 get_event_target(ephemeral_context& ctx)
 {
-    return get_event_traversal(ctx).event->target;
+    return ctx.events->event->target;
 }
 
 inline bool
@@ -82,8 +82,7 @@ is_refresh_event(ephemeral_context& ctx)
     inline data_type& as_##name##_event(ephemeral_context& ctx)               \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
-        return *reinterpret_cast<data_type*>(                                 \
-            get_event_traversal(ctx).event->payload);                         \
+        return *reinterpret_cast<data_type*>(ctx.events->event->payload);     \
     }
 
 ALIA_EVENTS(X)

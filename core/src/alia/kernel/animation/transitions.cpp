@@ -6,7 +6,7 @@
 #include <alia/abi/base/color.h>
 #include <alia/impl/kernel/animation.hpp>
 #include <alia/kernel/animation/unit_cubic_bezier.h>
-#include <alia/system/object.hpp>
+#include <alia/ui/system/object.h>
 
 #include <iostream>
 

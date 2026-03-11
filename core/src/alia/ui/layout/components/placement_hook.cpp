@@ -1,12 +1,12 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/ui/layout/components.h>
 #include <alia/abi/ui/style.h>
-#include <alia/context.hpp>
+#include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
-#include <alia/system/object.hpp>
+#include <alia/ui/system/object.h>
 
 namespace alia {
 

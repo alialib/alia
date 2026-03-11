@@ -21,7 +21,7 @@ namespace alia {
 
 struct gl_renderer
 {
-    alia_draw_system* system;
+    alia_ui_system* system;
     GLuint vanilla_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
@@ -34,7 +34,7 @@ struct display_list;
 // Create a new OpenGL renderer.
 // (This may compile shaders, etc.)
 void
-init_gl_renderer(alia_draw_system* system, gl_renderer* renderer);
+init_gl_renderer(alia_ui_system* system, gl_renderer* renderer);
 
 // Destroy a renderer.
 void

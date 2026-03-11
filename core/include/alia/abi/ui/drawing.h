@@ -65,6 +65,15 @@ alia_material_register(
 
 // GENERIC DRAW COMMANDS
 
+typedef struct alia_draw_bucket
+{
+    alia_draw_command* head;
+    alia_draw_command* tail;
+    uint32_t count;
+    // TODO: Add generalized, material-specific summary info.
+    uint32_t instance_count;
+} alia_draw_bucket;
+
 typedef struct alia_draw_bucket_table alia_draw_bucket_table;
 
 typedef struct alia_draw_context

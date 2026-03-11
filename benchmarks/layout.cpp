@@ -5,8 +5,8 @@
 #include <vector>
 
 #include <alia/arenas.hpp>
-#include <alia/context.hpp>
-#include <alia/system/object.hpp>
+#include <alia/context.h>
+#include <alia/system/object.h>
 
 using namespace alia;
 

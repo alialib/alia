@@ -5,7 +5,7 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/events.hpp>
-#include <alia/system/object.hpp>
+#include <alia/ui/system/object.h>
 
 using namespace alia::operators;
 using namespace alia;

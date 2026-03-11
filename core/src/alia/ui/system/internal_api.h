@@ -1,39 +1,19 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/context.h>
 #include <functional>
 
-// TODO: Use forward declarations once those are sorted out.
-#include <alia/system/object.hpp>
+#include <alia/ui/system/object.h>
+
+extern "C" {
+// TODO: This isn't technically correct.
+typedef struct alia_ui_system alia_ui_system;
+} // extern "C"
 
 namespace alia {
 
 struct os_interface;
 struct window_interface;
-
-// Initialize the UI system.
-void
-initialize(
-    ui_system& system,
-    std::function<void(context&)> controller /*,
-    external_interface* external,
-    std::shared_ptr<os_interface> os,
-    std::shared_ptr<window_interface> window*/);
-// TODO: Add other initialization arguments...
-//     // alia__shared_ptr<alia::surface> const& surface,
-//     float dpi,
-//     alia__shared_ptr<style_tree> const& style);
-
-// Update the UI system.
-// This detects changes in the UI contents and updates the layout of the UI.
-// It also resolves what's under the mouse cursor and updates the UI
-// accordingly.
-void
-update(ui_system& ui);
-
-// Handle a change in the size of the window.
-void
-update_window_size(ui_system& ui, alia_vec2f new_size);
 
 #if 0
 
@@ -76,6 +56,12 @@ regress_focus(ui_system& ui);
 void
 clear_focus(ui_system& ui);
 
+// Issue a refresh event to the UI system.
+// Note that this is called as part of update_ui, so it's normally not
+// necessary to call this separately.
+void
+refresh_system(ui_system& ui);
+
 #if 0
 
 // Issue an untargeted event to the UI system.
@@ -86,12 +72,6 @@ issue_event(ui_system& system, ui_event& event);
 void
 issue_targeted_event(
     ui_system& system, ui_event& event, routable_widget_id const& target);
-
-// Issue a refresh event to the UI system.
-// Note that this is called as part of update_ui, so it's normally not
-// necessary to call this separately.
-void
-refresh_ui(ui_system& ui);
 
 // Get the time in microseconds that the last refresh event took to process.
 int

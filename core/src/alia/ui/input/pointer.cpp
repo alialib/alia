@@ -3,10 +3,10 @@
 #include <alia/abi/events.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
-#include <alia/context.hpp>
-#include <alia/ids.hpp>
+#include <alia/context.h>
 #include <alia/impl/events.hpp>
-#include <alia/system/api.hpp>
+#include <alia/kernel/flow/ids.h>
+#include <alia/ui/system/internal_api.h>
 
 using namespace alia::operators;
 using namespace alia;

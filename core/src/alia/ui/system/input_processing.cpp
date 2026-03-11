@@ -1,59 +1,59 @@
-#include <alia/system/input_processing.hpp>
+#include <alia/abi/ui/system/input_processing.h>
 
 #include <alia/abi/base/geometry.h>
-#include <alia/flow/dispatch.hpp>
 #include <alia/impl/events.hpp>
-#include <alia/system/interface.hpp>
-#include <alia/system/object.hpp>
+#include <alia/kernel/flow/dispatch.h>
+#include <alia/ui/system/object.h>
 
 // TODO: API shouldn't be needed here.
-#include <alia/system/api.hpp>
+#include <alia/ui/system/internal_api.h>
 
 using namespace alia::operators;
-
-namespace alia {
+using namespace alia;
 
 namespace {
 
 alia_routable_element_id
-get_mouse_target(ui_system& ui)
+get_mouse_target(alia_ui_system* ui)
 {
     // If no widget has capture, send events to the widget under the mouse.
-    return alia_routable_element_id_is_valid(ui.input.element_with_capture)
-             ? ui.input.element_with_capture
-             : ui.input.hot_element;
+    return alia_routable_element_id_is_valid(ui->input.element_with_capture)
+             ? ui->input.element_with_capture
+             : ui->input.hot_element;
 }
 
 } // namespace
 
+extern "C" {
+
 void
-process_mouse_motion(ui_system& ui, alia_vec2f position)
+alia_ui_process_mouse_motion(alia_ui_system* ui, alia_vec2f position)
 {
-    if (!ui.input.mouse_inside_window
-        || !alia_vec2f_equal(ui.input.mouse_position, position))
+    if (!ui->input.mouse_inside_window
+        || !alia_vec2f_equal(ui->input.mouse_position, position))
     {
         alia_event event
             = alia_make_mouse_motion_event({.x = position.x, .y = position.y});
-        dispatch_targeted_event(ui, event, get_mouse_target(ui));
-        refresh_system(ui);
+        dispatch_targeted_event(*ui, event, get_mouse_target(ui));
+        refresh_system(*ui);
 
-        ui.input.mouse_position = position;
-        ui.input.mouse_inside_window = true;
+        ui->input.mouse_position = position;
+        ui->input.mouse_inside_window = true;
 
-        if (ui.input.mouse_button_state != 0)
-            ui.input.dragging = true;
+        if (ui->input.mouse_button_state != 0)
+            ui->input.dragging = true;
     }
 }
 
 void
-process_mouse_loss(ui_system& ui)
+alia_ui_process_mouse_loss(alia_ui_system* ui)
 {
-    ui.input.mouse_inside_window = false;
+    ui->input.mouse_inside_window = false;
 }
 
 void
-process_mouse_press(
-    ui_system& ui,
+alia_ui_process_mouse_press(
+    alia_ui_system* ui,
     alia_vec2f position,
     alia_button_t button,
     alia_kmods_t mods)
@@ -66,22 +66,22 @@ process_mouse_press(
              .mods = mods,
              .x = position.x,
              .y = position.y});
-        dispatch_targeted_event(ui, event, target);
-        refresh_system(ui);
+        dispatch_targeted_event(*ui, event, target);
+        refresh_system(*ui);
     }
     else
     {
         // TODO
         // clear_focus(ui);
     }
-    ui.input.last_mouse_press_time[unsigned(button)] = ui.tick_count;
-    ui.input.mouse_button_state |= 1 << unsigned(button);
-    ui.input.keyboard_interaction = false;
+    ui->input.last_mouse_press_time[unsigned(button)] = ui->tick_count;
+    ui->input.mouse_button_state |= 1 << unsigned(button);
+    ui->input.keyboard_interaction = false;
 }
 
 void
-process_mouse_release(
-    ui_system& ui,
+alia_ui_process_mouse_release(
+    alia_ui_system* ui,
     alia_vec2f position,
     alia_button_t button,
     alia_kmods_t mods)
@@ -94,20 +94,20 @@ process_mouse_release(
              .mods = mods,
              .x = position.x,
              .y = position.y});
-        dispatch_targeted_event(ui, event, target);
-        refresh_system(ui);
+        dispatch_targeted_event(*ui, event, target);
+        refresh_system(*ui);
     }
-    ui.input.mouse_button_state &= ~(1 << unsigned(button));
-    if (ui.input.mouse_button_state == 0)
+    ui->input.mouse_button_state &= ~(1 << unsigned(button));
+    if (ui->input.mouse_button_state == 0)
     {
-        set_element_with_capture(ui, alia_routable_element_id{});
-        ui.input.dragging = false;
+        set_element_with_capture(*ui, alia_routable_element_id{});
+        ui->input.dragging = false;
     }
 }
 
 void
-process_double_click(
-    ui_system& ui,
+alia_ui_process_double_click(
+    alia_ui_system* ui,
     alia_vec2f position,
     alia_button_t button,
     alia_kmods_t mods)
@@ -120,30 +120,30 @@ process_double_click(
              .mods = mods,
              .x = position.x,
              .y = position.y});
-        dispatch_targeted_event(ui, event, target);
+        dispatch_targeted_event(*ui, event, target);
     }
-    ui.input.mouse_button_state |= 1 << unsigned(button);
-    ui.input.keyboard_interaction = false;
+    ui->input.mouse_button_state |= 1 << unsigned(button);
+    ui->input.keyboard_interaction = false;
 }
 
 void
-process_scroll(ui_system& ui, alia_vec2f delta)
+alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
 {
     alia_event hit_test_event = alia_make_wheel_hit_test_event(
-        {.x = ui.input.mouse_position.x, .y = ui.input.mouse_position.y});
-    dispatch_event(ui, hit_test_event);
+        {.x = ui->input.mouse_position.x, .y = ui->input.mouse_position.y});
+    dispatch_event(*ui, hit_test_event);
     if (alia_element_id_is_valid(
             as_wheel_hit_test_event(hit_test_event).result.element))
     {
         alia_event wheel_event = alia_make_wheel_event({.delta = delta});
         dispatch_targeted_event(
-            ui, wheel_event, as_wheel_hit_test_event(hit_test_event).result);
-        refresh_system(ui);
+            *ui, wheel_event, as_wheel_hit_test_event(hit_test_event).result);
+        refresh_system(*ui);
     }
 }
 
 void
-set_focus(ui_system& sys, routable_widget_id widget)
+alia_ui_set_focus(alia_ui_system* ui, routable_widget_id widget)
 {
     // TODO: Implement this logic once there is an internal event queue.
 
@@ -193,52 +193,52 @@ set_focus(ui_system& sys, routable_widget_id widget)
 #if 0
 
 bool
-process_focused_key_press(
-    ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_process_focused_key_press(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
     alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
-    dispatch_targeted_event(ui, event, ui.input.widget_with_focus);
+    dispatch_targeted_event(*ui, event, ui->input.widget_with_focus);
     if (event.key_press.acknowledged)
-        refresh_system(ui);
+        refresh_system(*ui);
     return event.key_press.acknowledged;
 }
 
 bool
-process_background_key_press(
-    ui_system& ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_process_background_key_press(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
     alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
-    dispatch_event(ui, event, BACKGROUND_KEY_PRESS_EVENT);
+    dispatch_event(*ui, event, BACKGROUND_KEY_PRESS_EVENT);
     if (event.acknowledged)
-        refresh_system(ui);
+        refresh_system(*ui);
     return event.acknowledged;
 }
 
 bool
-process_focused_key_release(ui_system& ui, modded_key info)
+alia_ui_process_focused_key_release(alia_ui_system* ui, modded_key info)
 {
     key_event event{{}, info};
     dispatch_targeted_event(
-        ui, event, ui.input.widget_with_focus, KEY_RELEASE_EVENT);
+        *ui, event, ui->input.widget_with_focus, KEY_RELEASE_EVENT);
     if (event.acknowledged)
-        refresh_system(ui);
+        refresh_system(*ui);
     return event.acknowledged;
 }
 bool
-process_key_press(ui_system& ui, modded_key info)
+alia_ui_process_key_press(alia_ui_system* ui, modded_key info)
 {
-    ui.input.keyboard_interaction = true;
+    ui->input.keyboard_interaction = true;
     return process_focused_key_press(ui, info)
         || process_background_key_press(ui, info);
 }
 
 bool
-process_key_release(ui_system& ui, modded_key info)
+alia_ui_process_key_release(alia_ui_system* ui, modded_key info)
 {
-    ui.input.keyboard_interaction = true;
+    ui->input.keyboard_interaction = true;
     return process_focused_key_release(ui, info);
 }
 
 #endif
 
-} // namespace alia
+} // extern "C"

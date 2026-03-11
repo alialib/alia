@@ -31,8 +31,6 @@ add_library(alia_core STATIC
     src/alia/ui/system/api.cpp
     src/alia/ui/system/input_processing.cpp
     src/alia/ui/system/object.cpp
-    src/alia/ui/system/interface.cpp
-    src/alia/ui/system.cpp
     src/alia/ui/theme.cpp)
 target_include_directories(alia_core PUBLIC
     include)

@@ -1,17 +1,17 @@
 #include <alia/platforms/glfw/window.hpp>
 
-#include <alia/system/object.hpp>
+#include <alia/abi/ui/system/api.h>
 
 namespace alia {
 
 void
-update_glfw_window_info(ui_system& system, GLFWwindow* window)
+update_glfw_window_info(alia_ui_system* ui, GLFWwindow* window)
 {
     int framebuffer_width, framebuffer_height;
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
-    system.surface_size
-        = {float(framebuffer_width), float(framebuffer_height)};
+    alia_ui_system_set_surface_size(
+        ui, {float(framebuffer_width), float(framebuffer_height)});
 
     // TODO: Sort out scaling...
 

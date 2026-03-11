@@ -56,7 +56,7 @@ endif()
 option(
     ALIA_ENABLE_ASSET_PIPELINE
     "Enable the asset pipeline"
-    ${IS_NOT_EMSCRIPTEN})
+    ${ALIA_IS_NOT_EMSCRIPTEN})
 if(ALIA_ENABLE_ASSET_PIPELINE)
   list(APPEND VCPKG_MANIFEST_FEATURES "asset-pipeline")
 endif()

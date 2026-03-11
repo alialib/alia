@@ -1,4 +1,4 @@
-#include <alia/flow/traversal.hpp>
+#include <alia/kernel/flow/traversal.h>
 
 #include <alia/abi/ui/style.h>
 #include <alia/impl/events.hpp>
@@ -99,7 +99,7 @@ mark_animating_component(ephemeral_context& ctx)
 //     if (ctx_)
 //     {
 //         auto ctx = *ctx_;
-//         get_event_traversal(ctx).active_container = parent_;
+//         ctx->events->active_container = parent_;
 //         ctx_.reset();
 //     }
 // }

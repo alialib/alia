@@ -2,7 +2,7 @@
 #define ALIA_ABI_KERNEL_TIMING_H
 
 #include <alia/abi/prelude.h>
-#include <alia/context.hpp>
+#include <alia/context.h>
 
 ALIA_EXTERN_C_BEGIN
 

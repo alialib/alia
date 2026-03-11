@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/events.h>
-#include <alia/context.hpp>
+#include <alia/context.h>
 
 #include <memory>
 
@@ -20,6 +20,8 @@ struct component_container
     bool animating = false;
 };
 
+// TODO: Move this to an API file.
+
 void
 mark_dirty_component(component_container_ptr const& container);
 
@@ -32,7 +34,8 @@ mark_animating_component(component_container_ptr const& container);
 void
 mark_animating_component(ephemeral_context& ctx);
 
-// TODO
+// TODO: Make this a C-friendly API.
+
 // struct scoped_component_container
 // {
 //     scoped_component_container()

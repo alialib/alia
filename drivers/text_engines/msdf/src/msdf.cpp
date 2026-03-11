@@ -2,17 +2,12 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/system/api.h>
 #include <alia/base/arena.h>
 #include <alia/renderers/gl/renderer.hpp>
 
 #include <unordered_map>
 #include <vector>
-
-// TODO: Remove these.
-#include <alia/impl/base/arena.hpp>
-#include <alia/system/object.hpp>
-#include <alia/ui/drawing.h>
-#include <iostream>
 
 using namespace alia::operators;
 
@@ -133,7 +128,9 @@ struct cached_glyph_data
 
 struct msdf_text_engine
 {
-    alia_draw_system* system;
+    alia_ui_system* ui;
+
+    alia_vec2f surface_size;
 
     msdf_gpu_data gpu;
 
@@ -323,7 +320,8 @@ create_msdf_texture(unsigned char const* atlas_rgb, int width, int height)
 
 msdf_text_engine*
 create_msdf_text_engine(
-    alia_draw_system* system,
+    alia_ui_system* ui,
+    alia_draw_system* draw_system,
     msdf_font_description const& font,
     std::uint8_t const* atlas_rgb,
     int width,
@@ -361,7 +359,9 @@ create_msdf_text_engine(
 
     // TODO: Don't use new here.
     msdf_text_engine* engine = new msdf_text_engine{
-        .system = system,
+        .ui = ui,
+
+        .surface_size = alia_ui_system_get_surface_size(ui),
 
         .gpu
         = {.shader_program = shader_program,
@@ -402,9 +402,9 @@ create_msdf_text_engine(
             = font.glyphs[i].plane_top - font.glyphs[i].plane_bottom;
     }
 
-    engine->material_id = alia_material_alloc_ids(system, 1);
+    engine->material_id = alia_material_alloc_ids(draw_system, 1);
     alia_material_register(
-        system,
+        draw_system,
         engine->material_id,
         alia_material_vtable{
             .draw_bucket = render_msdf_bucket,
@@ -545,7 +545,7 @@ render_command(
     // TODO: Culling.
     alia_vec2f position = command.position;
     float scale = command.scale;
-    float surface_h = engine->system->surface_size.y;
+    float surface_h = engine->surface_size.y;
     for (size_t i = 0; i < command.length; ++i)
     {
         char const c = command.text[i];
@@ -585,8 +585,9 @@ void
 render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 {
     msdf_text_engine* engine = (msdf_text_engine*) user;
-    alia_vec2f surface_size
-        = {engine->system->surface_size.x, engine->system->surface_size.y};
+
+    alia_vec2f surface_size = alia_ui_system_get_surface_size(engine->ui);
+    engine->surface_size = surface_size;
 
     size_t glyph_instance_count = 0;
     for (alia_draw_command* cmd = bucket->head; cmd; cmd = cmd->next)

@@ -28,16 +28,14 @@
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/style.h>
+#include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
-#include <alia/context.hpp>
-#include <alia/flow/dispatch.hpp>
+#include <alia/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
+#include <alia/kernel/flow/dispatch.h>
 #include <alia/platforms/glfw/window.hpp>
-#include <alia/system/api.hpp>
-#include <alia/system/input_processing.hpp>
-#include <alia/system/interface.hpp>
-#include <alia/system/object.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/theme.hpp>
 #include <alia/ui/drawing.h>
@@ -77,7 +75,7 @@ seed_colors const seed_sets[] = {
      .danger = hex_color("#d31638")},
 };
 
-alia::ui_system the_system;
+alia_ui_system* the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
 alia_draw_system the_draw_system;
@@ -1494,7 +1492,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     switch (action)
     {
         case GLFW_PRESS: {
-            process_mouse_press(
+            alia_ui_process_mouse_press(
                 the_system,
                 {internal_x, internal_y},
                 button,
@@ -1502,7 +1500,7 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             break;
         }
         case GLFW_RELEASE: {
-            process_mouse_release(
+            alia_ui_process_mouse_release(
                 the_system,
                 {internal_x, internal_y},
                 button,
@@ -1527,7 +1525,7 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
         = (static_cast<float>(y) * framebuffer_height
            / window_height); // / the_ui_scale.y;
 
-    process_mouse_motion(the_system, {internal_x, internal_y});
+    alia_ui_process_mouse_motion(the_system, {internal_x, internal_y});
 }
 
 // alloc_probe.h
@@ -1644,50 +1642,26 @@ probe_allocations(F&& f)
 
 #endif
 
-int64_t
-get_nanosecond_count()
-{
-    // Get the current time from the steady clock
-    auto now = std::chrono::steady_clock::now();
-
-    // Get the duration since the clock's epoch
-    auto duration = now.time_since_epoch();
-
-    // Cast the duration to nanoseconds and extract the 64-bit integer
-    // count
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
-        .count();
-}
-
 void
 update()
 {
-    the_system.tick_count = get_nanosecond_count();
-
     static std::chrono::time_point<std::chrono::high_resolution_clock>
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
-    std::chrono::time_point<std::chrono::high_resolution_clock>
-        refresh_finished_time;
-    std::chrono::time_point<std::chrono::high_resolution_clock>
-        layout_finished_time;
+    // std::chrono::time_point<std::chrono::high_resolution_clock>
+    //     refresh_finished_time;
+    // std::chrono::time_point<std::chrono::high_resolution_clock>
+    //     layout_finished_time;
 
     AllocProbeResult result = probe_allocations([&]() {
-        refresh_system(the_system);
-        refresh_finished_time = std::chrono::high_resolution_clock::now();
-
-        alia_layout_system_resolve(
-            &the_system.layout, the_system.surface_size);
-
-        layout_finished_time = std::chrono::high_resolution_clock::now();
-
-        update(the_system);
+        alia_ui_system_update(the_system);
 
         update_glfw_window_info(the_system, the_window);
 
         // glfwMakeContextCurrent(the_window);
-        glViewport(0, 0, the_system.surface_size.x, the_system.surface_size.y);
+        alia_vec2f surface_size = alia_ui_system_get_surface_size(the_system);
+        glViewport(0, 0, surface_size.x, surface_size.y);
 
         alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x32, 0x33, 0x39});
         glClearColor(c.r, c.g, c.b, 1.0f);
@@ -1709,7 +1683,7 @@ update()
         alia_bump_allocator_init(&draw_context.arena, &the_display_list_arena);
 
         auto draw_event = alia_make_draw_event({.context = &draw_context});
-        dispatch_event(the_system, draw_event);
+        dispatch_event(*the_system, draw_event);
 
         while ((err = glGetError()) != GL_NO_ERROR)
             printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -1732,22 +1706,22 @@ update()
         glBindVertexArray(0);
     });
 
-    auto const end_time = std::chrono::high_resolution_clock::now();
-    auto const refresh_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(
-        refresh_finished_time - start_time);
-    auto const layout_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(
-        layout_finished_time - refresh_finished_time);
-    auto const render_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(
-        end_time - layout_finished_time);
-    auto const frame_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
+    // auto const end_time = std::chrono::high_resolution_clock::now();
+    // auto const refresh_time = std::chrono::duration_cast<
+    //     std::chrono::duration<int64_t, std::micro>>(
+    //     refresh_finished_time - start_time);
+    // auto const layout_time = std::chrono::duration_cast<
+    //     std::chrono::duration<int64_t, std::micro>>(
+    //     layout_finished_time - refresh_finished_time);
+    // auto const render_time = std::chrono::duration_cast<
+    //     std::chrono::duration<int64_t, std::micro>>(
+    //     end_time - layout_finished_time);
+    // auto const frame_time = std::chrono::duration_cast<
+    //     std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
-    auto const external_frame_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(
-        start_time - last_frame_time);
+    // auto const external_frame_time = std::chrono::duration_cast<
+    //     std::chrono::duration<int64_t, std::micro>>(
+    //     start_time - last_frame_time);
 
     // std::cout
     //     << "frame_time: " // << std::setw(6) << external_frame_time <<
@@ -1774,17 +1748,15 @@ update()
 void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    the_system.surface_size = {float(width), float(height)};
-    the_draw_system.surface_size = {float(width), float(height)};
+    alia_ui_system_set_surface_size(the_system, {float(width), float(height)});
     update();
 }
 
 void
 content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
+    alia_ui_system_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
     // TODO: Support 2D DPI?
-    the_system.dpi = ((xscale + yscale) / 2.0f) * 96.f;
-    the_draw_system.dpi = the_system.dpi;
     update();
 }
 
@@ -1856,6 +1828,10 @@ main()
 
     static bool theme_update_needed = true;
 
+    // TODO: Guarantee alignment.
+    void* ui_system_storage = malloc(alia_ui_system_object_spec().size);
+    the_system = alia_ui_system_init(ui_system_storage, the_demo, {0, 0});
+
     if (theme_update_needed)
     {
         the_palette = generate_color_palette(*seeds);
@@ -1926,8 +1902,7 @@ main()
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);
     // TODO: Support 2D DPI?
-    the_system.dpi = ((xscale + yscale) / 2.0f) * 96.f;
-    the_draw_system.dpi = the_system.dpi;
+    alia_ui_system_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
 
     glfwSetWindowContentScaleCallback(the_window, content_scale_callback);
 
@@ -1940,8 +1915,12 @@ main()
     }
 #endif
 
-    initialize_ui_system(&the_system, alia_vec2f{1200, 1600});
-    the_system.controller = the_demo;
+    // TODO: The surface size should use integers.
+    {
+        int x, y;
+        glfwGetFramebufferSize(the_window, &x, &y);
+        alia_ui_system_set_surface_size(the_system, {(float) x, (float) y});
+    }
 
 #ifndef __EMSCRIPTEN__
     glEnable(GL_FRAMEBUFFER_SRGB);
@@ -1949,7 +1928,7 @@ main()
 
     the_draw_system.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
-    init_gl_renderer(&the_draw_system, &the_renderer);
+    init_gl_renderer(the_system, &the_renderer);
     alia_material_register(
         &the_draw_system,
         ALIA_BOX_MATERIAL_ID,
@@ -1965,8 +1944,6 @@ main()
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    the_draw_system.surface_size = the_system.surface_size;
-
     std::vector<std::uint8_t> atlas_rgb(
         static_cast<std::size_t>(alia::alia_atlas_decompressed_size));
     alia::alia_msdf_atlas_rle_decompress(
@@ -1979,6 +1956,7 @@ main()
         atlas_rgb.data(),
         atlas_rgb.size());
     the_msdf_text_engine = alia::create_msdf_text_engine(
+        the_system,
         &the_draw_system,
         alia::alia_font_description(0),
         atlas_rgb.data(),

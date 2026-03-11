@@ -1,12 +1,12 @@
-#include <alia/flow/dispatch.hpp>
+#include <alia/kernel/flow/dispatch.h>
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
-#include <alia/context.hpp>
+#include <alia/context.h>
 #include <alia/impl/events.hpp>
-#include <alia/system/object.hpp>
+#include <alia/ui/system/object.h>
 
 namespace alia {
 

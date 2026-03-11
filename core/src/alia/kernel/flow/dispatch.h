@@ -1,8 +1,8 @@
 #pragma once
 
-#include <alia/context.hpp>
-#include <alia/ids.hpp>
+#include <alia/context.h>
 #include <alia/impl/events.hpp>
+#include <alia/kernel/flow/ids.h>
 
 namespace alia {
 

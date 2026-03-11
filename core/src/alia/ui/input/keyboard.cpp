@@ -5,10 +5,10 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/state.h>
-#include <alia/ids.hpp>
+#include <alia/abi/ui/system/input_processing.h>
 #include <alia/impl/events.hpp>
-#include <alia/system/api.hpp>
-#include <alia/system/input_processing.hpp>
+#include <alia/kernel/flow/ids.h>
+#include <alia/ui/system/internal_api.h>
 
 using namespace alia;
 
