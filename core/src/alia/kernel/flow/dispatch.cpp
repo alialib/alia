@@ -69,6 +69,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .input = &sys.input,
         .layout = &layout,
         .draw = draw,
+        .palette = &sys.palette,
     };
 
     alia_substrate_begin_block(

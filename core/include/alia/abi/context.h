@@ -2,6 +2,7 @@
 #define ALIA_ABI_CONTEXT_H
 
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/palette.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -32,6 +33,7 @@ typedef struct alia_context
     alia_input_state* input;
     alia_layout_context* layout;
     alia_draw_context* draw;
+    alia_palette* palette;
 } alia_context;
 
 ALIA_EXTERN_C_END

@@ -101,6 +101,13 @@ alia_srgb8_from_oklab(alia_oklab lab)
     return alia_srgb8_from_rgb(alia_rgb_from_oklab(lab));
 }
 
+static inline alia_srgb8
+alia_srgb8_from_unclipped_oklch(alia_oklch lch)
+{
+    return alia_srgb8_from_oklab(
+        alia_oklab_clip_chroma_to_srgb(alia_oklab_from_oklch(lch)));
+}
+
 alia_srgb8
 alia_srgb8_from_hex(const char* hex6_or_hash_hex6);
 

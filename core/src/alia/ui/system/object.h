@@ -13,7 +13,7 @@
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
-#include <alia/theme.hpp>
+#include <alia/abi/ui/palette.h>
 
 #include <functional>
 
@@ -45,7 +45,7 @@ struct alia_ui_system
     // point and the possibility of wraparound
     alia_nanosecond_count tick_count = 0;
 
-    alia::theme_colors theme;
+    alia_palette palette;
 
     alia_stack stack;
 

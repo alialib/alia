@@ -37,8 +37,9 @@
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
-#include <alia/theme.hpp>
+#include <alia/abi/ui/palette.h>
 #include <alia/ui/drawing.h>
+#include <alia/ui/system/object.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
 
@@ -54,26 +55,12 @@ using namespace alia::operators;
 
 constexpr rgba GRAY = {0.5f, 0.5f, 0.5f, 1.0f};
 
-seed_colors const seed_sets[] = {
-    {.primary = hex_color("#154DCF"),
-     .secondary = hex_color("#6C36AE"),
-     .tertiary = hex_color("#E01D23"),
-     .neutral = hex_color("#1f212a"),
-     .warning = hex_color("#FF9D00"),
-     .danger = hex_color("#E01D23")},
-    {.primary = hex_color("#6f42c1"),
-     .secondary = hex_color("#7d8bae"),
-     .tertiary = hex_color("#f1b2b2"),
-     .neutral = hex_color("#1f212a"),
-     .warning = hex_color("#e5857b"),
-     .danger = hex_color("#d31638")},
-    {.primary = hex_color("#a52e45"),
-     .secondary = hex_color("#2b5278"),
-     .tertiary = hex_color("#61787b"),
-     .neutral = hex_color("#1f212a"),
-     .warning = hex_color("#ead8b1"),
-     .danger = hex_color("#d31638")},
+static alia_srgb8 const brand_colors[] = {
+    hex_color("#154DCF"),
+    hex_color("#6f42c1"),
+    hex_color("#a52e45"),
 };
+static int brand_index = 0;
 
 alia_ui_system* the_system;
 GLFWwindow* the_window;
@@ -82,9 +69,6 @@ alia_draw_system the_draw_system;
 alia_arena the_display_list_arena;
 msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.padding = 10.0f};
-theme_colors the_theme;
-seed_colors const* seeds = &seed_sets[0];
-color_palette the_palette;
 float the_time = 0.0f;
 static uintptr_t the_element_counter = 0;
 
@@ -1249,52 +1233,41 @@ layout_demo(context& ctx)
     });
 }
 
-void
-show_color_ramp(context& ctx, color_ramp ramp)
+static void
+show_srgb8_rect(context& ctx, alia_srgb8 c)
+{
+    do_rect(
+        ctx,
+        1,
+        {24, 24},
+        alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(c), 1.0f),
+        CENTER);
+}
+
+static void
+show_foundation_ramp(context& ctx, alia_foundation_ramp const* ramp)
 {
     row(ctx, [&]() {
-        for (int i = 0; i != color_ramp_step_count; ++i)
-        {
-            do_rect(
-                ctx,
-                1,
-                {36, 36},
-                alia_rgba_from_rgb_alpha(
-                    alia_rgb_from_srgb8(ramp[i].rgb), 1.0f),
-                CENTER);
-        }
+        show_srgb8_rect(ctx, ramp->weaker_4.idle);
+        show_srgb8_rect(ctx, ramp->weaker_3.idle);
+        show_srgb8_rect(ctx, ramp->weaker_2.idle);
+        show_srgb8_rect(ctx, ramp->weaker_1.idle);
+        show_srgb8_rect(ctx, ramp->base.idle);
+        show_srgb8_rect(ctx, ramp->stronger_1.idle);
+        show_srgb8_rect(ctx, ramp->stronger_2.idle);
+        show_srgb8_rect(ctx, ramp->stronger_3.idle);
+        show_srgb8_rect(ctx, ramp->stronger_4.idle);
     });
 }
 
-void
-show_contrasting_color_pair(context& ctx, contrasting_color_pair pair)
-{
-    concrete_panel(
-        ctx,
-        0,
-        alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(pair.main), 1.0f),
-        CENTER,
-        [&]() {
-            with_padding(ctx, 20, [&]() {
-                do_rect(
-                    ctx,
-                    1,
-                    {10, 10},
-                    alia_rgba_from_rgb_alpha(
-                        alia_rgb_from_srgb8(pair.contrasting), 1.0f),
-                    CENTER);
-            });
-        });
-}
-
-void
-show_color_swatch(context& ctx, color_swatch swatch)
+static void
+show_palette_swatch(context& ctx, alia_swatch const* swatch)
 {
     row(ctx, [&]() {
-        show_contrasting_color_pair(ctx, swatch.weaker[0]);
-        show_contrasting_color_pair(ctx, swatch.base);
-        show_contrasting_color_pair(ctx, swatch.stronger[0]);
-        show_contrasting_color_pair(ctx, swatch.stronger[1]);
+        show_srgb8_rect(ctx, swatch->solid.idle);
+        show_srgb8_rect(ctx, swatch->subtle.idle);
+        show_srgb8_rect(ctx, swatch->outline.idle);
+        show_srgb8_rect(ctx, swatch->text.idle);
     });
 }
 
@@ -1359,23 +1332,17 @@ color_demo(context& ctx)
 void
 theme_demo(context& ctx)
 {
+    alia_palette const* p = ctx.palette;
     column(ctx, [&]() {
-        show_color_ramp(ctx, the_palette.primary);
-        show_color_ramp(ctx, the_palette.secondary);
-        show_color_ramp(ctx, the_palette.tertiary);
-        show_color_ramp(ctx, the_palette.neutral);
-        show_color_ramp(ctx, the_palette.warning);
-        show_color_ramp(ctx, the_palette.danger);
-
-        show_color_swatch(ctx, the_theme.primary);
-        show_color_swatch(ctx, the_theme.secondary);
-        show_color_swatch(ctx, the_theme.tertiary);
-        show_color_swatch(ctx, the_theme.background);
-        show_color_swatch(ctx, the_theme.foreground);
-        show_color_swatch(ctx, the_theme.structural);
-        show_color_swatch(ctx, the_theme.accent);
-        show_color_swatch(ctx, the_theme.warning);
-        show_color_swatch(ctx, the_theme.danger);
+        show_foundation_ramp(ctx, &p->foundation.background);
+        show_foundation_ramp(ctx, &p->foundation.structural);
+        show_foundation_ramp(ctx, &p->foundation.text);
+        show_palette_swatch(ctx, &p->primary);
+        show_palette_swatch(ctx, &p->secondary);
+        show_palette_swatch(ctx, &p->success);
+        show_palette_swatch(ctx, &p->warning);
+        show_palette_swatch(ctx, &p->danger);
+        show_palette_swatch(ctx, &p->info);
     });
 }
 
@@ -1834,24 +1801,18 @@ main()
 
     if (theme_update_needed)
     {
-        the_palette = generate_color_palette(*seeds);
-
-        contrast_parameters contrast;
-        contrast.light_on_dark_ratio = 6;
-        contrast.dark_on_light_ratio = 8;
-
-        theme_colors theme;
-        theme = generate_theme_colors(
-            light_theme ? ui_lightness_mode::LIGHT_MODE
-                        : ui_lightness_mode::DARK_MODE,
-            *seeds,
-            contrast);
-        the_theme = theme;
-
+        alia_palette_seeds pseeds = alia_seeds_from_elevation(
+            brand_colors[brand_index], 0, !light_theme);
+        alia_theme_params params = {
+            .foundation_step_l = 0.05f,
+            .hover_l_shift = 0.05f,
+            .active_l_shift = 0.10f,
+            .interaction_hue_shift = 0.0f,
+            .is_dark_mode = !light_theme,
+        };
+        alia_palette_expand(&the_system->palette, &pseeds, &params);
         theme_update_needed = false;
     }
-
-    // auto const& theme = get_system(ctx).theme;
 
     if (!glfwInit())
     {

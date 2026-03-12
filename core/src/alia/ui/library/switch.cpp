@@ -5,16 +5,13 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
 #include <alia/ui/animation.h>
 
-#include <alia/theme.hpp>
-
 #include <iostream>
-
-// TODO: Remove.
-extern alia::theme_colors the_theme;
 
 using namespace alia::operators;
 
@@ -53,17 +50,21 @@ struct switch_style_info
 switch_style_info
 extract_switch_style_info(alia_context* ctx)
 {
-    auto const& theme = the_theme; // TODO: Use `alia_context` instead.
+    alia_palette const* p = alia_ctx_palette(ctx);
     return {
         .disabled_track_color = alia_lerp_srgb8_via_oklch(
-            theme.background.base.main, theme.structural.base.main, 0.5f),
+            p->foundation.background.base.idle,
+            p->foundation.structural.base.idle,
+            0.5f),
         .disabled_dot_color = alia_lerp_srgb8_via_oklch(
-            theme.background.base.main, theme.structural.base.main, 0.6f),
-        .off_track_color = theme.structural.weaker[1].main,
-        .on_track_color = theme.structural.base.main,
-        .off_dot_color = theme.structural.stronger[0].main,
-        .on_dot_color = theme.accent.base.main,
-        .highlight_color = theme.accent.base.main,
+            p->foundation.background.base.idle,
+            p->foundation.structural.base.idle,
+            0.6f),
+        .off_track_color = p->foundation.structural.weaker_1.idle,
+        .on_track_color = p->foundation.structural.base.idle,
+        .off_dot_color = p->foundation.structural.stronger_1.idle,
+        .on_dot_color = p->primary.outline.idle,
+        .highlight_color = p->primary.outline.idle,
     };
 }
 

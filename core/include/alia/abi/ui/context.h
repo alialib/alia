@@ -18,6 +18,12 @@ alia_ctx_style(alia_context* ctx)
     return ctx->style;
 }
 
+static inline alia_palette*
+alia_ctx_palette(alia_context* ctx)
+{
+    return ctx->palette;
+}
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_CONTEXT_H */
