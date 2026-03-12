@@ -1,39 +1,80 @@
 #include <alia/abi/ui/palette.h>
+#include <numbers>
+
+static inline float
+alia_deg_to_rad(float degrees)
+{
+    return degrees * std::numbers::pi_v<float> / 180.0f;
+}
 
 extern "C" {
 
 static void
 fill_states(
-    alia_color_states* states, alia_oklch base, const alia_theme_params* p)
+    alia_interaction_colors* states,
+    alia_oklch base,
+    const alia_theme_params* p)
 {
     float dir = p->is_dark_mode ? 1.0f : -1.0f;
 
-    states->idle = alia_srgb8_from_unclipped_oklch(base);
-    states->hover = alia_srgb8_from_unclipped_oklch(
+    states->idle = alia_srgb8_from_unclamped_oklch(base);
+    states->hover = alia_srgb8_from_unclamped_oklch(
         {base.l + (p->hover_l_shift * dir),
          base.c,
          base.h + p->interaction_hue_shift});
-    states->active = alia_srgb8_from_unclipped_oklch(
+    states->active = alia_srgb8_from_unclamped_oklch(
         {base.l + (p->active_l_shift * dir),
          base.c,
          base.h + (p->interaction_hue_shift * 2.0f)});
-    states->disabled = alia_srgb8_from_unclipped_oklch(
+    states->disabled = alia_srgb8_from_unclamped_oklch(
         {p->is_dark_mode ? 0.3f : 0.8f, 0.02f, base.h});
 }
 
 static void
-generate_swatch(
+generate_swatch_from_oklch(
+    alia_swatch* swatch, alia_oklch base, const alia_theme_params* p)
+{
+    // 1. Solid Background
+    fill_states(&swatch->solid, base, p);
+
+    // 2. On-Solid (High Contrast Flip)
+    // If the solid background lightness is > 0.65, we need dark text.
+    // Otherwise, we need light text. We keep the hue, but drop chroma to 0.02.
+    float on_solid_l = (base.l > 0.65f) ? 0.15f : 0.95f;
+    alia_oklch on_solid_oklch = {on_solid_l, 0.02f, base.h};
+    fill_states(&swatch->on_solid, on_solid_oklch, p);
+
+    // 3. Subtle Background
+    // Lighter in light mode (0.90), darker in dark mode (0.25).
+    float subtle_l = p->is_dark_mode ? 0.25f : 0.90f;
+    alia_oklch subtle_oklch = {subtle_l, 0.04f, base.h};
+    fill_states(&swatch->subtle, subtle_oklch, p);
+
+    // 4. Outline
+    // Matches the solid lightness, but pulls the chroma back slightly.
+    alia_oklch outline_oklch = {base.l, base.c * 0.8f, base.h};
+    fill_states(&swatch->outline, outline_oklch, p);
+
+    // 5. Text and On-Subtle
+    // Needs to be legible against both the neutral app background AND the
+    // subtle background. Lighter in dark mode (0.85), darker in light mode
+    // (0.40).
+    float text_l = p->is_dark_mode ? 0.85f : 0.40f;
+    alia_oklch text_oklch = {text_l, base.c * 0.6f, base.h};
+
+    fill_states(&swatch->text, text_oklch, p);
+
+    // Mathematically identical to text, but explicitly mapped for API
+    // symmetry.
+    fill_states(&swatch->on_subtle, text_oklch, p);
+}
+
+static void
+generate_swatch_from_srgb8(
     alia_swatch* swatch, alia_srgb8 seed, const alia_theme_params* p)
 {
     alia_oklch base = alia_oklch_from_srgb8(seed);
-    fill_states(&swatch->solid, base, p);
-    fill_states(
-        &swatch->subtle, {p->is_dark_mode ? 0.25f : 0.90f, 0.04f, base.h}, p);
-    fill_states(&swatch->outline, {base.l, base.c * 0.8f, base.h}, p);
-    fill_states(
-        &swatch->text,
-        {p->is_dark_mode ? 0.85f : 0.40f, base.c * 0.6f, base.h},
-        p);
+    generate_swatch_from_oklch(swatch, base, p);
 }
 
 static void
@@ -42,7 +83,7 @@ generate_ramp(
 {
     alia_oklch base = alia_oklch_from_srgb8(seed);
     float step = p->foundation_step_l;
-    float dir = p->is_dark_mode ? -1.0f : 1.0f;
+    float dir = p->is_dark_mode ? 1.0f : -1.0f;
 
     fill_states(
         &ramp->weaker_4, {base.l - (step * 4 * dir), base.c, base.h}, p);
@@ -83,7 +124,7 @@ alia_seeds_from_core(
     // completely dead. Shift lightness toward the text so it functions as a
     // muted mid-tone.
     float sec_l = is_dark ? bg_oklch.l + 0.35f : bg_oklch.l - 0.35f;
-    seeds.secondary = alia_srgb8_from_unclipped_oklch(
+    seeds.secondary = alia_srgb8_from_unclamped_oklch(
         {sec_l, bg_oklch.c + 0.02f, bg_oklch.h});
 
     // 2. Relational Alerts:
@@ -92,20 +133,22 @@ alia_seeds_from_core(
     float alert_c = 0.16f; // High punch
 
     // Danger: Red hue (~25 deg)
-    seeds.danger = alia_srgb8_from_unclipped_oklch({alert_l, alert_c, 25.0f});
+    seeds.danger = alia_srgb8_from_unclamped_oklch(
+        {alert_l, alert_c, alia_deg_to_rad(25.0f)});
 
     // Success: Green hue (~145 deg)
-    seeds.success
-        = alia_srgb8_from_unclipped_oklch({alert_l, alert_c, 145.0f});
+    seeds.success = alia_srgb8_from_unclamped_oklch(
+        {alert_l, alert_c, alia_deg_to_rad(145.0f)});
 
     // Info: Blue hue (~250 deg)
-    seeds.info = alia_srgb8_from_unclipped_oklch({alert_l, alert_c, 250.0f});
+    seeds.info = alia_srgb8_from_unclamped_oklch(
+        {alert_l, alert_c, alia_deg_to_rad(250.0f)});
 
     // Warning: Yellow/Orange hue (~75 deg)
     // *OKLCH Gamut Quirk:* Yellow physically requires a higher lightness
     // to reach high chroma without turning muddy brown.
-    seeds.warning
-        = alia_srgb8_from_unclipped_oklch({alert_l + 0.15f, alert_c, 75.0f});
+    seeds.warning = alia_srgb8_from_unclamped_oklch(
+        {alert_l + 0.15f, alert_c, alia_deg_to_rad(75.0f)});
 
     return seeds;
 }
@@ -126,14 +169,14 @@ alia_seeds_from_elevation(alia_srgb8 brand, int elevation, bool is_dark)
 
     // Apply a tiny hint of the brand hue (Chroma 0.015) so it isn't dead grey
     alia_oklch bg_oklch = {bg_l, 0.015f, brand_h};
-    alia_srgb8 bg = alia_srgb8_from_unclipped_oklch(bg_oklch);
+    alia_srgb8 bg = alia_srgb8_from_unclamped_oklch(bg_oklch);
 
     // 2. Calculate the text
     // High contrast against the background, carrying a slightly stronger brand
     // tint (Chroma 0.02)
     float text_l = is_dark ? 0.95f : 0.15f;
     alia_oklch text_oklch = {text_l, 0.02f, brand_h};
-    alia_srgb8 text = alia_srgb8_from_unclipped_oklch(text_oklch);
+    alia_srgb8 text = alia_srgb8_from_unclamped_oklch(text_oklch);
 
     // 3. Delegate to the core triad function
     // alia_seeds_from_core will now use this tinted background to generate a
@@ -173,31 +216,87 @@ alia_palette_expand(
     alia_oklch struct_oklch = {
         bg_oklch.l + struct_l_shift, bg_oklch.c + struct_c_shift, bg_oklch.h};
 
-    alia_srgb8 structural_seed = alia_srgb8_from_unclipped_oklch(struct_oklch);
+    alia_srgb8 structural_seed = alia_srgb8_from_unclamped_oklch(struct_oklch);
 
     // 3. Expand Structural Ramp using the new offset seed
     generate_ramp(&out_palette->foundation.structural, structural_seed, &p);
 
     generate_ramp(&out_palette->foundation.text, seeds->text_base, &p);
 
+    // TODO: Add seeds for focus and selection
+    generate_swatch_from_srgb8(&out_palette->focus, seeds->primary, &p);
+    generate_swatch_from_srgb8(&out_palette->selection, seeds->secondary, &p);
+
     // Expand Semantics
-    generate_swatch(&out_palette->primary, seeds->primary, &p);
-    generate_swatch(&out_palette->secondary, seeds->secondary, &p);
-    generate_swatch(&out_palette->success, seeds->success, &p);
-    generate_swatch(&out_palette->warning, seeds->warning, &p);
-    generate_swatch(&out_palette->danger, seeds->danger, &p);
-    generate_swatch(&out_palette->info, seeds->info, &p);
+    generate_swatch_from_srgb8(&out_palette->primary, seeds->primary, &p);
+    generate_swatch_from_srgb8(&out_palette->secondary, seeds->secondary, &p);
+    generate_swatch_from_srgb8(&out_palette->success, seeds->success, &p);
+    generate_swatch_from_srgb8(&out_palette->warning, seeds->warning, &p);
+    generate_swatch_from_srgb8(&out_palette->danger, seeds->danger, &p);
+    generate_swatch_from_srgb8(&out_palette->info, seeds->info, &p);
 
-    // Setup basic literal palette mappings based on semantics for V1
-    generate_swatch(&out_palette->colors.red, seeds->danger, &p);
-    generate_swatch(&out_palette->colors.orange, seeds->warning, &p);
-    generate_swatch(&out_palette->colors.green, seeds->success, &p);
-    generate_swatch(&out_palette->colors.blue, seeds->info, &p);
+    // Literal palette: Evenly-sampled hues around the OKLCH wheel.
+    //
+    // We intentionally decouple these from semantics so that consumers can
+    // always rely on:
+    //  - `red`   ≈ canonical red
+    //  - `orange`≈ canonical orange
+    //  - `yellow`≈ canonical yellow
+    //  - `green` ≈ canonical green
+    //  - `cyan`  ≈ canonical cyan / teal
+    //  - `blue`  ≈ canonical blue
+    //  - `purple`≈ canonical purple / violet
+    //  - `pink`  ≈ warm magenta
+    //
+    // These are generated directly in OKLCH so that the theme can still
+    // control lightness and chroma in a perceptual space.
+    float literal_l = p.is_dark_mode ? 0.65f : 0.55f;
+    float literal_c = 0.16f;
 
-    // Overrides
-    alia_oklch focus_base = alia_oklch_from_srgb8(seeds->primary);
-    fill_states(
-        &out_palette->focus_ring, {0.70f, focus_base.c, focus_base.h}, &p);
+    auto make_literal_seed
+        = [&](const char* /*name*/, float hue_degrees, float l_offset) {
+              float h = alia_deg_to_rad(hue_degrees);
+              float l = literal_l + l_offset;
+              alia_oklch seed = {l, literal_c, h};
+              return seed;
+          };
+
+    // Primary warm wheel (R → O → Y)
+    generate_swatch_from_oklch(
+        &out_palette->colors.red, make_literal_seed("red", 25.0f, 0.0f), &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.orange,
+        make_literal_seed("orange", 55.0f, 0.0f),
+        &p);
+    // Yellow needs a touch more lightness to stay clean and avoid brown.
+    generate_swatch_from_oklch(
+        &out_palette->colors.yellow,
+        make_literal_seed("yellow", 95.0f, 0.10f),
+        &p);
+
+    // Cool wheel (G → C → B)
+    generate_swatch_from_oklch(
+        &out_palette->colors.green,
+        make_literal_seed("green", 145.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.cyan,
+        make_literal_seed("cyan", 195.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.blue,
+        make_literal_seed("blue", 250.0f, 0.0f),
+        &p);
+
+    // Ending arc (Purple → Pink)
+    generate_swatch_from_oklch(
+        &out_palette->colors.purple,
+        make_literal_seed("purple", 305.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.pink,
+        make_literal_seed("pink", 345.0f, 0.0f),
+        &p);
 }
 
 } // extern "C"

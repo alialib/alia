@@ -123,6 +123,7 @@ alia_rgb_from_srgb8(alia_srgb8 c)
 alia_srgb8
 alia_srgb8_from_rgb(alia_rgb c)
 {
+    // TODO: Are all of these clamps necessary?
     float r = alia_srgb_component_from_linear(clamp01(c.r));
     float g = alia_srgb_component_from_linear(clamp01(c.g));
     float b = alia_srgb_component_from_linear(clamp01(c.b));
@@ -146,6 +147,7 @@ alia_rgba_from_srgba8(alia_srgba8 c)
 alia_srgba8
 alia_srgba8_from_rgba(alia_rgba c)
 {
+    // TODO: Are all of these clamps necessary?
     float r = alia_srgb_component_from_linear(clamp01(c.r));
     float g = alia_srgb_component_from_linear(clamp01(c.g));
     float b = alia_srgb_component_from_linear(clamp01(c.b));
@@ -162,6 +164,8 @@ alia_srgba8_from_rgba(alia_rgba c)
 alia_oklab
 alia_oklab_from_rgb(alia_rgb c)
 {
+    // TODO: Are all of these clamps necessary?
+
     const float r = clamp01(c.r), g = clamp01(c.g), b = clamp01(c.b);
 
     const float l = 0.4122214708f * r + 0.5363325363f * g + 0.0514459929f * b;
@@ -366,6 +370,15 @@ alia_oklab_clip_chroma_to_srgb(alia_oklab color)
     result.b *= t;
 
     return result;
+}
+
+alia_srgb8
+alia_srgb8_from_unclamped_oklch(alia_oklch lch)
+{
+    lch.c = clamp01(lch.c);
+    lch.l = clamp01(lch.l);
+    alia_oklab lab = alia_oklab_from_oklch(lch);
+    return alia_srgb8_from_oklab(/*alia_oklab_clip_chroma_to_srgb(lab)*/ lab);
 }
 
 // alpha / compositing (linear premultiplied)

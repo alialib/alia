@@ -1,12 +1,12 @@
 #include <alia/abi/ui/library.h>
 
 #include <alia/abi/kernel/substrate.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/components.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
 #include <alia/ui/animation.h>
@@ -60,9 +60,9 @@ extract_switch_style_info(alia_context* ctx)
             p->foundation.background.base.idle,
             p->foundation.structural.base.idle,
             0.6f),
-        .off_track_color = p->foundation.structural.weaker_1.idle,
-        .on_track_color = p->foundation.structural.base.idle,
-        .off_dot_color = p->foundation.structural.stronger_1.idle,
+        .off_track_color = p->foundation.structural.weaker_2.idle,
+        .on_track_color = p->foundation.structural.weaker_1.idle,
+        .off_dot_color = p->foundation.structural.stronger_2.idle,
         .on_dot_color = p->primary.outline.idle,
         .highlight_color = p->primary.outline.idle,
     };

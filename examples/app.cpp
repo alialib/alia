@@ -27,6 +27,7 @@
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/library.h>
+#include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/style.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
@@ -37,11 +38,10 @@
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
-#include <alia/abi/ui/palette.h>
 #include <alia/ui/drawing.h>
-#include <alia/ui/system/object.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
+#include <alia/ui/system/object.h>
 
 #include <chrono>
 
@@ -56,7 +56,7 @@ using namespace alia::operators;
 constexpr rgba GRAY = {0.5f, 0.5f, 0.5f, 1.0f};
 
 static alia_srgb8 const brand_colors[] = {
-    hex_color("#154DCF"),
+    hex_color("94c1fd"), // hex_color("#154DCF"),
     hex_color("#6f42c1"),
     hex_color("#a52e45"),
 };
@@ -1239,7 +1239,7 @@ show_srgb8_rect(context& ctx, alia_srgb8 c)
     do_rect(
         ctx,
         1,
-        {24, 24},
+        {36, 36},
         alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(c), 1.0f),
         CENTER);
 }
@@ -1333,16 +1333,31 @@ void
 theme_demo(context& ctx)
 {
     alia_palette const* p = ctx.palette;
-    column(ctx, [&]() {
-        show_foundation_ramp(ctx, &p->foundation.background);
-        show_foundation_ramp(ctx, &p->foundation.structural);
-        show_foundation_ramp(ctx, &p->foundation.text);
-        show_palette_swatch(ctx, &p->primary);
-        show_palette_swatch(ctx, &p->secondary);
-        show_palette_swatch(ctx, &p->success);
-        show_palette_swatch(ctx, &p->warning);
-        show_palette_swatch(ctx, &p->danger);
-        show_palette_swatch(ctx, &p->info);
+    with_padding(ctx, 4, [&]() {
+        column(ctx, [&]() {
+            do_text(ctx, 1, GRAY, 24, "Foundation");
+            show_foundation_ramp(ctx, &p->foundation.background);
+            show_foundation_ramp(ctx, &p->foundation.structural);
+            show_foundation_ramp(ctx, &p->foundation.text);
+
+            do_text(ctx, 1, GRAY, 24, "Semantics");
+            show_palette_swatch(ctx, &p->primary);
+            show_palette_swatch(ctx, &p->secondary);
+            show_palette_swatch(ctx, &p->success);
+            show_palette_swatch(ctx, &p->warning);
+            show_palette_swatch(ctx, &p->danger);
+            show_palette_swatch(ctx, &p->info);
+
+            do_text(ctx, 1, GRAY, 24, "Colors");
+            show_palette_swatch(ctx, &p->colors.red);
+            show_palette_swatch(ctx, &p->colors.orange);
+            show_palette_swatch(ctx, &p->colors.yellow);
+            show_palette_swatch(ctx, &p->colors.green);
+            show_palette_swatch(ctx, &p->colors.cyan);
+            show_palette_swatch(ctx, &p->colors.blue);
+            show_palette_swatch(ctx, &p->colors.purple);
+            show_palette_swatch(ctx, &p->colors.pink);
+        });
     });
 }
 
@@ -1630,7 +1645,8 @@ update()
         alia_vec2i const surface_size = alia_ui_surface_get_size(the_system);
         glViewport(0, 0, surface_size.x, surface_size.y);
 
-        alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x32, 0x33, 0x39});
+        alia_rgb c = alia_rgb_from_srgb8(
+            the_system->palette.foundation.background.base.idle);
         glClearColor(c.r, c.g, c.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1803,6 +1819,7 @@ main()
     {
         alia_palette_seeds pseeds = alia_seeds_from_elevation(
             brand_colors[brand_index], 0, !light_theme);
+        pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
             .foundation_step_l = 0.05f,
             .hover_l_shift = 0.05f,

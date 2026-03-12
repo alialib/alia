@@ -77,9 +77,9 @@ alia_oklab_from_oklch(alia_oklch lch);
 alia_oklab
 alia_oklab_clip_chroma_to_srgb(alia_oklab color);
 
-// linear RGB <-> OKLCH
-alia_oklch
-alia_oklch_from_rgb(alia_rgb c);
+// Clamp a calculated OKLCH value to the sRGB gamut, returning an sRGB8.
+alia_srgb8
+alia_srgb8_from_unclamped_oklch(alia_oklch lch);
 
 // convenience
 
@@ -99,13 +99,6 @@ static inline alia_srgb8
 alia_srgb8_from_oklab(alia_oklab lab)
 {
     return alia_srgb8_from_rgb(alia_rgb_from_oklab(lab));
-}
-
-static inline alia_srgb8
-alia_srgb8_from_unclipped_oklch(alia_oklch lch)
-{
-    return alia_srgb8_from_oklab(
-        alia_oklab_clip_chroma_to_srgb(alia_oklab_from_oklch(lch)));
 }
 
 alia_srgb8
@@ -143,6 +136,15 @@ inline float
 alia_relative_luminance_srgb8(alia_srgb8 c)
 {
     return alia_relative_luminance_rgb(alia_rgb_from_srgb8(c));
+}
+
+static inline float
+alia_relative_luminance_ratio(float luminance_a, float luminance_b)
+{
+    if (luminance_a < luminance_b)
+        return (luminance_b + 0.05f) / (luminance_a + 0.05f);
+    else
+        return (luminance_a + 0.05f) / (luminance_b + 0.05f);
 }
 
 ALIA_EXTERN_C_END

@@ -6,45 +6,57 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct
+enum alia_ui_lightness_mode
+{
+    // dark text on light background
+    ALIA_UI_LIGHT_MODE = 0,
+    // light text on dark background
+    ALIA_UI_DARK_MODE = 1
+};
+
+typedef struct alia_interaction_colors
 {
     alia_srgb8 idle;
     alia_srgb8 hover;
     alia_srgb8 active;
     alia_srgb8 disabled;
-} alia_color_states;
+} alia_interaction_colors;
 
-typedef struct
+typedef struct alia_swatch
 {
-    alia_color_states solid;
-    alia_color_states subtle;
-    alia_color_states outline;
-    alia_color_states text;
+    alia_interaction_colors solid;
+    alia_interaction_colors on_solid;
+
+    alia_interaction_colors subtle;
+    alia_interaction_colors on_subtle;
+
+    alia_interaction_colors outline;
+    alia_interaction_colors text;
 } alia_swatch;
 
-typedef struct
+typedef struct alia_foundation_ramp
 {
-    alia_color_states weaker_4;
-    alia_color_states weaker_3;
-    alia_color_states weaker_2;
-    alia_color_states weaker_1;
-    alia_color_states base;
-    alia_color_states stronger_1;
-    alia_color_states stronger_2;
-    alia_color_states stronger_3;
-    alia_color_states stronger_4;
+    alia_interaction_colors weaker_4;
+    alia_interaction_colors weaker_3;
+    alia_interaction_colors weaker_2;
+    alia_interaction_colors weaker_1;
+    alia_interaction_colors base;
+    alia_interaction_colors stronger_1;
+    alia_interaction_colors stronger_2;
+    alia_interaction_colors stronger_3;
+    alia_interaction_colors stronger_4;
 } alia_foundation_ramp;
 
 // PALETTES
 
-typedef struct
+typedef struct alia_foundation
 {
     alia_foundation_ramp background;
     alia_foundation_ramp structural;
     alia_foundation_ramp text;
 } alia_foundation;
 
-typedef struct
+typedef struct alia_literal_palette
 {
     alia_swatch red;
     alia_swatch orange;
@@ -56,33 +68,32 @@ typedef struct
     alia_swatch pink;
 } alia_literal_palette;
 
-typedef union
+typedef union alia_palette
 {
     struct
     {
-        alia_foundation foundation; // 27 slots
+        alia_foundation foundation;
 
-        alia_swatch primary; // 4 slots each...
+        alia_swatch focus;
+        alia_swatch selection;
+
+        alia_swatch primary;
         alia_swatch secondary;
         alia_swatch success;
         alia_swatch warning;
         alia_swatch danger;
-        alia_swatch info; // ...24 slots total
+        alia_swatch info;
 
-        alia_literal_palette colors; // 32 slots
-
-        alia_color_states focus_ring; // 3 slots
-        alia_color_states selection_bg;
-        alia_color_states selection_text;
+        alia_literal_palette colors;
     };
 
     // The flat memory map for O(1) rendering lookups (86 used, 170 free)
-    alia_color_states roles[256];
+    alia_interaction_colors roles[256];
 } alia_palette;
 
 // GENERATION
 
-typedef struct
+typedef struct alia_palette_seeds
 {
     alia_srgb8 bg_base;
     alia_srgb8 text_base;
@@ -94,7 +105,7 @@ typedef struct
     alia_srgb8 info;
 } alia_palette_seeds;
 
-typedef struct
+typedef struct alia_theme_params
 {
     float foundation_step_l;
     float hover_l_shift;
