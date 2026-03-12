@@ -1351,10 +1351,14 @@ theme_demo(context& ctx)
             do_text(ctx, 1, GRAY, 24, "Colors");
             show_palette_swatch(ctx, &p->colors.red);
             show_palette_swatch(ctx, &p->colors.orange);
+            show_palette_swatch(ctx, &p->colors.amber);
             show_palette_swatch(ctx, &p->colors.yellow);
+            show_palette_swatch(ctx, &p->colors.lime);
             show_palette_swatch(ctx, &p->colors.green);
+            show_palette_swatch(ctx, &p->colors.teal);
             show_palette_swatch(ctx, &p->colors.cyan);
             show_palette_swatch(ctx, &p->colors.blue);
+            show_palette_swatch(ctx, &p->colors.indigo);
             show_palette_swatch(ctx, &p->colors.purple);
             show_palette_swatch(ctx, &p->colors.pink);
         });

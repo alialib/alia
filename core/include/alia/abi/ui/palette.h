@@ -60,10 +60,14 @@ typedef struct alia_literal_palette
 {
     alia_swatch red;
     alia_swatch orange;
+    alia_swatch amber;
     alia_swatch yellow;
+    alia_swatch lime;
     alia_swatch green;
+    alia_swatch teal;
     alia_swatch cyan;
     alia_swatch blue;
+    alia_swatch indigo;
     alia_swatch purple;
     alia_swatch pink;
 } alia_literal_palette;

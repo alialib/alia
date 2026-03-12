@@ -239,14 +239,18 @@ alia_palette_expand(
     //
     // We intentionally decouple these from semantics so that consumers can
     // always rely on:
-    //  - `red`   ≈ canonical red
-    //  - `orange`≈ canonical orange
-    //  - `yellow`≈ canonical yellow
-    //  - `green` ≈ canonical green
-    //  - `cyan`  ≈ canonical cyan / teal
-    //  - `blue`  ≈ canonical blue
-    //  - `purple`≈ canonical purple / violet
-    //  - `pink`  ≈ warm magenta
+    //  - `red`    ≈ canonical red
+    //  - `orange` ≈ canonical orange
+    //  - `amber`  ≈ orange-yellow
+    //  - `yellow` ≈ canonical yellow
+    //  - `lime`   ≈ yellow-green
+    //  - `green`  ≈ canonical green
+    //  - `teal`   ≈ green-cyan
+    //  - `cyan`   ≈ canonical cyan
+    //  - `blue`   ≈ canonical blue
+    //  - `indigo` ≈ blue-violet
+    //  - `purple` ≈ canonical purple / violet
+    //  - `pink`   ≈ warm magenta
     //
     // These are generated directly in OKLCH so that the theme can still
     // control lightness and chroma in a perceptual space.
@@ -261,41 +265,57 @@ alia_palette_expand(
               return seed;
           };
 
-    // Primary warm wheel (R → O → Y)
+    // Primary warm wheel (R → O → A → Y → L)
     generate_swatch_from_oklch(
-        &out_palette->colors.red, make_literal_seed("red", 25.0f, 0.0f), &p);
+        &out_palette->colors.red, make_literal_seed("red", 15.0f, 0.0f), &p);
     generate_swatch_from_oklch(
         &out_palette->colors.orange,
-        make_literal_seed("orange", 55.0f, 0.0f),
+        make_literal_seed("orange", 35.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.amber,
+        make_literal_seed("amber", 55.0f, 0.02f),
         &p);
     // Yellow needs a touch more lightness to stay clean and avoid brown.
     generate_swatch_from_oklch(
         &out_palette->colors.yellow,
-        make_literal_seed("yellow", 95.0f, 0.10f),
+        make_literal_seed("yellow", 80.0f, 0.08f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.lime,
+        make_literal_seed("lime", 110.0f, 0.04f),
         &p);
 
-    // Cool wheel (G → C → B)
+    // Cool wheel (G → T → C → B → I)
     generate_swatch_from_oklch(
         &out_palette->colors.green,
-        make_literal_seed("green", 145.0f, 0.0f),
+        make_literal_seed("green", 140.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.teal,
+        make_literal_seed("teal", 165.0f, 0.0f),
         &p);
     generate_swatch_from_oklch(
         &out_palette->colors.cyan,
-        make_literal_seed("cyan", 195.0f, 0.0f),
+        make_literal_seed("cyan", 190.0f, 0.0f),
         &p);
     generate_swatch_from_oklch(
         &out_palette->colors.blue,
-        make_literal_seed("blue", 250.0f, 0.0f),
+        make_literal_seed("blue", 220.0f, 0.0f),
+        &p);
+    generate_swatch_from_oklch(
+        &out_palette->colors.indigo,
+        make_literal_seed("indigo", 250.0f, 0.0f),
         &p);
 
     // Ending arc (Purple → Pink)
     generate_swatch_from_oklch(
         &out_palette->colors.purple,
-        make_literal_seed("purple", 305.0f, 0.0f),
+        make_literal_seed("purple", 285.0f, 0.0f),
         &p);
     generate_swatch_from_oklch(
         &out_palette->colors.pink,
-        make_literal_seed("pink", 345.0f, 0.0f),
+        make_literal_seed("pink", 320.0f, 0.0f),
         &p);
 }
 
