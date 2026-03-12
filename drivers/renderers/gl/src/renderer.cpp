@@ -304,13 +304,12 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    alia_vec2f surface_size
-        = alia_ui_system_get_surface_size(renderer->system);
+    alia_vec2i const surface_size = alia_ui_surface_get_size(renderer->system);
 
     float l = 0.f; // left
-    float r = surface_size.x; // right
+    float r = (float) surface_size.x; // right
     float t = 0.f; // top
-    float b = surface_size.y; // bottom
+    float b = (float) surface_size.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 

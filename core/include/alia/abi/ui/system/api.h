@@ -23,7 +23,7 @@ alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
     std::function<void(context&)> controller,
-    alia_vec2f surface_size
+    alia_vec2i surface_size
     /*external_interface* external,
     std::shared_ptr<os_interface> os,
     std::shared_ptr<window_interface> window*/);
@@ -39,17 +39,17 @@ alia_ui_system_update(alia_ui_system* ui);
 
 // Set the size of the surface.
 void
-alia_ui_system_set_surface_size(alia_ui_system* ui, alia_vec2f new_size);
+alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size);
 
-alia_vec2f
-alia_ui_system_get_surface_size(alia_ui_system* ui);
+alia_vec2i
+alia_ui_surface_get_size(alia_ui_system* ui);
 
 // Set the DPI of the UI system.
 void
-alia_ui_system_set_dpi(alia_ui_system* ui, float dpi);
+alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi);
 
 // Get the DPI of the UI system.
 float
-alia_ui_system_get_dpi(alia_ui_system* ui);
+alia_ui_surface_get_dpi(alia_ui_system* ui);
 
 } // namespace alia

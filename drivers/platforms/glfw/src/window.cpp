@@ -10,8 +10,7 @@ update_glfw_window_info(alia_ui_system* ui, GLFWwindow* window)
     int framebuffer_width, framebuffer_height;
     glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 
-    alia_ui_system_set_surface_size(
-        ui, {float(framebuffer_width), float(framebuffer_height)});
+    alia_ui_surface_set_size(ui, {framebuffer_width, framebuffer_height});
 
     // TODO: Sort out scaling...
 

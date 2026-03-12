@@ -361,7 +361,7 @@ create_msdf_text_engine(
     msdf_text_engine* engine = new msdf_text_engine{
         .ui = ui,
 
-        .surface_size = alia_ui_system_get_surface_size(ui),
+        .surface_size = {0, 0},
 
         .gpu
         = {.shader_program = shader_program,
@@ -586,7 +586,8 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 {
     msdf_text_engine* engine = (msdf_text_engine*) user;
 
-    alia_vec2f surface_size = alia_ui_system_get_surface_size(engine->ui);
+    alia_vec2f const surface_size
+        = alia_vec2i_to_vec2f(alia_ui_surface_get_size(engine->ui));
     engine->surface_size = surface_size;
 
     size_t glyph_instance_count = 0;

@@ -26,7 +26,7 @@ struct alia_ui_system
     std::function<void(alia::context&)> controller;
 
     // alia__shared_ptr<alia::surface> surface;
-    alia_vec2f surface_size;
+    alia_vec2i surface_size;
     float dpi;
     float magnification = 1;
 

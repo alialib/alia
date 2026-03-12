@@ -17,7 +17,7 @@ alia_struct_spec
 alia_draw_system_object_spec(void);
 
 alia_draw_system*
-alia_draw_system_init(void* object_storage, alia_vec2f surface_size);
+alia_draw_system_init(void* object_storage, alia_vec2i surface_size);
 
 void
 alia_draw_system_cleanup(alia_draw_system* system);

@@ -1660,7 +1660,7 @@ update()
         update_glfw_window_info(the_system, the_window);
 
         // glfwMakeContextCurrent(the_window);
-        alia_vec2f surface_size = alia_ui_system_get_surface_size(the_system);
+        alia_vec2i const surface_size = alia_ui_surface_get_size(the_system);
         glViewport(0, 0, surface_size.x, surface_size.y);
 
         alia_rgb c = alia_rgb_from_srgb8(alia_srgb8{0x32, 0x33, 0x39});
@@ -1748,14 +1748,14 @@ update()
 void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    alia_ui_system_set_surface_size(the_system, {float(width), float(height)});
+    alia_ui_surface_set_size(the_system, {width, height});
     update();
 }
 
 void
 content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
-    alia_ui_system_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
+    alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
     // TODO: Support 2D DPI?
     update();
 }
@@ -1853,21 +1853,6 @@ main()
 
     // auto const& theme = get_system(ctx).theme;
 
-#if 0
-    // Enable debug heap reports
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
-    HANDLE hCurrentThread = GetCurrentThread();
-    if (SetThreadPriority(hCurrentThread, THREAD_PRIORITY_HIGHEST))
-    {
-        std::cout << "Main thread priority set to HIGHEST." << std::endl;
-    }
-    else
-    {
-        std::cerr << "Failed to set main thread priority." << std::endl;
-    }
-#endif
-
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW\n";
@@ -1902,7 +1887,7 @@ main()
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);
     // TODO: Support 2D DPI?
-    alia_ui_system_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
+    alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
 
     glfwSetWindowContentScaleCallback(the_window, content_scale_callback);
 
@@ -1915,11 +1900,10 @@ main()
     }
 #endif
 
-    // TODO: The surface size should use integers.
     {
         int x, y;
         glfwGetFramebufferSize(the_window, &x, &y);
-        alia_ui_system_set_surface_size(the_system, {(float) x, (float) y});
+        alia_ui_surface_set_size(the_system, {x, y});
     }
 
 #ifndef __EMSCRIPTEN__
