@@ -1,6 +1,53 @@
 #include <alia/abi/ui/palette.h>
 #include <numbers>
 
+// Compile-time check that flat index math matches struct layout (no padding surprises).
+consteval bool
+alia_palette_flat_index_ok()
+{
+    size_t const slot = ALIA_PALETTE_SLOT_SIZE;
+    // Foundation: base + ramp*stride + level
+    if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
+            + 0u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
+            + (size_t)ALIA_PALETTE_RAMP_LEVEL_BASE
+        != offsetof(alia_palette, foundation.background.base) / slot)
+        return false;
+    if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
+            + 1u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
+            + (size_t)ALIA_PALETTE_RAMP_LEVEL_WEAKER_2
+        != offsetof(alia_palette, foundation.structural.weaker_2) / slot)
+        return false;
+    if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
+            + 2u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
+            + (size_t)ALIA_PALETTE_RAMP_LEVEL_BASE
+        != offsetof(alia_palette, foundation.text.base) / slot)
+        return false;
+    // Semantic swatch: base + swatch*stride + part
+    if (ALIA_PALETTE_INDEX_SWATCH_BASE
+            + (size_t)ALIA_PALETTE_SWATCH_PRIMARY * ALIA_PALETTE_SWATCH_STRIDE
+            + (size_t)ALIA_PALETTE_SWATCH_PART_OUTLINE
+        != offsetof(alia_palette, primary.outline) / slot)
+        return false;
+    if (ALIA_PALETTE_INDEX_SWATCH_BASE
+            + (size_t)ALIA_PALETTE_SWATCH_INFO * ALIA_PALETTE_SWATCH_STRIDE
+            + (size_t)ALIA_PALETTE_SWATCH_PART_SOLID
+        != offsetof(alia_palette, info.solid) / slot)
+        return false;
+    // Literal: base + literal*stride + part
+    if (ALIA_PALETTE_INDEX_LITERAL_BASE
+            + (size_t)ALIA_PALETTE_LITERAL_RED * ALIA_PALETTE_SWATCH_STRIDE
+            + (size_t)ALIA_PALETTE_SWATCH_PART_OUTLINE
+        != offsetof(alia_palette, colors.red.outline) / slot)
+        return false;
+    if (ALIA_PALETTE_INDEX_LITERAL_BASE
+            + (size_t)ALIA_PALETTE_LITERAL_PINK * ALIA_PALETTE_SWATCH_STRIDE
+            + (size_t)ALIA_PALETTE_SWATCH_PART_TEXT
+        != offsetof(alia_palette, colors.pink.text) / slot)
+        return false;
+    return true;
+}
+static_assert(alia_palette_flat_index_ok(), "palette flat index math must match struct layout");
+
 static inline float
 alia_deg_to_rad(float degrees)
 {

@@ -939,7 +939,7 @@ mixed_flow_demo(context& ctx)
                     alia_element_id id;
                     row(ctx, [&]() {
                         do_text(ctx, 2, GRAY, 24, "Roboto", CENTER);
-                        id = alia_do_switch(&ctx, &invert[i], 0);
+                        id = alia_do_switch(&ctx, &invert[i], 0, nullptr);
                     });
                     alia_element_box_region(
                         &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);

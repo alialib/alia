@@ -29,44 +29,27 @@ struct switch_data
     alia_keyboard_click_state keyboard_click_state_;
 };
 
-struct switch_style_info
-{
-    // track color when switch is disabled
-    alia_srgb8 disabled_track_color;
-    // dot color when switch is disabled
-    alia_srgb8 disabled_dot_color;
-    // track color when switch is off
-    alia_srgb8 off_track_color;
-    // track color when switch is on
-    alia_srgb8 on_track_color;
-    // dot color when switch is off
-    alia_srgb8 off_dot_color;
-    // dot color when switch is on
-    alia_srgb8 on_dot_color;
-    // color of hover/press highlight
-    alia_srgb8 highlight_color;
+static alia_switch_style const default_switch_style = {
+    .off_track = alia_palette_index_foundation_ramp(
+        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+    .on_track = alia_palette_index_foundation_ramp(
+        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+        ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
+    .off_dot = alia_palette_index_foundation_ramp(
+        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+        ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
+    .on_dot = alia_palette_index_swatch(
+        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+    .highlight = alia_palette_index_swatch(
+        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+    .disabled_track = alia_palette_index_foundation_ramp(
+        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+        ALIA_PALETTE_RAMP_LEVEL_BASE),
+    .disabled_dot = alia_palette_index_foundation_ramp(
+        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+        ALIA_PALETTE_RAMP_LEVEL_BASE),
 };
-
-switch_style_info
-extract_switch_style_info(alia_context* ctx)
-{
-    alia_palette const* p = alia_ctx_palette(ctx);
-    return {
-        .disabled_track_color = alia_lerp_srgb8_via_oklch(
-            p->foundation.background.base.idle,
-            p->foundation.structural.base.idle,
-            0.5f),
-        .disabled_dot_color = alia_lerp_srgb8_via_oklch(
-            p->foundation.background.base.idle,
-            p->foundation.structural.base.idle,
-            0.6f),
-        .off_track_color = p->foundation.structural.weaker_2.idle,
-        .on_track_color = p->foundation.structural.weaker_1.idle,
-        .off_dot_color = p->foundation.structural.stronger_2.idle,
-        .on_dot_color = p->primary.outline.idle,
-        .highlight_color = p->primary.outline.idle,
-    };
-}
 
 void
 render_switch(
@@ -75,38 +58,37 @@ render_switch(
     switch_data& data,
     bool state,
     alia_interaction_status_t interaction_status,
-    switch_style_info const& style)
+    alia_switch_style const* style)
 {
+    alia_palette const* p = alia_ctx_palette(ctx);
     alia_vec2f const center = placement.min + placement.size * 0.5;
+    uint8_t const status = (uint8_t)interaction_status; // for palette_color_at
 
     if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
     {
-        {
-            alia_draw_rounded_box(
-                ctx,
-                ctx->geometry->z_base + 2, // TODO: Proper z offset.
-                alia_box{
-                    center
-                        - alia_vec2f{placement.size.x * 0.25f, alia_px(ctx, 7)},
-                    alia_vec2f{placement.size.x * 0.5f, alia_px(ctx, 14)}},
-                alia_rgba_from_rgb_alpha(
-                    alia_rgb_from_srgb8(style.disabled_track_color), 1.f),
-                alia_px(ctx, 7));
-        }
+        alia_srgb8 const track_color = alia_palette_color_at(
+            p, style->disabled_track, ALIA_INTERACTION_STATUS_DISABLED);
+        alia_srgb8 const dot_color = alia_palette_color_at(
+            p, style->disabled_dot, ALIA_INTERACTION_STATUS_DISABLED);
 
-        {
-            float const dot_x_offset = state ? 0.75f : 0.25f;
+        alia_draw_rounded_box(
+            ctx,
+            ctx->geometry->z_base + 2, // TODO: Proper z offset.
+            alia_box{
+                center
+                    - alia_vec2f{placement.size.x * 0.25f, alia_px(ctx, 7)},
+                alia_vec2f{placement.size.x * 0.5f, alia_px(ctx, 14)}},
+            alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(track_color), 1.f),
+            alia_px(ctx, 7));
 
-            float dot_radius = state ? alia_px(ctx, 11) : alia_px(ctx, 13);
-
-            alia_draw_circle(
-                ctx,
-                ctx->geometry->z_base + 2, // TODO: Proper z offset.
-                {placement.min.x + dot_x_offset * placement.size.x, center.y},
-                dot_radius,
-                alia_rgba_from_rgb_alpha(
-                    alia_rgb_from_srgb8(style.disabled_dot_color), 1.f));
-        }
+        float const dot_x_offset = state ? 0.75f : 0.25f;
+        float dot_radius = state ? alia_px(ctx, 11) : alia_px(ctx, 13);
+        alia_draw_circle(
+            ctx,
+            ctx->geometry->z_base + 2, // TODO: Proper z offset.
+            {placement.min.x + dot_x_offset * placement.size.x, center.y},
+            dot_radius,
+            alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(dot_color), 1.f));
 
         return;
     }
@@ -125,11 +107,19 @@ render_switch(
 
     float const dot_x_offset = alia_lerp(0.25f, 0.75f, switch_position);
 
-    alia_srgb8 const dot_color = alia_lerp_srgb8_via_oklch(
-        style.off_dot_color, style.on_dot_color, switch_position);
+    alia_srgb8 const off_dot
+        = alia_palette_color_at(p, style->off_dot, status);
+    alia_srgb8 const on_dot
+        = alia_palette_color_at(p, style->on_dot, status);
+    alia_srgb8 const dot_color
+        = alia_lerp_srgb8_via_oklch(off_dot, on_dot, switch_position);
 
-    alia_srgb8 const track_color = alia_lerp_srgb8_via_oklch(
-        style.off_track_color, style.on_track_color, switch_position);
+    alia_srgb8 const off_track
+        = alia_palette_color_at(p, style->off_track, status);
+    alia_srgb8 const on_track
+        = alia_palette_color_at(p, style->on_track, status);
+    alia_srgb8 const track_color
+        = alia_lerp_srgb8_via_oklch(off_track, on_track, switch_position);
 
     alia_draw_rounded_box(
         ctx,
@@ -164,13 +154,15 @@ render_switch(
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
         != 0)
     {
+        alia_srgb8 const highlight_color
+            = alia_palette_color_at(p, style->highlight, status);
         alia_draw_circle(
             ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             {placement.min.x + dot_x_offset * placement.size.x, center.y},
             alia_px(ctx, 20),
             alia_rgba_from_rgb_alpha(
-                alia_rgb_from_srgb8(style.highlight_color), 0.2f));
+                alia_rgb_from_srgb8(highlight_color), 0.2f));
     }
 
     render_click_flares(
@@ -192,7 +184,8 @@ alia_element_id
 alia_do_switch(
     alia_context* ctx,
     bool* state, // TODO: Use `alia_signal_bool` instead.
-    alia_layout_flags_t layout_flags)
+    alia_layout_flags_t layout_flags,
+    alia_switch_style const* style)
 {
     // TODO: Use C++ API for this.
     alia_substrate_usage_result result = alia_substrate_use_memory(
@@ -268,8 +261,10 @@ alia_do_switch(
                         | (data->keyboard_click_state_.state
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
-            switch_style_info style = extract_switch_style_info(ctx);
-            render_switch(ctx, box, *data, *state, interaction_status, style);
+            alia_switch_style const* effective_style
+                = style != nullptr ? style : &default_switch_style;
+            render_switch(
+                ctx, box, *data, *state, interaction_status, effective_style);
         }
     }
     return id;
