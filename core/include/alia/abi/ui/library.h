@@ -16,8 +16,26 @@ typedef struct alia_switch_style
     uint8_t off_dot;
     uint8_t on_dot;
     uint8_t highlight;
-    uint8_t disabled_track;
-    uint8_t disabled_dot;
+
+    // Geometry (logical px unless noted). Switch is drawn at fixed size inside
+    // allocated placement (centered); it does not stretch with allocated size.
+    float layout_width;
+    float layout_height;
+    float track_width;
+    float track_height;
+
+    // Corner radius = fraction * track_height (e.g. 0.5 = pill).
+    float track_corner_radius_fraction;
+
+    // dot center X from left edge of switch content (logical px)
+    float dot_center_x_off;
+    float dot_center_x_on;
+
+    float dot_radius_off;
+    float dot_radius_on;
+
+    float highlight_radius;
+    float flare_radius;
 } alia_switch_style;
 
 alia_element_id
