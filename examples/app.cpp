@@ -930,21 +930,26 @@ nested_flow_demo(context& ctx)
 void
 mixed_flow_demo(context& ctx)
 {
-    static bool invert[10] = {false};
+    static bool switch_state = false;
+    static float slider_value = 5.f;
     with_padding(ctx, 10, [&] {
         column(ctx, [&]() {
-            for (int i = 0; i < 10; ++i)
-            {
-                placement_hook(ctx, [&](auto const& placement) {
-                    alia_element_id id;
-                    row(ctx, [&]() {
-                        do_text(ctx, 2, GRAY, 24, "Roboto", CENTER);
-                        id = alia_do_switch(&ctx, &invert[i], 0, nullptr);
-                    });
-                    alia_element_box_region(
-                        &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+            placement_hook(ctx, [&](auto const& placement) {
+                alia_element_id id;
+                row(ctx, ALIGN_LEFT, [&]() {
+                    do_text(ctx, 2, GRAY, alia_px(&ctx, 16), "Switch", CENTER);
+                    id = alia_do_switch(&ctx, &switch_state, 0, nullptr);
                 });
-            }
+                alia_element_box_region(
+                    &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+            });
+            // Slider (float) — shares implementation with alia_do_slider_d via
+            // library.
+            row(ctx, [&]() {
+                do_text(ctx, 2, GRAY, alia_px(&ctx, 16), "Slider", CENTER);
+                alia_do_slider_f(
+                    &ctx, &slider_value, 0.f, 10.f, 1.f, 0, false, nullptr);
+            });
         });
     });
     with_padding(ctx, 10, [&] {
