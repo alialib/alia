@@ -156,8 +156,9 @@ struct pass_aborted
 };
 
 void
-abort_pass()
+abort_pass(context& ctx)
 {
+    ctx.events->aborted = true;
     throw pass_aborted();
 }
 
@@ -253,7 +254,7 @@ do_controls(context& ctx)
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             demo_is_dark = switch_signal.value;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 
@@ -284,7 +285,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_one = switch_signal.value;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 
@@ -298,7 +299,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_two = switch_signal.value;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 
@@ -312,7 +313,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_three = switch_signal.value;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 }
@@ -333,7 +334,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 0;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 
@@ -346,7 +347,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 1;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 
@@ -359,7 +360,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 2;
-            abort_pass();
+            abort_pass(ctx);
         }
     }
 }
@@ -385,6 +386,8 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
+            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
+            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
             do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
         });
     });
@@ -476,7 +479,7 @@ the_demo(context& ctx)
             });
         });
     }
-    catch (pass_aborted)
+    catch (pass_aborted&)
     {
     }
 }

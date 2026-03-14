@@ -77,7 +77,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     sys.controller(ctx);
 
-    sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
+    if (!ctx.events->aborted)
+        sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;
