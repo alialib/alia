@@ -109,6 +109,12 @@ alia_srgb8_from_hex(const char* hex6_or_hash_hex6);
 alia_rgba
 alia_rgba_from_rgb_alpha(alia_rgb c, float a);
 
+static inline alia_rgba
+alia_rgba_from_rgb(alia_rgb c)
+{
+    return alia_rgba{c.r, c.g, c.b, 1.0f};
+}
+
 // modulate (rgb*a, a*a)
 alia_rgba
 alia_apply_alpha_rgba(alia_rgba c, float a);

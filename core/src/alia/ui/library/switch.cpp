@@ -44,7 +44,7 @@ static alia_switch_style const default_switch_style = {
     .layout_width = 55.f,
     .layout_height = 30.f,
     .track_width = 27.5f,
-    .track_height = 14.f,
+    .track_height = 12.f,
     .track_corner_radius_fraction = 0.5f,
     .dot_center_x_off = 13.75f,
     .dot_center_x_on = 41.25f,
@@ -101,7 +101,7 @@ render_switch(
             ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             alia_box{track_min, alia_vec2f{track_w, track_h}},
-            alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(track_color), 1.f),
+            alia_rgba_from_rgb(alia_rgb_from_srgb8(track_color)),
             track_corner);
 
         float const dot_x_logical
@@ -115,7 +115,7 @@ render_switch(
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             {switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
             alia_px(ctx, dot_radius_logical),
-            alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(dot_color), 1.f));
+            alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_color)));
 
         return;
     }
@@ -156,7 +156,7 @@ render_switch(
         ctx,
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         alia_box{track_min, alia_vec2f{track_w, track_h}},
-        alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(track_color), 1.f),
+        alia_rgba_from_rgb(alia_rgb_from_srgb8(track_color)),
         track_corner);
 
     float const dot_center_x = switch_min.x + alia_px(ctx, dot_x_logical);
@@ -180,7 +180,7 @@ render_switch(
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         dot_center,
         dot_radius,
-        alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(dot_color), 1.0f));
+        alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_color)));
 
     if ((interaction_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
@@ -215,7 +215,7 @@ ALIA_EXTERN_C_BEGIN
 alia_element_id
 alia_do_switch(
     alia_context* ctx,
-    bool* state, // TODO: Use `alia_signal_bool` instead.
+    alia_bool_signal* value,
     alia_layout_flags_t layout_flags,
     alia_switch_style const* style)
 {
@@ -232,8 +232,11 @@ alia_do_switch(
     }
     auto const id = result.ptr;
 
-    // TODO: Incorporate signal state into this.
-    bool const is_disabled = false; // !alia_signal_ready_to_write(state);
+    bool const is_disabled = ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
+
+    // TODO: Consider supporting tristate switches.
+    bool const selected
+        = ((value->flags & ALIA_SIGNAL_READABLE) != 0) ? value->value : false;
 
     alia_switch_style const* const effective_style
         = style != nullptr ? style : &default_switch_style;
@@ -274,12 +277,9 @@ alia_do_switch(
                 // TODO: Fix mouse_button::LEFT
                 fire_click_flare(
                     ctx, ALIA_NESTED_BITPACK(data->bits, click_flare));
-                // TODO: Use signals here.
-                // if (signal_has_value(state) && signal_ready_to_write(state))
-                // {
-                //     write_signal(state, !read_signal(state));
-                // }
-                *state = !*state;
+                // TODO: Use signal utilities here.
+                value->value = !value->value;
+                value->flags |= ALIA_SIGNAL_WRITTEN;
                 // TODO
                 // abort_traversal(*ctx);
             }
@@ -299,7 +299,12 @@ alia_do_switch(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_switch(
-                ctx, box, *data, *state, interaction_status, effective_style);
+                ctx,
+                box,
+                *data,
+                selected,
+                interaction_status,
+                effective_style);
         }
     }
     return id;

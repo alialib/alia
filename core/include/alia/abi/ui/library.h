@@ -2,8 +2,8 @@
 #define ALIA_ABI_UI_LIBRARY_H
 
 #include <alia/abi/context.h>
-#include <alia/abi/prelude.h>
 #include <alia/abi/kernel/signal.h>
+#include <alia/abi/prelude.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/palette.h>
@@ -42,11 +42,10 @@ typedef struct alia_switch_style
 alia_element_id
 alia_do_switch(
     alia_context* ctx,
-    bool* state, // TODO: Use `alia_signal_bool` instead.
+    alia_bool_signal* value,
     alia_layout_flags_t layout_flags,
     alia_switch_style const* style);
 
-// Slider: palette indices + geometry (logical px). Horizontal when vertical is false.
 typedef struct alia_slider_style
 {
     uint8_t track_color;
@@ -88,7 +87,6 @@ typedef struct alia_radio_style
     float flare_radius;
 } alia_radio_style;
 
-// vertical: true = value maps to Y axis (bottom = min), false = X axis (left = min).
 alia_element_id
 alia_do_slider_d(
     alia_context* ctx,

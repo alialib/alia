@@ -96,7 +96,7 @@ render_radio(
         alia_srgb8 const outline_srgb = alia_palette_color_at(
             p, style->outline, ALIA_INTERACTION_STATUS_DISABLED);
         alia_rgba const outline_rgba
-            = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(outline_srgb), 1.f);
+            = alia_rgba_from_rgb(alia_rgb_from_srgb8(outline_srgb));
 
         draw_radio_ring(
             ctx, center, ring_radius_px, border_width_px, outline_rgba);
@@ -131,9 +131,9 @@ render_radio(
         = alia_palette_color_at(p, style->highlight, status);
 
     alia_rgba const outline_rgba
-        = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(outline_srgb), 1.f);
+        = alia_rgba_from_rgb(alia_rgb_from_srgb8(outline_srgb));
     alia_rgba const dot_rgba
-        = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(dot_srgb), 1.f);
+        = alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_srgb));
     alia_rgba const highlight_rgba
         = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(highlight_srgb), 0.2f);
 

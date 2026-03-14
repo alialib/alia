@@ -192,10 +192,10 @@ render_slider(
     alia_vec2f const track_size = get_track_size(box, axis, ctx, s);
     alia_box const track_box{track_min, track_size};
 
-    alia_srgb8 const track_srgb
-        = alia_palette_color_at(p, s->track_color, status);
+    // TODO: Should the track use interaction status?
+    alia_srgb8 const track_srgb = alia_palette_color_at(p, s->track_color, 0);
     alia_rgba const track_rgba
-        = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(track_srgb), 1.f);
+        = alia_rgba_from_rgb(alia_rgb_from_srgb8(track_srgb));
 
     alia_draw_rounded_box(
         ctx, ctx->geometry->z_base + 2, track_box, track_rgba, 0.f);
@@ -205,7 +205,7 @@ render_slider(
     alia_srgb8 const thumb_srgb
         = alia_palette_color_at(p, s->thumb_color, status);
     alia_rgba const thumb_rgba
-        = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(thumb_srgb), 1.f);
+        = alia_rgba_from_rgb(alia_rgb_from_srgb8(thumb_srgb));
 
     float const thumb_r = alia_px(ctx, s->thumb_radius);
 
