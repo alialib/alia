@@ -254,6 +254,10 @@ mixed_flow_demo(context& ctx)
 {
     static bool switch_state = false;
     static float slider_value = 5.f;
+    static alia_bool_signal radio_signal{
+        .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+        .value = false,
+    };
     with_padding(ctx, 10, [&] {
         column(ctx, [&]() {
             placement_hook(ctx, [&](auto const& placement) {
@@ -264,6 +268,10 @@ mixed_flow_demo(context& ctx)
                 });
                 alia_element_box_region(
                     &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+            });
+            row(ctx, [&]() {
+                do_text(ctx, 2, GRAY, alia_px(&ctx, 16), "Radio", CENTER);
+                alia_do_radio(&ctx, &radio_signal, 0, nullptr);
             });
             // Slider (float) — shares implementation with alia_do_slider_d via
             // library.

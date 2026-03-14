@@ -3,6 +3,7 @@
 
 #include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/kernel/signal.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/palette.h>
@@ -63,6 +64,30 @@ typedef struct alia_slider_style
     float highlight_radius;
 } alia_slider_style;
 
+typedef struct alia_radio_style
+{
+    uint8_t outline;
+    uint8_t dot;
+    uint8_t highlight;
+
+    // size of the radio button (logical px)
+    float layout_width;
+    float layout_height;
+
+    // outer ring radius and inner dot radius (logical px)
+    float ring_radius;
+    float dot_radius;
+
+    // radius of the highlight when hovered/active (logical px)
+    float highlight_radius;
+
+    // width of the outer ring outline (logical px)
+    float border_width;
+
+    // radius used for click flare effects (logical px)
+    float flare_radius;
+} alia_radio_style;
+
 // vertical: true = value maps to Y axis (bottom = min), false = X axis (left = min).
 alia_element_id
 alia_do_slider_d(
@@ -85,6 +110,13 @@ alia_do_slider_f(
     alia_layout_flags_t layout_flags,
     bool vertical,
     alia_slider_style const* style);
+
+alia_element_id
+alia_do_radio(
+    alia_context* ctx,
+    alia_bool_signal* value,
+    alia_layout_flags_t layout_flags,
+    alia_radio_style const* style);
 
 ALIA_EXTERN_C_END
 
