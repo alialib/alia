@@ -269,9 +269,19 @@ alia_do_radio(
                 effective_style);
             break;
         }
+
+        default:
+            alia_layout_leaf_read(ctx);
+            break;
     }
 
     return id;
+}
+
+alia_radio_style const*
+alia_default_radio_style(void)
+{
+    return &default_radio_style;
 }
 
 ALIA_EXTERN_C_END

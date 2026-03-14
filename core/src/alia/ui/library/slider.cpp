@@ -423,6 +423,10 @@ do_slider_impl(
                 thumb_status);
             break;
         }
+
+        default:
+            alia_layout_leaf_read(ctx);
+            break;
     }
 
     (void) data;
@@ -479,6 +483,12 @@ alia_do_slider_f(
         layout_flags,
         vertical,
         style);
+}
+
+alia_slider_style const*
+alia_default_slider_style(void)
+{
+    return &default_slider_style;
 }
 
 ALIA_EXTERN_C_END

@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/events.h>
 #include <alia/abi/ui/drawing.h>
@@ -71,6 +72,17 @@ msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.padding = 10.0f};
 float the_time = 0.0f;
 
+// Local palette and styles for the content pane (driven by controls).
+static alia_palette local_palette;
+static alia_switch_style local_switch_style;
+static alia_slider_style local_slider_style;
+static alia_radio_style local_radio_style;
+static bool local_styles_initialized = false;
+static float demo_hue = 0.55f;
+static bool demo_is_dark = true;
+static float demo_padding = 10.f;
+static float demo_scale = 1.0f;
+
 #include "prototyping/allocation_probe.h"
 #include "prototyping/layout_mods.h"
 #include "prototyping/msdf.h"
@@ -106,6 +118,26 @@ with_padding(context& ctx, float padding, Content&& content)
     ctx.style->padding = old_padding;
 }
 
+template<class Content>
+void
+with_ui_scale(context& ctx, float scale, Content&& content)
+{
+    float old_scale = ctx.geometry->scale;
+    ctx.geometry->scale *= scale;
+    content();
+    ctx.geometry->scale = old_scale;
+}
+
+template<class Content>
+void
+with_palette(context& ctx, alia_palette* palette, Content&& content)
+{
+    alia_palette* old_palette = ctx.palette;
+    ctx.palette = palette;
+    content();
+    ctx.palette = old_palette;
+}
+
 char const* lorem_ipsum
     = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin sed "
       "dictum massa. Maecenas et euismod lorem, ut dapibus eros. Nam maximus, "
@@ -137,7 +169,7 @@ do_heading(context& ctx, char const* text)
         2,
         alia_rgba_from_rgb(
             alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_2.idle)),
-        alia_px(&ctx, 20),
+        alia_px(&ctx, 16),
         text);
 }
 
@@ -149,17 +181,21 @@ do_subheading(context& ctx, char const* text)
         2,
         alia_rgba_from_rgb(
             alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_1.idle)),
-        alia_px(&ctx, 18),
+        alia_px(&ctx, 14),
         text);
 }
 
 void
-do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
+do_radio_with_text(
+    context& ctx,
+    alia_bool_signal* value,
+    char const* text,
+    alia_radio_style const* style)
 {
     placement_hook(ctx, [&](auto const& placement) {
         row(ctx, ALIGN_LEFT, [&]() {
             alia_element_id id
-                = alia_do_radio(&ctx, value, ALIA_CENTER_Y, nullptr);
+                = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
             do_text(
                 ctx,
                 2,
@@ -167,7 +203,7 @@ do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base.idle
                         : ctx.palette->foundation.text.base.disabled)),
-                alia_px(&ctx, 16),
+                alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -177,12 +213,16 @@ do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
 }
 
 void
-do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
+do_switch_with_text(
+    context& ctx,
+    alia_bool_signal* value,
+    char const* text,
+    alia_switch_style const* style)
 {
     placement_hook(ctx, [&](auto const& placement) {
         row(ctx, ALIGN_LEFT, [&]() {
             alia_element_id id
-                = alia_do_switch(&ctx, value, ALIA_CENTER_Y, nullptr);
+                = alia_do_switch(&ctx, value, ALIA_CENTER_Y, style);
             do_text(
                 ctx,
                 2,
@@ -190,7 +230,7 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base.idle
                         : ctx.palette->foundation.text.base.disabled)),
-                alia_px(&ctx, 16),
+                alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -202,11 +242,35 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
 void
 do_controls(context& ctx)
 {
-    do_heading(ctx, "CONTROLS");
+    do_heading(ctx, "PALETTE");
+
+    {
+        alia_bool_signal switch_signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = demo_is_dark,
+        };
+        do_switch_with_text(ctx, &switch_signal, "Dark Mode", nullptr);
+        if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            demo_is_dark = switch_signal.value;
+            abort_pass();
+        }
+    }
+
+    do_subheading(ctx, "Hue");
+    alia_do_slider_f(&ctx, &demo_hue, 0.f, 1.f, 0.01f, 0, false, nullptr);
+
+    do_subheading(ctx, "GEOMETRY");
+
+    do_subheading(ctx, "Spacing");
+    alia_do_slider_f(&ctx, &demo_padding, 0.f, 24.f, 1.f, 0, false, nullptr);
+
+    do_subheading(ctx, "Scale");
+    alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false, nullptr);
 }
 
 void
-do_switch_demo(context& ctx)
+do_switch_demo(context& ctx, alia_switch_style const* style)
 {
     do_heading(ctx, "SWITCHES");
 
@@ -216,10 +280,11 @@ do_switch_demo(context& ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_one,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting One");
+        do_switch_with_text(ctx, &switch_signal, "Setting One", style);
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_one = switch_signal.value;
+            abort_pass();
         }
     }
 
@@ -229,18 +294,12 @@ do_switch_demo(context& ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_two,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting Two");
+        do_switch_with_text(ctx, &switch_signal, "Setting Two", style);
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_two = switch_signal.value;
+            abort_pass();
         }
-
-        // alia_bool_signal disabled_switch_signal{
-        //     .flags = ALIA_SIGNAL_READABLE,
-        //     .value = setting_two,
-        // };
-        // do_switch_with_text(
-        //     ctx, &disabled_switch_signal, "Disabled Setting Two");
     }
 
     {
@@ -249,16 +308,17 @@ do_switch_demo(context& ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_three,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting Three");
+        do_switch_with_text(ctx, &switch_signal, "Setting Three", style);
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_three = switch_signal.value;
+            abort_pass();
         }
     }
 }
 
 void
-do_radio_demo(context& ctx)
+do_radio_demo(context& ctx, alia_radio_style const* style)
 {
     static int radio_index = 0;
 
@@ -269,10 +329,11 @@ do_radio_demo(context& ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 0,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option One");
+        do_radio_with_text(ctx, &radio_signal, "Option One", style);
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 0;
+            abort_pass();
         }
     }
 
@@ -281,55 +342,50 @@ do_radio_demo(context& ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 1,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option Two");
+        do_radio_with_text(ctx, &radio_signal, "Option Two", style);
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 1;
+            abort_pass();
         }
     }
-
-    // {
-    //     alia_bool_signal radio_signal{
-    //         .flags = ALIA_SIGNAL_READABLE,
-    //         .value = radio_index == 1,
-    //     };
-    //     do_radio_with_text(ctx, &radio_signal, "Disabled Option Two");
-    // }
 
     {
         alia_bool_signal radio_signal{
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 2,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option Three");
+        do_radio_with_text(ctx, &radio_signal, "Option Three", style);
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 2;
+            abort_pass();
         }
     }
 }
 
 void
-do_slider_demo(context& ctx)
+do_slider_demo(context& ctx, alia_slider_style const* style)
 {
     do_heading(ctx, "SLIDERS");
 
     static float slider_value = 5.f;
-    alia_do_slider_f(&ctx, &slider_value, 0.f, 10.f, 1.f, 0, false, nullptr);
+    alia_do_slider_f(&ctx, &slider_value, 0.f, 10.f, 1.f, 0, false, style);
 }
 
 void
 do_content(context& ctx)
 {
-    static bool switch_state = false;
-    static float slider_value = 5.f;
-    with_padding(ctx, 10, [&] {
-        column(ctx, [&]() {
-            do_switch_demo(ctx);
-            do_heading(ctx, "");
-            do_radio_demo(ctx);
-            do_heading(ctx, "");
-            do_slider_demo(ctx);
+    column(ctx, [&]() {
+        do_switch_demo(ctx, nullptr); //&local_switch_style);
+        do_heading(ctx, "");
+        do_radio_demo(ctx, nullptr); //&local_radio_style);
+        do_heading(ctx, "");
+        do_slider_demo(ctx, nullptr); //&local_slider_style);
+        do_heading(ctx, "");
+        do_heading(ctx, "TEXT");
+        flow(ctx, FILL, [&]() {
+            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
         });
     });
 }
@@ -339,6 +395,36 @@ the_demo(context& ctx)
 {
     try
     {
+        // Initialize local style structs from library defaults once.
+        if (!local_styles_initialized)
+        {
+            local_switch_style = *alia_default_switch_style();
+            local_slider_style = *alia_default_slider_style();
+            local_radio_style = *alia_default_radio_style();
+            local_styles_initialized = true;
+        }
+
+        // Refresh local palette from control state (hue, light/dark).
+        {
+            alia_oklch lch = {
+                .l = 0.55f,
+                .c = 0.2f,
+                .h = demo_hue * 2.f * 3.14159f,
+            };
+            alia_srgb8 brand = alia_srgb8_from_unclamped_oklch(lch);
+            alia_palette_seeds pseeds
+                = alia_seeds_from_elevation(brand, 0, demo_is_dark);
+            pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
+            alia_theme_params params = {
+                .foundation_step_l = 0.05f,
+                .hover_l_shift = 0.05f,
+                .active_l_shift = 0.10f,
+                .interaction_hue_shift = 0.0f,
+                .is_dark_mode = demo_is_dark,
+            };
+            alia_palette_expand(&local_palette, &pseeds, &params);
+        }
+
         with_padding(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
@@ -356,18 +442,36 @@ the_demo(context& ctx)
                                  .top = 40,
                                  .bottom = 40},
                                 [&]() {
-                                    with_padding(
-                                        ctx, 6, [&] { do_controls(ctx); });
+                                    with_padding(ctx, 10, [&] {
+                                        column(
+                                            ctx, [&]() { do_controls(ctx); });
+                                    });
                                 });
                         });
                     });
-                column(ctx, GROW, [&]() {
-                    inset(
-                        ctx,
-                        {.left = 40, .right = 40, .top = 40, .bottom = 40},
-                        [&]() {
-                            with_padding(ctx, 6, [&] { do_content(ctx); });
+                with_palette(ctx, &local_palette, [&] {
+                    with_ui_scale(ctx, demo_scale, [&] {
+                        with_padding(ctx, demo_padding, [&] {
+                            concrete_panel(
+                                ctx,
+                                0,
+                                alia_rgba_from_rgb(alia_rgb_from_srgb8(
+                                    ctx.palette->foundation.background.base
+                                        .idle)),
+                                FILL,
+                                [&]() {
+                                    column(ctx, GROW, [&]() {
+                                        inset(
+                                            ctx,
+                                            {.left = 40,
+                                             .right = 40,
+                                             .top = 40,
+                                             .bottom = 40},
+                                            [&]() { do_content(ctx); });
+                                    });
+                                });
                         });
+                    });
                 });
             });
         });
@@ -456,11 +560,6 @@ update()
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
-    // std::chrono::time_point<std::chrono::high_resolution_clock>
-    //     refresh_finished_time;
-    // std::chrono::time_point<std::chrono::high_resolution_clock>
-    //     layout_finished_time;
-
     AllocProbeResult result = probe_allocations([&]() {
         alia_ui_system_update(the_system);
 
@@ -514,7 +613,7 @@ update()
         glBindVertexArray(0);
     });
 
-    // auto const end_time = std::chrono::high_resolution_clock::now();
+    auto const end_time = std::chrono::high_resolution_clock::now();
     // auto const refresh_time = std::chrono::duration_cast<
     //     std::chrono::duration<int64_t, std::micro>>(
     //     refresh_finished_time - start_time);
@@ -524,13 +623,14 @@ update()
     // auto const render_time = std::chrono::duration_cast<
     //     std::chrono::duration<int64_t, std::micro>>(
     //     end_time - layout_finished_time);
-    // auto const frame_time = std::chrono::duration_cast<
-    //     std::chrono::duration<int64_t, std::micro>>(end_time -
-    //     start_time);
+    auto const frame_time = std::chrono::duration_cast<
+        std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
 
     // auto const external_frame_time = std::chrono::duration_cast<
     //     std::chrono::duration<int64_t, std::micro>>(
     //     start_time - last_frame_time);
+    std::cout << "frame_time: " << std::setw(6) << frame_time.count() << "us"
+              << std::endl;
 
     // std::cout
     //     << "frame_time: " // << std::setw(6) << external_frame_time <<

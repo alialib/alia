@@ -281,7 +281,7 @@ do_text(
             new_node->base.next_sibling = nullptr;
             new_node->flags = raw_code(flags);
             new_node->text = text;
-            new_node->font_size = scale;
+            new_node->font_size = scale * ctx.geometry->scale;
             new_node->engine = the_msdf_text_engine;
             new_node->padding = ctx.style->padding;
             *emission.next_ptr = &new_node->base;
@@ -314,12 +314,13 @@ do_text(
                     z_index,
                     fragment.text,
                     fragment.length,
-                    scale,
+                    scale * ctx.geometry->scale,
                     fragment.position,
                     color);
             }
             break;
         }
+        default:
         case ALIA_CATEGORY_INPUT: {
             auto& text_placement = *arena_alloc<text_layout_placement_header>(
                 *alia_layout_placement_arena(&ctx));

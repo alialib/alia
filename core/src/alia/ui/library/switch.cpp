@@ -305,9 +305,21 @@ alia_do_switch(
                 selected,
                 interaction_status,
                 effective_style);
+
+            break;
         }
+
+        default:
+            alia_layout_leaf_read(ctx);
+            break;
     }
     return id;
+}
+
+alia_switch_style const*
+alia_default_switch_style(void)
+{
+    return &default_switch_style;
 }
 
 ALIA_EXTERN_C_END

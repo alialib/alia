@@ -116,6 +116,13 @@ alia_do_radio(
     alia_layout_flags_t layout_flags,
     alia_radio_style const* style);
 
+alia_switch_style const*
+alia_default_switch_style(void);
+alia_slider_style const*
+alia_default_slider_style(void);
+alia_radio_style const*
+alia_default_radio_style(void);
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_LIBRARY_H */
