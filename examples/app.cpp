@@ -439,7 +439,6 @@ the_demo(context& ctx)
             alia_srgb8 brand = alia_srgb8_from_unclamped_oklch(lch);
             alia_palette_seeds pseeds
                 = alia_seeds_from_elevation(brand, 0, demo_is_dark);
-            pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
             alia_theme_params params = {
                 .foundation_step_l = 0.05f,
                 .hover_l_shift = 0.05f,
@@ -767,7 +766,7 @@ main()
     {
         alia_palette_seeds pseeds = alia_seeds_from_elevation(
             brand_colors[brand_index], 0, !light_theme);
-        pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
+        // pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
             .foundation_step_l = 0.05f,
             .hover_l_shift = 0.05f,
