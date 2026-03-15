@@ -121,7 +121,7 @@ struct msdf_draw_command
     size_t font_index;
     alia_vec2f position;
     float scale;
-    alia_rgba color;
+    alia_srgba8 color;
     size_t length;
     char text[];
 };
@@ -135,7 +135,7 @@ draw_text(
     size_t length,
     float scale,
     alia_vec2f position,
-    alia_rgba color,
+    alia_srgba8 color,
     size_t font_index);
 
 } // namespace alia

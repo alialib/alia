@@ -171,8 +171,7 @@ do_heading(context& ctx, char const* text)
     do_text(
         ctx,
         2,
-        alia_rgba_from_rgb(
-            alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_2.idle)),
+        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2.idle),
         alia_px(&ctx, 14),
         text,
         NO_FLAGS,
@@ -185,8 +184,7 @@ do_subheading(context& ctx, char const* text)
     do_text(
         ctx,
         2,
-        alia_rgba_from_rgb(
-            alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_1.idle)),
+        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1.idle),
         alia_px(&ctx, 12),
         text,
         NO_FLAGS,
@@ -207,10 +205,10 @@ do_radio_with_text(
             do_text(
                 ctx,
                 2,
-                alia_rgba_from_rgb(alia_rgb_from_srgb8(
+                alia_srgba8_from_srgb8(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base.idle
-                        : ctx.palette->foundation.text.base.disabled)),
+                        : ctx.palette->foundation.text.base.disabled),
                 alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
@@ -234,10 +232,10 @@ do_switch_with_text(
             do_text(
                 ctx,
                 2,
-                alia_rgba_from_rgb(alia_rgb_from_srgb8(
+                alia_srgba8_from_srgb8(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base.idle
-                        : ctx.palette->foundation.text.base.disabled)),
+                        : ctx.palette->foundation.text.base.disabled),
                 alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
@@ -393,9 +391,26 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
-            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
-            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
-            do_text(ctx, 2, GRAY, alia_px(&ctx, 12), lorem_ipsum);
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_px(&ctx, 12),
+                lorem_ipsum);
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_px(&ctx, 12),
+                lorem_ipsum,
+                NO_FLAGS,
+                1);
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_px(&ctx, 12),
+                lorem_ipsum);
         });
     });
 }

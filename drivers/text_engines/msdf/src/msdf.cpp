@@ -27,6 +27,17 @@ out vec2 v_uv;
 
 uniform mat4 u_projection;
 
+vec3 srgb_to_linear(vec3 srgb) {
+    vec3 low = srgb / 12.92;
+    vec3 high = pow((srgb + 0.055) / 1.055, vec3(2.4));
+    vec3 mask = step(vec3(0.04045), srgb);
+    return mix(low, high, mask);
+}
+
+vec4 srgba_to_linear(vec4 srgba) {
+    return vec4(srgb_to_linear(srgba.rgb) * srgba.a, srgba.a);
+}
+
 void main() {
     vec2 xy_pos = i_plane_rect.xy;
     vec2 xy_size = i_plane_rect.zw;
@@ -37,7 +48,7 @@ void main() {
     gl_Position = u_projection * vec4(xy, 0.0, 1.0);
 
     v_uv = uv_pos + a_vertex_pos * uv_size;
-    v_color = i_color;
+    v_color = srgba_to_linear(i_color);
     v_scale = i_scale;
 }
 )";
@@ -74,7 +85,7 @@ void main() {
 
 struct gpu_glyph_instance
 {
-    alia_rgba color;
+    alia_srgba8 color;
     alia_vec2f position;
     float scale;
     float uv_rect[4];
@@ -202,8 +213,8 @@ create_vertex_array(GLuint quad_vbo, GLuint instance_vbo)
     glVertexAttribPointer(
         1,
         4,
-        GL_FLOAT,
-        GL_FALSE,
+        GL_UNSIGNED_BYTE,
+        GL_TRUE,
         sizeof(gpu_glyph_instance),
         (void*) offsetof(gpu_glyph_instance, color));
     glEnableVertexAttribArray(1);
@@ -438,10 +449,7 @@ get_msdf_font_metrics(msdf_text_engine* engine, size_t font_index)
 
 float
 get_kerning(
-    msdf_text_engine* engine,
-    size_t font_index,
-    uint32_t left,
-    uint32_t right)
+    msdf_text_engine* engine, size_t font_index, uint32_t left, uint32_t right)
 {
     auto& km = engine->fonts[font_index].kerning_map;
     auto it = km.find(kerning_pair_index{left, right});
@@ -492,7 +500,7 @@ draw_text(
     size_t length,
     float scale,
     alia_vec2f position,
-    alia_rgba color,
+    alia_srgba8 color,
     size_t font_index)
 {
     auto* command = downcast<msdf_draw_command>(alia_draw_command_alloc(
@@ -502,9 +510,9 @@ draw_text(
         alia_min_aligned_size(sizeof(msdf_draw_command) + length)));
     command->engine = engine;
     command->font_index = font_index;
-    command->position = position
-        + alia_vec2f{0,
-                     engine->fonts[font_index].metrics.ascender * scale};
+    command->position
+        = position
+        + alia_vec2f{0, engine->fonts[font_index].metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
@@ -544,8 +552,7 @@ break_text(
         const msdf_glyph& glyph = glyph_map.at(c);
         assert(glyph.unicode == static_cast<uint32_t>(c));
 
-        x += (glyph.advance
-              + get_kerning(engine, font_index, c, text[i + 1]))
+        x += (glyph.advance + get_kerning(engine, font_index, c, text[i + 1]))
            * scale;
         if (x > width)
         {
@@ -584,7 +591,7 @@ render_command(
 
         alia_vec2f draw_pos = {position.x, surface_h - position.y};
         engine->gpu.glyph_instances[glyph_instance_count] = {
-            alia_rgba{0.9f, 0.9f, 0.9f, 1.0f},
+            command.color,
             draw_pos,
             scale,
             cached_glyph.uv_rect[0],
@@ -601,9 +608,9 @@ render_command(
         position.x += glyph.advance * scale;
 
         if (i + 1 < command.length)
-            position.x += get_kerning(
-                            engine, font_index, c, command.text[i + 1])
-                        * scale;
+            position.x
+                += get_kerning(engine, font_index, c, command.text[i + 1])
+                 * scale;
     }
 }
 

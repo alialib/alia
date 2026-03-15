@@ -43,8 +43,7 @@ measure_text_vertical(
     float assigned_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
     return alia_vertical_requirements{
         .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
@@ -79,8 +78,7 @@ assign_text_boxes(
     float baseline)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
 
     // TODO: Don't repeatedly measure the text width.
     float width = measure_text_width(
@@ -127,8 +125,7 @@ measure_text_wrapped_vertical(
     float line_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
@@ -211,8 +208,7 @@ assign_text_wrapped_boxes(
     alia_wrapping_assignment const* assignment)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
@@ -282,7 +278,7 @@ bool
 do_text(
     context& ctx,
     alia_z_index z_index,
-    alia_rgba color,
+    alia_srgba8 color,
     float scale,
     char const* text,
     layout_flag_set flags = NO_FLAGS,
