@@ -56,7 +56,7 @@ draw_radio_ring(
     alia_vec2f center,
     float radius_px,
     float border_width_px,
-    alia_rgba border_color)
+    alia_srgb8 border_color)
 {
     float const d = radius_px * 2.f;
     alia_box const ring_box{
@@ -65,10 +65,10 @@ draw_radio_ring(
     };
 
     alia_box_paint paint{
-        .fill_color = alia_rgba{0.f, 0.f, 0.f, 0.f},
+        .fill_color = alia_srgba8{0, 0, 0, 0},
         .corner_radius = radius_px,
         .border_width = border_width_px,
-        .border_color = border_color,
+        .border_color = alia_srgba8_from_srgb8(border_color),
     };
 
     alia_draw_box(ctx, ctx->geometry->z_base + 2, ring_box, paint);
@@ -95,11 +95,9 @@ render_radio(
     {
         alia_srgb8 const outline_srgb = alia_palette_color_at(
             p, style->outline, ALIA_INTERACTION_STATUS_DISABLED);
-        alia_rgba const outline_rgba
-            = alia_rgba_from_rgb(alia_rgb_from_srgb8(outline_srgb));
 
         draw_radio_ring(
-            ctx, center, ring_radius_px, border_width_px, outline_rgba);
+            ctx, center, ring_radius_px, border_width_px, outline_srgb);
 
         if (selected)
         {
@@ -108,7 +106,7 @@ render_radio(
                 ctx->geometry->z_base + 2,
                 center,
                 dot_radius_max_px,
-                outline_rgba);
+                alia_srgba8_from_srgb8(outline_srgb));
         }
 
         return;
@@ -130,13 +128,6 @@ render_radio(
     alia_srgb8 const highlight_srgb
         = alia_palette_color_at(p, style->highlight, status);
 
-    alia_rgba const outline_rgba
-        = alia_rgba_from_rgb(alia_rgb_from_srgb8(outline_srgb));
-    alia_rgba const dot_rgba
-        = alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_srgb));
-    alia_rgba const highlight_rgba
-        = alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(highlight_srgb), 0.2f);
-
     if ((interaction_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
         != 0)
@@ -146,7 +137,7 @@ render_radio(
             ctx->geometry->z_base + 2,
             center,
             alia_px(ctx, style->highlight_radius),
-            highlight_rgba);
+            alia_srgba8_from_srgb8_alpha(highlight_srgb, 0x33));
     }
 
     render_click_flares(
@@ -154,17 +145,21 @@ render_radio(
         ALIA_NESTED_BITPACK(data.bits, click_flare),
         interaction_status,
         center,
-        alia_rgb_from_srgb8(dot_srgb),
+        dot_srgb,
         alia_px(ctx, style->flare_radius));
 
     draw_radio_ring(
-        ctx, center, ring_radius_px, border_width_px, outline_rgba);
+        ctx, center, ring_radius_px, border_width_px, outline_srgb);
 
     float const dot_radius_px = dot_radius_max_px * smoothed_state;
     if (dot_radius_px > 0.f)
     {
         alia_draw_circle(
-            ctx, ctx->geometry->z_base + 2, center, dot_radius_px, dot_rgba);
+            ctx,
+            ctx->geometry->z_base + 2,
+            center,
+            dot_radius_px,
+            alia_srgba8_from_srgb8(dot_srgb));
     }
 }
 

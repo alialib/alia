@@ -194,11 +194,13 @@ render_slider(
 
     // TODO: Should the track use interaction status?
     alia_srgb8 const track_srgb = alia_palette_color_at(p, s->track_color, 0);
-    alia_rgba const track_rgba
-        = alia_rgba_from_rgb(alia_rgb_from_srgb8(track_srgb));
 
     alia_draw_rounded_box(
-        ctx, ctx->geometry->z_base + 2, track_box, track_rgba, 0.f);
+        ctx,
+        ctx->geometry->z_base + 2,
+        track_box,
+        alia_srgba8_from_srgb8(track_srgb),
+        0.f);
 
     alia_vec2f const thumb_center
         = get_thumb_center(box, axis, ctx, s, minimum, maximum, value);
@@ -216,20 +218,24 @@ render_slider(
     // alia_draw_blurred_box(...)
 
     alia_draw_circle(
-        ctx, ctx->geometry->z_base + 2, thumb_center, thumb_r, thumb_rgba);
+        ctx,
+        ctx->geometry->z_base + 2,
+        thumb_center,
+        thumb_r,
+        alia_srgba8_from_srgb8(thumb_srgb));
 
     if ((thumb_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
         != 0)
     {
-        alia_srgb8 const hi_srgb
+        alia_srgb8 const highlight_srgb
             = alia_palette_color_at(p, s->highlight, status);
         alia_draw_circle(
             ctx,
             ctx->geometry->z_base + 2,
             thumb_center,
             alia_px(ctx, s->highlight_radius),
-            alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(hi_srgb), 0.2f));
+            alia_srgba8_from_srgb8_alpha(highlight_srgb, 0x33));
     }
 
     // TODO: Draw focus

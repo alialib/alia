@@ -115,6 +115,18 @@ alia_rgba_from_rgb(alia_rgb c)
     return alia_rgba{c.r, c.g, c.b, 1.0f};
 }
 
+static inline alia_srgba8
+alia_srgba8_from_srgb8_alpha(alia_srgb8 c, uint8_t a)
+{
+    return alia_srgba8{c.r, c.g, c.b, a};
+}
+
+static inline alia_srgba8
+alia_srgba8_from_srgb8(alia_srgb8 c)
+{
+    return alia_srgba8{c.r, c.g, c.b, 255};
+}
+
 // modulate (rgb*a, a*a)
 alia_rgba
 alia_apply_alpha_rgba(alia_rgba c, float a);

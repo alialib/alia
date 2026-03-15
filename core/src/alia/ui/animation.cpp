@@ -40,7 +40,7 @@ render_click_flares(
     bitpack_ref<click_flare_bit_layout> bits,
     alia_interaction_status_t state,
     alia_vec2f position,
-    alia_rgb color,
+    alia_srgb8 color,
     float radius)
 {
     // TODO: Don't hardcode the maximum number of flares.
@@ -69,7 +69,8 @@ render_click_flares(
                 ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
                 position,
                 radius * radius_scale_factor,
-                alia_rgba_from_rgb_alpha(color, intensity * 0.4f));
+                alia_srgba8_from_srgb8_alpha(
+                    color, uint8_t(intensity * 0x66)));
         }
     }
 
@@ -86,7 +87,8 @@ render_click_flares(
                 ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
                 position,
                 radius,
-                alia_rgba_from_rgb_alpha(color, intensity * 0.4f));
+                alia_srgba8_from_srgb8_alpha(
+                    color, uint8_t(intensity * 0x66)));
         }
     }
 
@@ -107,7 +109,7 @@ render_click_flares(
             ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
             position,
             scale_factor * radius,
-            alia_rgba_from_rgb_alpha(color, scale_factor * 0.4f));
+            alia_srgba8_from_srgb8_alpha(color, uint8_t(scale_factor * 0x66)));
     }
 }
 

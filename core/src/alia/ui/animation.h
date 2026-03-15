@@ -29,7 +29,7 @@ render_click_flares(
     bitpack_ref<click_flare_bit_layout> bits,
     alia_interaction_status_t state,
     alia_vec2f position,
-    alia_rgb color,
+    alia_srgb8 color,
     float radius = 32);
 
 } // namespace alia

@@ -5,7 +5,7 @@ do_rect(
     context& ctx,
     alia_z_index z_index,
     alia_vec2f size,
-    alia_rgba color,
+    alia_srgb8 color,
     layout_flag_set flags)
 {
     alia_element_id id = alia_element_get_identity(&ctx);
@@ -27,13 +27,14 @@ do_rect(
                 = alia_element_get_interaction_status(&ctx, id, 0);
             if (status & ALIA_INTERACTION_STATUS_HOVERED)
             {
-                color = {0.0f, 0.0f, 1.0f, 1.0f};
+                color = {0x00, 0x00, 0xff};
             }
             else if (status & ALIA_INTERACTION_STATUS_ACTIVE)
             {
-                color = {1.0f, 0.0f, 1.0f, 1.0f};
+                color = {0xff, 0x00, 0xff};
             }
-            alia_draw_rounded_box(&ctx, z_index, box, color, 0.0f);
+            alia_draw_rounded_box(
+                &ctx, z_index, box, alia_srgba8_from_srgb8(color), 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -51,7 +52,7 @@ do_rect_with_offset(
     context& ctx,
     alia_z_index z_index,
     alia_vec2f size,
-    alia_rgba color,
+    alia_srgb8 color,
     layout_flag_set flags,
     alia_vec2f offset)
 {
@@ -68,7 +69,8 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_DRAWING: {
             alia_box box = alia_layout_leaf_read(&ctx);
-            alia_draw_rounded_box(&ctx, z_index, box, color, 0.0f);
+            alia_draw_rounded_box(
+                &ctx, z_index, box, alia_srgba8_from_srgb8(color), 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -98,7 +100,7 @@ do_animated_rect(
     bool& initialized,
     alia_vec2f& offset,
     alia_vec2f size,
-    alia_rgba color,
+    alia_srgb8 color,
     layout_flag_set flags)
 {
     placement_hook(ctx, FILL, [&](auto outer_placement) {

@@ -10,20 +10,6 @@
 #include <alia/ui/drawing.h>
 #include <iostream>
 
-// extern "C" {
-
-// struct gl_renderer
-// {
-//     alia_draw_system* system;
-//     GLuint vanilla_shader_program;
-//     GLuint vao, vbo;
-//     GLuint instance_vbo;
-//     GLint vanilla_matrix_location;
-//     alia_arena rect_instance_arena;
-// };
-
-// } // extern "C"
-
 namespace alia {
 
 const char* vanilla_vertex_shader_source = R"(
@@ -45,17 +31,28 @@ flat out float v_corner_radius;
 flat out float v_border_width;
 flat out vec4 v_border_color;
 
+vec3 srgb_to_linear(vec3 srgb) {
+    vec3 low = srgb / 12.92;
+    vec3 high = pow((srgb + 0.055) / 1.055, vec3(2.4));
+    vec3 mask = step(vec3(0.04045), srgb);
+    return mix(low, high, mask);
+}
+
+vec4 srgba_to_linear(vec4 srgba) {
+    return vec4(srgb_to_linear(srgba.rgb) * srgba.a, srgba.a);
+}
+
 void main() {
     vec2 scaled = a_pos * (i_size + vec2(2.0f)) + i_pos - vec2(1.0f);
     gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
-    v_fill_color = i_fill_color;
+    v_fill_color = srgba_to_linear(i_fill_color);
     v_pos = scaled;
     v_rect_center = i_pos + i_size * 0.5;
     v_rect_half_size = i_size * 0.5;
     v_corner_radius =
         min(i_corner_radius, min(v_rect_half_size.x, v_rect_half_size.y));
     v_border_width = i_border_width;
-    v_border_color = i_border_color;
+    v_border_color = srgba_to_linear(i_border_color);
 }
 )";
 
@@ -108,8 +105,8 @@ struct rect_instance
 {
     alia_vec2f min;
     alia_vec2f size;
-    alia_rgba fill_color;
-    alia_rgba border_color;
+    alia_srgba8 fill_color;
+    alia_srgba8 border_color;
     float corner_radius;
     float border_width;
 };
@@ -226,8 +223,8 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glVertexAttribPointer(
         3,
         4,
-        GL_FLOAT,
-        GL_FALSE,
+        GL_UNSIGNED_BYTE,
+        GL_TRUE,
         sizeof(rect_instance),
         (void*) offsetof(rect_instance, fill_color));
     glEnableVertexAttribArray(3);
@@ -259,8 +256,8 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glVertexAttribPointer(
         6,
         4,
-        GL_FLOAT,
-        GL_FALSE,
+        GL_UNSIGNED_BYTE,
+        GL_TRUE,
         sizeof(rect_instance),
         (void*) offsetof(rect_instance, border_color));
     glEnableVertexAttribArray(6);

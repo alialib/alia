@@ -106,10 +106,10 @@ alia_draw_command_alloc_aligned(
 
 typedef struct alia_box_paint
 {
-    alia_rgba fill_color;
+    alia_srgba8 fill_color;
     float corner_radius;
     float border_width;
-    alia_rgba border_color;
+    alia_srgba8 border_color;
 } alia_box_paint;
 
 typedef struct alia_draw_box_command
@@ -149,7 +149,7 @@ alia_draw_rounded_box(
     alia_context* ctx,
     alia_z_index z_index,
     alia_box box,
-    alia_rgba color,
+    alia_srgba8 color,
     float radius)
 {
     alia_draw_box(
@@ -168,7 +168,7 @@ alia_draw_circle(
     alia_z_index z_index,
     alia_vec2f center,
     float radius,
-    alia_rgba color)
+    alia_srgba8 color)
 {
     alia_draw_box(
         ctx,

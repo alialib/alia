@@ -101,7 +101,7 @@ render_switch(
             ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             alia_box{track_min, alia_vec2f{track_w, track_h}},
-            alia_rgba_from_rgb(alia_rgb_from_srgb8(track_color)),
+            alia_srgba8_from_srgb8(track_color),
             track_corner);
 
         float const dot_x_logical
@@ -115,7 +115,7 @@ render_switch(
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             {switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
             alia_px(ctx, dot_radius_logical),
-            alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_color)));
+            alia_srgba8_from_srgb8(dot_color));
 
         return;
     }
@@ -156,7 +156,7 @@ render_switch(
         ctx,
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         alia_box{track_min, alia_vec2f{track_w, track_h}},
-        alia_rgba_from_rgb(alia_rgb_from_srgb8(track_color)),
+        alia_srgba8_from_srgb8(track_color),
         track_corner);
 
     float const dot_center_x = switch_min.x + alia_px(ctx, dot_x_logical);
@@ -180,7 +180,7 @@ render_switch(
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
         dot_center,
         dot_radius,
-        alia_rgba_from_rgb(alia_rgb_from_srgb8(dot_color)));
+        alia_srgba8_from_srgb8(dot_color));
 
     if ((interaction_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
@@ -193,8 +193,7 @@ render_switch(
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
             dot_center,
             alia_px(ctx, style->highlight_radius),
-            alia_rgba_from_rgb_alpha(
-                alia_rgb_from_srgb8(highlight_color), 0.2f));
+            alia_srgba8_from_srgb8_alpha(highlight_color, 0x33));
     }
 
     render_click_flares(
@@ -202,7 +201,7 @@ render_switch(
         ALIA_NESTED_BITPACK(data.bits, click_flare),
         interaction_status,
         dot_center,
-        alia_rgb_from_srgb8(dot_color),
+        dot_color,
         alia_px(ctx, style->flare_radius));
 }
 

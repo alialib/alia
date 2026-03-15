@@ -440,8 +440,7 @@ the_demo(context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_rgba_from_rgb(alia_rgb_from_srgb8(
-                        ctx.palette->foundation.background.stronger_2.idle)),
+                    ctx.palette->foundation.background.stronger_2.idle,
                     FILL,
                     [&]() {
                         column(ctx, [&]() {
@@ -465,9 +464,7 @@ the_demo(context& ctx)
                             concrete_panel(
                                 ctx,
                                 0,
-                                alia_rgba_from_rgb(alia_rgb_from_srgb8(
-                                    ctx.palette->foundation.background.base
-                                        .idle)),
+                                ctx.palette->foundation.background.base.idle,
                                 FILL,
                                 [&]() {
                                     column(ctx, GROW, [&]() {
