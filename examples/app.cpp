@@ -80,7 +80,7 @@ static alia_radio_style local_radio_style;
 static bool local_styles_initialized = false;
 static float demo_hue = 0.55f;
 static bool demo_is_dark = true;
-static float demo_padding = 10.f;
+static float demo_padding = 6.f;
 static float demo_scale = 1.0f;
 
 #include "prototyping/allocation_probe.h"
@@ -113,7 +113,7 @@ void
 with_padding(context& ctx, float padding, Content&& content)
 {
     float old_padding = ctx.style->padding;
-    ctx.style->padding = padding;
+    ctx.style->padding = padding * ctx.geometry->scale;
     content();
     ctx.style->padding = old_padding;
 }
@@ -123,9 +123,12 @@ void
 with_ui_scale(context& ctx, float scale, Content&& content)
 {
     float old_scale = ctx.geometry->scale;
+    float old_padding = ctx.style->padding;
     ctx.geometry->scale *= scale;
+    ctx.style->padding *= scale;
     content();
     ctx.geometry->scale = old_scale;
+    ctx.style->padding = old_padding;
 }
 
 template<class Content>
@@ -445,7 +448,7 @@ the_demo(context& ctx)
                                  .top = 40,
                                  .bottom = 40},
                                 [&]() {
-                                    with_padding(ctx, 10, [&] {
+                                    with_padding(ctx, 6, [&] {
                                         column(
                                             ctx, [&]() { do_controls(ctx); });
                                     });
