@@ -6,6 +6,7 @@ struct msdf_text_layout_node
     alia_layout_flags_t flags;
     float padding;
     msdf_text_engine* engine;
+    size_t font_index;
     char const* text;
     float font_size;
 };
@@ -15,7 +16,11 @@ measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     float width = measure_text_width(
-        text.engine, text.text, strlen(text.text), text.font_size);
+        text.engine,
+        text.font_index,
+        text.text,
+        strlen(text.text),
+        text.font_size);
     return alia_horizontal_requirements{
         .min_size = width + text.padding * 2, .growth_factor = 0};
 }
@@ -38,7 +43,8 @@ measure_text_vertical(
     float assigned_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine);
+    auto const* metrics
+        = get_msdf_font_metrics(text.engine, text.font_index);
     return alia_vertical_requirements{
         .min_size = metrics->line_height * text.font_size + text.padding * 2,
         .growth_factor = 0,
@@ -61,6 +67,7 @@ struct text_layout_placement_fragment
     alia_vec2f size;
     char const* text;
     size_t length;
+    size_t font_index;
 };
 
 void
@@ -72,11 +79,16 @@ assign_text_boxes(
     float baseline)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine);
+    auto const* metrics
+        = get_msdf_font_metrics(text.engine, text.font_index);
 
     // TODO: Don't repeatedly measure the text width.
     float width = measure_text_width(
-        text.engine, text.text, strlen(text.text), text.font_size);
+        text.engine,
+        text.font_index,
+        text.text,
+        strlen(text.text),
+        text.font_size);
 
     auto const placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(text.flags, main_axis),
@@ -96,6 +108,7 @@ assign_text_boxes(
     fragment->size = placement.size;
     fragment->text = text.text;
     fragment->length = strlen(text.text);
+    fragment->font_index = text.font_index;
 }
 
 alia_horizontal_requirements
@@ -114,7 +127,8 @@ measure_text_wrapped_vertical(
     float line_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine);
+    auto const* metrics
+        = get_msdf_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
@@ -122,6 +136,7 @@ measure_text_wrapped_vertical(
 
     auto first_break = break_text(
         text.engine,
+        text.font_index,
         text.text,
         0,
         length,
@@ -164,6 +179,7 @@ measure_text_wrapped_vertical(
         ++wrap_count;
         auto break_result = break_text(
             text.engine,
+            text.font_index,
             text.text,
             index,
             length,
@@ -195,7 +211,8 @@ assign_text_wrapped_boxes(
     alia_wrapping_assignment const* assignment)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine);
+    auto const* metrics
+        = get_msdf_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
@@ -216,6 +233,7 @@ assign_text_wrapped_boxes(
     {
         auto break_result = break_text(
             text.engine,
+            text.font_index,
             text.text,
             index,
             length,
@@ -241,6 +259,7 @@ assign_text_wrapped_boxes(
                metrics->line_height * text.font_size};
         fragment->text = text.text + index;
         fragment->length = end_index - index;
+        fragment->font_index = text.font_index;
         ++header->fragment_count;
 
         x = 0;
@@ -266,7 +285,8 @@ do_text(
     alia_rgba color,
     float scale,
     char const* text,
-    layout_flag_set flags = NO_FLAGS)
+    layout_flag_set flags = NO_FLAGS,
+    size_t font_index = 0)
 {
     bool result = false;
     // TODO: Should this have its own ID?
@@ -283,6 +303,7 @@ do_text(
             new_node->text = text;
             new_node->font_size = scale * ctx.geometry->scale;
             new_node->engine = the_msdf_text_engine;
+            new_node->font_index = font_index;
             new_node->padding = ctx.style->padding;
             *emission.next_ptr = &new_node->base;
             emission.next_ptr = &new_node->base.next_sibling;
@@ -316,7 +337,8 @@ do_text(
                     fragment.length,
                     scale * ctx.geometry->scale,
                     fragment.position,
-                    color);
+                    color,
+                    fragment.font_index);
             }
             break;
         }

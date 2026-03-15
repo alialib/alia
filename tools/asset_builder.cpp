@@ -472,31 +472,14 @@ inline std::size_t const alia_atlas_decompressed_size = )"
 inline std::size_t const alia_font_count = )"
           << fonts.size() << R"(;
 
+extern msdf_font_description const alia_font_descriptions[];
+
 inline msdf_font_description const& alia_font_description(std::size_t index) {
-    static msdf_font_description const descs[] = {
+    return alia_font_descriptions[index];
+}
+
+} // namespace alia
 )";
-        for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
-        {
-            FontGeometry const& fg = fonts[font_idx];
-            msdfgen::FontMetrics const& m = fg.getMetrics();
-            f << "        { {" << std::showpoint
-              << static_cast<float>(m.emSize) << "f, "
-              << static_cast<float>(m.lineHeight) << "f, "
-              << static_cast<float>(m.ascenderY) << "f, "
-              << static_cast<float>(m.descenderY) << "f, "
-              << static_cast<float>(m.underlineY) << "f, "
-              << static_cast<float>(m.underlineThickness) << "f}, {"
-              << dist_range << "f, 0.f, " << em_sz << "f, "
-              << static_cast<float>(w) << "f, " << static_cast<float>(h)
-              << "f}, alia_font_" << font_idx << "_glyphs, alia_font_"
-              << font_idx << "_glyph_count, "
-              << (fonts[font_idx].getKerning().empty()
-                      ? "nullptr"
-                      : "alia_font_" + std::to_string(font_idx)
-                            + "_kerning_pairs")
-              << ", alia_font_" << font_idx << "_kerning_pair_count },\n";
-        }
-        f << "    };\n    return descs[index];\n}\n\n} // namespace alia\n";
     }
 
     // --- Emit alia_fonts.cpp (glyph/kerning arrays and RLE data) ---
@@ -602,6 +585,32 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             f << "char const alia_font_" << font_idx << "_slant[] = \""
               << slant_escaped << "\";\n\n";
         }
+
+        float const dist_range
+            = static_cast<float>(px_range.upper - px_range.lower);
+        float const em_sz = static_cast<float>(em_size);
+        f << "msdf_font_description const alia_font_descriptions[] = {\n";
+        for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
+        {
+            FontGeometry const& fg = fonts[font_idx];
+            msdfgen::FontMetrics const& m = fg.getMetrics();
+            f << "    { {" << std::showpoint << static_cast<float>(m.emSize)
+              << "f, " << static_cast<float>(m.lineHeight) << "f, "
+              << static_cast<float>(m.ascenderY) << "f, "
+              << static_cast<float>(m.descenderY) << "f, "
+              << static_cast<float>(m.underlineY) << "f, "
+              << static_cast<float>(m.underlineThickness) << "f}, {"
+              << dist_range << "f, 0.f, " << em_sz << "f, "
+              << static_cast<float>(w) << "f, " << static_cast<float>(h)
+              << "f}, alia_font_" << font_idx << "_glyphs, alia_font_"
+              << font_idx << "_glyph_count, "
+              << (fonts[font_idx].getKerning().empty()
+                      ? "nullptr"
+                      : "alia_font_" + std::to_string(font_idx)
+                            + "_kerning_pairs")
+              << ", alia_font_" << font_idx << "_kerning_pair_count },\n";
+        }
+        f << "};\n\n";
 
         f << "std::uint8_t const alia_atlas_rle_r[] = {\n";
         f << std::hex << std::setfill('0');

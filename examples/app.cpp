@@ -173,8 +173,10 @@ do_heading(context& ctx, char const* text)
         2,
         alia_rgba_from_rgb(
             alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_2.idle)),
-        alia_px(&ctx, 16),
-        text);
+        alia_px(&ctx, 14),
+        text,
+        NO_FLAGS,
+        1);
 }
 
 void
@@ -185,8 +187,10 @@ do_subheading(context& ctx, char const* text)
         2,
         alia_rgba_from_rgb(
             alia_rgb_from_srgb8(ctx.palette->foundation.text.stronger_1.idle)),
-        alia_px(&ctx, 14),
-        text);
+        alia_px(&ctx, 12),
+        text,
+        NO_FLAGS,
+        1);
 }
 
 void
@@ -264,7 +268,7 @@ do_controls(context& ctx)
     do_subheading(ctx, "Hue");
     alia_do_slider_f(&ctx, &demo_hue, 0.f, 1.f, 0.01f, 0, false, nullptr);
 
-    do_subheading(ctx, "GEOMETRY");
+    do_heading(ctx, "GEOMETRY");
 
     do_subheading(ctx, "Spacing");
     alia_do_slider_f(&ctx, &demo_padding, 0.f, 24.f, 1.f, 0, false, nullptr);
@@ -852,7 +856,8 @@ main()
     the_msdf_text_engine = alia::create_msdf_text_engine(
         the_system,
         &the_draw_system,
-        alia::alia_font_description(0),
+        alia::alia_font_descriptions,
+        alia::alia_font_count,
         atlas_rgb.data(),
         alia::alia_atlas_width,
         alia::alia_atlas_height);

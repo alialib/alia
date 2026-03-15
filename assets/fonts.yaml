@@ -6,3 +6,7 @@ fonts:
     url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
     weight: 400
     slant: normal
+  - id: Roboto-Bold
+    url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf"
+    weight: 700
+    slant: normal

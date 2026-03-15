@@ -59,13 +59,14 @@ struct msdf_font_description
     size_t kerning_pair_count;
 };
 
-// Creates engine from an in-memory RGB atlas.
+// Creates engine from an in-memory RGB atlas and multiple font descriptions.
 msdf_text_engine*
 create_msdf_text_engine(
     alia_ui_system* ui,
     // TODO: Don't have a separate draw system object.
     alia_draw_system* draw_system,
-    msdf_font_description const& font_description,
+    msdf_font_description const* font_descriptions,
+    size_t font_count,
     std::uint8_t const* atlas_rgb,
     int width,
     int height);
@@ -91,11 +92,12 @@ void
 destroy_msdf_text_engine(msdf_text_engine* engine);
 
 msdf_font_metrics const*
-get_msdf_font_metrics(msdf_text_engine* engine);
+get_msdf_font_metrics(msdf_text_engine* engine, size_t font_index);
 
 float
 measure_text_width(
     msdf_text_engine* engine,
+    size_t font_index,
     char const* text,
     size_t length,
     float font_size);
@@ -103,6 +105,7 @@ measure_text_width(
 std::pair<size_t, float>
 break_text(
     msdf_text_engine* engine,
+    size_t font_index,
     char const* text,
     size_t start,
     size_t end,
@@ -115,6 +118,7 @@ struct msdf_draw_command
 {
     alia_draw_command base;
     msdf_text_engine* engine;
+    size_t font_index;
     alia_vec2f position;
     float scale;
     alia_rgba color;
@@ -131,6 +135,7 @@ draw_text(
     size_t length,
     float scale,
     alia_vec2f position,
-    alia_rgba color);
+    alia_rgba color,
+    size_t font_index);
 
 } // namespace alia

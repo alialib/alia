@@ -126,6 +126,14 @@ struct cached_glyph_data
     float plane_rect[4];
 };
 
+struct msdf_font_data
+{
+    msdf_font_metrics metrics;
+    alia::glyph_map glyph_map;
+    std::unordered_map<int, cached_glyph_data> glyph_cache;
+    alia::kerning_map kerning_map;
+};
+
 struct msdf_text_engine
 {
     alia_ui_system* ui;
@@ -134,14 +142,9 @@ struct msdf_text_engine
 
     msdf_gpu_data gpu;
 
-    msdf_font_metrics metrics;
     msdf_atlas_description atlas;
 
-    alia::glyph_map glyph_map;
-
-    std::unordered_map<int, cached_glyph_data> glyph_cache;
-
-    alia::kerning_map kerning_map;
+    std::vector<msdf_font_data> fonts;
 
     alia_draw_material_id material_id;
 };
@@ -322,7 +325,8 @@ msdf_text_engine*
 create_msdf_text_engine(
     alia_ui_system* ui,
     alia_draw_system* draw_system,
-    msdf_font_description const& font,
+    msdf_font_description const* font_descriptions,
+    size_t font_count,
     std::uint8_t const* atlas_rgb,
     int width,
     int height)
@@ -343,64 +347,64 @@ create_msdf_text_engine(
     std::vector<gpu_glyph_instance> glyph_instances;
     glyph_instances.resize(initial_glyph_instance_capacity);
 
-    kerning_map kerning_map;
-    for (size_t i = 0; i < font.kerning_pair_count; ++i)
-    {
-        kerning_map[kerning_pair_index{
-            font.kerning_pairs[i].left, font.kerning_pairs[i].right}]
-            = font.kerning_pairs[i].adjustment;
-    }
+    msdf_atlas_description atlas = font_count > 0 ? font_descriptions[0].atlas
+                                                  : msdf_atlas_description{};
 
-    glyph_map glyph_map;
-    for (size_t i = 0; i < font.glyph_count; ++i)
+    std::vector<msdf_font_data> fonts;
+    fonts.reserve(font_count);
+    for (size_t f = 0; f < font_count; ++f)
     {
-        glyph_map[font.glyphs[i].unicode] = font.glyphs[i];
+        msdf_font_description const& font = font_descriptions[f];
+        msdf_font_data fd;
+        fd.metrics = font.metrics;
+        for (size_t i = 0; i < font.kerning_pair_count; ++i)
+        {
+            fd.kerning_map[kerning_pair_index{
+                font.kerning_pairs[i].left, font.kerning_pairs[i].right}]
+                = font.kerning_pairs[i].adjustment;
+        }
+        for (size_t i = 0; i < font.glyph_count; ++i)
+        {
+            fd.glyph_map[font.glyphs[i].unicode] = font.glyphs[i];
+        }
+        for (size_t i = 0; i < font.glyph_count; ++i)
+        {
+            auto& cached_glyph = fd.glyph_cache[font.glyphs[i].unicode];
+            cached_glyph.uv_rect[0]
+                = font.glyphs[i].atlas_left / font.atlas.width;
+            cached_glyph.uv_rect[1]
+                = font.glyphs[i].atlas_bottom / font.atlas.height;
+            cached_glyph.uv_rect[2]
+                = (font.glyphs[i].atlas_right - font.glyphs[i].atlas_left)
+                / font.atlas.width;
+            cached_glyph.uv_rect[3]
+                = (font.glyphs[i].atlas_top - font.glyphs[i].atlas_bottom)
+                / font.atlas.height;
+            cached_glyph.plane_rect[0] = font.glyphs[i].plane_left;
+            cached_glyph.plane_rect[1] = font.glyphs[i].plane_bottom;
+            cached_glyph.plane_rect[2]
+                = font.glyphs[i].plane_right - font.glyphs[i].plane_left;
+            cached_glyph.plane_rect[3]
+                = font.glyphs[i].plane_top - font.glyphs[i].plane_bottom;
+        }
+        fonts.push_back(std::move(fd));
     }
 
     // TODO: Don't use new here.
     msdf_text_engine* engine = new msdf_text_engine{
         .ui = ui,
-
         .surface_size = {0, 0},
-
         .gpu
         = {.shader_program = shader_program,
            .matrix_location = matrix_location,
-
            .texture = texture,
-
            .vao = vao,
            .quad_vbo = quad_vbo,
            .instance_vbo = instance_vbo,
-
            .glyph_instances = std::move(glyph_instances)},
-
-        .metrics = font.metrics,
-        .atlas = font.atlas,
-        .glyph_map = std::move(glyph_map),
-        .kerning_map = std::move(kerning_map),
-
+        .atlas = atlas,
+        .fonts = std::move(fonts),
         .material_id = 0};
-
-    for (size_t i = 0; i < font.glyph_count; ++i)
-    {
-        auto& cached_glyph = engine->glyph_cache[font.glyphs[i].unicode];
-        cached_glyph.uv_rect[0] = font.glyphs[i].atlas_left / font.atlas.width;
-        cached_glyph.uv_rect[1]
-            = font.glyphs[i].atlas_bottom / font.atlas.height;
-        cached_glyph.uv_rect[2]
-            = (font.glyphs[i].atlas_right - font.glyphs[i].atlas_left)
-            / font.atlas.width;
-        cached_glyph.uv_rect[3]
-            = (font.glyphs[i].atlas_top - font.glyphs[i].atlas_bottom)
-            / font.atlas.height;
-        cached_glyph.plane_rect[0] = font.glyphs[i].plane_left;
-        cached_glyph.plane_rect[1] = font.glyphs[i].plane_bottom;
-        cached_glyph.plane_rect[2]
-            = font.glyphs[i].plane_right - font.glyphs[i].plane_left;
-        cached_glyph.plane_rect[3]
-            = font.glyphs[i].plane_top - font.glyphs[i].plane_bottom;
-    }
 
     engine->material_id = alia_material_alloc_ids(draw_system, 1);
     alia_material_register(
@@ -427,16 +431,21 @@ destroy_msdf_text_engine(msdf_text_engine* engine)
 }
 
 msdf_font_metrics const*
-get_msdf_font_metrics(msdf_text_engine* engine)
+get_msdf_font_metrics(msdf_text_engine* engine, size_t font_index)
 {
-    return &engine->metrics;
+    return &engine->fonts[font_index].metrics;
 }
 
 float
-get_kerning(msdf_text_engine* engine, uint32_t left, uint32_t right)
+get_kerning(
+    msdf_text_engine* engine,
+    size_t font_index,
+    uint32_t left,
+    uint32_t right)
 {
-    auto it = engine->kerning_map.find(kerning_pair_index{left, right});
-    if (it != engine->kerning_map.end())
+    auto& km = engine->fonts[font_index].kerning_map;
+    auto it = km.find(kerning_pair_index{left, right});
+    if (it != km.end())
     {
         return it->second;
     }
@@ -445,19 +454,25 @@ get_kerning(msdf_text_engine* engine, uint32_t left, uint32_t right)
 
 float
 measure_text_width(
-    msdf_text_engine* engine, char const* text, size_t length, float font_size)
+    msdf_text_engine* engine,
+    size_t font_index,
+    char const* text,
+    size_t length,
+    float font_size)
 {
+    auto& glyph_map = engine->fonts[font_index].glyph_map;
     float width = 0;
     for (size_t i = 0; i < length; ++i)
     {
         char const c = text[i];
 
-        const msdf_glyph& glyph = engine->glyph_map[c];
-        assert(glyph.unicode == c);
+        const msdf_glyph& glyph = glyph_map.at(c);
+        assert(glyph.unicode == static_cast<uint32_t>(c));
 
         if (i + 1 < length)
         {
-            width += (glyph.advance + get_kerning(engine, c, text[i + 1]))
+            width += (glyph.advance
+                      + get_kerning(engine, font_index, c, text[i + 1]))
                    * font_size;
         }
         else
@@ -477,7 +492,8 @@ draw_text(
     size_t length,
     float scale,
     alia_vec2f position,
-    alia_rgba color)
+    alia_rgba color,
+    size_t font_index)
 {
     auto* command = downcast<msdf_draw_command>(alia_draw_command_alloc(
         ctx,
@@ -485,8 +501,10 @@ draw_text(
         engine->material_id,
         alia_min_aligned_size(sizeof(msdf_draw_command) + length)));
     command->engine = engine;
-    command->position
-        = position + alia_vec2f{0, engine->metrics.ascender * scale};
+    command->font_index = font_index;
+    command->position = position
+        + alia_vec2f{0,
+                     engine->fonts[font_index].metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
     command->length = length;
@@ -496,6 +514,7 @@ draw_text(
 std::pair<size_t, float>
 break_text(
     msdf_text_engine* engine,
+    size_t font_index,
     char const* text,
     size_t start,
     size_t end,
@@ -504,6 +523,7 @@ break_text(
     float width,
     bool force_break)
 {
+    auto& glyph_map = engine->fonts[font_index].glyph_map;
     size_t last_space = start;
     float x = 0;
     for (size_t i = start; i < end; ++i)
@@ -521,10 +541,12 @@ break_text(
                 break;
         }
 
-        const msdf_glyph& glyph = engine->glyph_map[c];
-        assert(glyph.unicode == c);
+        const msdf_glyph& glyph = glyph_map.at(c);
+        assert(glyph.unicode == static_cast<uint32_t>(c));
 
-        x += (glyph.advance + get_kerning(engine, c, text[i + 1])) * scale;
+        x += (glyph.advance
+              + get_kerning(engine, font_index, c, text[i + 1]))
+           * scale;
         if (x > width)
         {
             return {
@@ -542,6 +564,8 @@ render_command(
     size_t& glyph_instance_count,
     msdf_draw_command const& command)
 {
+    size_t font_index = command.font_index;
+    auto& font = engine->fonts[font_index];
     // TODO: Culling.
     alia_vec2f position = command.position;
     float scale = command.scale;
@@ -551,12 +575,12 @@ render_command(
         char const c = command.text[i];
         if (c < 32)
             continue;
-        uint32_t unicode = c;
+        uint32_t unicode = static_cast<uint32_t>(c);
 
-        const msdf_glyph& glyph = engine->glyph_map[unicode];
+        const msdf_glyph& glyph = font.glyph_map.at(unicode);
         assert(glyph.unicode == unicode);
 
-        auto& cached_glyph = engine->glyph_cache[unicode];
+        auto& cached_glyph = font.glyph_cache.at(unicode);
 
         alia_vec2f draw_pos = {position.x, surface_h - position.y};
         engine->gpu.glyph_instances[glyph_instance_count] = {
@@ -577,7 +601,9 @@ render_command(
         position.x += glyph.advance * scale;
 
         if (i + 1 < command.length)
-            position.x += get_kerning(engine, c, command.text[i + 1]) * scale;
+            position.x += get_kerning(
+                            engine, font_index, c, command.text[i + 1])
+                        * scale;
     }
 }
 
