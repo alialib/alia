@@ -9,22 +9,9 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// LIFECYCLE
-
-typedef struct alia_draw_system alia_draw_system;
-
-alia_struct_spec
-alia_draw_system_object_spec(void);
-
-alia_draw_system*
-alia_draw_system_init(void* object_storage, alia_vec2i surface_size);
-
-void
-alia_draw_system_cleanup(alia_draw_system* system);
-
 // MATERIALS
 
-typedef uint32_t alia_draw_material_id;
+typedef uint16_t alia_draw_material_id;
 
 // built-in material IDs
 enum
@@ -36,7 +23,7 @@ enum
 
 // Allocate IDs for custom materials.
 alia_draw_material_id
-alia_material_alloc_ids(alia_draw_system* system, uint32_t count);
+alia_material_alloc_ids(alia_ui_system* system, uint32_t count);
 
 typedef struct alia_draw_command
 {
@@ -58,7 +45,7 @@ typedef struct alia_material_vtable
 // a custom ID allocated with `alia_material_alloc_ids()`.
 void
 alia_material_register(
-    alia_draw_system* system,
+    alia_ui_system* system,
     alia_draw_material_id id,
     alia_material_vtable vtable,
     void* user);
@@ -67,6 +54,7 @@ alia_material_register(
 
 typedef struct alia_draw_bucket
 {
+    alia_box* clip_rect;
     alia_draw_command* head;
     alia_draw_command* tail;
     uint32_t count;
@@ -78,7 +66,6 @@ typedef struct alia_draw_bucket_table alia_draw_bucket_table;
 
 typedef struct alia_draw_context
 {
-    alia_draw_system* system;
     alia_draw_bucket_table* buckets;
     alia_bump_allocator arena;
 } alia_draw_context;
@@ -86,7 +73,7 @@ typedef struct alia_draw_context
 // Allocate a draw command with `ALIA_MIN_ALIGN` alignment.
 alia_draw_command*
 alia_draw_command_alloc(
-    alia_draw_context* ctx,
+    alia_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     size_t size);
@@ -96,7 +83,7 @@ alia_draw_command_alloc(
 // `size` must be a multiple of `ALIA_MIN_ALIGN`.
 alia_draw_command*
 alia_draw_command_alloc_aligned(
-    alia_draw_context* ctx,
+    alia_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     size_t size,
@@ -132,7 +119,7 @@ alia_draw_box(
     {
         alia_draw_box_command* command
             = (alia_draw_box_command*) alia_draw_command_alloc(
-                ctx->draw,
+                ctx,
                 z_index,
                 ALIA_BOX_MATERIAL_ID,
                 ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_box_command)));

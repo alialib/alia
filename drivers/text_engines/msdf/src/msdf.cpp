@@ -149,8 +149,6 @@ struct msdf_text_engine
 {
     alia_ui_system* ui;
 
-    alia_vec2f surface_size;
-
     msdf_gpu_data gpu;
 
     msdf_atlas_description atlas;
@@ -335,7 +333,6 @@ create_msdf_texture(unsigned char const* atlas_rgb, int width, int height)
 msdf_text_engine*
 create_msdf_text_engine(
     alia_ui_system* ui,
-    alia_draw_system* draw_system,
     msdf_font_description const* font_descriptions,
     size_t font_count,
     std::uint8_t const* atlas_rgb,
@@ -404,7 +401,6 @@ create_msdf_text_engine(
     // TODO: Don't use new here.
     msdf_text_engine* engine = new msdf_text_engine{
         .ui = ui,
-        .surface_size = {0, 0},
         .gpu
         = {.shader_program = shader_program,
            .matrix_location = matrix_location,
@@ -417,9 +413,9 @@ create_msdf_text_engine(
         .fonts = std::move(fonts),
         .material_id = 0};
 
-    engine->material_id = alia_material_alloc_ids(draw_system, 1);
+    engine->material_id = alia_material_alloc_ids(ui, 1);
     alia_material_register(
-        draw_system,
+        ui,
         engine->material_id,
         alia_material_vtable{
             .draw_bucket = render_msdf_bucket,
@@ -494,7 +490,7 @@ measure_text_width(
 void
 draw_text(
     msdf_text_engine* engine,
-    alia_draw_context* ctx,
+    alia_context* ctx,
     alia_z_index z_index,
     char const* text,
     size_t length,
@@ -568,6 +564,7 @@ break_text(
 void
 render_command(
     msdf_text_engine* engine,
+    alia_draw_bucket const* bucket,
     size_t& glyph_instance_count,
     msdf_draw_command const& command)
 {
@@ -575,8 +572,8 @@ render_command(
     auto& font = engine->fonts[font_index];
     // TODO: Culling.
     alia_vec2f position = command.position;
-    float scale = command.scale;
-    float surface_h = engine->surface_size.y;
+    float const scale = command.scale;
+    float const clip_height = bucket->clip_rect->size.y;
     for (size_t i = 0; i < command.length; ++i)
     {
         char const c = command.text[i];
@@ -589,7 +586,7 @@ render_command(
 
         auto& cached_glyph = font.glyph_cache.at(unicode);
 
-        alia_vec2f draw_pos = {position.x, surface_h - position.y};
+        alia_vec2f draw_pos = {position.x, clip_height - position.y};
         engine->gpu.glyph_instances[glyph_instance_count] = {
             command.color,
             draw_pos,
@@ -621,13 +618,20 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 
     alia_vec2f const surface_size
         = alia_vec2i_to_vec2f(alia_ui_surface_get_size(engine->ui));
-    engine->surface_size = surface_size;
+
+    alia_box const* clip_rect = bucket->clip_rect;
+
+    glViewport(
+        clip_rect->min.x,
+        surface_size.y - (clip_rect->min.y + clip_rect->size.y),
+        clip_rect->size.x,
+        clip_rect->size.y);
 
     size_t glyph_instance_count = 0;
     for (alia_draw_command* cmd = bucket->head; cmd; cmd = cmd->next)
     {
         auto const* msdf_cmd = downcast<msdf_draw_command>(cmd);
-        render_command(engine, glyph_instance_count, *msdf_cmd);
+        render_command(engine, bucket, glyph_instance_count, *msdf_cmd);
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, engine->gpu.instance_vbo);
@@ -641,10 +645,11 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 
     glUseProgram(engine->gpu.shader_program);
 
-    float l = 0.f; // left
-    float r = surface_size.x; // right
-    float t = surface_size.y; // top (world Y up = screen Y up)
-    float b = 0.f; // bottom
+    float l = clip_rect->min.x; // left
+    float r = clip_rect->min.x + clip_rect->size.x; // right
+    float t = clip_rect->min.y
+            + clip_rect->size.y; // top (world Y up = screen Y up)
+    float b = clip_rect->min.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 

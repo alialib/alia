@@ -63,8 +63,6 @@ struct msdf_font_description
 msdf_text_engine*
 create_msdf_text_engine(
     alia_ui_system* ui,
-    // TODO: Don't have a separate draw system object.
-    alia_draw_system* draw_system,
     msdf_font_description const* font_descriptions,
     size_t font_count,
     std::uint8_t const* atlas_rgb,
@@ -129,7 +127,7 @@ struct msdf_draw_command
 void
 draw_text(
     msdf_text_engine* engine,
-    alia_draw_context* ctx,
+    alia_context* ctx,
     alia_z_index z_index,
     char const* text,
     size_t length,

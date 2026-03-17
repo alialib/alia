@@ -1,6 +1,7 @@
 #ifndef ALIA_ABI_CONTEXT_H
 #define ALIA_ABI_CONTEXT_H
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/palette.h>
 
@@ -24,6 +25,7 @@ typedef struct alia_context
     alia_substrate_traversal* substrate;
     alia_event_traversal* events;
     alia_stack* stack;
+    alia_bump_allocator* scratch;
     alia_nanosecond_count tick_count;
 
     // UI-level capabilities

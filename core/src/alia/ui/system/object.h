@@ -14,6 +14,7 @@
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
 #include <alia/abi/ui/palette.h>
+#include <alia/ui/drawing.h>
 
 #include <functional>
 
@@ -22,6 +23,8 @@ extern "C" {
 struct alia_ui_system
 {
     alia::animation_system animation;
+
+    alia_draw_system draw;
 
     std::function<void(alia::context&)> controller;
 
@@ -48,6 +51,8 @@ struct alia_ui_system
     alia_palette palette;
 
     alia_stack stack;
+
+    alia_arena scratch;
 
     // alia::routable_widget_id overlay_id;
 

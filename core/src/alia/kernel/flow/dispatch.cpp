@@ -5,6 +5,7 @@
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.h>
+#include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 
@@ -13,27 +14,24 @@ namespace alia {
 void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
-    // events.is_refresh = (events.event->category == ALIA_EVENT_REFRESH);
-
-    // data_traversal data;
-    // scoped_data_traversal sdt(sys.data, data);
-    // // Only use refresh events to decide when data is no longer needed.
-    // data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
-
-    // timing_subsystem timing;
-    // // TODO: The UI system has a different tick count.
-    // timing.tick_counter = sys.external->get_tick_count();
-
-    // invoke_controller(sys, events);
-
     // TODO
     static alia_style the_style = {.padding = 10.0f};
+
+    alia_bump_allocator scratch;
+    alia_bump_allocator_init(&scratch, &sys.scratch);
+
+    alia_box clip_box = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)};
+    alia_box* clip_pointer = arena_new<alia_box>(scratch);
+    *clip_pointer = clip_box;
 
     alia_geometry_context geometry = {
         .scale = sys.magnification * sys.dpi / 96.0f,
         .offset = {0, 0},
-        .clip_region = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)},
-        .clip_id = 0,
+        .clip = {
+            .box = clip_box,
+            .pointer = clip_pointer,
+            .id = 0,
+        },
         .z_base = 0,
     };
 
@@ -56,12 +54,15 @@ invoke_controller(ui_system& sys, event_traversal& events)
         &substrate_bump_allocator, &sys.substrate_discovery_arena);
     substrate_traversal_init(
         substrate_traversal, sys.substrate, &substrate_bump_allocator);
+    // TODO: Only use refresh events to decide when data is no longer needed.
+    // data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
 
     alia_context ctx = {
         .kernel = nullptr,
         .substrate = &substrate_traversal,
         .events = &events,
         .stack = &sys.stack,
+        .scratch = &scratch,
         .tick_count = sys.tick_count,
         .system = &sys,
         .style = &the_style,

@@ -66,7 +66,6 @@ static int brand_index = 0;
 alia_ui_system* the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
-alia_draw_system the_draw_system;
 alia_arena the_display_list_arena;
 msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.padding = 10.0f};
@@ -587,8 +586,6 @@ update()
         update_glfw_window_info(the_system, the_window);
 
         // glfwMakeContextCurrent(the_window);
-        alia_vec2i const surface_size = alia_ui_surface_get_size(the_system);
-        glViewport(0, 0, surface_size.x, surface_size.y);
 
         alia_rgb c = alia_rgb_from_srgb8(
             the_system->palette.foundation.background.base.idle);
@@ -604,7 +601,6 @@ update()
             .keys = {},
         };
         alia_draw_context draw_context = {
-            .system = &the_draw_system,
             .buckets = &bucket_table,
             .arena = {},
         };
@@ -619,11 +615,12 @@ update()
         std::sort(bucket_table.keys.begin(), bucket_table.keys.end());
         for (auto const key : bucket_table.keys)
         {
-            alia_draw_material_id material_id = key & 0xffff'ffff;
+            alia_clip_id clip_id = (key >> 16) & 0xffff;
+            alia_draw_material_id material_id = key & 0xffff;
             alia_z_index z_index = key >> 32;
             alia_draw_bucket* bucket = &bucket_table.buckets[key];
             alia_draw_material* material
-                = &the_draw_system.materials[material_id];
+                = &the_system->draw.materials[material_id];
             material->vtable.draw_bucket(material->user, bucket);
         }
 
@@ -835,11 +832,9 @@ main()
     glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
 
-    the_draw_system.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
-
     init_gl_renderer(the_system, &the_renderer);
     alia_material_register(
-        &the_draw_system,
+        the_system,
         ALIA_BOX_MATERIAL_ID,
         alia_material_vtable{
             .draw_bucket = render_box_command_list,
@@ -866,7 +861,6 @@ main()
         atlas_rgb.size());
     the_msdf_text_engine = alia::create_msdf_text_engine(
         the_system,
-        &the_draw_system,
         alia::alia_font_descriptions,
         alia::alia_font_count,
         atlas_rgb.data(),

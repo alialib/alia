@@ -327,7 +327,7 @@ do_text(
                     *alia_layout_placement_arena(&ctx));
                 draw_text(
                     the_msdf_text_engine,
-                    as_draw_event(ctx).context,
+                    &ctx,
                     z_index,
                     fragment.text,
                     fragment.length,

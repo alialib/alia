@@ -112,10 +112,10 @@ alia_arena_alloc_aligned(
 void
 alia_update_peak_usage(alia_bump_allocator* alloc);
 
-struct alia_arena_marker
+typedef struct alia_arena_marker
 {
     size_t offset;
-};
+} alia_arena_marker;
 
 static inline alia_arena_marker
 alia_arena_mark(alia_bump_allocator* alloc)

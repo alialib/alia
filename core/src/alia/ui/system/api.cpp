@@ -63,10 +63,15 @@ alia_ui_system_init(
     allocator.free = block_free;
     substrate_system_init(ui->substrate, allocator);
 
+    // TODO: Sort this out.
+    alia::initialize_lazy_commit_arena(&ui->scratch, 1024 * 1024);
+
     // ui.os = std::move(os);
     // ui.window = std::move(window);
     // TODO
     // ui.theme = blue_dark_theme;
+
+    ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
     return ui;
 }

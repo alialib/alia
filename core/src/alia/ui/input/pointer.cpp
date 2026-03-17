@@ -25,7 +25,7 @@ alia_input_pointer_in_box(alia_context* ctx, alia_box const* box)
     return alia_input_pointer_in_surface(ctx)
         && alia_box_contains(*box, alia_input_pointer_position(ctx))
         && alia_box_contains(
-               alia_geometry_get_clip_region(ctx), ctx->input->mouse_position);
+               alia_geometry_get_clip_box(ctx), ctx->input->mouse_position);
 }
 
 static bool

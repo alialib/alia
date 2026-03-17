@@ -297,16 +297,25 @@ render_box_command_list(void* user, alia_draw_bucket const* bucket)
     gl_renderer* renderer = static_cast<gl_renderer*>(user);
     alia_draw_bucket const& boxes = *bucket;
 
+    alia_box const* clip_rect = bucket->clip_rect;
+
+    alia_vec2f const surface_size
+        = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
+
+    glViewport(
+        clip_rect->min.x,
+        surface_size.y - (clip_rect->min.y + clip_rect->size.y),
+        clip_rect->size.x,
+        clip_rect->size.y);
+
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    alia_vec2i const surface_size = alia_ui_surface_get_size(renderer->system);
-
-    float l = 0.f; // left
-    float r = (float) surface_size.x; // right
-    float t = 0.f; // top
-    float b = (float) surface_size.y; // bottom
+    float l = clip_rect->min.x; // left
+    float r = clip_rect->min.x + clip_rect->size.x; // right
+    float t = (float) clip_rect->min.y; // top
+    float b = clip_rect->min.y + clip_rect->size.y; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 
