@@ -57,6 +57,12 @@ alia_geometry_push_clip_box(alia_context* ctx, alia_box box);
 void
 alia_geometry_pop_clip_box(alia_context* ctx);
 
+void
+alia_geometry_push_translation(alia_context* ctx, alia_vec2f offset);
+
+void
+alia_geometry_pop_translation(alia_context* ctx);
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_GEOMETRY_H */

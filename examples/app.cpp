@@ -197,6 +197,8 @@ do_radio_with_text(
     char const* text,
     alia_radio_style const* style)
 {
+    // TODO: The hook gets the full placement, before the alignment is applied.
+    // (But also the hook is only supposed to have a single child.)
     placement_hook(ctx, [&](auto const& placement) {
         row(ctx, ALIGN_LEFT, [&]() {
             alia_element_id id
@@ -224,6 +226,8 @@ do_switch_with_text(
     char const* text,
     alia_switch_style const* style)
 {
+    // TODO: The hook gets the full placement, before the alignment is applied.
+    // (But also the hook is only supposed to have a single child.)
     placement_hook(ctx, [&](auto const& placement) {
         row(ctx, ALIGN_LEFT, [&]() {
             alia_element_id id

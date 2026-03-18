@@ -124,7 +124,7 @@ alia_draw_box(
                 ALIA_BOX_MATERIAL_ID,
                 ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_box_command)));
 
-        command->box = box;
+        command->box = alia_box_translate(box, ctx->geometry->offset);
         if (paint.border_width == 0)
             paint.border_color = paint.fill_color;
         command->paint = paint;

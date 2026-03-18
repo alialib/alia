@@ -507,7 +507,7 @@ draw_text(
     command->engine = engine;
     command->font_index = font_index;
     command->position
-        = position
+        = position + ctx->geometry->offset
         + alia_vec2f{0, engine->fonts[font_index].metrics.ascender * scale};
     command->scale = scale;
     command->color = color;
