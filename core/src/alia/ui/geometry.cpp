@@ -18,8 +18,9 @@ alia_geometry_push_clip_box(alia_context* ctx, alia_box box)
     ctx->geometry->clip = {
         .box = box,
         .pointer = pointer,
-        .id = 0,
+        .id = ctx->geometry->next_clip_id,
     };
+    ++ctx->geometry->next_clip_id;
 }
 
 void

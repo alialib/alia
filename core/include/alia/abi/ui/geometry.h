@@ -35,6 +35,9 @@ typedef struct alia_geometry_context
     // the current clipping state
     alia_clip_state clip;
 
+    // the next clip ID to use
+    alia_clip_id next_clip_id;
+
     // the base z-index for the current context
     alia_z_index z_base;
 } alia_geometry_context;

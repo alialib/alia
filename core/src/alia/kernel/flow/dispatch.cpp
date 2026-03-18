@@ -32,6 +32,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
             .pointer = clip_pointer,
             .id = 0,
         },
+        .next_clip_id = 1,
         .z_base = 0,
     };
 
