@@ -1,5 +1,6 @@
 #include <alia/abi/ui/library.h>
 
+#include <alia/abi/ids.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing.h>
@@ -12,17 +13,13 @@
 #include <cmath>
 #include <cstdint>
 
-#include <alia/kernel/flow/ids.h>
-
 using namespace alia::operators;
 
 namespace alia {
 
 struct slider_data
 {
-    // Placeholder for future state (e.g. drag cache); substrate requires a
-    // stable block. Legacy had layout_leaf here; leaf is now external.
-    std::uint8_t reserved;
+    uint32_t reserved;
 };
 
 static alia_slider_style const default_slider_style = {
@@ -37,7 +34,7 @@ static alia_slider_style const default_slider_style = {
     .layout_height = 32.f,
     .track_thickness = 6.f,
     .thumb_radius = 12.f,
-    .highlight_radius = 16.f,
+    .highlight_radius = 18.f,
 };
 
 static inline float
@@ -270,10 +267,7 @@ do_slider_impl(
     }
     alia_element_id const base_id = result.ptr;
     alia_element_id const track_id = base_id;
-    // Distinct hit target for thumb; same pattern as legacy offset_id(&data,
-    // 1).
-    alia_element_id const thumb_id = const_cast<alia_element_id>(
-        offset_id(static_cast<widget_id>(base_id), 1));
+    alia_element_id const thumb_id = alia_offset_id(base_id, 1);
 
     bool const is_disabled = false;
 

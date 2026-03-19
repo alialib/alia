@@ -3,11 +3,11 @@
 #include <optional>
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/ids.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/impl/events.hpp>
-#include <alia/kernel/flow/ids.h>
 #include <alia/ui/system/internal_api.h>
 
 using namespace alia;
@@ -29,7 +29,7 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
         auto& event = as_focus_successor_event(*ctx);
         if (event.just_saw_target)
         {
-            event.successor = make_routable_element_id(*ctx, id);
+            event.successor = alia_make_routable_element_id(ctx, id);
             event.just_saw_target = false;
         }
         if (id == event.target)
@@ -47,7 +47,7 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
         }
         if (!event.saw_target)
         {
-            event.predecessor = make_routable_element_id(*ctx, id);
+            event.predecessor = alia_make_routable_element_id(ctx, id);
         }
     }
 }
@@ -80,7 +80,7 @@ alia_element_focus_on_click(alia_context* ctx, alia_element_id id)
         && (get_event_type(*ctx) == ALIA_EVENT_MOUSE_PRESS
             || get_event_type(*ctx) == ALIA_EVENT_DOUBLE_CLICK))
     {
-        set_focus(*ctx->system, make_routable_element_id(*ctx, id));
+        // TODO: set_focus(*ctx->system, make_routable_element_id(*ctx, id));
     }
 }
 

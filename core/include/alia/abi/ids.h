@@ -10,6 +10,12 @@ typedef void* alia_element_id;
 
 #define ALIA_ELEMENT_ID_NONE ((alia_element_id) NULL)
 
+static inline alia_element_id
+alia_offset_id(alia_element_id main_id, uint8_t index)
+{
+    return (alia_element_id) ((uint8_t*) main_id + index);
+}
+
 typedef struct alia_route_node_id
 {
     // TODO: Implement this.
@@ -41,8 +47,12 @@ alia_routable_element_id_matches(
     return id.element == element;
 }
 
-alia_routable_element_id
-alia_make_routable_element_id(alia_context* ctx, alia_element_id id);
+static inline alia_routable_element_id
+alia_make_routable_element_id(alia_context* ctx, alia_element_id id)
+{
+    // TODO: Implement this.
+    return ALIA_BRACED_INIT(alia_routable_element_id, id, {.dummy = 0});
+}
 
 ALIA_EXTERN_C_END
 

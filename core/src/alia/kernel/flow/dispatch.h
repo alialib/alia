@@ -1,8 +1,8 @@
 #pragma once
 
+#include <alia/abi/ids.h>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
-#include <alia/kernel/flow/ids.h>
 
 namespace alia {
 
@@ -63,13 +63,6 @@ dispatch_targeted_event(
 }
 
 // TODO: Sort all this out...
-
-inline void
-dispatch_targeted_event(
-    ui_system& sys, alia_event& event, routable_widget_id target)
-{
-    detail::dispatch_targeted_event(sys, event, target.component);
-}
 
 inline void
 dispatch_targeted_event(

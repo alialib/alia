@@ -87,6 +87,30 @@ typedef struct alia_radio_style
     float flare_radius;
 } alia_radio_style;
 
+typedef struct alia_node_expander_style
+{
+    // Palette indices (interaction-independent; disabled uses its own index).
+    uint8_t triangle;
+    uint8_t disabled_triangle;
+    uint8_t highlight;
+
+    // Layout (logical px). The control does not stretch the glyph beyond this
+    // allocated leaf (glyph is centered in the leaf).
+    float layout_width;
+    float layout_height;
+
+    // Glyph sizing (logical px).
+    float triangle_side;
+
+    // Degrees (clockwise in screen space), animated from collapsed to expanded.
+    float collapsed_rotation_degrees;
+    float expanded_rotation_degrees;
+
+    // Hover/active + click flare parameters (logical px).
+    float highlight_radius;
+    float flare_radius;
+} alia_node_expander_style;
+
 alia_element_id
 alia_do_slider_d(
     alia_context* ctx,
@@ -116,12 +140,21 @@ alia_do_radio(
     alia_layout_flags_t layout_flags,
     alia_radio_style const* style);
 
+alia_element_id
+alia_do_node_expander(
+    alia_context* ctx,
+    alia_bool_signal* expanded,
+    alia_layout_flags_t layout_flags,
+    alia_node_expander_style const* style);
+
 alia_switch_style const*
 alia_default_switch_style(void);
 alia_slider_style const*
 alia_default_slider_style(void);
 alia_radio_style const*
 alia_default_radio_style(void);
+alia_node_expander_style const*
+alia_default_node_expander_style(void);
 
 ALIA_EXTERN_C_END
 

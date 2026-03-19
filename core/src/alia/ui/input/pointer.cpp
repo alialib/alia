@@ -1,11 +1,11 @@
 #include <alia/abi/ui/input/pointer.h>
 
 #include <alia/abi/events.h>
+#include <alia/abi/ids.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
-#include <alia/kernel/flow/ids.h>
 #include <alia/ui/system/internal_api.h>
 
 using namespace alia::operators;
@@ -43,7 +43,8 @@ alia_element_detect_mouse_press(
 {
     if (!alia_element_is_hovered(ctx, id) || !detect_mouse_press(ctx, button))
         return false;
-    set_element_with_capture(*ctx->system, make_routable_element_id(*ctx, id));
+    set_element_with_capture(
+        *ctx->system, alia_make_routable_element_id(ctx, id));
     return true;
 }
 

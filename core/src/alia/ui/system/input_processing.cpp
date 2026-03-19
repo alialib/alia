@@ -143,7 +143,7 @@ alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
 }
 
 void
-alia_ui_set_focus(alia_ui_system* ui, routable_widget_id widget)
+alia_ui_set_focus(alia_ui_system* ui, alia_routable_element_id widget)
 {
     // TODO: Implement this logic once there is an internal event queue.
 

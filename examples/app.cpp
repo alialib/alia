@@ -76,11 +76,13 @@ static alia_palette local_palette;
 static alia_switch_style local_switch_style;
 static alia_slider_style local_slider_style;
 static alia_radio_style local_radio_style;
+static alia_node_expander_style local_node_expander_style;
 static bool local_styles_initialized = false;
 static float demo_hue = 0.55f;
 static bool demo_is_dark = true;
 static float demo_padding = 6.f;
 static float demo_scale = 1.0f;
+static float demo_node_expander_triangle_side = 24.f;
 
 #include "prototyping/allocation_probe.h"
 #include "prototyping/layout_mods.h"
@@ -249,6 +251,35 @@ do_switch_with_text(
 }
 
 void
+do_node_expander_with_text(
+    context& ctx,
+    alia_bool_signal* value,
+    char const* text,
+    alia_node_expander_style const* style)
+{
+    // TODO: The hook gets the full placement, before the alignment is applied.
+    // (But also the hook is only supposed to have a single child.)
+    placement_hook(ctx, [&](auto const& placement) {
+        row(ctx, ALIGN_LEFT, [&]() {
+            alia_element_id id
+                = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y, style);
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(
+                    value->flags & ALIA_SIGNAL_WRITABLE
+                        ? ctx.palette->foundation.text.base.idle
+                        : ctx.palette->foundation.text.base.disabled),
+                alia_px(&ctx, 12),
+                text,
+                CENTER_Y);
+            alia_element_box_region(
+                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+        });
+    });
+}
+
+void
 do_controls(context& ctx)
 {
     do_heading(ctx, "PALETTE");
@@ -276,6 +307,17 @@ do_controls(context& ctx)
 
     do_subheading(ctx, "Scale");
     alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false, nullptr);
+
+    do_subheading(ctx, "Node Expander");
+    alia_do_slider_f(
+        &ctx,
+        &demo_node_expander_triangle_side,
+        12.f,
+        36.f,
+        0.5f,
+        0,
+        false,
+        nullptr);
 }
 
 void
@@ -374,6 +416,44 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
 }
 
 void
+do_node_expander_demo(context& ctx, alia_node_expander_style const* style)
+{
+    do_heading(ctx, "NODE EXPANDER");
+
+    // Apply interactive tuning sliders.
+    local_node_expander_style.triangle_side = demo_node_expander_triangle_side;
+
+    alia_node_expander_style const* effective_style
+        = style != nullptr ? style : &local_node_expander_style;
+
+    {
+        static bool expanded = false;
+        alia_bool_signal expanded_signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = expanded,
+        };
+        do_node_expander_with_text(
+            ctx, &expanded_signal, "Expandable", effective_style);
+        if (expanded_signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            expanded = expanded_signal.value;
+            abort_pass(ctx);
+        }
+    }
+
+    {
+        static bool disabled_expanded = true;
+        alia_bool_signal disabled_signal{
+            .flags = ALIA_SIGNAL_READABLE,
+            .value = disabled_expanded,
+        };
+        do_node_expander_with_text(
+            ctx, &disabled_signal, "Disabled", effective_style);
+        (void) disabled_expanded;
+    }
+}
+
+void
 do_slider_demo(context& ctx, alia_slider_style const* style)
 {
     do_heading(ctx, "SLIDERS");
@@ -387,6 +467,8 @@ do_content(context& ctx)
 {
     column(ctx, [&]() {
         do_switch_demo(ctx, nullptr); //&local_switch_style);
+        do_heading(ctx, "");
+        do_node_expander_demo(ctx, nullptr); //&local_node_expander_style);
         do_heading(ctx, "");
         do_radio_demo(ctx, nullptr); //&local_radio_style);
         do_heading(ctx, "");
@@ -429,6 +511,7 @@ the_demo(context& ctx)
             local_switch_style = *alia_default_switch_style();
             local_slider_style = *alia_default_slider_style();
             local_radio_style = *alia_default_radio_style();
+            local_node_expander_style = *alia_default_node_expander_style();
             local_styles_initialized = true;
         }
 
