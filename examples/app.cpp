@@ -839,9 +839,9 @@ main()
     init_gl_renderer(the_system, &the_renderer);
     alia_material_register(
         the_system,
-        ALIA_BOX_MATERIAL_ID,
+        ALIA_PRIMITIVE_MATERIAL_ID,
         alia_material_vtable{
-            .draw_bucket = render_box_command_list,
+            .draw_bucket = render_primitive_command_list,
         },
         &the_renderer);
 

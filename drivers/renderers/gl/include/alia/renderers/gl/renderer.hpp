@@ -41,7 +41,7 @@ void
 destroy_gl_renderer(gl_renderer* renderer);
 
 void
-render_box_command_list(void* user, alia_draw_bucket const* bucket);
+render_primitive_command_list(void* user, alia_draw_bucket const* bucket);
 
 // TODO: Move to a separate utility header.
 GLuint
