@@ -115,9 +115,10 @@ enum
       alia_mouse_notification)                                                \
     X(0x67, INPUT, TARGETED, CURSOR_QUERY, cursor_query, alia_cursor_query)   \
     /* scroll */                                                              \
-    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)
+    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                       \
+    /* timer */                                                              \
+    X(0x82, INPUT, TARGETED, TIMER, timer, alia_timer)
 /* misc */
-// X(0x82, INPUT, TIMER, TARGETED, timer, alia_timer)
 //
 // X(0x83, NONE, RESOLVE_LOCATION, TARGETED, resolve_location,
 // alia_resolve_location)

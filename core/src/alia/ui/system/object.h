@@ -16,9 +16,34 @@
 #include <alia/abi/ui/palette.h>
 #include <alia/ui/drawing.h>
 
+#include <cstdint>
 #include <functional>
+#include <queue>
+#include <vector>
 
 extern "C" {
+
+// A pending timer request queued by component code.
+// Dispatch happens during `alia_ui_system_update`.
+struct alia_ui_timer_request
+{
+    alia_element_id target;
+    alia_nanosecond_count fire_time;
+    // Used to prevent timers from being dispatched in the same update cycle
+    // they were queued (avoids re-entrancy loops).
+    uint64_t queued_in_cycle = 0;
+};
+
+struct alia_ui_timer_request_compare
+{
+    bool
+    operator()(
+        alia_ui_timer_request const& a, alia_ui_timer_request const& b) const
+    {
+        // Min-heap by fire_time.
+        return a.fire_time > b.fire_time;
+    }
+};
 
 struct alia_ui_system
 {
@@ -53,6 +78,14 @@ struct alia_ui_system
     alia_stack stack;
 
     alia_arena scratch;
+
+    // pending timer events
+    uint64_t timer_event_counter = 0;
+    std::priority_queue<
+        alia_ui_timer_request,
+        std::vector<alia_ui_timer_request>,
+        alia_ui_timer_request_compare>
+        timer_requests;
 
     // alia::routable_widget_id overlay_id;
 

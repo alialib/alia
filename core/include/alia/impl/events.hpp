@@ -37,7 +37,7 @@ get_active_component_container(Context& ctx)
     return *ctx.events->active_container;
 }
 
-typedef component_container_ptr::weak_type component_identity;
+using component_identity = std::weak_ptr<component_container>;
 
 struct traversal_aborted
 {

@@ -8,6 +8,7 @@
 #include <alia/impl/base/arena.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/ui/system/object.h>
+#include <alia/ui/system/timer_internal.h>
 
 namespace alia {
 
@@ -91,12 +92,34 @@ get_nanosecond_count()
         .count();
 }
 
+static void
+process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
+{
+    // Dispatch all timers that are due as of `now`, except those that were
+    // queued in the current update cycle (same-cycle suppression).
+    alia::process_due_timers_internal(
+        ui.timer_requests, now, cycle, [&](alia_ui_timer_request const& req) {
+            alia_timer payload{
+                .target = req.target, .fire_time = req.fire_time};
+            alia_event event = alia_make_timer_event(payload);
+            dispatch_event(ui, event);
+            refresh_system(ui);
+        });
+}
+
 void
 alia_ui_system_update(alia_ui_system* ui)
 {
     ui->tick_count = get_nanosecond_count();
 
+    // Start a new timer dispatch cycle before running refresh. Timer requests
+    // made during refresh will be deferred by `process_due_timers`.
+    ++ui->timer_event_counter;
+    uint64_t const current_cycle = ui->timer_event_counter;
+
     refresh_system(*ui);
+
+    process_due_timers(*ui, ui->tick_count, current_cycle);
 
     alia_layout_system_resolve(
         &ui->layout, alia_vec2i_to_vec2f(ui->surface_size));
