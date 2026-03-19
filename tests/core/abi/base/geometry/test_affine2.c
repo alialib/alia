@@ -193,3 +193,4 @@ affine2_tests(void)
     test_transform_aabb_scaling();
     test_transform_aabb_rotation_90deg_about_origin();
 }
+

@@ -62,12 +62,12 @@ typedef struct alia_substrate_block alia_substrate_block;
 typedef struct alia_substrate_traversal alia_substrate_traversal;
 typedef struct alia_context alia_context;
 
-struct alia_substrate_allocator
+typedef struct alia_substrate_allocator
 {
     void* (*alloc)(void* user_data, size_t size, size_t alignment);
     void (*free)(void* user_data, void* ptr);
     void* user_data;
-};
+} alia_substrate_allocator;
 
 enum alia_substrate_block_traversal_mode
 {
@@ -86,7 +86,7 @@ typedef struct alia_substrate_usage_result
 {
     void* ptr;
     alia_generation_counter generation;
-    alia_substrate_block_traversal_mode mode;
+    enum alia_substrate_block_traversal_mode mode;
 } alia_substrate_usage_result;
 
 // 'Use' memory from the current substrate block.

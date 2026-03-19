@@ -20,10 +20,11 @@ test_constructors_and_equality(void)
     TEST_CHECK(
         !alia_vec2i_equal(alia_vec2i_make(3, 4), alia_vec2i_make(3, 5)));
 
-    TEST_CHECK(alia_vec2f_equal(
-        alia_vec2f_make(3.0f, 4.0f), alia_vec2f_make(3.0f, 4.0f)));
-    TEST_CHECK(!alia_vec2f_equal(
-        alia_vec2f_make(3.0f, 4.0f), alia_vec2f_make(3.0f, 4.0001f)));
+    TEST_CHECK(
+        alia_vec2f_equal(alia_vec2f_make(3.0f, 4.0f), alia_vec2f_make(3.0f, 4.0f)));
+    TEST_CHECK(
+        !alia_vec2f_equal(
+            alia_vec2f_make(3.0f, 4.0f), alia_vec2f_make(3.0f, 4.0001f)));
 }
 
 static void
@@ -124,10 +125,11 @@ test_vec2i_arithmetic(void)
 }
 
 void
-vec2_tests()
+vec2_tests(void)
 {
     test_constructors_and_equality();
     test_conversions();
     test_vec2f_arithmetic();
     test_vec2i_arithmetic();
 }
+

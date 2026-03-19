@@ -99,3 +99,4 @@ insets_tests(void)
     test_sub_and_inplace();
     test_scale_and_inplace();
 }
+

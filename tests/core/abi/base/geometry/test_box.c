@@ -154,3 +154,4 @@ box_tests()
     test_outset_matches_expand_for_uniform_amount();
     test_contains_edges();
 }
+

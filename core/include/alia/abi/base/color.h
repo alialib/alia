@@ -13,11 +13,23 @@ typedef struct alia_srgb8
     uint8_t r, g, b;
 } alia_srgb8;
 
+static inline alia_srgb8
+alia_srgb8_make(uint8_t r, uint8_t g, uint8_t b)
+{
+    return ALIA_BRACED_INIT(alia_srgb8, r, g, b);
+}
+
 // sRGBA
 typedef struct alia_srgba8
 {
     uint8_t r, g, b, a;
 } alia_srgba8;
+
+static inline alia_srgba8
+alia_srgba8_make(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    return ALIA_BRACED_INIT(alia_srgba8, r, g, b, a);
+}
 
 // linear RGB
 typedef struct alia_rgb
@@ -25,11 +37,23 @@ typedef struct alia_rgb
     float r, g, b;
 } alia_rgb;
 
+static inline alia_rgb
+alia_rgb_make(float r, float g, float b)
+{
+    return ALIA_BRACED_INIT(alia_rgb, r, g, b);
+}
+
 // linear RGBA, premultiplied alpha
 typedef struct alia_rgba
 {
     float r, g, b, a;
 } alia_rgba;
+
+static inline alia_rgba
+alia_rgba_make(float r, float g, float b, float a)
+{
+    return ALIA_BRACED_INIT(alia_rgba, r, g, b, a);
+}
 
 // OKLab
 typedef struct alia_oklab
@@ -37,11 +61,23 @@ typedef struct alia_oklab
     float l, a, b;
 } alia_oklab;
 
+static inline alia_oklab
+alia_oklab_make(float l, float a, float b)
+{
+    return ALIA_BRACED_INIT(alia_oklab, l, a, b);
+}
+
 // OKLCH
 typedef struct alia_oklch
 {
     float l, c, h;
 } alia_oklch;
+
+static inline alia_oklch
+alia_oklch_make(float l, float c, float h)
+{
+    return ALIA_BRACED_INIT(alia_oklch, l, c, h);
+}
 
 // sRGB transfer (single component in [0,1])
 float
@@ -112,19 +148,19 @@ alia_rgba_from_rgb_alpha(alia_rgb c, float a);
 static inline alia_rgba
 alia_rgba_from_rgb(alia_rgb c)
 {
-    return alia_rgba{c.r, c.g, c.b, 1.0f};
+    return alia_rgba_make(c.r, c.g, c.b, 1.0f);
 }
 
 static inline alia_srgba8
 alia_srgba8_from_srgb8_alpha(alia_srgb8 c, uint8_t a)
 {
-    return alia_srgba8{c.r, c.g, c.b, a};
+    return alia_srgba8_make(c.r, c.g, c.b, a);
 }
 
 static inline alia_srgba8
 alia_srgba8_from_srgb8(alia_srgb8 c)
 {
-    return alia_srgba8{c.r, c.g, c.b, 255};
+    return alia_srgba8_make(c.r, c.g, c.b, 0xff);
 }
 
 // modulate (rgb*a, a*a)

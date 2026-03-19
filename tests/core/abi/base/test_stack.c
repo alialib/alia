@@ -288,3 +288,4 @@ stack_tests(void)
     test_stack_push_aligned_and_prev_chain();
     test_stack_reset_discards_entries();
 }
+

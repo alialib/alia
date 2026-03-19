@@ -36,7 +36,7 @@ typedef struct alia_arena_controller
 static inline alia_arena_controller
 alia_arena_no_controller(void)
 {
-    return alia_arena_controller{.user = NULL, .grow = NULL, .free = NULL};
+    return ALIA_BRACED_INIT(alia_arena_controller, NULL, NULL, NULL);
 }
 
 // LIFECYCLE
@@ -120,7 +120,7 @@ typedef struct alia_arena_marker
 static inline alia_arena_marker
 alia_arena_mark(alia_bump_allocator* alloc)
 {
-    return alia_arena_marker{.offset = alloc->offset};
+    return ALIA_BRACED_INIT(alia_arena_marker, alloc->offset);
 }
 
 static inline void

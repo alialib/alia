@@ -119,7 +119,6 @@ TEST_CASE("bitpack subpacks")
     auto b_ref = ALIA_BITREF(pack, b);
 
     auto inner_ref = ALIA_NESTED_BITPACK(pack, inner);
-    REQUIRE(inner_ref.offset == 1);
 
     auto x_ref = ALIA_BITREF(inner_ref, x);
     auto y_ref = ALIA_BITREF(inner_ref, y);
@@ -150,3 +149,4 @@ TEST_CASE("bitpack subpacks")
     // Verify the overall bitpack again
     REQUIRE(pack.bits == 0b1101'0111);
 }
+

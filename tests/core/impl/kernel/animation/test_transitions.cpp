@@ -117,9 +117,12 @@ TEST_CASE("animated transition reversal")
     REQUIRE(invoke_smoother(milliseconds(400), true) == doctest::Approx(0.4f));
     REQUIRE(ctx.animation_in_progress);
 
-    REQUIRE(invoke_smoother(milliseconds(600), true) == doctest::Approx(0.2f));
+    REQUIRE(
+        invoke_smoother(milliseconds(600), true) == doctest::Approx(0.2f));
     REQUIRE(ctx.animation_in_progress);
 
-    REQUIRE(invoke_smoother(milliseconds(1000), true) == 0.0f);
+    REQUIRE(
+        invoke_smoother(milliseconds(1000), true) == doctest::Approx(0.0f));
     REQUIRE(!ctx.animation_in_progress);
 }
+

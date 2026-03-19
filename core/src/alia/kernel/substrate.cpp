@@ -198,8 +198,9 @@ alia_substrate_end_block(alia_context* ctx)
 {
     auto& parent_scope = stack_pop<alia_substrate_block_traversal_state>(ctx);
     auto& traversal = *ctx->substrate;
+    alia_struct_spec const completed_block_spec = traversal.block.spec;
     traversal.block = parent_scope;
-    return traversal.block.spec;
+    return completed_block_spec;
 }
 
 ALIA_EXTERN_C_END

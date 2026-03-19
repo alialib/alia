@@ -62,7 +62,7 @@ TEST_CASE("alia_vec2i operators match C API")
         check_vec2i_eq(got, expected);
     }
 
-    SUBCASE("operator== (if provided)")
+    SUBCASE("operator==")
     {
         CHECK((a == a));
         CHECK_FALSE((a == b));
@@ -118,7 +118,7 @@ TEST_CASE("alia_vec2f operators match C API")
         check_vec2f_near(got, expected);
     }
 
-    SUBCASE("operator*(scalar, vec2f) (if provided)")
+    SUBCASE("operator*(scalar, vec2f)")
     {
         float s = -0.5f;
         alia_vec2f got = s * a;
@@ -126,7 +126,7 @@ TEST_CASE("alia_vec2f operators match C API")
         check_vec2f_near(got, expected);
     }
 
-    SUBCASE("operator*= (if provided)")
+    SUBCASE("operator*=")
     {
         float s = 3.0f;
 
@@ -139,7 +139,7 @@ TEST_CASE("alia_vec2f operators match C API")
         check_vec2f_near(got, expected);
     }
 
-    SUBCASE("operator== (if provided)")
+    SUBCASE("operator==")
     {
         CHECK((a == a));
         CHECK_FALSE((a == b));
