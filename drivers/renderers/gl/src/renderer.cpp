@@ -68,12 +68,12 @@ void main() {
     // CPU stores border_color as raw 32-bit bits (r,g,b,a each 8-bit),
     // reinterprets those bits as a float, and uploads it as payload.z.
     // Here we reverse that.
-    uint packed = floatBitsToUint(i_payload.z);
+    uint packed_bits = floatBitsToUint(i_payload.z);
     vec4 border_srgba
-        = vec4(float(packed & 255u),
-               float((packed >> 8u) & 255u),
-               float((packed >> 16u) & 255u),
-               float((packed >> 24u) & 255u))
+        = vec4(float(packed_bits & 255u),
+               float((packed_bits >> 8u) & 255u),
+               float((packed_bits >> 16u) & 255u),
+               float((packed_bits >> 24u) & 255u))
           / 255.0;
     v_border_color = srgba_to_linear(border_srgba);
 }
