@@ -329,7 +329,7 @@ main(int argc, char const* const* argv)
         DimensionsConstraint::MULTIPLE_OF_FOUR_SQUARE);
     packer.setSpacing(0);
     packer.setScale(48.0);
-    packer.setPixelRange(msdfgen::Range(2.0));
+    packer.setPixelRange(msdfgen::Range(4.0));
     packer.setMiterLimit(1.0);
     packer.setOriginPixelAlignment(false, true);
 

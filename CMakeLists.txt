@@ -69,25 +69,6 @@ alia_detect_compiler()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(EMSCRIPTEN)
-    target_compile_options(alia_app PRIVATE
-        "-fwasm-exceptions")
-    # -s USE_GLFW=3 enables internal GLFW
-    # --preload-file maps source assets to virtual filesystem
-
-    target_link_options(alia_app PRIVATE
-        "-sUSE_GLFW=3"
-        "-sUSE_WEBGL2=1"
-        "-sFULL_ES3=1"
-        "-sWASM=1"
-        "-fwasm-exceptions"
-        "-sALLOW_MEMORY_GROWTH=1"
-        "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
-        "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
-    )
-    set_target_properties(alia_app PROPERTIES SUFFIX ".html")
-endif()
-
 add_subdirectory(core)
 
 if(ALIA_ENABLE_OPENGL)
@@ -137,6 +118,25 @@ if(ALIA_ENABLE_EXAMPLES)
         alia_cpp alia_core alia_gl_renderer alia_glfw_platform
         alia_msdf_text_engine alia_font_assets)
     target_include_directories(alia_app PRIVATE "${ALIA_GEN_DIR}")
+
+    if(EMSCRIPTEN)
+        target_compile_options(alia_app PRIVATE
+            "-fwasm-exceptions")
+        # -s USE_GLFW=3 enables internal GLFW
+        # --preload-file maps source assets to virtual filesystem
+
+        target_link_options(alia_app PRIVATE
+            "-sUSE_GLFW=3"
+            "-sUSE_WEBGL2=1"
+            "-sFULL_ES3=1"
+            "-sWASM=1"
+            "-fwasm-exceptions"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
+            "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
+        )
+        set_target_properties(alia_app PROPERTIES SUFFIX ".html")
+    endif()
 endif()
 
 if(ALIA_ENABLE_TESTING)

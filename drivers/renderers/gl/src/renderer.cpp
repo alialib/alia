@@ -156,6 +156,13 @@ float sd_equilateral_triangle(vec2 p, float R, float rotation_radians)
     return d * sign;
 }
 
+vec3 linear_to_srgb(vec3 linear) {
+    vec3 s1 = sqrt(linear);
+    vec3 s2 = sqrt(s1);
+    vec3 s3 = sqrt(s2);
+    return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 - 0.0225411470 * linear;
+}
+
 vec4 sample_pixel(vec2 p)
 {
     vec2 local_p = v_pos - v_rect_center;
@@ -172,7 +179,13 @@ vec4 sample_pixel(vec2 p)
             float alpha_inner = smoothstep(-aa, aa, d + v_border_width);
             float alpha_outer = smoothstep(aa, -aa, d);
             vec4 mix_color = mix(v_color, v_border_color, alpha_inner);
+        #ifdef EMSCRIPTEN
+            vec3 unpremultiplied = mix_color.a > 0.0 ? mix_color.rgb / mix_color.a : vec3(0.0);
+            float alpha = mix_color.a * alpha_outer;
+            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
+        #else
             return mix_color * alpha_outer;
+        #endif
         }
         // Equilateral triangle
         case 1:
@@ -180,7 +193,13 @@ vec4 sample_pixel(vec2 p)
             float R = min(v_rect_half_size.x, v_rect_half_size.y);
             float d = sd_equilateral_triangle(local_p, R, v_triangle_rotation_radians);
             float alpha_outer = smoothstep(aa, -aa, d);
+        #ifdef EMSCRIPTEN
+            vec3 unpremultiplied = v_color.a > 0.0 ? v_color.rgb / v_color.a : vec3(0.0);
+            float alpha = v_color.a * alpha_outer;
+            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
+        #else
             return v_color * alpha_outer;
+        #endif
         }
         default:
             return vec4(0.0);
@@ -211,7 +230,8 @@ compile_shader(GLenum type, const char* source)
 // Note: WebGL fragment shaders require explicit precision.
 // It's safe to put this in vertex shaders too (it's the default there).
 #ifdef __EMSCRIPTEN__
-    const char* header = "#version 300 es\nprecision highp float;\n";
+    const char* header
+        = "#version 300 es\nprecision highp float;\n#define EMSCRIPTEN 1\n";
 #else
     const char* header = "#version 330 core\n";
 #endif
@@ -383,13 +403,16 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     alia_vec2f const surface_size
         = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
 
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+
     glViewport(
         clip_rect->min.x,
         surface_size.y - (clip_rect->min.y + clip_rect->size.y),
         clip_rect->size.x,
         clip_rect->size.y);
 
-    GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 

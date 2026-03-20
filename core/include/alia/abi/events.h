@@ -115,8 +115,8 @@ enum
       alia_mouse_notification)                                                \
     X(0x67, INPUT, TARGETED, CURSOR_QUERY, cursor_query, alia_cursor_query)   \
     /* scroll */                                                              \
-    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                       \
-    /* timer */                                                              \
+    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                        \
+    /* timer */                                                               \
     X(0x82, INPUT, TARGETED, TIMER, timer, alia_timer)
 /* misc */
 //
@@ -132,6 +132,8 @@ enum
 
 typedef struct alia_refresh
 {
+    // TODO
+    int dummy;
 } alia_refresh;
 
 typedef struct alia_draw_context alia_draw_context;
@@ -144,6 +146,8 @@ typedef struct alia_draw
 
 typedef struct alia_nil
 {
+    // TODO
+    int dummy;
 } alia_nil;
 
 typedef struct alia_make_widget_visible

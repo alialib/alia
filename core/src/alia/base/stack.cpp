@@ -1,6 +1,7 @@
 #include <alia/abi/base/stack.h>
 
 #include <alia/base/stack.h>
+#include <alia/impl/base/arena.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -43,7 +44,7 @@ alia_is_aligned_ptr(void const* p, uint32_t align)
 // Reserve exactly ALIA_MIN_ALIGN bytes at the start of each entry for the
 // header area.
 static constexpr uint32_t ALIA_STACK_HEADER_AREA
-    = uint32_t(sizeof(alia_stack_entry_header));
+    = uint32_t(alia::align_up(sizeof(alia_stack_entry_header)));
 
 // Largest entry size that fits in 16 bits and is a multiple of ALIA_MIN_ALIGN.
 static constexpr uint32_t ALIA_STACK_MAX_ENTRY_SIZE_U32
@@ -76,7 +77,6 @@ alia_stack_top_entry_start(alia_stack const* s)
 // API IMPLEMENTATION
 
 extern "C" {
-
 alia_struct_spec
 alia_stack_object_spec(void)
 {

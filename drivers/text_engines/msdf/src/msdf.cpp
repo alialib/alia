@@ -66,20 +66,25 @@ float median(vec3 v) {
     return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
 }
 
-const float output_bias = 0.0f;
+vec3 linear_to_srgb(vec3 linear) {
+    vec3 s1 = sqrt(linear);
+    vec3 s2 = sqrt(s1);
+    vec3 s3 = sqrt(s2);
+    return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 - 0.0225411470 * linear;
+}
 
 void main() {
     vec3 msd = texture(u_msdf, v_uv).rgb;
     float sd = median(msd) - 0.5;
-    float screen_px_distance = v_scale / 12.0f * sd + output_bias;
+    // NOTE: 12.0f corresponds to atlas's 48px font size and 4px pixel range.
+    float screen_px_distance = v_scale / 12.0f * sd;
     float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-    // float glow = smoothstep(-0.5, 0.0, sd); // 0.0 at glyph edge
-    opacity *= smoothstep(0.05, 0.2, opacity);
-    opacity = pow(opacity, 1.0 / 2.2);
-    vec4 glyph_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
-    // vec4 glow_color = vec4(1, 0.2, 0.2, v_color.a * glow);
-    // out_color = mix(glow_color, glyph_color, opacity);
-    out_color = glyph_color;
+    #ifdef EMSCRIPTEN
+    vec3 unpremultiplied = v_color.a > 0.0 ? v_color.rgb / v_color.a : vec3(0.0);
+    out_color = vec4(linear_to_srgb(unpremultiplied) * opacity, opacity);
+    #else
+    out_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
+    #endif
 }
 )";
 

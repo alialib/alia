@@ -806,7 +806,7 @@ check_and_update_resolution()
         // Update your Alia System / Renderer Viewport
         // (Assuming you do this in your render code, but if you cache it,
         // update it here)
-        the_system.surface_size = {float(target_w), float(target_h)};
+        the_system->surface_size = {target_w, target_h};
 
         // Helpful log to prove it's working
         std::cout << "Resized to: " << target_w << "x" << target_h
