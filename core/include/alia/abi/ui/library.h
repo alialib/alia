@@ -102,7 +102,8 @@ typedef struct alia_node_expander_style
     // Glyph sizing (logical px).
     float triangle_side;
 
-    // Degrees (clockwise in screen space), animated from collapsed to expanded.
+    // Degrees (clockwise in screen space), animated from collapsed to
+    // expanded.
     float collapsed_rotation_degrees;
     float expanded_rotation_degrees;
 
@@ -110,6 +111,22 @@ typedef struct alia_node_expander_style
     float highlight_radius;
     float flare_radius;
 } alia_node_expander_style;
+
+typedef struct alia_scrollbar_style
+{
+    uint8_t track_color;
+    uint8_t thumb_color;
+    uint8_t button_color;
+    uint8_t glyph_color;
+    uint8_t highlight;
+
+    float width;
+    float button_length;
+    float minimum_thumb_length;
+    float thumb_corner_radius;
+    float line_size;
+    float wheel_scale;
+} alia_scrollbar_style;
 
 alia_element_id
 alia_do_slider_d(
@@ -147,6 +164,16 @@ alia_do_node_expander(
     alia_layout_flags_t layout_flags,
     alia_node_expander_style const* style);
 
+void
+alia_ui_scroll_view_begin(
+    alia_context* ctx,
+    alia_layout_flags_t layout_flags,
+    uint8_t scrollable_axes,
+    uint8_t reserved_axes,
+    alia_scrollbar_style const* style);
+void
+alia_ui_scroll_view_end(alia_context* ctx);
+
 alia_switch_style const*
 alia_default_switch_style(void);
 alia_slider_style const*
@@ -155,6 +182,8 @@ alia_radio_style const*
 alia_default_radio_style(void);
 alia_node_expander_style const*
 alia_default_node_expander_style(void);
+alia_scrollbar_style const*
+alia_default_scrollbar_style(void);
 
 ALIA_EXTERN_C_END
 

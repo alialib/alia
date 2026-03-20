@@ -526,7 +526,7 @@ the_demo(context& ctx)
             alia_palette_seeds pseeds
                 = alia_seeds_from_elevation(brand, 0, demo_is_dark);
             alia_theme_params params = {
-                .foundation_step_l = 0.05f,
+                .foundation_step_l = 0.075f,
                 .hover_l_shift = 0.05f,
                 .active_l_shift = 0.10f,
                 .interaction_hue_shift = 0.0f,
@@ -568,6 +568,8 @@ the_demo(context& ctx)
                                 FILL,
                                 [&]() {
                                     column(ctx, GROW, [&]() {
+                                        alia_ui_scroll_view_begin(
+                                            &ctx, ALIA_GROW, 0x3, 0, nullptr);
                                         inset(
                                             ctx,
                                             {.left = 40,
@@ -575,6 +577,7 @@ the_demo(context& ctx)
                                              .top = 40,
                                              .bottom = 40},
                                             [&]() { do_content(ctx); });
+                                        alia_ui_scroll_view_end(&ctx);
                                     });
                                 });
                         });
@@ -852,7 +855,7 @@ main()
             brand_colors[brand_index], 0, !light_theme);
         // pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
-            .foundation_step_l = 0.05f,
+            .foundation_step_l = 0.075f,
             .hover_l_shift = 0.05f,
             .active_l_shift = 0.10f,
             .interaction_hue_shift = 0.0f,
