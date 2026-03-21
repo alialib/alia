@@ -33,6 +33,7 @@ add_library(alia_core STATIC
     src/alia/ui/library/switch.cpp
     src/alia/ui/library/node_expander.cpp
     src/alia/ui/library/scroll_view.cpp
+    src/alia/ui/library/collapsible.cpp
     src/alia/ui/system/api.cpp
     src/alia/ui/system/input_processing.cpp
     src/alia/ui/system/object.cpp

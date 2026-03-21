@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_LIBRARY_H
 
 #include <alia/abi/context.h>
+#include <alia/abi/kernel/animation.h>
 #include <alia/abi/kernel/signal.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/input/elements.h>
@@ -173,6 +174,16 @@ alia_ui_scroll_view_begin(
     alia_scrollbar_style const* style);
 void
 alia_ui_scroll_view_end(alia_context* ctx);
+
+void
+alia_ui_collapsible_begin(
+    alia_context* ctx,
+    alia_bool_signal* expanded,
+    alia_layout_flags_t column_flags,
+    float offset_factor,
+    alia_animated_transition const* transition);
+void
+alia_ui_collapsible_end(alia_context* ctx);
 
 alia_switch_style const*
 alia_default_switch_style(void);

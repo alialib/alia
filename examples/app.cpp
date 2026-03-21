@@ -42,6 +42,7 @@
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
+#include <alia/ui/library.hpp>
 #include <alia/ui/system/object.h>
 
 #include <chrono>
@@ -463,6 +464,35 @@ do_slider_demo(context& ctx, alia_slider_style const* style)
 }
 
 void
+do_collapsible_demo(context& ctx)
+{
+    do_heading(ctx, "COLLAPSIBLE");
+
+    static bool collapsed = false;
+    alia_bool_signal collapsed_signal{
+        .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+        .value = collapsed,
+    };
+    do_node_expander_with_text(ctx, &collapsed_signal, "Collapsible", nullptr);
+    if (collapsed_signal.flags & ALIA_SIGNAL_WRITTEN)
+    {
+        collapsed = collapsed_signal.value;
+        abort_pass(ctx);
+    }
+
+    alia::collapsible(ctx, &collapsed_signal, [&]() {
+        flow(ctx, FILL, [&]() {
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_px(&ctx, 12),
+                lorem_ipsum);
+        });
+    });
+}
+
+void
 do_content(context& ctx)
 {
     column(ctx, [&]() {
@@ -473,6 +503,8 @@ do_content(context& ctx)
         do_radio_demo(ctx, nullptr); //&local_radio_style);
         do_heading(ctx, "");
         do_slider_demo(ctx, nullptr); //&local_slider_style);
+        do_heading(ctx, "");
+        do_collapsible_demo(ctx);
         do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
