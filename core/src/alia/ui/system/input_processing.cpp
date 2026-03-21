@@ -132,8 +132,8 @@ alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
     alia_event hit_test_event = alia_make_wheel_hit_test_event(
         {.x = ui->input.mouse_position.x, .y = ui->input.mouse_position.y});
     dispatch_event(*ui, hit_test_event);
-    if (alia_element_id_is_valid(
-            as_wheel_hit_test_event(hit_test_event).result.element))
+    if (alia_routable_element_id_is_valid(
+            as_wheel_hit_test_event(hit_test_event).result))
     {
         alia_event wheel_event = alia_make_wheel_event({.delta = delta});
         dispatch_targeted_event(

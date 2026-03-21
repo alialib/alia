@@ -693,6 +693,13 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
 }
 
 void
+scroll_callback(GLFWwindow* window, double x, double y)
+{
+    alia_ui_process_scroll(
+        the_system, {static_cast<float>(x), static_cast<float>(y)});
+}
+
+void
 update()
 {
     static std::chrono::time_point<std::chrono::high_resolution_clock>
@@ -921,6 +928,7 @@ main()
     glfwSetMouseButtonCallback(the_window, mouse_button_callback);
     glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
     glfwSetCursorPosCallback(the_window, cursor_position_callback);
+    glfwSetScrollCallback(the_window, scroll_callback);
 
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);

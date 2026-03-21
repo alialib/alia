@@ -62,12 +62,14 @@ dispatch_targeted_event(
     detail::dispatch_targeted_event(sys, event, component.identity);
 }
 
-// TODO: Sort all this out...
-
+// Deliver a "targeted" event while still traversing the full controller tree.
+// TODO: Implement actual targeted traversal.
 inline void
 dispatch_targeted_event(
-    ui_system& sys, alia_event& event, alia_routable_element_id)
+    ui_system& sys, alia_event& event, alia_routable_element_id rid)
 {
+    if (alia_routable_element_id_is_valid(rid))
+        event.target = rid.element;
     detail::dispatch_untargeted_event(sys, event);
 }
 
