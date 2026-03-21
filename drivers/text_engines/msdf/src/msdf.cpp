@@ -578,7 +578,8 @@ render_command(
     // TODO: Culling.
     alia_vec2f position = command.position;
     float const scale = command.scale;
-    float const clip_height = bucket->clip_rect->size.y;
+    alia_box const* const clip = bucket->clip_rect;
+    float const clip_bottom_y = clip->min.y + clip->size.y;
     for (size_t i = 0; i < command.length; ++i)
     {
         char const c = command.text[i];
@@ -591,7 +592,7 @@ render_command(
 
         auto& cached_glyph = font.glyph_cache.at(unicode);
 
-        alia_vec2f draw_pos = {position.x, clip_height - position.y};
+        alia_vec2f draw_pos = {position.x, clip_bottom_y - position.y};
         engine->gpu.glyph_instances[glyph_instance_count] = {
             command.color,
             draw_pos,
@@ -652,9 +653,8 @@ render_msdf_bucket(void* user, alia_draw_bucket const* bucket)
 
     float l = clip_rect->min.x; // left
     float r = clip_rect->min.x + clip_rect->size.x; // right
-    float t = clip_rect->min.y
-            + clip_rect->size.y; // top (world Y up = screen Y up)
-    float b = clip_rect->min.y; // bottom
+    float t = clip_rect->size.y; // top (Y-up, range matching draw_pos output)
+    float b = 0.f; // bottom
     float n = -1.f; // near
     float f = 1.f; // far
 
