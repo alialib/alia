@@ -173,7 +173,7 @@ do_heading(context& ctx, char const* text)
     do_text(
         ctx,
         2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2.idle),
+        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2),
         alia_px(&ctx, 14),
         text,
         NO_FLAGS,
@@ -186,7 +186,7 @@ do_subheading(context& ctx, char const* text)
     do_text(
         ctx,
         2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1.idle),
+        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1),
         alia_px(&ctx, 12),
         text,
         NO_FLAGS,
@@ -211,8 +211,8 @@ do_radio_with_text(
                 2,
                 alia_srgba8_from_srgb8(
                     value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base.idle
-                        : ctx.palette->foundation.text.base.disabled),
+                        ? ctx.palette->foundation.text.base
+                        : ctx.palette->foundation.text.weaker_2),
                 alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
@@ -240,8 +240,8 @@ do_switch_with_text(
                 2,
                 alia_srgba8_from_srgb8(
                     value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base.idle
-                        : ctx.palette->foundation.text.base.disabled),
+                        ? ctx.palette->foundation.text.base
+                        : ctx.palette->foundation.text.weaker_2),
                 alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
@@ -269,8 +269,8 @@ do_node_expander_with_text(
                 2,
                 alia_srgba8_from_srgb8(
                     value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base.idle
-                        : ctx.palette->foundation.text.base.disabled),
+                        ? ctx.palette->foundation.text.base
+                        : ctx.palette->foundation.text.weaker_2),
                 alia_px(&ctx, 12),
                 text,
                 CENTER_Y);
@@ -485,7 +485,7 @@ do_collapsible_demo(context& ctx)
             do_text(
                 ctx,
                 2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
                 alia_px(&ctx, 12),
                 lorem_ipsum);
         });
@@ -511,13 +511,13 @@ do_content(context& ctx)
             do_text(
                 ctx,
                 2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
                 alia_px(&ctx, 12),
                 lorem_ipsum);
             do_text(
                 ctx,
                 2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
                 alia_px(&ctx, 12),
                 lorem_ipsum,
                 NO_FLAGS,
@@ -525,7 +525,7 @@ do_content(context& ctx)
             do_text(
                 ctx,
                 2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base.idle),
+                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
                 alia_px(&ctx, 12),
                 lorem_ipsum);
         });
@@ -559,9 +559,6 @@ the_demo(context& ctx)
                 = alia_seeds_from_elevation(brand, 0, demo_is_dark);
             alia_theme_params params = {
                 .foundation_step_l = 0.075f,
-                .hover_l_shift = 0.05f,
-                .active_l_shift = 0.10f,
-                .interaction_hue_shift = 0.0f,
                 .is_dark_mode = demo_is_dark,
             };
             alia_palette_expand(&local_palette, &pseeds, &params);
@@ -572,7 +569,7 @@ the_demo(context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    ctx.palette->foundation.background.stronger_2.idle,
+                    ctx.palette->foundation.background.stronger_2,
                     FILL,
                     [&]() {
                         column(ctx, [&]() {
@@ -596,7 +593,7 @@ the_demo(context& ctx)
                             concrete_panel(
                                 ctx,
                                 0,
-                                ctx.palette->foundation.background.base.idle,
+                                ctx.palette->foundation.background.base,
                                 FILL,
                                 [&]() {
                                     column(ctx, GROW, [&]() {
@@ -710,7 +707,7 @@ update()
         // glfwMakeContextCurrent(the_window);
 
         alia_rgb c = alia_rgb_from_srgb8(
-            the_system->palette.foundation.background.base.idle);
+            the_system->palette.foundation.background.base);
         glClearColor(c.r, c.g, c.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -888,9 +885,6 @@ main()
         // pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
             .foundation_step_l = 0.075f,
-            .hover_l_shift = 0.05f,
-            .active_l_shift = 0.10f,
-            .interaction_hue_shift = 0.0f,
             .is_dark_mode = !light_theme,
         };
         alia_palette_expand(&the_system->palette, &pseeds, &params);

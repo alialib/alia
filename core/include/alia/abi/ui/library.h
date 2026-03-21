@@ -13,11 +13,15 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_switch_style
 {
-    uint8_t off_track;
-    uint8_t on_track;
-    uint8_t off_dot;
-    uint8_t on_dot;
-    uint8_t highlight;
+    alia_palette_color off_track;
+    alia_palette_color on_track;
+    alia_palette_color off_dot;
+    alia_palette_color on_dot;
+    alia_palette_color off_track_disabled;
+    alia_palette_color on_track_disabled;
+    alia_palette_color off_dot_disabled;
+    alia_palette_color on_dot_disabled;
+    alia_palette_color highlight;
 
     // Geometry (logical px unless noted). Switch is drawn at fixed size inside
     // allocated placement (centered); it does not stretch with allocated size.
@@ -49,9 +53,9 @@ alia_do_switch(
 
 typedef struct alia_slider_style
 {
-    uint8_t track_color;
-    uint8_t thumb_color;
-    uint8_t highlight;
+    alia_palette_color track_color;
+    alia_palette_color thumb_color;
+    alia_palette_color highlight;
 
     // Total allocated size for the slider leaf (logical px).
     float layout_width;
@@ -66,9 +70,11 @@ typedef struct alia_slider_style
 
 typedef struct alia_radio_style
 {
-    uint8_t outline;
-    uint8_t dot;
-    uint8_t highlight;
+    alia_palette_color outline;
+    alia_palette_color dot;
+    alia_palette_color outline_disabled;
+    alia_palette_color dot_disabled;
+    alia_palette_color highlight;
 
     // size of the radio button (logical px)
     float layout_width;
@@ -90,10 +96,9 @@ typedef struct alia_radio_style
 
 typedef struct alia_node_expander_style
 {
-    // Palette indices (interaction-independent; disabled uses its own index).
-    uint8_t triangle;
-    uint8_t disabled_triangle;
-    uint8_t highlight;
+    alia_palette_color triangle;
+    alia_palette_color disabled_triangle;
+    alia_palette_color highlight;
 
     // Layout (logical px). The control does not stretch the glyph beyond this
     // allocated leaf (glyph is centered in the leaf).
@@ -115,11 +120,11 @@ typedef struct alia_node_expander_style
 
 typedef struct alia_scrollbar_style
 {
-    uint8_t track_color;
-    uint8_t thumb_color;
-    uint8_t button_color;
-    uint8_t glyph_color;
-    uint8_t highlight;
+    alia_palette_color track_color;
+    alia_palette_color thumb_color;
+    alia_palette_color button_color;
+    alia_palette_color glyph_color;
+    alia_palette_color highlight;
 
     float width;
     float button_length;

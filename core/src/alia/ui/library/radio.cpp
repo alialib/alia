@@ -29,12 +29,29 @@ struct radio_data
 };
 
 static alia_radio_style const default_radio_style = {
-    .outline = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL, ALIA_PALETTE_RAMP_LEVEL_BASE),
-    .dot = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-    .highlight = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+    .outline = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_BASE),
+        0xff),
+    .dot = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        0xff),
+    .outline_disabled = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+        0xff),
+    .dot_disabled = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_STRONGER_1),
+        0xff),
+    .highlight = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        0x33),
     .layout_width = 40.f,
     .layout_height = 40.f,
     .ring_radius = 12.f,
@@ -84,7 +101,6 @@ render_radio(
     alia_radio_style const* style)
 {
     alia_palette const* p = alia_ctx_palette(ctx);
-    uint8_t const status = static_cast<uint8_t>(interaction_status);
 
     alia_vec2f const center = radio_center(placement);
     float const ring_radius_px = alia_px(ctx, style->ring_radius);
@@ -93,8 +109,10 @@ render_radio(
 
     if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
     {
-        alia_srgb8 const outline_srgb = alia_palette_color_at(
-            p, style->outline, ALIA_INTERACTION_STATUS_DISABLED);
+        alia_srgb8 const outline_srgb
+            = alia_palette_srgb_at(p, style->outline_disabled.index);
+        alia_srgb8 const dot_srgb
+            = alia_palette_srgb_at(p, style->dot_disabled.index);
 
         draw_radio_ring(
             ctx, center, ring_radius_px, border_width_px, outline_srgb);
@@ -106,7 +124,7 @@ render_radio(
                 ctx->geometry->z_base + 2,
                 center,
                 dot_radius_max_px,
-                alia_srgba8_from_srgb8(outline_srgb));
+                alia_srgba8_from_srgb8(dot_srgb));
         }
 
         return;
@@ -123,10 +141,8 @@ render_radio(
         0.f);
 
     alia_srgb8 const outline_srgb
-        = alia_palette_color_at(p, style->outline, status);
-    alia_srgb8 const dot_srgb = alia_palette_color_at(p, style->dot, status);
-    alia_srgb8 const highlight_srgb
-        = alia_palette_color_at(p, style->highlight, status);
+        = alia_palette_srgb_at(p, style->outline.index);
+    alia_srgb8 const dot_srgb = alia_palette_srgb_at(p, style->dot.index);
 
     if ((interaction_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
@@ -137,7 +153,7 @@ render_radio(
             ctx->geometry->z_base + 2,
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_srgba8_from_srgb8_alpha(highlight_srgb, 0x33));
+            alia_palette_color_resolve(p, style->highlight));
     }
 
     render_click_flares(

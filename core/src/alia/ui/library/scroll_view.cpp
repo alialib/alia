@@ -68,19 +68,30 @@ struct scroll_view_state
 };
 
 static alia_scrollbar_style const default_scrollbar_style = {
-    .track_color = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND, ALIA_PALETTE_RAMP_LEVEL_BASE),
-    .thumb_color = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-        ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-    .button_color = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-        ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
-    .glyph_color = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-        ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-    .highlight = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SUBTLE),
+    .track_color = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+            ALIA_PALETTE_RAMP_LEVEL_BASE),
+        0xff),
+    .thumb_color = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+            ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
+        0xff),
+    .button_color = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+            ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
+        0xff),
+    .glyph_color = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+            ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
+        0xff),
+    .highlight = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SUBTLE),
+        0x40),
     .width = 24.f,
     .button_length = 0.f,
     .minimum_thumb_length = 20.f,
@@ -350,29 +361,37 @@ draw_scrollbar(
         ctx,
         ctx->geometry->z_base + 1,
         sb,
-        alia_srgba8_from_srgb8(
-            alia_palette_color_at(palette, data.style.track_color, 0)),
+        alia_palette_color_resolve(palette, data.style.track_color),
         0.f);
 
     alia_draw_rounded_box(
         ctx,
         ctx->geometry->z_base + 2,
         thumb,
-        alia_srgba8_from_srgb8(alia_palette_color_at(
-            palette,
-            data.style.thumb_color,
-            static_cast<uint8_t>(thumb_status))),
+        alia_palette_color_resolve(palette, data.style.thumb_color),
         data.style.thumb_corner_radius);
 
-    alia_srgba8 const button = alia_srgba8_from_srgb8(
-        alia_palette_color_at(palette, data.style.button_color, 0));
+    if ((thumb_status
+         & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
+        != 0)
+    {
+        alia_draw_rounded_box(
+            ctx,
+            ctx->geometry->z_base + 2,
+            thumb,
+            alia_palette_color_resolve(palette, data.style.highlight),
+            data.style.thumb_corner_radius);
+    }
+
+    alia_srgba8 const button
+        = alia_palette_color_resolve(palette, data.style.button_color);
     alia_draw_rounded_box(ctx, ctx->geometry->z_base + 2, btn0, button, 0.f);
     alia_draw_rounded_box(ctx, ctx->geometry->z_base + 2, btn1, button, 0.f);
 
     float const rotation0 = axis == 0 ? 270.f : 0.f;
     float const rotation1 = axis == 0 ? 90.f : 180.f;
-    alia_srgba8 const glyph = alia_srgba8_from_srgb8(
-        alia_palette_color_at(palette, data.style.glyph_color, 0));
+    alia_srgba8 const glyph
+        = alia_palette_color_resolve(palette, data.style.glyph_color);
     alia_draw_equilateral_triangle(
         ctx, ctx->geometry->z_base + 3, btn0, glyph, rotation0);
     alia_draw_equilateral_triangle(

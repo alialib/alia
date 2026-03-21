@@ -398,15 +398,15 @@ static void
 show_foundation_ramp(context& ctx, alia_foundation_ramp const* ramp)
 {
     row(ctx, [&]() {
-        show_srgb8_rect(ctx, ramp->weaker_4.idle);
-        show_srgb8_rect(ctx, ramp->weaker_3.idle);
-        show_srgb8_rect(ctx, ramp->weaker_2.idle);
-        show_srgb8_rect(ctx, ramp->weaker_1.idle);
-        show_srgb8_rect(ctx, ramp->base.idle);
-        show_srgb8_rect(ctx, ramp->stronger_1.idle);
-        show_srgb8_rect(ctx, ramp->stronger_2.idle);
-        show_srgb8_rect(ctx, ramp->stronger_3.idle);
-        show_srgb8_rect(ctx, ramp->stronger_4.idle);
+        show_srgb8_rect(ctx, ramp->weaker_4);
+        show_srgb8_rect(ctx, ramp->weaker_3);
+        show_srgb8_rect(ctx, ramp->weaker_2);
+        show_srgb8_rect(ctx, ramp->weaker_1);
+        show_srgb8_rect(ctx, ramp->base);
+        show_srgb8_rect(ctx, ramp->stronger_1);
+        show_srgb8_rect(ctx, ramp->stronger_2);
+        show_srgb8_rect(ctx, ramp->stronger_3);
+        show_srgb8_rect(ctx, ramp->stronger_4);
     });
 }
 
@@ -414,10 +414,10 @@ static void
 show_palette_swatch(context& ctx, alia_swatch const* swatch)
 {
     row(ctx, [&]() {
-        show_srgb8_rect(ctx, swatch->solid.idle);
-        show_srgb8_rect(ctx, swatch->subtle.idle);
-        show_srgb8_rect(ctx, swatch->outline.idle);
-        show_srgb8_rect(ctx, swatch->text.idle);
+        show_srgb8_rect(ctx, swatch->solid);
+        show_srgb8_rect(ctx, swatch->subtle);
+        show_srgb8_rect(ctx, swatch->outline);
+        show_srgb8_rect(ctx, swatch->text);
     });
 }
 

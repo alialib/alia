@@ -32,10 +32,20 @@ struct node_expander_data
 static alia_node_expander_style const default_node_expander_style = {
     // Use structural base color for the triangle glyph and a slightly weaker
     // variant for disabled state.
-    .triangle = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL, ALIA_PALETTE_RAMP_LEVEL_BASE),
-    .highlight = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+    .triangle = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_BASE),
+        0xff),
+    .disabled_triangle = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+        0xff),
+    .highlight = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        0x30),
 
     .layout_width = 48.f,
     .layout_height = 48.f,
@@ -97,16 +107,15 @@ render_node_expander(
         = node_expander_triangle_box(ctx, placement, style);
     alia_vec2f const center = node_expander_center(placement);
 
-    alia_srgb8 triangle_srgb = alia_palette_color_at(
-        p,
-        style->triangle,
-        interaction_status & ALIA_INTERACTION_STATUS_DISABLED);
+    alia_srgba8 const triangle_rgba = is_disabled
+        ? alia_palette_color_resolve(p, style->disabled_triangle)
+        : alia_palette_color_resolve(p, style->triangle);
 
     alia_draw_equilateral_triangle(
         ctx,
         ctx->geometry->z_base + 2,
         triangle_box,
-        alia_srgba8_from_srgb8(triangle_srgb),
+        triangle_rgba,
         rotation_degrees);
 
     if (is_disabled)
@@ -117,24 +126,22 @@ render_node_expander(
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
         != 0)
     {
-        alia_srgb8 const highlight_srgb
-            = alia_palette_color_at(p, style->highlight, 0);
         alia_draw_circle(
             ctx,
             ctx->geometry->z_base + 3,
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_srgba8_from_srgb8_alpha(highlight_srgb, 0x30));
+            alia_palette_color_resolve(p, style->highlight));
     }
 
-    alia_srgb8 const highlight_srgb
-        = alia_palette_color_at(p, style->highlight, 0);
+    alia_srgb8 const flare_srgb
+        = alia_palette_srgb_at(p, style->highlight.index);
     render_click_flares(
         ctx,
         ALIA_NESTED_BITPACK(data.bits, click_flare),
         interaction_status,
         center,
-        highlight_srgb,
+        flare_srgb,
         alia_px(ctx, style->flare_radius));
 }
 

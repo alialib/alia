@@ -23,13 +23,19 @@ struct slider_data
 };
 
 static alia_slider_style const default_slider_style = {
-    .track_color = alia_palette_index_foundation_ramp(
-        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-        ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
-    .thumb_color = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-    .highlight = alia_palette_index_swatch(
-        ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+    .track_color = alia_palette_color_make(
+        alia_palette_index_foundation_ramp(
+            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+            ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
+        0xff),
+    .thumb_color = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        0xff),
+    .highlight = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        0x33),
     .layout_width = 320.f,
     .layout_height = 32.f,
     .track_thickness = 6.f,
@@ -183,28 +189,26 @@ render_slider(
     alia_interaction_status_t thumb_status)
 {
     alia_palette const* p = alia_ctx_palette(ctx);
-    uint8_t const status = static_cast<uint8_t>(thumb_status);
 
     alia_vec2f const track_min = get_track_min(box, axis, ctx, s);
     alia_vec2f const track_size = get_track_size(box, axis, ctx, s);
     alia_box const track_box{track_min, track_size};
 
     // TODO: Should the track use interaction status?
-    alia_srgb8 const track_srgb = alia_palette_color_at(p, s->track_color, 0);
+    alia_srgba8 const track_rgba
+        = alia_palette_color_resolve(p, s->track_color);
 
     alia_draw_rounded_box(
         ctx,
         ctx->geometry->z_base + 2,
         track_box,
-        alia_srgba8_from_srgb8(track_srgb),
+        track_rgba,
         0.f);
 
     alia_vec2f const thumb_center
         = get_thumb_center(box, axis, ctx, s, minimum, maximum, value);
     alia_srgb8 const thumb_srgb
-        = alia_palette_color_at(p, s->thumb_color, status);
-    alia_rgba const thumb_rgba
-        = alia_rgba_from_rgb(alia_rgb_from_srgb8(thumb_srgb));
+        = alia_palette_srgb_at(p, s->thumb_color.index);
 
     float const thumb_r = alia_px(ctx, s->thumb_radius);
 
@@ -225,14 +229,12 @@ render_slider(
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
         != 0)
     {
-        alia_srgb8 const highlight_srgb
-            = alia_palette_color_at(p, s->highlight, status);
         alia_draw_circle(
             ctx,
             ctx->geometry->z_base + 2,
             thumb_center,
             alia_px(ctx, s->highlight_radius),
-            alia_srgba8_from_srgb8_alpha(highlight_srgb, 0x33));
+            alia_palette_color_resolve(p, s->highlight));
     }
 
     // TODO: Draw focus

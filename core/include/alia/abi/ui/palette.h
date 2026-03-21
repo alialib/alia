@@ -15,37 +15,29 @@ enum alia_ui_lightness_mode
     ALIA_UI_DARK_MODE = 1
 };
 
-typedef struct alia_interaction_colors
-{
-    alia_srgb8 idle;
-    alia_srgb8 hover;
-    alia_srgb8 active;
-    alia_srgb8 disabled;
-} alia_interaction_colors;
-
 typedef struct alia_swatch
 {
-    alia_interaction_colors solid;
-    alia_interaction_colors on_solid;
+    alia_srgb8 solid;
+    alia_srgb8 on_solid;
 
-    alia_interaction_colors subtle;
-    alia_interaction_colors on_subtle;
+    alia_srgb8 subtle;
+    alia_srgb8 on_subtle;
 
-    alia_interaction_colors outline;
-    alia_interaction_colors text;
+    alia_srgb8 outline;
+    alia_srgb8 text;
 } alia_swatch;
 
 typedef struct alia_foundation_ramp
 {
-    alia_interaction_colors weaker_4;
-    alia_interaction_colors weaker_3;
-    alia_interaction_colors weaker_2;
-    alia_interaction_colors weaker_1;
-    alia_interaction_colors base;
-    alia_interaction_colors stronger_1;
-    alia_interaction_colors stronger_2;
-    alia_interaction_colors stronger_3;
-    alia_interaction_colors stronger_4;
+    alia_srgb8 weaker_4;
+    alia_srgb8 weaker_3;
+    alia_srgb8 weaker_2;
+    alia_srgb8 weaker_1;
+    alia_srgb8 base;
+    alia_srgb8 stronger_1;
+    alia_srgb8 stronger_2;
+    alia_srgb8 stronger_3;
+    alia_srgb8 stronger_4;
 } alia_foundation_ramp;
 
 // PALETTES
@@ -73,6 +65,10 @@ typedef struct alia_literal_palette
     alia_swatch pink;
 } alia_literal_palette;
 
+// Flat index count for the palette union (padding in `flat` aliases the
+// structured region only for indices that exist in the named layout).
+#define ALIA_PALETTE_SLOT_COUNT 256
+
 typedef union alia_palette
 {
     struct
@@ -91,15 +87,13 @@ typedef union alia_palette
 
         alia_literal_palette colors;
     };
-
-    // Flat index lookup over the same memory as the structured members above.
-    alia_interaction_colors flat[256];
+    alia_srgb8 flat[ALIA_PALETTE_SLOT_COUNT];
 } alia_palette;
 
 // --- Flat index API: constants + direct math (no switches). Packing is validated
 //     at compile time in palette generation code via alia_palette_flat_index_ok(). ---
 
-#define ALIA_PALETTE_SLOT_SIZE (sizeof(alia_interaction_colors))
+#define ALIA_PALETTE_SLOT_SIZE (sizeof(alia_srgb8))
 
 // Strides (slots per sub-struct). Used in index math; must match actual layout.
 #define ALIA_PALETTE_FOUNDATION_RAMP_STRIDE \
@@ -205,23 +199,41 @@ alia_palette_index_literal(
                      + (size_t)part);
 }
 
-// Resolve flat index + interaction status to color. status uses the same bits
-// as alia_interaction_status_t (DISABLED=0x1, HOVERED=0x2, ACTIVE=0x4); disabled
-// wins, then active, then hover, else idle.
-static inline alia_srgb8
-alia_palette_color_at(
-    alia_palette const* p,
-    uint8_t index,
-    uint8_t interaction_status)
+// Index + alpha for a palette-backed color (widget styles, etc.).
+typedef struct alia_palette_color
 {
-    alia_interaction_colors const* slot = &p->flat[index];
-    if (interaction_status & 0x1u)
-        return slot->disabled;
-    if (interaction_status & 0x4u)
-        return slot->active;
-    if (interaction_status & 0x2u)
-        return slot->hover;
-    return slot->idle;
+    uint8_t index;
+    uint8_t alpha;
+} alia_palette_color;
+
+static inline alia_palette_color
+alia_palette_color_make(uint8_t index, uint8_t alpha)
+{
+    alia_palette_color c;
+    c.index = index;
+    c.alpha = alpha;
+    return c;
+}
+
+static inline alia_srgb8
+alia_palette_srgb_at(alia_palette const* p, uint8_t index)
+{
+    return p->flat[index];
+}
+
+// Resolve flat index + alpha to premultiplied-friendly sRGBA.
+static inline alia_srgba8
+alia_palette_color_at(
+    alia_palette const* p, uint8_t index, uint8_t alpha)
+{
+    return alia_srgba8_from_srgb8_alpha(p->flat[index], alpha);
+}
+
+static inline alia_srgba8
+alia_palette_color_resolve(
+    alia_palette const* p, alia_palette_color c)
+{
+    return alia_palette_color_at(p, c.index, c.alpha);
 }
 
 // GENERATION
@@ -241,9 +253,6 @@ typedef struct alia_palette_seeds
 typedef struct alia_theme_params
 {
     float foundation_step_l;
-    float hover_l_shift;
-    float active_l_shift;
-    float interaction_hue_shift;
     bool is_dark_mode;
 } alia_theme_params;
 
