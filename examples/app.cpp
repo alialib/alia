@@ -57,12 +57,12 @@ using namespace alia::operators;
 
 constexpr rgba GRAY = {0.5f, 0.5f, 0.5f, 1.0f};
 
-static alia_srgb8 const brand_colors[] = {
+static alia_srgb8 const primary_colors[] = {
     hex_color("94c1fd"), // hex_color("#154DCF"),
     hex_color("#6f42c1"),
     hex_color("#a52e45"),
 };
-static int brand_index = 0;
+static int primary_index = 0;
 
 alia_ui_system* the_system;
 GLFWwindow* the_window;
@@ -81,6 +81,7 @@ static alia_node_expander_style local_node_expander_style;
 static bool local_styles_initialized = false;
 static float demo_hue = 0.55f;
 static bool demo_is_dark = true;
+static float demo_foundation_step_l = 0.075f;
 static float demo_padding = 6.f;
 static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
@@ -297,6 +298,10 @@ do_controls(context& ctx)
             abort_pass(ctx);
         }
     }
+
+    do_subheading(ctx, "Foundation Lightness Step");
+    alia_do_slider_f(
+        &ctx, &demo_foundation_step_l, 0.01f, 0.2f, 0.001f, 0, false, nullptr);
 
     do_subheading(ctx, "Hue");
     alia_do_slider_f(&ctx, &demo_hue, 0.f, 1.f, 0.01f, 0, false, nullptr);
@@ -548,20 +553,30 @@ the_demo(context& ctx)
         }
 
         // Refresh local palette from control state (hue, light/dark).
+        static bool current_demo_is_dark = false;
+        static float current_demo_foundation_step_l = 0;
+        static float current_demo_hue = 0;
+        if (current_demo_is_dark != demo_is_dark
+            || current_demo_foundation_step_l != demo_foundation_step_l
+            || current_demo_hue != demo_hue)
         {
             alia_oklch lch = {
                 .l = 0.55f,
                 .c = 0.2f,
                 .h = demo_hue * 2.f * 3.14159f,
             };
-            alia_srgb8 brand = alia_srgb8_from_unclamped_oklch(lch);
+            alia_srgb8 primary = alia_srgb8_from_unclamped_oklch(lch);
             alia_palette_seeds pseeds
-                = alia_seeds_from_elevation(brand, 0, demo_is_dark);
+                = alia_seeds_from_elevation(primary, 0, demo_is_dark);
             alia_theme_params params = {
-                .foundation_step_l = 0.075f,
+                .foundation_step_l = demo_foundation_step_l,
                 .is_dark_mode = demo_is_dark,
             };
             alia_palette_expand(&local_palette, &pseeds, &params);
+
+            current_demo_is_dark = demo_is_dark;
+            current_demo_foundation_step_l = demo_foundation_step_l;
+            current_demo_hue = demo_hue;
         }
 
         with_padding(ctx, 0, [&] {
@@ -879,23 +894,22 @@ main()
 {
     static bool light_theme = false;
 
-    static bool theme_update_needed = true;
-
     // TODO: Guarantee alignment.
     void* ui_system_storage = malloc(alia_ui_system_object_spec().size);
     the_system = alia_ui_system_init(ui_system_storage, the_demo, {0, 0});
 
-    if (theme_update_needed)
+    static bool theme_initialized = false;
+    if (!theme_initialized)
     {
         alia_palette_seeds pseeds = alia_seeds_from_elevation(
-            brand_colors[brand_index], 0, !light_theme);
+            primary_colors[primary_index], 0, !light_theme);
         // pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
             .foundation_step_l = 0.075f,
             .is_dark_mode = !light_theme,
         };
         alia_palette_expand(&the_system->palette, &pseeds, &params);
-        theme_update_needed = false;
+        theme_initialized = true;
     }
 
     if (!glfwInit())
@@ -917,7 +931,7 @@ main()
 #endif
 
     the_window
-        = glfwCreateWindow(1200, 1600, "Alia Renderer", nullptr, nullptr);
+        = glfwCreateWindow(1200, 1200, "Alia Renderer", nullptr, nullptr);
     if (!the_window)
     {
         std::cerr << "Failed to create GLFW window\n";

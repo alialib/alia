@@ -72,7 +72,7 @@ static void
 generate_swatch_from_oklch(
     alia_swatch* swatch, alia_oklch base, const alia_theme_params* p)
 {
-    (void)p;
+    (void) p;
     // 1. Solid Background
     fill_one(&swatch->solid, base);
 
@@ -129,13 +129,13 @@ generate_ramp(
 
 alia_palette_seeds
 alia_seeds_from_core(
-    alia_srgb8 brand, alia_srgb8 bg, alia_srgb8 text, bool is_dark)
+    alia_srgb8 primary, alia_srgb8 bg, alia_srgb8 text, bool is_dark)
 {
     alia_palette_seeds seeds;
 
     seeds.bg_base = bg;
     seeds.text_base = text;
-    seeds.primary = brand;
+    seeds.primary = primary;
 
     alia_oklch bg_oklch = alia_oklch_from_srgb8(bg);
 
@@ -162,22 +162,22 @@ alia_seeds_from_core(
 }
 
 alia_palette_seeds
-alia_seeds_from_elevation(alia_srgb8 brand, int elevation, bool is_dark)
+alia_seeds_from_elevation(alia_srgb8 primary, int elevation, bool is_dark)
 {
-    alia_oklch brand_oklch = alia_oklch_from_srgb8(brand);
-    float brand_h = brand_oklch.h;
+    alia_oklch primary_oklch = alia_oklch_from_srgb8(primary);
+    float primary_h = primary_oklch.h;
 
     float bg_l
         = is_dark ? 0.12f + (elevation * 0.03f) : 0.98f - (elevation * 0.01f);
 
-    alia_oklch bg_oklch = {bg_l, 0.015f, brand_h};
+    alia_oklch bg_oklch = {bg_l, 0.015f, primary_h};
     alia_srgb8 bg = alia_srgb8_from_unclamped_oklch(bg_oklch);
 
     float text_l = is_dark ? 0.95f : 0.15f;
-    alia_oklch text_oklch = {text_l, 0.02f, brand_h};
+    alia_oklch text_oklch = {text_l, 0.02f, primary_h};
     alia_srgb8 text = alia_srgb8_from_unclamped_oklch(text_oklch);
 
-    return alia_seeds_from_core(brand, bg, text, is_dark);
+    return alia_seeds_from_core(primary, bg, text, is_dark);
 }
 
 void
@@ -187,12 +187,11 @@ alia_palette_expand(
     const alia_theme_params* params)
 {
     alia_theme_params p
-        = params
-            ? *params
-            : alia_theme_params{
-                  .foundation_step_l = 0.075f,
-                  .is_dark_mode = true,
-              };
+        = params ? *params
+                 : alia_theme_params{
+                       .foundation_step_l = 0.075f,
+                       .is_dark_mode = true,
+                   };
 
     generate_ramp(&out_palette->foundation.background, seeds->bg_base, &p);
 
@@ -205,18 +204,15 @@ alia_palette_expand(
 
     alia_srgb8 structural_seed = alia_srgb8_from_unclamped_oklch(struct_oklch);
 
-    generate_ramp(
-        &out_palette->foundation.structural, structural_seed, &p);
+    generate_ramp(&out_palette->foundation.structural, structural_seed, &p);
 
     generate_ramp(&out_palette->foundation.text, seeds->text_base, &p);
 
     generate_swatch_from_srgb8(&out_palette->focus, seeds->primary, &p);
-    generate_swatch_from_srgb8(
-        &out_palette->selection, seeds->secondary, &p);
+    generate_swatch_from_srgb8(&out_palette->selection, seeds->secondary, &p);
 
     generate_swatch_from_srgb8(&out_palette->primary, seeds->primary, &p);
-    generate_swatch_from_srgb8(
-        &out_palette->secondary, seeds->secondary, &p);
+    generate_swatch_from_srgb8(&out_palette->secondary, seeds->secondary, &p);
     generate_swatch_from_srgb8(&out_palette->success, seeds->success, &p);
     generate_swatch_from_srgb8(&out_palette->warning, seeds->warning, &p);
     generate_swatch_from_srgb8(&out_palette->danger, seeds->danger, &p);
