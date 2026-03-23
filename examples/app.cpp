@@ -3,11 +3,9 @@
 
 #include <algorithm>
 #include <chrono>
-#include <functional> // For std::hash
+#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <random>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -37,6 +35,7 @@
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
+#include <alia/kernel/macros.hpp>
 #include <alia/platforms/glfw/window.hpp>
 #include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/ui/drawing.h>
@@ -698,11 +697,9 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
     glfwGetWindowSize(window, &window_width, &window_height);
 
     float internal_x
-        = (static_cast<float>(x) * framebuffer_width
-           / window_width); // / the_ui_scale.x;
+        = (static_cast<float>(x) * framebuffer_width / window_width);
     float internal_y
-        = (static_cast<float>(y) * framebuffer_height
-           / window_height); // / the_ui_scale.y;
+        = (static_cast<float>(y) * framebuffer_height / window_height);
 
     alia_ui_process_mouse_motion(the_system, {internal_x, internal_y});
 }

@@ -17,8 +17,10 @@ template<class Content>
 void
 collapsible(context& ctx, alia_bool_signal* expanded, Content&& content)
 {
-    alia_ui_collapsible_begin(&ctx, expanded, 0, 1.f, nullptr);
-    std::forward<Content>(content)();
+    bool const do_content
+        = alia_ui_collapsible_begin(&ctx, expanded, 0, 1.f, nullptr);
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
     alia_ui_collapsible_end(&ctx);
 }
 
@@ -30,9 +32,10 @@ collapsible(
     layout_flag_set column_flags,
     Content&& content)
 {
-    alia_ui_collapsible_begin(
+    bool const do_content = alia_ui_collapsible_begin(
         &ctx, expanded, raw_code(column_flags), 1.f, nullptr);
-    std::forward<Content>(content)();
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
     alia_ui_collapsible_end(&ctx);
 }
 
@@ -46,9 +49,10 @@ collapsible(
     alia_animated_transition const* transition,
     Content&& content)
 {
-    alia_ui_collapsible_begin(
+    bool const do_content = alia_ui_collapsible_begin(
         &ctx, expanded, raw_code(column_flags), offset_factor, transition);
-    std::forward<Content>(content)();
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
     alia_ui_collapsible_end(&ctx);
 }
 

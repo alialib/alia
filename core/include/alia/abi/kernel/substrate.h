@@ -4,6 +4,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
 
+#include <alia/abi/context.h>
+
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with Alia components. It is designed so that each
 // component emitted by an application is associated with a unique instance of
@@ -124,6 +126,10 @@ alia_substrate_use_object(
 // This is the primary way to anchor conditional blocks within their parents.
 alia_substrate_block*
 alia_substrate_use_block(alia_context* ctx);
+
+// Clean up the current contents of a block and reset it to an empty state.
+void
+alia_substrate_reset_block(alia_substrate_block* block);
 
 inline bool
 alia_substrate_block_needs_discovery(alia_struct_spec* spec)

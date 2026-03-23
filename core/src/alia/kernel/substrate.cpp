@@ -2,6 +2,7 @@
 
 #include <alia/abi/context.h>
 #include <alia/impl/base/stack.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/kernel/substrate.h>
 
 #include <algorithm>
@@ -51,9 +52,12 @@ substrate_block_cleanup(
     }
     block.destructors = nullptr;
 
-    system.allocator.free(system.allocator.user_data, block.storage);
-    block.storage = nullptr;
-    ++system.current_generation;
+    if (block.storage != nullptr)
+    {
+        system.allocator.free(system.allocator.user_data, block.storage);
+        block.storage = nullptr;
+        ++system.current_generation;
+    }
 }
 
 } // namespace alia
@@ -148,6 +152,12 @@ alia_substrate_use_block(alia_context* ctx)
     }
 }
 
+void
+alia_substrate_reset_block(alia_substrate_block* block)
+{
+    substrate_block_cleanup(*block->system, *block);
+}
+
 // Begin the scope of a child substrate block.
 // `spec` is the memoized memory layout specification of the block.
 // If `alia_substrate_block_needs_discovery` returns true on the spec, the
@@ -167,6 +177,8 @@ alia_substrate_begin_block(
 
     if (alia_substrate_block_needs_discovery(spec))
     {
+        ALIA_ASSERT(get_event_type(*ctx) == ALIA_EVENT_REFRESH);
+        as_refresh_event(*ctx).incomplete = true;
         traversal.block.spec = {.size = 0, .align = 0};
         traversal.block.mode = ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY;
     }

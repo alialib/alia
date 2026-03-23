@@ -180,7 +180,8 @@ alia_ui_scroll_view_begin(
 void
 alia_ui_scroll_view_end(alia_context* ctx);
 
-void
+// TODO: Decide on a more general return value for this.
+bool
 alia_ui_collapsible_begin(
     alia_context* ctx,
     alia_bool_signal* expanded,

@@ -302,9 +302,17 @@ refresh_system(ui_system& sys)
     // std::chrono::steady_clock::time_point begin
     //     = std::chrono::steady_clock::now();
 
+    int attempts = 0;
+    while (true)
     {
-        auto refresh_event = alia_make_refresh_event({});
+        auto refresh_event = alia_make_refresh_event({.incomplete = false});
         dispatch_event(sys, refresh_event);
+        if (!as_refresh_event(refresh_event).incomplete)
+            break;
+        ++attempts;
+        ALIA_ASSERT(attempts < 100);
+        if (attempts >= 100)
+            break;
     }
 
     // long long refresh_time;

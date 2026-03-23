@@ -146,7 +146,7 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
-void
+bool
 alia_ui_collapsible_begin(
     alia_context* ctx,
     alia_bool_signal* expanded,
@@ -210,7 +210,7 @@ alia_ui_collapsible_begin(
         scope.node = node;
         alia_layout_container_activate(ctx, &node->base);
         alia_layout_column_begin(ctx, column_flags);
-        return;
+        return expansion != 0.f;
     }
 
     auto* placement = arena_alloc<collapsible_placement>(
@@ -220,10 +220,7 @@ alia_ui_collapsible_begin(
     alia_element_box_region(
         ctx, scope.id, &scope.placement.window, ALIA_CURSOR_DEFAULT);
 
-    // TODO: Only apply geometry when expansion is not 0 or 1.
-    // (This requires the user to omit their content when fully collapsed.)
-    // bool const apply_geometry = expansion != 0.f && expansion != 1.f;
-    bool const apply_geometry = true;
+    bool const apply_geometry = expansion != 0.f && expansion != 1.f;
     if (apply_geometry)
     {
         alia_geometry_push_clip_box(
@@ -241,6 +238,8 @@ alia_ui_collapsible_begin(
 
     // TODO: Layout could be entirely conditional based on the expansion value.
     alia_layout_column_begin(ctx, column_flags);
+
+    return expansion != 0.f;
 }
 
 void

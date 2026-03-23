@@ -90,11 +90,6 @@ typedef union alia_palette
     alia_srgb8 flat[ALIA_PALETTE_SLOT_COUNT];
 } alia_palette;
 
-// --- Flat index API: constants + direct math (no switches). Packing is
-// validated
-//     at compile time in palette generation code via
-//     alia_palette_flat_index_ok(). ---
-
 #define ALIA_PALETTE_SLOT_SIZE (sizeof(alia_srgb8))
 
 // Strides (slots per sub-struct). Used in index math; must match actual

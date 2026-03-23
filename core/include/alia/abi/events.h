@@ -132,8 +132,7 @@ enum
 
 typedef struct alia_refresh
 {
-    // TODO
-    int dummy;
+    bool incomplete;
 } alia_refresh;
 
 typedef struct alia_draw_context alia_draw_context;

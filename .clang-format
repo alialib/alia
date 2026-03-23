@@ -104,16 +104,17 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
-ForEachMacros:
-  - foreach
-  - Q_FOREACH
-  - BOOST_FOREACH
 IfMacros:
+  - ALIA_IF_
   - ALIA_IF
-  - alia_if
+  - ALIA_ELSE_IF_
   - ALIA_ELSE_IF
+  - ALIA_ELSE_
+  - alia_if_
+  - alia_if
+  - alia_else_if_
   - alia_else_if
-  - KJ_IF_MAYBE
+  - alia_else_
 IncludeBlocks: Preserve
 IncludeCategories:
   - Regex: '^"(llvm|llvm-c|clang|clang-c)/'
@@ -224,23 +225,17 @@ SpacesInParensOptions:
   Other: false
 SpacesInSquareBrackets: false
 Standard: Latest
-StatementAttributeLikeMacros:
-  - Q_EMIT
 StatementMacros:
+  - ALIA_ELSE
   - ALIA_END
   - ALIA_CASE
   - ALIA_DEFAULT
+  - alia_else
   - alia_end
   - alia_case
   - alia_default
 TabWidth: 8
 UseTab: Never
 VerilogBreakBetweenInstancePorts: true
-WhitespaceSensitiveMacros:
-  - BOOST_PP_STRINGIZE
-  - CF_SWIFT_NAME
-  - NS_SWIFT_NAME
-  - PP_STRINGIZE
-  - STRINGIZE
 ...
 

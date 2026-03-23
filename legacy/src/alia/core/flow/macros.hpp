@@ -373,10 +373,10 @@ read_condition(T const& x)
 #ifndef ALIA_STRICT_MACROS
 
 #define alia_untracked_if_(ctx, condition) ALIA_UNTRACKED_IF_(ctx, condition)
-#define alia_untracked_if(condition) ALIA_UNTRACKED_IF (condition)
+#define alia_untracked_if(condition) ALIA_UNTRACKED_IF(condition)
 #define alia_untracked_else_if_(ctx, condition)                               \
     ALIA_UNTRACKED_ELSE_IF_(ctx, condition)
-#define alia_untracked_else_if(condition) ALIA_UNTRACKED_ELSE_IF (condition)
+#define alia_untracked_else_if(condition) ALIA_UNTRACKED_ELSE_IF(condition)
 #define alia_untracked_else_(ctx) ALIA_UNTRACKED_ELSE(ctx)
 #define alia_untracked_else ALIA_UNTRACKED_ELSE
 
@@ -421,7 +421,7 @@ read_condition(T const& x)
 #ifndef ALIA_STRICT_MACROS
 #define alia_event_dependent_if_(ctx, condition)                              \
     ALIA_EVENT_DEPENDENT_IF_(ctx, condition)
-#define alia_event_dependent_if(condition) ALIA_EVENT_DEPENDENT_IF (condition)
+#define alia_event_dependent_if(condition) ALIA_EVENT_DEPENDENT_IF(condition)
 #endif
 
 } // namespace alia
