@@ -2,11 +2,17 @@
 # kerning; FreeType's TT_CONFIG_OPTION_GPOS_KERNING has limited variable font
 # support. Static Roboto-Regular from googlefonts/roboto has a kern table.
 fonts:
-  - id: Roboto
+  - id: roboto_regular
     url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
-    weight: 400
-    slant: normal
-  - id: Roboto-Bold
+  - id: roboto_bold
     url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf"
-    weight: 700
-    slant: normal
+
+# Icon font example (Material Symbols): list `icons` and fetch the matching
+# `.codepoints` file from google/material-design-icons.
+#  - id: MaterialSymbolsOutlined
+#    url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
+#    codepoints_url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints"
+#    icons:
+#      - search
+#      - home
+#      - settings

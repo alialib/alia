@@ -3,6 +3,10 @@
  * (downloads via libcurl with optional cache), generates a single MSDF atlas,
  * compresses with RLE, and emits alia_fonts.h / alia_fonts.cpp.
  *
+ * Text fonts load printable ASCII. Icon fonts (optional `icons` plus
+ * `codepoints_path` or `codepoints_url`) bake only listed glyphs from a Google
+ * `.codepoints` file and emit `constexpr` Unicode constants per icon.
+ *
  * Usage: alia_asset_builder <manifest.yaml> <output.h> <output.cpp>
  * [--cache-dir <dir>]
  */
@@ -13,7 +17,11 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <msdfgen-ext.h>
@@ -33,13 +41,132 @@ using namespace msdf_atlas;
 
 namespace fs = std::filesystem;
 
+static bool
+is_ident_start(unsigned char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+static bool
+is_ident_char(unsigned char c)
+{
+    return is_ident_start(c) || (c >= '0' && c <= '9');
+}
+
 struct FontEntry
 {
-    std::string path; // resolved local path
-    std::string id; // from manifest
-    int weight = 400; // optional, default 400
-    std::string slant; // optional, e.g. "normal", "italic"
+    std::string path; // resolved local path (TTF)
+    std::string id; // from manifest; must be a valid C identifier
+    /// If empty, load printable ASCII; otherwise icon font with these
+    /// (name, codepoint) pairs in manifest order.
+    std::vector<std::pair<std::string, uint32_t>> icon_codepoints;
 };
+
+static bool
+is_valid_c_identifier(std::string const& s)
+{
+    if (s.empty())
+        return false;
+    if (!is_ident_start(static_cast<unsigned char>(s[0])))
+        return false;
+    for (size_t i = 1; i < s.size(); ++i)
+    {
+        if (!is_ident_char(static_cast<unsigned char>(s[i])))
+            return false;
+    }
+    return true;
+}
+
+/// Suffix for `alia_font_<Id>_icon_<suffix>` when the Google icon name is not
+/// a valid C identifier (e.g. starts with a digit). Uses `cp_` prefix so we
+/// do not collide with a distinct icon literally named `u10k` vs `10k`.
+static std::string
+icon_name_c_suffix(std::string const& icon_name)
+{
+    if (icon_name.empty())
+        return "invalid_empty";
+    unsigned char c0 = static_cast<unsigned char>(icon_name[0]);
+    if (is_ident_start(c0))
+        return icon_name;
+    return std::string("cp_") + icon_name;
+}
+
+static bool
+parse_hex_codepoint(std::string const& hex_in, uint32_t& out)
+{
+    std::string hex = hex_in;
+    while (!hex.empty() && (hex.front() == ' ' || hex.front() == '\t'))
+        hex.erase(hex.begin());
+    while (!hex.empty() && (hex.back() == ' ' || hex.back() == '\t'))
+        hex.pop_back();
+    if (hex.size() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X'))
+        hex = hex.substr(2);
+    if (hex.empty())
+        return false;
+    char* end = nullptr;
+    unsigned long v = std::strtoul(hex.c_str(), &end, 16);
+    if (end != hex.c_str() + hex.size())
+        return false;
+    out = static_cast<uint32_t>(v);
+    return true;
+}
+
+// Google `.codepoints` format: one line per glyph: `name hex` (hex without 0x).
+static int
+load_codepoints_map(
+    std::string const& path, std::unordered_map<std::string, uint32_t>& out)
+{
+    std::ifstream in(path);
+    if (!in)
+    {
+        fprintf(stderr, "Cannot read codepoints file: %s\n", path.c_str());
+        return 1;
+    }
+    std::string line;
+    size_t line_no = 0;
+    while (std::getline(in, line))
+    {
+        ++line_no;
+        // Trim
+        size_t a = 0;
+        while (a < line.size()
+               && (line[a] == ' ' || line[a] == '\t' || line[a] == '\r'))
+            ++a;
+        while (!line.empty() && (line.back() == ' ' || line.back() == '\t'
+                                  || line.back() == '\r'))
+            line.pop_back();
+        if (a >= line.size())
+            continue;
+        line = line.substr(a);
+        if (line[0] == '#')
+            continue;
+        std::istringstream iss(line);
+        std::string name;
+        std::string hex;
+        if (!(iss >> name >> hex))
+        {
+            fprintf(
+                stderr,
+                "%s:%zu: expected 'name hex'\n",
+                path.c_str(),
+                line_no);
+            return 1;
+        }
+        uint32_t cp = 0;
+        if (!parse_hex_codepoint(hex, cp))
+        {
+            fprintf(
+                stderr,
+                "%s:%zu: bad hex for '%s'\n",
+                path.c_str(),
+                line_no,
+                name.c_str());
+            return 1;
+        }
+        out[std::move(name)] = cp;
+    }
+    return 0;
+}
 
 static void
 usage(const char* prog)
@@ -192,6 +319,7 @@ main(int argc, char const* const* argv)
 
     fs::path manifest_dir = fs::path(manifest_path).parent_path();
     std::vector<FontEntry> font_entries;
+    std::unordered_set<std::string> seen_ids;
 
     for (size_t i = 0; i < fonts_node.size(); ++i)
     {
@@ -202,6 +330,21 @@ main(int argc, char const* const* argv)
             return 1;
         }
         std::string id = entry["id"].as<std::string>();
+        if (!is_valid_c_identifier(id))
+        {
+            fprintf(
+                stderr,
+                "Font '%s': 'id' must be a valid C identifier "
+                "([A-Za-z_][A-Za-z0-9_]*)\n",
+                id.c_str());
+            return 1;
+        }
+        if (!seen_ids.insert(id).second)
+        {
+            fprintf(stderr, "Duplicate font id: %s\n", id.c_str());
+            return 1;
+        }
+
         bool has_path = entry["path"].IsDefined();
         bool has_url = entry["url"].IsDefined();
         if (has_path == has_url)
@@ -213,12 +356,42 @@ main(int argc, char const* const* argv)
             return 1;
         }
 
+        YAML::Node icons_node = entry["icons"];
+        bool has_icons_list = icons_node && icons_node.IsSequence();
+        bool has_icons = has_icons_list && icons_node.size() > 0;
+        bool has_codepoints_path = entry["codepoints_path"].IsDefined();
+        bool has_codepoints_url = entry["codepoints_url"].IsDefined();
+        if (has_codepoints_path == has_codepoints_url)
+        {
+            if (has_icons)
+            {
+                fprintf(
+                    stderr,
+                    "Font '%s': exactly one of 'codepoints_path' or "
+                    "'codepoints_url' required when 'icons' is set\n",
+                    id.c_str());
+                return 1;
+            }
+        }
+        else if (!has_icons)
+        {
+            fprintf(
+                stderr,
+                "Font '%s': 'icons' required when codepoints_path/url is set\n",
+                id.c_str());
+            return 1;
+        }
+        if (has_icons_list && icons_node.size() == 0)
+        {
+            fprintf(
+                stderr,
+                "Font '%s': 'icons' must be non-empty when present\n",
+                id.c_str());
+            return 1;
+        }
+
         FontEntry fe;
         fe.id = id;
-        if (entry["weight"])
-            fe.weight = entry["weight"].as<int>();
-        if (entry["slant"])
-            fe.slant = entry["slant"].as<std::string>();
 
         if (has_path)
         {
@@ -271,6 +444,115 @@ main(int argc, char const* const* argv)
                 fe.path = tmp.lexically_normal().string();
             }
         }
+
+        if (has_icons)
+        {
+            std::string cp_path;
+            if (has_codepoints_path)
+            {
+                std::string path_str = entry["codepoints_path"].as<std::string>();
+                fs::path p(path_str);
+                if (!p.is_absolute())
+                    p = manifest_dir / p;
+                cp_path = p.lexically_normal().string();
+                if (!fs::is_regular_file(cp_path))
+                {
+                    fprintf(
+                        stderr,
+                        "Font '%s': codepoints file not found: %s\n",
+                        id.c_str(),
+                        cp_path.c_str());
+                    return 1;
+                }
+            }
+            else
+            {
+                std::string url = entry["codepoints_url"].as<std::string>();
+                if (cache_dir)
+                {
+                    fs::path cache_path
+                        = fs::path(cache_dir) / (id + ".codepoints");
+                    if (!fs::is_regular_file(cache_path.string()))
+                    {
+                        fs::create_directories(cache_dir);
+                        if (download_url(url.c_str(), cache_path.string()) != 0)
+                        {
+                            fprintf(
+                                stderr,
+                                "Failed to download codepoints for '%s'\n",
+                                id.c_str());
+                            return 1;
+                        }
+                    }
+                    cp_path = cache_path.lexically_normal().string();
+                }
+                else
+                {
+                    fs::path tmp = fs::temp_directory_path()
+                        / ("alia_font_" + id + ".codepoints");
+                    if (download_url(url.c_str(), tmp.string()) != 0)
+                    {
+                        fprintf(
+                            stderr,
+                            "Failed to download codepoints for '%s'\n",
+                            id.c_str());
+                        return 1;
+                    }
+                    cp_path = tmp.lexically_normal().string();
+                }
+            }
+
+            std::unordered_map<std::string, uint32_t> cp_map;
+            if (load_codepoints_map(cp_path, cp_map) != 0)
+                return 1;
+
+            std::vector<std::string> missing;
+            std::unordered_set<std::string> seen_icon_names;
+            std::unordered_set<std::string> seen_icon_suffixes;
+            for (size_t k = 0; k < icons_node.size(); ++k)
+            {
+                std::string iname = icons_node[k].as<std::string>();
+                if (!seen_icon_names.insert(iname).second)
+                {
+                    fprintf(
+                        stderr,
+                        "Font '%s': duplicate icon name '%s'\n",
+                        id.c_str(),
+                        iname.c_str());
+                    return 1;
+                }
+                auto it = cp_map.find(iname);
+                if (it == cp_map.end())
+                    missing.push_back(iname);
+                else
+                {
+                    std::string suf = icon_name_c_suffix(iname);
+                    if (!seen_icon_suffixes.insert(suf).second)
+                    {
+                        fprintf(
+                            stderr,
+                            "Font '%s': icon names collapse to the same C++ "
+                            "identifier suffix after sanitization (e.g. '%s')\n",
+                            id.c_str(),
+                            suf.c_str());
+                        return 1;
+                    }
+                    fe.icon_codepoints.push_back({iname, it->second});
+                }
+            }
+            if (!missing.empty())
+            {
+                fprintf(
+                    stderr,
+                    "Font '%s': icon name(s) not in codepoints file:",
+                    id.c_str());
+                for (std::string const& m : missing)
+                    fprintf(stderr, " %s", m.c_str());
+                fprintf(stderr, "\n");
+                return 1;
+            }
+        }
+
         font_entries.push_back(std::move(fe));
     }
 
@@ -302,8 +584,20 @@ main(int argc, char const* const* argv)
             return 1;
         }
         FontGeometry font_geometry(&glyphs);
-        int loaded = font_geometry.loadCharset(
-            font, font_scale, Charset::ASCII, true, true);
+        int loaded = 0;
+        if (font_entries[f].icon_codepoints.empty())
+        {
+            loaded = font_geometry.loadCharset(
+                font, font_scale, Charset::ASCII, true, true);
+        }
+        else
+        {
+            Charset charset;
+            for (auto const& ic : font_entries[f].icon_codepoints)
+                charset.add(static_cast<unicode_t>(ic.second));
+            loaded = font_geometry.loadCharset(
+                font, font_scale, charset, true, true);
+        }
         if (loaded <= 0)
         {
             fprintf(stderr, "No glyphs loaded from %s\n", path);
@@ -446,22 +740,25 @@ inline std::size_t const alia_atlas_decompressed_size = )"
 
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
-            f << "extern alia::msdf_glyph const alia_font_" << font_idx
+            std::string const& symid = font_entries[font_idx].id;
+            f << "extern alia::msdf_glyph const alia_font_" << symid
               << "_glyphs[];\n";
-            f << "extern std::size_t const alia_font_" << font_idx
+            f << "extern std::size_t const alia_font_" << symid
               << "_glyph_count;\n";
             if (!fonts[font_idx].getKerning().empty())
             {
                 f << "extern alia::msdf_kerning_pair const alia_font_"
-                  << font_idx << "_kerning_pairs[];\n";
+                  << symid << "_kerning_pairs[];\n";
             }
-            f << "extern std::size_t const alia_font_" << font_idx
+            f << "extern std::size_t const alia_font_" << symid
               << "_kerning_pair_count;\n";
-            // Per-font metadata from manifest
-            f << "extern char const alia_font_" << font_idx << "_id[];\n";
-            f << "inline int const alia_font_" << font_idx
-              << "_weight = " << font_entries[font_idx].weight << ";\n";
-            f << "extern char const alia_font_" << font_idx << "_slant[];\n";
+            f << "extern char const alia_font_" << symid << "_id[];\n";
+            for (auto const& ic : font_entries[font_idx].icon_codepoints)
+            {
+                f << "inline constexpr std::uint32_t alia_font_" << symid
+                  << "_icon_" << icon_name_c_suffix(ic.first) << " = " << ic.second
+                  << "u;\n";
+            }
         }
 
         float const dist_range
@@ -494,10 +791,11 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
 
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
+            std::string const& symid = font_entries[font_idx].id;
             FontGeometry const& fg = fonts[font_idx];
             auto range = fg.getGlyphs();
 
-            f << "alia::msdf_glyph const alia_font_" << font_idx
+            f << "alia::msdf_glyph const alia_font_" << symid
               << "_glyphs[] = {\n";
             f << std::showpoint;
             for (const GlyphGeometry* it = range.begin(); it != range.end();
@@ -519,7 +817,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
                   << "f },\n";
             }
             f << "};\n";
-            f << "std::size_t const alia_font_" << font_idx
+            f << "std::size_t const alia_font_" << symid
               << "_glyph_count = " << (range.end() - range.begin()) << ";\n\n";
 
             // Kerning: iterate getKerning() and output (unicode, unicode,
@@ -547,7 +845,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             }
             if (!kp_lines.empty())
             {
-                f << "alia::msdf_kerning_pair const alia_font_" << font_idx
+                f << "alia::msdf_kerning_pair const alia_font_" << symid
                   << "_kerning_pairs[] = {\n";
                 for (size_t i = 0; i < kp_lines.size(); ++i)
                 {
@@ -556,10 +854,9 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
                 }
                 f << "};\n";
             }
-            f << "std::size_t const alia_font_" << font_idx
+            f << "std::size_t const alia_font_" << symid
               << "_kerning_pair_count = " << kp_lines.size() << ";\n\n";
 
-            // Per-font metadata from manifest
             std::string id_escaped;
             for (char c : font_entries[font_idx].id)
             {
@@ -570,20 +867,8 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
                 else
                     id_escaped += c;
             }
-            std::string slant_escaped;
-            for (char c : font_entries[font_idx].slant)
-            {
-                if (c == '\\')
-                    slant_escaped += "\\\\";
-                else if (c == '"')
-                    slant_escaped += "\\\"";
-                else
-                    slant_escaped += c;
-            }
-            f << "char const alia_font_" << font_idx << "_id[] = \""
-              << id_escaped << "\";\n";
-            f << "char const alia_font_" << font_idx << "_slant[] = \""
-              << slant_escaped << "\";\n\n";
+            f << "char const alia_font_" << symid << "_id[] = \"" << id_escaped
+              << "\";\n\n";
         }
 
         float const dist_range
@@ -592,6 +877,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
         f << "msdf_font_description const alia_font_descriptions[] = {\n";
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
+            std::string const& symid = font_entries[font_idx].id;
             FontGeometry const& fg = fonts[font_idx];
             msdfgen::FontMetrics const& m = fg.getMetrics();
             f << "    { {" << std::showpoint << static_cast<float>(m.emSize)
@@ -602,13 +888,12 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
               << static_cast<float>(m.underlineThickness) << "f}, {"
               << dist_range << "f, 0.f, " << em_sz << "f, "
               << static_cast<float>(w) << "f, " << static_cast<float>(h)
-              << "f}, alia_font_" << font_idx << "_glyphs, alia_font_"
-              << font_idx << "_glyph_count, "
+              << "f}, alia_font_" << symid << "_glyphs, alia_font_" << symid
+              << "_glyph_count, "
               << (fonts[font_idx].getKerning().empty()
                       ? "nullptr"
-                      : "alia_font_" + std::to_string(font_idx)
-                            + "_kerning_pairs")
-              << ", alia_font_" << font_idx << "_kerning_pair_count },\n";
+                      : std::string("alia_font_") + symid + "_kerning_pairs")
+              << ", alia_font_" << symid << "_kerning_pair_count },\n";
         }
         f << "};\n\n";
 
