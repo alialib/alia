@@ -7,7 +7,7 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_style
 {
-    float padding;
+    float spacing;
 } alia_style;
 
 ALIA_EXTERN_C_END

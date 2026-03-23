@@ -80,7 +80,7 @@ alia_element_handle_visibility(
             // TODO: Do we really want to expand here?
             alia_box_expand(
                 *region,
-                {alia_ctx_style(ctx)->padding, alia_ctx_style(ctx)->padding}),
+                {alia_ctx_style(ctx)->spacing, alia_ctx_style(ctx)->spacing}),
             ctx->geometry->offset);
         e.acknowledged = true;
     }

@@ -68,7 +68,7 @@ GLFWwindow* the_window;
 gl_renderer the_renderer;
 alia_arena the_display_list_arena;
 msdf_text_engine* the_msdf_text_engine;
-alia_style the_style = {.padding = 10.0f};
+alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
 // Local palette and styles for the content pane (driven by controls).
@@ -81,7 +81,7 @@ static bool local_styles_initialized = false;
 static float demo_hue = 0.55f;
 static bool demo_is_dark = true;
 static float demo_foundation_step_l = 0.075f;
-static float demo_padding = 6.f;
+static float demo_spacing = 6.f;
 static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
 
@@ -112,12 +112,12 @@ button(
 
 template<class Content>
 void
-with_padding(context& ctx, float padding, Content&& content)
+with_spacing(context& ctx, float spacing, Content&& content)
 {
-    float old_padding = ctx.style->padding;
-    ctx.style->padding = padding * ctx.geometry->scale;
+    float old_spacing = ctx.style->spacing;
+    ctx.style->spacing = spacing * ctx.geometry->scale;
     content();
-    ctx.style->padding = old_padding;
+    ctx.style->spacing = old_spacing;
 }
 
 template<class Content>
@@ -125,12 +125,12 @@ void
 with_ui_scale(context& ctx, float scale, Content&& content)
 {
     float old_scale = ctx.geometry->scale;
-    float old_padding = ctx.style->padding;
+    float old_spacing = ctx.style->spacing;
     ctx.geometry->scale *= scale;
-    ctx.style->padding *= scale;
+    ctx.style->spacing *= scale;
     content();
     ctx.geometry->scale = old_scale;
-    ctx.style->padding = old_padding;
+    ctx.style->spacing = old_spacing;
 }
 
 template<class Content>
@@ -308,7 +308,7 @@ do_controls(context& ctx)
     do_heading(ctx, "GEOMETRY");
 
     do_subheading(ctx, "Spacing");
-    alia_do_slider_f(&ctx, &demo_padding, 0.f, 24.f, 1.f, 0, false, nullptr);
+    alia_do_slider_f(&ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false, nullptr);
 
     do_subheading(ctx, "Scale");
     alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false, nullptr);
@@ -578,7 +578,7 @@ the_demo(context& ctx)
             current_demo_hue = demo_hue;
         }
 
-        with_padding(ctx, 0, [&] {
+        with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
                     ctx,
@@ -594,7 +594,7 @@ the_demo(context& ctx)
                                  .top = 40,
                                  .bottom = 40},
                                 [&]() {
-                                    with_padding(ctx, 6, [&] {
+                                    with_spacing(ctx, 6, [&] {
                                         column(
                                             ctx, [&]() { do_controls(ctx); });
                                     });
@@ -603,7 +603,7 @@ the_demo(context& ctx)
                     });
                 with_palette(ctx, &local_palette, [&] {
                     with_ui_scale(ctx, demo_scale, [&] {
-                        with_padding(ctx, demo_padding, [&] {
+                        with_spacing(ctx, demo_spacing, [&] {
                             concrete_panel(
                                 ctx,
                                 0,

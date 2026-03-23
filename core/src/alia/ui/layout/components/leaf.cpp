@@ -11,7 +11,7 @@ struct layout_leaf_node
 {
     alia_layout_node base;
     alia_layout_flags_t flags;
-    float padding;
+    float spacing;
     alia_vec2f size;
 };
 
@@ -20,7 +20,7 @@ leaf_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     return alia_horizontal_requirements{
-        .min_size = leaf.size.x + leaf.padding * 2,
+        .min_size = leaf.size.x + leaf.spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags)};
 }
 
@@ -42,7 +42,7 @@ leaf_measure_vertical(
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     return alia_vertical_requirements{
-        .min_size = leaf.size.y + leaf.padding * 2,
+        .min_size = leaf.size.y + leaf.spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags),
         .ascent = 0,
         .descent = 0};
@@ -64,7 +64,7 @@ leaf_assign_boxes(
         baseline,
         leaf.size,
         0,
-        {leaf.padding, leaf.padding});
+        {leaf.spacing, leaf.spacing});
     placement->min = box.min + padded_placement.min;
     placement->size = padded_placement.size;
 }
@@ -95,7 +95,7 @@ alia_layout_leaf_emit(
     *new_node = layout_leaf_node{
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
-        .padding = ctx->style->padding,
+        .spacing = ctx->style->spacing,
         .size = size};
 }
 

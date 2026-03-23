@@ -15,7 +15,7 @@ void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
     // TODO
-    static alia_style the_style = {.padding = 10.0f};
+    static alia_style the_style = {.spacing = 10.0f};
 
     alia_bump_allocator scratch;
     alia_bump_allocator_init(&scratch, &sys.scratch);

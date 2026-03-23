@@ -5,7 +5,7 @@ rectangle_demo(context& ctx)
 {
     static bool invert = false;
 
-    with_padding(ctx, 0, [&] {
+    with_spacing(ctx, 0, [&] {
         column(ctx, [&]() {
             flow(ctx, [&]() {
                 float x = 0.0f;
@@ -32,7 +32,7 @@ rectangle_demo(context& ctx)
                             x += 0.0015f;
                         }
 
-                        with_padding(ctx, 20, [&] {
+                        with_spacing(ctx, 20, [&] {
                             for (int j = 0; j < 1; ++j)
                             {
                                 do_text(
@@ -69,7 +69,7 @@ text_demo(context& ctx)
         column(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
-                with_padding(ctx, 8, [&] {
+                with_spacing(ctx, 8, [&] {
                     row(ctx, [&]() {
                         do_text(ctx, 1, GRAY, 40, "test");
                         flow(ctx, GROW, [&]() {
@@ -132,7 +132,7 @@ nested_flow_demo(context& ctx)
 void
 mixed_flow_demo(context& ctx)
 {
-    with_padding(ctx, 10, [&] {
+    with_spacing(ctx, 10, [&] {
         flow(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
@@ -346,7 +346,7 @@ grid_demo(context& ctx)
 void
 layout_demo(context& ctx)
 {
-    with_padding(ctx, 10, [&] {
+    with_spacing(ctx, 10, [&] {
         inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
             row(ctx, [&]() {
                 float x = 0.0f;
@@ -461,7 +461,7 @@ color_demo(context& ctx)
         {
             oklch.h = i * 0.01f * 2 * 3.14159f;
             alia_rgb rgb = alia_rgb_from_oklab(alia_oklab_from_oklch(oklch));
-            with_padding(ctx, 5, [&] {
+            with_spacing(ctx, 5, [&] {
                 do_rect(ctx, 1, {24, 24}, alia_rgba_from_rgb(rgb), CENTER);
             });
         }
@@ -476,7 +476,7 @@ void
 theme_demo(context& ctx)
 {
     alia_palette const* p = ctx.palette;
-    with_padding(ctx, 4, [&]() {
+    with_spacing(ctx, 4, [&]() {
         column(ctx, [&]() {
             do_text(ctx, 1, GRAY, 24, "Foundation");
             show_foundation_ramp(ctx, &p->foundation.background);
@@ -515,7 +515,7 @@ the_demo(context& ctx)
     {
         static int active_demo = 0;
         int const demo_count = 6;
-        with_padding(ctx, 0, [&] {
+        with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 column(ctx, [&]() {
                     for (int i = 0; i < demo_count; ++i)
@@ -541,7 +541,7 @@ the_demo(context& ctx)
                         ctx,
                         {.left = 40, .right = 40, .top = 40, .bottom = 40},
                         [&]() {
-                            with_padding(ctx, 10, [&] {
+                            with_spacing(ctx, 10, [&] {
                                 switch (active_demo)
                                 {
                                     case 0:

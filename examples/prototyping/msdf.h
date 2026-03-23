@@ -4,7 +4,7 @@ struct msdf_text_layout_node
 {
     alia_layout_node base;
     alia_layout_flags_t flags;
-    float padding;
+    float spacing;
     msdf_text_engine* engine;
     size_t font_index;
     char const* text;
@@ -22,7 +22,7 @@ measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         strlen(text.text),
         text.font_size);
     return alia_horizontal_requirements{
-        .min_size = width + text.padding * 2, .growth_factor = 0};
+        .min_size = width + text.spacing * 2, .growth_factor = 0};
 }
 
 void
@@ -45,13 +45,13 @@ measure_text_vertical(
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
     return alia_vertical_requirements{
-        .min_size = metrics->line_height * text.font_size + text.padding * 2,
+        .min_size = metrics->line_height * text.font_size + text.spacing * 2,
         .growth_factor = 0,
         .ascent = (text.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
-                    ? metrics->ascender * text.font_size + text.padding
+                    ? metrics->ascender * text.font_size + text.spacing
                     : 0.0f,
         .descent = (text.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
-                     ? -metrics->descender * text.font_size + text.padding
+                     ? -metrics->descender * text.font_size + text.spacing
                      : 0.0f};
 }
 
@@ -94,7 +94,7 @@ assign_text_boxes(
         baseline,
         alia_vec2f{width, metrics->line_height * text.font_size},
         metrics->ascender * text.font_size,
-        {text.padding, text.padding});
+        {text.spacing, text.spacing});
 
     text_layout_placement_header* header
         = arena_alloc<text_layout_placement_header>(ctx->arena);
@@ -139,7 +139,7 @@ measure_text_wrapped_vertical(
         length,
         length,
         text.font_size,
-        line_width - current_x_offset - text.padding * 2,
+        line_width - current_x_offset - text.spacing * 2,
         current_x_offset == 0);
 
     // If there is content on the first line, then we need to assign the
@@ -147,9 +147,9 @@ measure_text_wrapped_vertical(
     if (first_break.first != 0)
     {
         requirements.first_line = {
-            .height = metrics->line_height * text.font_size + text.padding * 2,
-            .ascent = metrics->ascender * text.font_size + text.padding,
-            .descent = -metrics->descender * text.font_size + text.padding};
+            .height = metrics->line_height * text.font_size + text.spacing * 2,
+            .ascent = metrics->ascender * text.font_size + text.spacing,
+            .descent = -metrics->descender * text.font_size + text.spacing};
     }
     else
     {
@@ -162,7 +162,7 @@ measure_text_wrapped_vertical(
         requirements.interior_height = 0;
         requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
         requirements.end_x
-            = current_x_offset + first_break.second + text.padding * 2;
+            = current_x_offset + first_break.second + text.spacing * 2;
         return requirements;
     }
 
@@ -182,7 +182,7 @@ measure_text_wrapped_vertical(
             length,
             length,
             text.font_size,
-            line_width - text.padding * 2,
+            line_width - text.spacing * 2,
             true);
         index = break_result.first;
         new_x = break_result.second;
@@ -190,12 +190,12 @@ measure_text_wrapped_vertical(
 
     requirements.interior_height
         = (wrap_count - 1)
-        * (metrics->line_height * text.font_size + text.padding * 2);
+        * (metrics->line_height * text.font_size + text.spacing * 2);
     requirements.last_line
-        = {.height = metrics->line_height * text.font_size + text.padding * 2,
-           .ascent = metrics->ascender * text.font_size + text.padding,
-           .descent = -metrics->descender * text.font_size + text.padding};
-    requirements.end_x = new_x + text.padding * 2;
+        = {.height = metrics->line_height * text.font_size + text.spacing * 2,
+           .ascent = metrics->ascender * text.font_size + text.spacing,
+           .descent = -metrics->descender * text.font_size + text.spacing};
+    requirements.end_x = new_x + text.spacing * 2;
 
     return requirements;
 }
@@ -222,7 +222,7 @@ assign_text_wrapped_boxes(
     float x = assignment->first_line_x_offset;
     float y = assignment->y_base + assignment->first_line.baseline_offset;
     float next_y = assignment->y_base + assignment->first_line.line_height
-                 + metrics->ascender * text.font_size + text.padding;
+                 + metrics->ascender * text.font_size + text.spacing;
 
     size_t index = 0;
     while (index < length)
@@ -235,23 +235,23 @@ assign_text_wrapped_boxes(
             length,
             length,
             text.font_size,
-            assignment->line_width - x - text.padding * 2,
+            assignment->line_width - x - text.spacing * 2,
             x == 0);
         size_t const end_index = break_result.first;
 
         if (end_index == length)
         {
             y += assignment->last_line.baseline_offset
-               - (metrics->ascender * text.font_size + text.padding);
+               - (metrics->ascender * text.font_size + text.spacing);
         }
 
         text_layout_placement_fragment* fragment
             = arena_alloc<text_layout_placement_fragment>(ctx->arena);
         fragment->position
-            = {x + assignment->x_base + text.padding,
+            = {x + assignment->x_base + text.spacing,
                y - metrics->ascender * text.font_size};
         fragment->size
-            = {assignment->line_width - x - text.padding * 2,
+            = {assignment->line_width - x - text.spacing * 2,
                metrics->line_height * text.font_size};
         fragment->text = text.text + index;
         fragment->length = end_index - index;
@@ -260,7 +260,7 @@ assign_text_wrapped_boxes(
 
         x = 0;
         y = next_y;
-        next_y += metrics->line_height * text.font_size + text.padding * 2;
+        next_y += metrics->line_height * text.font_size + text.spacing * 2;
         index = end_index;
     }
 }
@@ -300,7 +300,7 @@ do_text(
             new_node->font_size = scale * ctx.geometry->scale;
             new_node->engine = the_msdf_text_engine;
             new_node->font_index = font_index;
-            new_node->padding = ctx.style->padding;
+            new_node->spacing = ctx.style->spacing;
             *emission.next_ptr = &new_node->base;
             emission.next_ptr = &new_node->base.next_sibling;
             break;

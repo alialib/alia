@@ -14,7 +14,7 @@ template<class Content>
 void
 add_content(System& system, Content&& content)
 {
-    Style style = {.padding = 0};
+    Style style = {.spacing = 0};
 
     system.layout.node_arena.reset();
     Context refresh_ctx = {
@@ -46,7 +46,7 @@ do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
         *new_node = LayoutLeafNode{
             .base = {.vtable = &leaf_vtable, .next_sibling = 0},
             .flags = flags,
-            .padding = ctx.style->padding,
+            .spacing = ctx.style->spacing,
             .size = size};
     }
 }

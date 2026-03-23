@@ -117,15 +117,15 @@ alia_resolve_leaf_x(
     alia_layout_flags_t flags,
     float assigned_size,
     float required_size,
-    float padding)
+    float spacing)
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const sizes[8] = {0, 0, 0, 0, 1, 1, 1, 1};
     auto const index
         = (flags & ALIA_X_ALIGNMENT_MASK) >> ALIA_X_ALIGNMENT_BIT_OFFSET;
-    float const extra_space = assigned_size - (required_size + padding * 2);
+    float const extra_space = assigned_size - (required_size + spacing * 2);
     return alia_layout_axis_placement{
-        .offset = padding + offsets[index] * extra_space,
+        .offset = spacing + offsets[index] * extra_space,
         .size = required_size + sizes[index] * extra_space};
 }
 
@@ -136,17 +136,17 @@ alia_resolve_leaf_y(
     float baseline,
     float required_size,
     float ascent,
-    float padding)
+    float spacing)
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const baseline_offsets[8] = {0, 0, 0, 0, 0, 1, 0, 0};
     static float const sizes[8] = {0, 0, 0, 0, 1, 0, 1, 1};
     auto const index
         = (flags & ALIA_Y_ALIGNMENT_MASK) >> ALIA_Y_ALIGNMENT_BIT_OFFSET;
-    float const extra_space = assigned_size - (required_size + padding * 2);
+    float const extra_space = assigned_size - (required_size + spacing * 2);
     return alia_layout_axis_placement{
-        .offset = padding + offsets[index] * extra_space
-                + baseline_offsets[index] * (baseline - (ascent + padding)),
+        .offset = spacing + offsets[index] * extra_space
+                + baseline_offsets[index] * (baseline - (ascent + spacing)),
         .size = required_size + sizes[index] * extra_space};
 }
 
@@ -157,12 +157,12 @@ alia_resolve_leaf_box(
     float baseline,
     alia_vec2f required_size,
     float ascent,
-    alia_vec2f padding)
+    alia_vec2f spacing)
 {
     alia_layout_axis_placement x_placement = alia_resolve_leaf_x(
-        flags, assigned_size.x, required_size.x, padding.x);
+        flags, assigned_size.x, required_size.x, spacing.x);
     alia_layout_axis_placement y_placement = alia_resolve_leaf_y(
-        flags, assigned_size.y, baseline, required_size.y, ascent, padding.y);
+        flags, assigned_size.y, baseline, required_size.y, ascent, spacing.y);
     return {
         {x_placement.offset, y_placement.offset},
         {x_placement.size, y_placement.size}};

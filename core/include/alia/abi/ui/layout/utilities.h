@@ -98,8 +98,8 @@ alia_resolve_container_box(
     alia_vec2f required_size,
     float ascent);
 
-// LEAF PLACEMENT - Includes padding. If no alignment flags are set, the node
-// will be aligned to the start of its assigned region.
+// LEAF PLACEMENT - Takes into account spacing. If no alignment flags are set,
+// the node will be aligned to the start of its assigned region.
 
 // Resolve the horizontal placement for a leaf node.
 alia_layout_axis_placement
@@ -107,7 +107,7 @@ alia_resolve_leaf_x(
     alia_layout_flags_t flags,
     float assigned_size,
     float required_size,
-    float padding);
+    float spacing);
 
 // Resolve the vertical placement for a leaf node.
 alia_layout_axis_placement
@@ -117,7 +117,7 @@ alia_resolve_leaf_y(
     float baseline,
     float required_size,
     float ascent,
-    float padding);
+    float spacing);
 
 // Resolve the full 2D placement for a leaf node.
 alia_box
@@ -127,7 +127,7 @@ alia_resolve_leaf_box(
     float baseline,
     alia_vec2f required_size,
     float ascent,
-    alia_vec2f padding);
+    alia_vec2f spacing);
 
 // Resolve the baseline offset for a node.
 float
