@@ -33,8 +33,12 @@ do_rect(
             {
                 color = {0xff, 0x00, 0xff};
             }
-            alia_draw_rounded_box(
-                &ctx, z_index, box, alia_srgba8_from_srgb8(color), 0.0f);
+            alia_draw_squircle(
+                &ctx,
+                z_index,
+                box,
+                box.size.x / 2,
+                alia_srgba8_from_srgb8(color));
             break;
         }
         case ALIA_CATEGORY_INPUT: {

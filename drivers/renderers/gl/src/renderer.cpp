@@ -30,6 +30,7 @@ flat out vec2 v_rect_half_size;
 flat out int v_primitive_type;
 flat out float v_triangle_rotation_radians;
 flat out float v_corner_radius;
+flat out float v_squircle_radius;
 flat out float v_border_width;
 flat out vec4 v_border_color;
 
@@ -54,14 +55,16 @@ void main() {
     v_rect_half_size = i_size * 0.5;
 
     v_primitive_type = i_primitive_type;
+    // TODO: Don't need to split things up here.
     // Generic payload layout:
-    // - payload.x: triangle rotation (radians) OR box corner_radius
-    // - payload.y: box border_width
+    // - payload.x: triangle rotation (radians) OR box corner_radius OR squircle radius
+    // - payload.y: box/squircle border_width
     // - payload.z: packed border_color bits (srgba8) reinterpreted as float
     v_triangle_rotation_radians = i_payload.x;
-
     v_corner_radius =
         min(i_payload.x, min(v_rect_half_size.x, v_rect_half_size.y));
+    v_squircle_radius = i_payload.x;
+
     v_border_width = i_payload.y;
 
     // Pack/unpack strategy:
@@ -87,6 +90,7 @@ flat in vec2 v_rect_half_size;
 flat in int v_primitive_type;
 flat in float v_triangle_rotation_radians;
 flat in float v_corner_radius;
+flat in float v_squircle_radius;
 flat in float v_border_width;
 flat in vec4 v_border_color;
 
@@ -117,6 +121,13 @@ vec2 rotate_point_clockwise(vec2 p, float radians)
 float cross2(vec2 u, vec2 v)
 {
     return u.x * v.y - u.y * v.x;
+}
+
+float sd_squircle(vec2 p, float R)
+{
+    float x2 = p.x * p.x;
+    float y2 = p.y * p.y;
+    return sqrt(sqrt(x2 * x2 + y2 * y2)) - R;
 }
 
 float sd_segment(vec2 p, vec2 a, vec2 b)
@@ -199,6 +210,21 @@ vec4 sample_pixel(vec2 p)
             return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
         #else
             return v_color * alpha_outer;
+        #endif
+        }
+        // Squircle
+        case 2:
+        {
+            float d = sd_squircle(local_p, v_squircle_radius);
+            float alpha_inner = smoothstep(-aa, aa, d + v_border_width);
+            float alpha_outer = smoothstep(aa, -aa, d);
+            vec4 mix_color = mix(v_color, v_border_color, alpha_inner);
+        #ifdef EMSCRIPTEN
+            vec3 unpremultiplied = mix_color.a > 0.0 ? mix_color.rgb / mix_color.a : vec3(0.0);
+            float alpha = mix_color.a * alpha_outer;
+            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
+        #else
+            return mix_color * alpha_outer;
         #endif
         }
         default:
@@ -480,24 +506,36 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
             instance->payload[2] = 0.0f;
             instance->payload[3] = 0.0f;
 
-            if (primitive_cmd->primitive_type == ALIA_PRIMITIVE_BOX)
+            switch (primitive_cmd->primitive_type)
             {
-                instance->payload[0]
-                    = primitive_cmd->payload.box.corner_radius;
-                instance->payload[1] = primitive_cmd->payload.box.border_width;
-                instance->payload[2] = pack_border_color(
-                    primitive_cmd->payload.box.border_color);
-                instance->payload[3] = 0.0f;
-            }
-            else if (
-                primitive_cmd->primitive_type
-                == ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE)
-            {
-                float const degrees_to_radians
-                    = 3.14159265358979323846f / 180.0f;
-                instance->payload[0]
-                    = primitive_cmd->payload.triangle.rotation_degrees
-                    * degrees_to_radians;
+                case ALIA_PRIMITIVE_BOX: {
+                    instance->payload[0]
+                        = primitive_cmd->payload.box.corner_radius;
+                    instance->payload[1]
+                        = primitive_cmd->payload.box.border_width;
+                    instance->payload[2] = pack_border_color(
+                        primitive_cmd->payload.box.border_color);
+                    instance->payload[3] = 0.0f;
+                    break;
+                }
+                case ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE: {
+                    float const degrees_to_radians
+                        = 3.14159265358979323846f / 180.0f;
+                    instance->payload[0]
+                        = primitive_cmd->payload.triangle.rotation_degrees
+                        * degrees_to_radians;
+                    break;
+                }
+                case ALIA_PRIMITIVE_SQUIRCLE: {
+                    instance->payload[0]
+                        = primitive_cmd->payload.squircle.radius;
+                    instance->payload[1]
+                        = primitive_cmd->payload.squircle.border_width;
+                    instance->payload[2] = pack_border_color(
+                        primitive_cmd->payload.squircle.border_color);
+                    instance->payload[3] = 0.0f;
+                    break;
+                }
             }
             ++instance;
         }

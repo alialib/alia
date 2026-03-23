@@ -98,6 +98,7 @@ enum
 {
     ALIA_PRIMITIVE_BOX = 0,
     ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE = 1,
+    ALIA_PRIMITIVE_SQUIRCLE = 2,
 };
 
 typedef struct alia_draw_box_payload
@@ -113,10 +114,18 @@ typedef struct alia_draw_equilateral_triangle_payload
     float rotation_degrees;
 } alia_draw_equilateral_triangle_payload;
 
+typedef struct alia_draw_squircle_payload
+{
+    float radius;
+    float border_width;
+    alia_srgba8 border_color;
+} alia_draw_squircle_payload;
+
 typedef union alia_primitive_payload
 {
     alia_draw_box_payload box;
     alia_draw_equilateral_triangle_payload triangle;
+    alia_draw_squircle_payload squircle;
 } alia_primitive_payload;
 
 typedef struct alia_draw_primitive_command
@@ -132,6 +141,7 @@ typedef struct alia_draw_primitive_command
 
 // BOXES
 
+// TODO: Revisit this structure breakdown.
 typedef struct alia_box_paint
 {
     alia_srgba8 fill_color;
@@ -227,6 +237,29 @@ alia_draw_circle(
          .corner_radius = radius,
          .border_width = 0,
          .border_color = color});
+}
+
+static inline void
+alia_draw_squircle(
+    alia_context* ctx,
+    alia_z_index z_index,
+    alia_box box,
+    float radius,
+    alia_srgba8 color)
+{
+    alia_draw_primitive_command* command
+        = (alia_draw_primitive_command*) alia_draw_command_alloc(
+            ctx,
+            z_index,
+            ALIA_PRIMITIVE_MATERIAL_ID,
+            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command)));
+
+    command->box = alia_box_translate(box, ctx->geometry->offset);
+    command->primitive_type = ALIA_PRIMITIVE_SQUIRCLE;
+    command->color = color;
+    command->payload.squircle.radius = radius;
+    command->payload.squircle.border_width = 0;
+    command->payload.squircle.border_color = color;
 }
 
 ALIA_EXTERN_C_END

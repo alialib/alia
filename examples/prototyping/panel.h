@@ -35,10 +35,6 @@ panel(
 {
     apply_mods(ctx, mods, [&] {
         concrete_panel(
-            ctx,
-            z_index,
-            alia_srgba8_from_srgb8(color),
-            FILL,
-            std::forward<Content>(content));
+            ctx, z_index, color, FILL, std::forward<Content>(content));
     });
 }

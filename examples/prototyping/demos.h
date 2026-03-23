@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0
+
 void
 rectangle_demo(context& ctx)
 {
@@ -38,13 +40,13 @@ rectangle_demo(context& ctx)
                                 do_text(
                                     ctx,
                                     text_z_index,
-                                    GRAY,
+                                    ctx.palette->foundation.text.base,
                                     24 + i * 6 + j * 4,
                                     "lorem ipsum");
                                 if (do_text(
                                         ctx,
                                         text_z_index,
-                                        GRAY,
+                                        ctx.palette->foundation.text.base,
                                         20 + i * 12 + j * 4,
                                         lorem_ipsum))
                                 {
@@ -129,8 +131,10 @@ nested_flow_demo(context& ctx)
     });
 }
 
+#endif
+
 void
-mixed_flow_demo(context& ctx)
+mixed_flow_demo(alia_context& ctx)
 {
     with_spacing(ctx, 10, [&] {
         flow(ctx, [&]() {
@@ -141,14 +145,24 @@ mixed_flow_demo(context& ctx)
                 {
                     float f = fmod(x, 1.0f);
                     do_rect(
-                        ctx, 0, {72, 72}, rgba{f, 0.1f, 1.0f - f, 1}, CENTER);
+                        ctx,
+                        0,
+                        {72, 72},
+                        alia_srgb8{
+                            uint8_t(0xff * f),
+                            uint8_t(0xff * 0.1f),
+                            uint8_t(0xff * (1.0f - f))},
+                        CENTER);
                     x += 0.1f;
                 }
 
                 panel(
                     ctx,
                     1,
-                    rgba{0.05f, 0.05f, 0.06f, 1},
+                    alia_srgb8{
+                        uint8_t(0xff * 0.05f),
+                        uint8_t(0xff * 0.05f),
+                        uint8_t(0xff * 0.06f)},
                     min_size({0, 0})
                         | margins(
                             {.left = 10,
@@ -156,13 +170,28 @@ mixed_flow_demo(context& ctx)
                              .top = 10,
                              .bottom = 10}),
                     [&] {
-                        do_text(ctx, 2, GRAY, 12 + i * 6, "panel", BASELINE_Y);
+                        do_text(
+                            ctx,
+                            2,
+                            alia_srgba8_from_srgb8(
+                                ctx.palette->foundation.text.base),
+                            12 + i * 6,
+                            "panel",
+                            BASELINE_Y);
                     });
-                do_text(ctx, 1, GRAY, 12 + i * 4, lorem_ipsum, BASELINE_Y);
+                do_text(
+                    ctx,
+                    1,
+                    alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
+                    12 + i * 4,
+                    lorem_ipsum,
+                    BASELINE_Y);
             }
         });
     });
 }
+
+#if 0
 
 void
 layout_demo_flow(context& ctx)
@@ -573,3 +602,5 @@ the_demo(context& ctx)
     {
     }
 }
+
+#endif

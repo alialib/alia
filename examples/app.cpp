@@ -167,6 +167,8 @@ abort_pass(context& ctx)
     throw pass_aborted();
 }
 
+#include "prototyping/demos.h"
+
 void
 do_heading(context& ctx, char const* text)
 {
