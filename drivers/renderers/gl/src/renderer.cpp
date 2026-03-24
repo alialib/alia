@@ -13,13 +13,14 @@
 
 namespace alia {
 
-const char* vanilla_vertex_shader_source = R"(
+const char* primitive_vertex_shader_source = R"(
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
 layout (location = 3) in vec4 i_color;
 layout (location = 4) in int i_primitive_type;
-layout (location = 5) in vec4 i_payload;
+layout (location = 5) in vec4 i_data_a;
+layout (location = 6) in vec4 i_data_b;
 
 uniform mat4 u_projection;
 
@@ -28,11 +29,8 @@ out vec2 v_pos;
 flat out vec2 v_rect_center;
 flat out vec2 v_rect_half_size;
 flat out int v_primitive_type;
-flat out float v_triangle_rotation_radians;
-flat out float v_corner_radius;
-flat out float v_squircle_radius;
-flat out float v_border_width;
-flat out vec4 v_border_color;
+flat out vec4 v_data_a;
+flat out vec4 v_data_b;
 
 vec3 srgb_to_linear(vec3 srgb) {
     vec3 low = srgb / 12.92;
@@ -55,46 +53,44 @@ void main() {
     v_rect_half_size = i_size * 0.5;
 
     v_primitive_type = i_primitive_type;
-    // TODO: Don't need to split things up here.
-    // Generic payload layout:
-    // - payload.x: triangle rotation (radians) OR box corner_radius OR squircle radius
-    // - payload.y: box/squircle border_width
-    // - payload.z: packed border_color bits (srgba8) reinterpreted as float
-    v_triangle_rotation_radians = i_payload.x;
-    v_corner_radius =
-        min(i_payload.x, min(v_rect_half_size.x, v_rect_half_size.y));
-    v_squircle_radius = i_payload.x;
+    v_data_a = i_data_a;
+    v_data_b = i_data_b;
+}
+)";
 
-    v_border_width = i_payload.y;
+const char* primitive_fragment_shader_source = R"(
+in vec4 v_color;
+in vec2 v_pos;
+flat in vec2 v_rect_center;
+flat in vec2 v_rect_half_size;
+flat in int v_primitive_type;
+flat in vec4 v_data_a;
+flat in vec4 v_data_b;
 
-    // Pack/unpack strategy:
-    // CPU stores border_color as raw 32-bit bits (r,g,b,a each 8-bit),
-    // reinterprets those bits as a float, and uploads it as payload.z.
-    // Here we reverse that.
-    uint packed_bits = floatBitsToUint(i_payload.z);
+out vec4 frag_color;
+
+vec3 srgb_to_linear(vec3 srgb) {
+    vec3 low = srgb / 12.92;
+    vec3 high = pow((srgb + 0.055) / 1.055, vec3(2.4));
+    vec3 mask = step(vec3(0.04045), srgb);
+    return mix(low, high, mask);
+}
+
+vec4 srgba_to_linear(vec4 srgba) {
+    return vec4(srgb_to_linear(srgba.rgb) * srgba.a, srgba.a);
+}
+
+// CPU packs border_color bytes into a u32, reinterprets as float -> data_a.z.
+vec4 unpack_border_color_linear(float packed_as_float) {
+    uint packed_bits = floatBitsToUint(packed_as_float);
     vec4 border_srgba
         = vec4(float(packed_bits & 255u),
                float((packed_bits >> 8u) & 255u),
                float((packed_bits >> 16u) & 255u),
                float((packed_bits >> 24u) & 255u))
           / 255.0;
-    v_border_color = srgba_to_linear(border_srgba);
+    return srgba_to_linear(border_srgba);
 }
-)";
-
-const char* vanilla_fragment_shader_source = R"(
-in vec4 v_color;
-in vec2 v_pos;
-flat in vec2 v_rect_center;
-flat in vec2 v_rect_half_size;
-flat in int v_primitive_type;
-flat in float v_triangle_rotation_radians;
-flat in float v_corner_radius;
-flat in float v_squircle_radius;
-flat in float v_border_width;
-flat in vec4 v_border_color;
-
-out vec4 frag_color;
 
 float sd_round_rect(vec2 p, vec2 b, float r)
 {
@@ -174,58 +170,59 @@ vec3 linear_to_srgb(vec3 linear) {
     return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 - 0.0225411470 * linear;
 }
 
-vec4 sample_pixel(vec2 p)
+vec4 apply_aa_and_postprocess(vec4 color, float aa_alpha) {
+#ifdef EMSCRIPTEN
+    vec3 unpremultiplied = color.a > 0.0 ? color.rgb / color.a : vec3(0.0);
+    float alpha = color.a * aa_alpha;
+    return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
+#else
+    return color * aa_alpha;
+#endif
+}
+
+vec4 sample_primitive(vec2 p)
 {
     vec2 local_p = v_pos - v_rect_center;
 
-    // TODO: Take into account UI scaling if applicable.
+    // UI is always in physical pixels, so AA is 0.5px.
     float aa = 0.5;
 
     switch (v_primitive_type)
     {
-        // Box
+        // ALIA_PRIMITIVE_BOX
         case 0:
         {
-            float d = sd_round_rect(local_p, v_rect_half_size, v_corner_radius);
-            float alpha_inner = smoothstep(-aa, aa, d + v_border_width);
+            float corner_radius = min(
+                v_data_a.x, min(v_rect_half_size.x, v_rect_half_size.y));
+            float border_width = v_data_a.y;
+            vec4 border_color = unpack_border_color_linear(v_data_a.z);
+            float d = sd_round_rect(local_p, v_rect_half_size, corner_radius);
+            float alpha_inner = smoothstep(-aa, aa, d + border_width);
             float alpha_outer = smoothstep(aa, -aa, d);
-            vec4 mix_color = mix(v_color, v_border_color, alpha_inner);
-        #ifdef EMSCRIPTEN
-            vec3 unpremultiplied = mix_color.a > 0.0 ? mix_color.rgb / mix_color.a : vec3(0.0);
-            float alpha = mix_color.a * alpha_outer;
-            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
-        #else
-            return mix_color * alpha_outer;
-        #endif
+            vec4 mix_color = mix(v_color, border_color, alpha_inner);
+            return apply_aa_and_postprocess(mix_color, alpha_outer);
         }
-        // Equilateral triangle
+        // ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE
         case 1:
         {
             float R = min(v_rect_half_size.x, v_rect_half_size.y);
-            float d = sd_equilateral_triangle(local_p, R, v_triangle_rotation_radians);
-            float alpha_outer = smoothstep(aa, -aa, d);
-        #ifdef EMSCRIPTEN
-            vec3 unpremultiplied = v_color.a > 0.0 ? v_color.rgb / v_color.a : vec3(0.0);
-            float alpha = v_color.a * alpha_outer;
-            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
-        #else
-            return v_color * alpha_outer;
-        #endif
+            float triangle_rotation_radians = v_data_a.x;
+            float d = sd_equilateral_triangle(
+                local_p, R, triangle_rotation_radians);
+            float alpha = smoothstep(aa, -aa, d);
+            return apply_aa_and_postprocess(v_color, alpha);
         }
-        // Squircle
+        // ALIA_PRIMITIVE_SQUIRCLE
         case 2:
         {
-            float d = sd_squircle(local_p, v_squircle_radius);
-            float alpha_inner = smoothstep(-aa, aa, d + v_border_width);
+            float squircle_radius = v_data_a.x;
+            float border_width = v_data_a.y;
+            vec4 border_color = unpack_border_color_linear(v_data_a.z);
+            float d = sd_squircle(local_p, squircle_radius);
+            float alpha_inner = smoothstep(-aa, aa, d + border_width);
             float alpha_outer = smoothstep(aa, -aa, d);
-            vec4 mix_color = mix(v_color, v_border_color, alpha_inner);
-        #ifdef EMSCRIPTEN
-            vec3 unpremultiplied = mix_color.a > 0.0 ? mix_color.rgb / mix_color.a : vec3(0.0);
-            float alpha = mix_color.a * alpha_outer;
-            return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
-        #else
-            return mix_color * alpha_outer;
-        #endif
+            vec4 mix_color = mix(v_color, border_color, alpha_inner);
+            return apply_aa_and_postprocess(mix_color, alpha_outer);
         }
         default:
             return vec4(0.0);
@@ -234,7 +231,7 @@ vec4 sample_pixel(vec2 p)
 
 void main()
 {
-    frag_color = sample_pixel(v_pos);
+    frag_color = sample_primitive(v_pos);
 }
 )";
 
@@ -244,9 +241,9 @@ struct primitive_instance
     alia_vec2f size;
     alia_srgba8 color;
     int primitive_type;
-    // Generic per-primitive payload:
-    // See `vanilla_vertex_shader_source` for the decoding rules.
-    float payload[4];
+    // Per-primitive-type layouts; see fragment shader `sample_pixel`.
+    float data_a[4];
+    float data_b[4];
 };
 
 GLuint
@@ -298,15 +295,15 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
 {
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
-    GLuint vanilla_shader_program = create_shader_program(
-        vanilla_vertex_shader_source, vanilla_fragment_shader_source);
+    GLuint primitive_shader_program = create_shader_program(
+        primitive_vertex_shader_source, primitive_fragment_shader_source);
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    GLint vanilla_matrix_location
-        = glGetUniformLocation(vanilla_shader_program, "u_projection");
+    GLint primitive_matrix_location
+        = glGetUniformLocation(primitive_shader_program, "u_projection");
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -379,27 +376,38 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
-    // payload (location = 5)
+    // data_a (location = 5)
     glVertexAttribPointer(
         5,
         4,
         GL_FLOAT,
         GL_FALSE,
         sizeof(primitive_instance),
-        (void*) offsetof(primitive_instance, payload));
+        (void*) offsetof(primitive_instance, data_a));
     glEnableVertexAttribArray(5);
     glVertexAttribDivisor(5, 1);
+
+    // data_b (location = 6)
+    glVertexAttribPointer(
+        6,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(primitive_instance),
+        (void*) offsetof(primitive_instance, data_b));
+    glEnableVertexAttribArray(6);
+    glVertexAttribDivisor(6, 1);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     *renderer = {
         .system = system,
-        .vanilla_shader_program = vanilla_shader_program,
+        .primitive_shader_program = primitive_shader_program,
         .vao = vao,
         .vbo = vbo,
         .instance_vbo = instance_vbo,
-        .vanilla_matrix_location = vanilla_matrix_location,
+        .primitive_matrix_location = primitive_matrix_location,
     };
 
     initialize_lazy_commit_arena(&renderer->rect_instance_arena);
@@ -408,7 +416,7 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
 void
 destroy_gl_renderer(gl_renderer* renderer)
 {
-    glDeleteProgram(renderer->vanilla_shader_program);
+    glDeleteProgram(renderer->primitive_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
     glDeleteBuffers(1, &renderer->instance_vbo);
 }
@@ -467,12 +475,13 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         -(f + n) / (f - n),
         1.f};
 
-    glUseProgram(renderer->vanilla_shader_program);
+    glUseProgram(renderer->primitive_shader_program);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
-    glUniformMatrix4fv(renderer->vanilla_matrix_location, 1, GL_FALSE, ortho);
+    glUniformMatrix4fv(
+        renderer->primitive_matrix_location, 1, GL_FALSE, ortho);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -501,39 +510,37 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
             instance->size = primitive_cmd->box.size;
             instance->color = primitive_cmd->color;
             instance->primitive_type = int(primitive_cmd->primitive_type);
-            instance->payload[0] = 0.0f;
-            instance->payload[1] = 0.0f;
-            instance->payload[2] = 0.0f;
-            instance->payload[3] = 0.0f;
+            std::memset(instance->data_a, 0, sizeof(instance->data_a));
+            std::memset(instance->data_b, 0, sizeof(instance->data_b));
 
             switch (primitive_cmd->primitive_type)
             {
                 case ALIA_PRIMITIVE_BOX: {
-                    instance->payload[0]
+                    instance->data_a[0]
                         = primitive_cmd->payload.box.corner_radius;
-                    instance->payload[1]
+                    instance->data_a[1]
                         = primitive_cmd->payload.box.border_width;
-                    instance->payload[2] = pack_border_color(
+                    instance->data_a[2] = pack_border_color(
                         primitive_cmd->payload.box.border_color);
-                    instance->payload[3] = 0.0f;
+                    instance->data_a[3] = 0.0f;
                     break;
                 }
                 case ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE: {
                     float const degrees_to_radians
                         = 3.14159265358979323846f / 180.0f;
-                    instance->payload[0]
+                    instance->data_a[0]
                         = primitive_cmd->payload.triangle.rotation_degrees
                         * degrees_to_radians;
                     break;
                 }
                 case ALIA_PRIMITIVE_SQUIRCLE: {
-                    instance->payload[0]
+                    instance->data_a[0]
                         = primitive_cmd->payload.squircle.radius;
-                    instance->payload[1]
+                    instance->data_a[1]
                         = primitive_cmd->payload.squircle.border_width;
-                    instance->payload[2] = pack_border_color(
+                    instance->data_a[2] = pack_border_color(
                         primitive_cmd->payload.squircle.border_color);
-                    instance->payload[3] = 0.0f;
+                    instance->data_a[3] = 0.0f;
                     break;
                 }
             }

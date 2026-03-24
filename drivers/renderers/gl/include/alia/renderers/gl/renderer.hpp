@@ -22,10 +22,10 @@ namespace alia {
 struct gl_renderer
 {
     alia_ui_system* system;
-    GLuint vanilla_shader_program;
+    GLuint primitive_shader_program;
     GLuint vao, vbo;
     GLuint instance_vbo;
-    GLint vanilla_matrix_location;
+    GLint primitive_matrix_location;
     alia_arena rect_instance_arena;
 };
 
