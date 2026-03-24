@@ -37,7 +37,6 @@
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
 #include <alia/platforms/glfw/window.hpp>
-#include <alia/text_engines/msdf/msdf.hpp>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
@@ -67,7 +66,7 @@ alia_ui_system* the_system;
 GLFWwindow* the_window;
 gl_renderer the_renderer;
 alia_arena the_display_list_arena;
-msdf_text_engine* the_msdf_text_engine;
+alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
@@ -986,23 +985,20 @@ main()
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 
     std::vector<std::uint8_t> atlas_rgb(
-        static_cast<std::size_t>(alia::alia_atlas_decompressed_size));
-    alia::alia_msdf_atlas_rle_decompress(
-        alia::alia_atlas_rle_r,
-        alia::alia_atlas_rle_r_size,
-        alia::alia_atlas_rle_g,
-        alia::alia_atlas_rle_g_size,
-        alia::alia_atlas_rle_b,
-        alia::alia_atlas_rle_b_size,
+        static_cast<std::size_t>(alia_atlas_decompressed_size));
+    alia_msdf_atlas_rle_decompress(
+        alia_atlas_rle_r,
+        alia_atlas_rle_r_size,
+        alia_atlas_rle_g,
+        alia_atlas_rle_g_size,
+        alia_atlas_rle_b,
+        alia_atlas_rle_b_size,
         atlas_rgb.data(),
         atlas_rgb.size());
-    the_msdf_text_engine = alia::create_msdf_text_engine(
-        the_system,
-        alia::alia_font_descriptions,
-        alia::alia_font_count,
-        atlas_rgb.data(),
-        alia::alia_atlas_width,
-        alia::alia_atlas_height);
+    gl_renderer_upload_msdf_atlas(
+        &the_renderer, atlas_rgb.data(), alia_atlas_width, alia_atlas_height);
+    the_msdf_text_engine = alia_msdf_create_text_engine(
+        alia_font_descriptions, alia_font_count);
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

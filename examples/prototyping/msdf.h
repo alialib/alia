@@ -5,7 +5,7 @@ struct msdf_text_layout_node
     alia_layout_node base;
     alia_layout_flags_t flags;
     float spacing;
-    msdf_text_engine* engine;
+    alia_msdf_text_engine* engine;
     size_t font_index;
     char const* text;
     float font_size;
@@ -15,7 +15,7 @@ alia_horizontal_requirements
 measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    float width = measure_text_width(
+    float width = alia_msdf_measure_text_width(
         text.engine,
         text.font_index,
         text.text,
@@ -43,7 +43,8 @@ measure_text_vertical(
     float assigned_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
     return alia_vertical_requirements{
         .min_size = metrics->line_height * text.font_size + text.spacing * 2,
         .growth_factor = 0,
@@ -78,10 +79,11 @@ assign_text_boxes(
     float baseline)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
 
     // TODO: Don't repeatedly measure the text width.
-    float width = measure_text_width(
+    float width = alia_msdf_measure_text_width(
         text.engine,
         text.font_index,
         text.text,
@@ -125,13 +127,14 @@ measure_text_wrapped_vertical(
     float line_width)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
     alia_wrapping_requirements requirements;
 
-    auto first_break = break_text(
+    auto first_break = alia_msdf_break_text(
         text.engine,
         text.font_index,
         text.text,
@@ -144,7 +147,7 @@ measure_text_wrapped_vertical(
 
     // If there is content on the first line, then we need to assign the
     // vertical requirements for it.
-    if (first_break.first != 0)
+    if (first_break.next != 0)
     {
         requirements.first_line = {
             .height = metrics->line_height * text.font_size + text.spacing * 2,
@@ -157,24 +160,24 @@ measure_text_wrapped_vertical(
     }
 
     // If everything fits on the first line, then we're done.
-    if (first_break.first == length)
+    if (first_break.next == length)
     {
         requirements.interior_height = 0;
         requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
         requirements.end_x
-            = current_x_offset + first_break.second + text.spacing * 2;
+            = current_x_offset + first_break.width + text.spacing * 2;
         return requirements;
     }
 
     // Otherwise, wrap the rest of the text...
 
     int wrap_count = 0;
-    size_t index = first_break.first;
+    size_t index = first_break.next;
     float new_x = 0;
     while (index < length)
     {
         ++wrap_count;
-        auto break_result = break_text(
+        auto break_result = alia_msdf_break_text(
             text.engine,
             text.font_index,
             text.text,
@@ -184,8 +187,8 @@ measure_text_wrapped_vertical(
             text.font_size,
             line_width - text.spacing * 2,
             true);
-        index = break_result.first;
-        new_x = break_result.second;
+        index = break_result.next;
+        new_x = break_result.width;
     }
 
     requirements.interior_height
@@ -208,7 +211,8 @@ assign_text_wrapped_boxes(
     alia_wrapping_assignment const* assignment)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics = get_msdf_font_metrics(text.engine, text.font_index);
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
 
     size_t length = strlen(text.text);
 
@@ -227,7 +231,7 @@ assign_text_wrapped_boxes(
     size_t index = 0;
     while (index < length)
     {
-        auto break_result = break_text(
+        auto break_result = alia_msdf_break_text(
             text.engine,
             text.font_index,
             text.text,
@@ -237,7 +241,7 @@ assign_text_wrapped_boxes(
             text.font_size,
             assignment->line_width - x - text.spacing * 2,
             x == 0);
-        size_t const end_index = break_result.first;
+        size_t const end_index = break_result.next;
 
         if (end_index == length)
         {
@@ -325,7 +329,7 @@ do_text(
             {
                 auto& fragment = *arena_alloc<text_layout_placement_fragment>(
                     *alia_layout_placement_arena(&ctx));
-                draw_text(
+                alia_msdf_draw_text(
                     the_msdf_text_engine,
                     &ctx,
                     z_index,

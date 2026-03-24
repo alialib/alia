@@ -26,6 +26,8 @@ struct gl_renderer
     GLuint vao, vbo;
     GLuint instance_vbo;
     GLint primitive_matrix_location;
+    GLint msdf_sampler_location;
+    GLuint msdf_atlas_texture;
     alia_arena rect_instance_arena;
 };
 
@@ -39,6 +41,13 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer);
 // Destroy a renderer.
 void
 destroy_gl_renderer(gl_renderer* renderer);
+
+void
+gl_renderer_upload_msdf_atlas(
+    gl_renderer* renderer,
+    unsigned char const* atlas_rgb,
+    int width,
+    int height);
 
 void
 render_primitive_command_list(void* user, alia_draw_bucket const* bucket);

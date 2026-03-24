@@ -79,8 +79,6 @@ if(ALIA_ENABLE_GLFW)
     add_subdirectory(drivers/platforms/glfw)
 endif()
 
-add_subdirectory(drivers/text_engines/msdf)
-
 add_subdirectory(apis/cpp)
 
 set(ALIA_GEN_DIR "${CMAKE_BINARY_DIR}/gen"
@@ -108,7 +106,6 @@ endif()
 add_library(alia_font_assets STATIC "${ALIA_FONTS_CPP}")
 target_include_directories(alia_font_assets PUBLIC
     "${ALIA_GEN_DIR}"
-    ${CMAKE_SOURCE_DIR}/drivers/text_engines/msdf/include
     ${CMAKE_SOURCE_DIR}/core/include)
 target_link_libraries(alia_font_assets PUBLIC alia_core)
 
@@ -116,7 +113,7 @@ if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_app ${PROJECT_SOURCE_DIR}/examples/app.cpp)
     target_link_libraries(alia_app PRIVATE
         alia_cpp alia_core alia_gl_renderer alia_glfw_platform
-        alia_msdf_text_engine alia_font_assets)
+        alia_font_assets)
     target_include_directories(alia_app PRIVATE "${ALIA_GEN_DIR}")
 
     if(EMSCRIPTEN)

@@ -5,7 +5,7 @@
  *
  * Text fonts load printable ASCII. Icon fonts (optional `icons` plus
  * `codepoints_path` or `codepoints_url`) bake only listed glyphs from a Google
- * `.codepoints` file and emit `constexpr` Unicode constants per icon.
+ * `.codepoints` file and emit Unicode constants per icon.
  *
  * Usage: alia_asset_builder <manifest.yaml> <output.h> <output.cpp>
  * [--cache-dir <dir>]
@@ -718,9 +718,7 @@ main(int argc, char const* const* argv)
 #include <cstddef>
 #include <cstdint>
 
-#include <alia/text_engines/msdf/msdf.hpp>
-
-namespace alia {
+#include <alia/abi/ui/msdf.h>
 
 extern std::uint8_t const alia_atlas_rle_r[];
 extern std::size_t const alia_atlas_rle_r_size;
@@ -741,23 +739,12 @@ inline std::size_t const alia_atlas_decompressed_size = )"
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
             std::string const& symid = font_entries[font_idx].id;
-            f << "extern alia::msdf_glyph const alia_font_" << symid
-              << "_glyphs[];\n";
-            f << "extern std::size_t const alia_font_" << symid
-              << "_glyph_count;\n";
-            if (!fonts[font_idx].getKerning().empty())
-            {
-                f << "extern alia::msdf_kerning_pair const alia_font_"
-                  << symid << "_kerning_pairs[];\n";
-            }
-            f << "extern std::size_t const alia_font_" << symid
-              << "_kerning_pair_count;\n";
-            f << "extern char const alia_font_" << symid << "_id[];\n";
+            f << "inline std::uint32_t const alia_font_" << symid
+              << "_index = " << static_cast<std::uint32_t>(font_idx) << "u;\n";
             for (auto const& ic : font_entries[font_idx].icon_codepoints)
             {
-                f << "inline constexpr std::uint32_t alia_font_" << symid
-                  << "_icon_" << icon_name_c_suffix(ic.first) << " = " << ic.second
-                  << "u;\n";
+                f << "inline std::uint32_t const alia_font_" << symid << "_icon_"
+                  << icon_name_c_suffix(ic.first) << " = " << ic.second << "u;\n";
             }
         }
 
@@ -769,13 +756,11 @@ inline std::size_t const alia_atlas_decompressed_size = )"
 inline std::size_t const alia_font_count = )"
           << fonts.size() << R"(;
 
-extern msdf_font_description const alia_font_descriptions[];
+extern alia_msdf_font_description const alia_font_descriptions[];
 
-inline msdf_font_description const& alia_font_description(std::size_t index) {
+inline alia_msdf_font_description const& alia_font_description(std::size_t index) {
     return alia_font_descriptions[index];
 }
-
-} // namespace alia
 )";
     }
 
@@ -787,7 +772,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             fprintf(stderr, "Cannot write %s\n", out_cpp);
             return 1;
         }
-        f << "#include \"alia_fonts.h\"\n\nnamespace alia {\n\n";
+        f << "#include \"alia_fonts.h\"\n\n";
 
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
@@ -795,7 +780,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             FontGeometry const& fg = fonts[font_idx];
             auto range = fg.getGlyphs();
 
-            f << "alia::msdf_glyph const alia_font_" << symid
+            f << "alia_msdf_glyph const alia_font_" << symid
               << "_glyphs[] = {\n";
             f << std::showpoint;
             for (const GlyphGeometry* it = range.begin(); it != range.end();
@@ -845,7 +830,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             }
             if (!kp_lines.empty())
             {
-                f << "alia::msdf_kerning_pair const alia_font_" << symid
+                f << "alia_msdf_kerning_pair const alia_font_" << symid
                   << "_kerning_pairs[] = {\n";
                 for (size_t i = 0; i < kp_lines.size(); ++i)
                 {
@@ -857,24 +842,12 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
             f << "std::size_t const alia_font_" << symid
               << "_kerning_pair_count = " << kp_lines.size() << ";\n\n";
 
-            std::string id_escaped;
-            for (char c : font_entries[font_idx].id)
-            {
-                if (c == '\\')
-                    id_escaped += "\\\\";
-                else if (c == '"')
-                    id_escaped += "\\\"";
-                else
-                    id_escaped += c;
-            }
-            f << "char const alia_font_" << symid << "_id[] = \"" << id_escaped
-              << "\";\n\n";
         }
 
         float const dist_range
             = static_cast<float>(px_range.upper - px_range.lower);
         float const em_sz = static_cast<float>(em_size);
-        f << "msdf_font_description const alia_font_descriptions[] = {\n";
+        f << "alia_msdf_font_description const alia_font_descriptions[] = {\n";
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {
             std::string const& symid = font_entries[font_idx].id;
@@ -938,7 +911,7 @@ inline msdf_font_description const& alia_font_description(std::size_t index) {
         f << std::dec << std::setfill(' ');
         f << "};\n";
         f << "std::size_t const alia_atlas_rle_b_size = " << rle_b.size()
-          << ";\n\n} // namespace alia\n";
+          << ";\n\n";
     }
 
     fprintf(

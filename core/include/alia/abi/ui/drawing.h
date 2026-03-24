@@ -99,6 +99,7 @@ enum
     ALIA_PRIMITIVE_BOX = 0,
     ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE = 1,
     ALIA_PRIMITIVE_SQUIRCLE = 2,
+    ALIA_PRIMITIVE_MSDF_GLYPH = 3,
 };
 
 typedef struct alia_draw_box_payload
@@ -121,11 +122,18 @@ typedef struct alia_draw_squircle_payload
     alia_srgba8 border_color;
 } alia_draw_squircle_payload;
 
+typedef struct alia_draw_msdf_glyph_payload
+{
+    float uv_rect[4];
+    float sdf_scale;
+} alia_draw_msdf_glyph_payload;
+
 typedef union alia_primitive_payload
 {
     alia_draw_box_payload box;
     alia_draw_equilateral_triangle_payload triangle;
     alia_draw_squircle_payload squircle;
+    alia_draw_msdf_glyph_payload msdf_glyph;
 } alia_primitive_payload;
 
 typedef struct alia_draw_primitive_command

@@ -31,6 +31,8 @@ flat out vec2 v_rect_half_size;
 flat out int v_primitive_type;
 flat out vec4 v_data_a;
 flat out vec4 v_data_b;
+out vec2 v_uv_msdf;
+flat out float v_msdf_sdf_scale;
 
 vec3 srgb_to_linear(vec3 srgb) {
     vec3 low = srgb / 12.92;
@@ -44,17 +46,42 @@ vec4 srgba_to_linear(vec4 srgba) {
 }
 
 void main() {
-    vec2 scaled = a_pos * (i_size + vec2(2.0f)) + i_pos - vec2(1.0f);
-    gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
+    if (i_primitive_type == 3) {
+        vec2 scaled = a_pos * i_size + i_pos;
+        gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
 
-    v_color = srgba_to_linear(i_color);
-    v_pos = scaled;
-    v_rect_center = i_pos + i_size * 0.5;
-    v_rect_half_size = i_size * 0.5;
+        v_color = srgba_to_linear(i_color);
+        v_pos = vec2(0.0);
+        v_rect_center = vec2(0.0);
+        v_rect_half_size = vec2(0.0);
 
-    v_primitive_type = i_primitive_type;
-    v_data_a = i_data_a;
-    v_data_b = i_data_b;
+        v_primitive_type = i_primitive_type;
+        v_data_a = i_data_a;
+        v_data_b = i_data_b;
+
+        vec2 uv_min = vec2(i_data_a[0], i_data_a[1]);
+        vec2 uv_sz = vec2(i_data_a[2], i_data_a[3]);
+        // y-down quad (a_pos.y=0 at top): match atlas to screen by flipping v.
+        v_uv_msdf = vec2(
+            uv_min.x + a_pos.x * uv_sz.x,
+            uv_min.y + (1.0 - a_pos.y) * uv_sz.y);
+        v_msdf_sdf_scale = i_data_b[0];
+    } else {
+        vec2 scaled = a_pos * (i_size + vec2(2.0f)) + i_pos - vec2(1.0f);
+        gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
+
+        v_color = srgba_to_linear(i_color);
+        v_pos = scaled;
+        v_rect_center = i_pos + i_size * 0.5;
+        v_rect_half_size = i_size * 0.5;
+
+        v_primitive_type = i_primitive_type;
+        v_data_a = i_data_a;
+        v_data_b = i_data_b;
+
+        v_uv_msdf = vec2(0.0);
+        v_msdf_sdf_scale = 0.0;
+    }
 }
 )";
 
@@ -66,8 +93,16 @@ flat in vec2 v_rect_half_size;
 flat in int v_primitive_type;
 flat in vec4 v_data_a;
 flat in vec4 v_data_b;
+in vec2 v_uv_msdf;
+flat in float v_msdf_sdf_scale;
 
 out vec4 frag_color;
+
+uniform sampler2D u_msdf;
+
+float median_msdf(vec3 v) {
+    return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
+}
 
 vec3 srgb_to_linear(vec3 srgb) {
     vec3 low = srgb / 12.92;
@@ -231,7 +266,20 @@ vec4 sample_primitive(vec2 p)
 
 void main()
 {
-    frag_color = sample_primitive(v_pos);
+    if (v_primitive_type == 3) {
+        vec3 msd = texture(u_msdf, v_uv_msdf).rgb;
+        float sd = median_msdf(msd) - 0.5;
+        float screen_px_distance = v_msdf_sdf_scale * sd;
+        float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
+        #ifdef EMSCRIPTEN
+        vec3 unpremultiplied = v_color.a > 0.0 ? v_color.rgb / v_color.a : vec3(0.0);
+        frag_color = vec4(linear_to_srgb(unpremultiplied) * opacity, opacity);
+        #else
+        frag_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
+        #endif
+    } else {
+        frag_color = sample_primitive(v_pos);
+    }
 }
 )";
 
@@ -304,6 +352,9 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
 
     GLint primitive_matrix_location
         = glGetUniformLocation(primitive_shader_program, "u_projection");
+
+    GLint msdf_sampler_location
+        = glGetUniformLocation(primitive_shader_program, "u_msdf");
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
@@ -408,14 +459,47 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
         .vbo = vbo,
         .instance_vbo = instance_vbo,
         .primitive_matrix_location = primitive_matrix_location,
+        .msdf_sampler_location = msdf_sampler_location,
+        .msdf_atlas_texture = 0,
     };
 
     initialize_lazy_commit_arena(&renderer->rect_instance_arena);
 }
 
 void
+gl_renderer_upload_msdf_atlas(
+    gl_renderer* renderer, unsigned char const* atlas_rgb, int width, int height)
+{
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glDeleteTextures(1, &renderer->msdf_atlas_texture);
+        renderer->msdf_atlas_texture = 0;
+    }
+
+    glGenTextures(1, &renderer->msdf_atlas_texture);
+    glBindTexture(GL_TEXTURE_2D, renderer->msdf_atlas_texture);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB8,
+        width,
+        height,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        atlas_rgb);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void
 destroy_gl_renderer(gl_renderer* renderer)
 {
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glDeleteTextures(1, &renderer->msdf_atlas_texture);
+        renderer->msdf_atlas_texture = 0;
+    }
     glDeleteProgram(renderer->primitive_shader_program);
     glDeleteBuffers(1, &renderer->vbo);
     glDeleteBuffers(1, &renderer->instance_vbo);
@@ -543,9 +627,32 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                     instance->data_a[3] = 0.0f;
                     break;
                 }
+                case ALIA_PRIMITIVE_MSDF_GLYPH: {
+                    instance->data_a[0]
+                        = primitive_cmd->payload.msdf_glyph.uv_rect[0];
+                    instance->data_a[1]
+                        = primitive_cmd->payload.msdf_glyph.uv_rect[1];
+                    instance->data_a[2]
+                        = primitive_cmd->payload.msdf_glyph.uv_rect[2];
+                    instance->data_a[3]
+                        = primitive_cmd->payload.msdf_glyph.uv_rect[3];
+                    instance->data_b[0]
+                        = primitive_cmd->payload.msdf_glyph.sdf_scale;
+                    instance->data_b[1] = 0.0f;
+                    instance->data_b[2] = 0.0f;
+                    instance->data_b[3] = 0.0f;
+                    break;
+                }
             }
             ++instance;
         }
+    }
+
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, renderer->msdf_atlas_texture);
+        glUniform1i(renderer->msdf_sampler_location, 0);
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->instance_vbo);
