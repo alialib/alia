@@ -4,54 +4,48 @@
 #include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
 
+#include <alia/abi/kernel/substrate.h>
+
 ALIA_EXTERN_C_BEGIN
 
-typedef void* alia_element_id;
+typedef uint32_t alia_route_node_id;
+
+typedef struct alia_element_id
+{
+    void* ptr;
+    alia_generation_counter generation;
+    alia_route_node_id route;
+} alia_element_id;
 
 #define ALIA_ELEMENT_ID_NONE ((alia_element_id) NULL)
 
 static inline alia_element_id
 alia_offset_id(alia_element_id main_id, uint8_t index)
 {
-    return (alia_element_id) ((uint8_t*) main_id + index);
+    return ALIA_BRACED_INIT(
+        alia_element_id, (uint8_t*) main_id.ptr + index, main_id.generation);
 }
-
-typedef struct alia_route_node_id
-{
-    // TODO: Implement this.
-    int dummy;
-} alia_route_node_id;
-
-typedef struct alia_routable_element_id
-{
-    alia_element_id element;
-    alia_route_node_id route;
-} alia_routable_element_id;
 
 static inline bool
 alia_element_id_is_valid(alia_element_id id)
 {
-    return id != NULL;
+    return id.ptr != NULL;
 }
 
 static inline bool
-alia_routable_element_id_is_valid(alia_routable_element_id id)
+alia_element_id_equal(alia_element_id a, alia_element_id b)
 {
-    return alia_element_id_is_valid(id.element);
+    return a.ptr == b.ptr && a.generation == b.generation
+        && a.route == b.route;
 }
 
-static inline bool
-alia_routable_element_id_matches(
-    alia_routable_element_id id, alia_element_id element)
-{
-    return id.element == element;
-}
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_element_id);
 
-static inline alia_routable_element_id
-alia_make_routable_element_id(alia_context* ctx, alia_element_id id)
+static inline alia_element_id
+alia_make_element_id(alia_context* ctx, alia_substrate_usage_result result)
 {
-    // TODO: Implement this.
-    return ALIA_BRACED_INIT(alia_routable_element_id, id, {.dummy = 0});
+    // TODO: Get the route node ID from the context.
+    return ALIA_BRACED_INIT(alia_element_id, result.ptr, result.generation, 0);
 }
 
 ALIA_EXTERN_C_END

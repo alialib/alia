@@ -157,7 +157,7 @@ typedef struct alia_make_widget_visible
 
 typedef struct alia_mouse_hit_test_result
 {
-    alia_routable_element_id id;
+    alia_element_id id;
     alia_cursor_t cursor;
 } alia_mouse_hit_test_result;
 
@@ -172,7 +172,7 @@ typedef struct alia_wheel_hit_test
 {
     float x;
     float y;
-    alia_routable_element_id result;
+    alia_element_id result;
 } alia_wheel_hit_test;
 
 typedef struct alia_cursor_query
@@ -207,14 +207,14 @@ typedef struct alia_focus_recovery
 typedef struct alia_focus_successor
 {
     alia_element_id target;
-    alia_routable_element_id successor;
+    alia_element_id successor;
     bool just_saw_target;
 } alia_focus_successor;
 
 typedef struct alia_focus_predecessor
 {
     alia_element_id target;
-    alia_routable_element_id predecessor;
+    alia_element_id predecessor;
     bool saw_target;
 } alia_focus_predecessor;
 

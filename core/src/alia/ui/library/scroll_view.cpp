@@ -689,7 +689,7 @@ struct scroll_view_scope
     scroll_view_layout_node* node = nullptr;
     scroll_view_state* data = nullptr;
     scroll_view_placement placement = {};
-    alia_element_id id = 0;
+    alia_element_id id = ALIA_ELEMENT_ID_NONE;
 };
 
 } // namespace alia
@@ -716,7 +716,7 @@ alia_ui_scroll_view_begin(
         new (data) scroll_view_state;
     }
     scope.data = data;
-    scope.id = result.ptr;
+    scope.id = alia_make_element_id(ctx, result);
 
     data->scrollable_axes = scrollable_axes;
     data->reserved_axes = reserved_axes;

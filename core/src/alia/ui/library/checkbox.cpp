@@ -251,7 +251,7 @@ alia_do_checkbox(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = result.ptr;
+    alia_element_id const id = alia_make_element_id(ctx, result);
 
     alia_checkbox_style const* const effective_style
         = style != nullptr ? style : &default_checkbox_style;

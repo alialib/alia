@@ -117,12 +117,12 @@ render_switch(
 
     if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
     {
-        alia_srgb8 const track_srgb = state
-            ? alia_palette_srgb_at(p, style->on_track_disabled.index)
-            : alia_palette_srgb_at(p, style->off_track_disabled.index);
-        alia_srgb8 const dot_srgb = state
-            ? alia_palette_srgb_at(p, style->on_dot_disabled.index)
-            : alia_palette_srgb_at(p, style->off_dot_disabled.index);
+        alia_srgb8 const track_srgb
+            = state ? alia_palette_srgb_at(p, style->on_track_disabled.index)
+                    : alia_palette_srgb_at(p, style->off_track_disabled.index);
+        alia_srgb8 const dot_srgb
+            = state ? alia_palette_srgb_at(p, style->on_dot_disabled.index)
+                    : alia_palette_srgb_at(p, style->off_dot_disabled.index);
 
         alia_vec2f const track_min{
             switch_min.x + (layout_w - track_w) * 0.5f,
@@ -166,16 +166,14 @@ render_switch(
     float const dot_x_logical = alia_lerp(
         style->dot_center_x_off, style->dot_center_x_on, switch_position);
 
-    alia_srgb8 const off_dot
-        = alia_palette_srgb_at(p, style->off_dot.index);
+    alia_srgb8 const off_dot = alia_palette_srgb_at(p, style->off_dot.index);
     alia_srgb8 const on_dot = alia_palette_srgb_at(p, style->on_dot.index);
     alia_srgb8 const dot_color
         = alia_lerp_srgb8_via_oklch(off_dot, on_dot, switch_position);
 
     alia_srgb8 const off_track
         = alia_palette_srgb_at(p, style->off_track.index);
-    alia_srgb8 const on_track
-        = alia_palette_srgb_at(p, style->on_track.index);
+    alia_srgb8 const on_track = alia_palette_srgb_at(p, style->on_track.index);
     alia_srgb8 const track_color
         = alia_lerp_srgb8_via_oklch(off_track, on_track, switch_position);
 
@@ -257,7 +255,7 @@ alia_do_switch(
             .keyboard_click_state_ = {0},
         };
     }
-    auto const id = result.ptr;
+    alia_element_id const id = alia_make_element_id(ctx, result);
 
     bool const is_disabled = ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
 

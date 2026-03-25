@@ -90,14 +90,14 @@ on_ui_style_change(ui_system& system)
 #endif
 
 void
-set_focus(ui_system& sys, alia_routable_element_id element);
+set_focus(ui_system& sys, alia_element_id element);
 
 // Set the element that has the mouse captured.
 void
-set_element_with_capture(ui_system& ui, alia_routable_element_id element);
+set_element_with_capture(ui_system& ui, alia_element_id element);
 
 // Set the element that's under the mouse.
 void
-set_hot_element(ui_system& ui, alia_routable_element_id element);
+set_hot_element(ui_system& ui, alia_element_id element);
 
 } // namespace alia

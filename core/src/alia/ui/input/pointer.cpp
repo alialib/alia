@@ -43,8 +43,7 @@ alia_element_detect_mouse_press(
 {
     if (!alia_element_is_hovered(ctx, id) || !detect_mouse_press(ctx, button))
         return false;
-    set_element_with_capture(
-        *ctx->system, alia_make_routable_element_id(ctx, id));
+    set_element_with_capture(*ctx->system, id);
     return true;
 }
 

@@ -202,7 +202,7 @@ alia_do_radio(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = result.ptr;
+    alia_element_id const id = alia_make_element_id(ctx, result);
 
     alia_radio_style const* const effective_style
         = style != nullptr ? style : &default_radio_style;

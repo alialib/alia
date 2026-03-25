@@ -65,11 +65,10 @@ dispatch_targeted_event(
 // Deliver a "targeted" event while still traversing the full controller tree.
 // TODO: Implement actual targeted traversal.
 inline void
-dispatch_targeted_event(
-    ui_system& sys, alia_event& event, alia_routable_element_id rid)
+dispatch_targeted_event(ui_system& sys, alia_event& event, alia_element_id id)
 {
-    if (alia_routable_element_id_is_valid(rid))
-        event.target = rid.element;
+    if (alia_element_id_is_valid(id))
+        event.target = id;
     detail::dispatch_untargeted_event(sys, event);
 }
 

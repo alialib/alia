@@ -1,7 +1,7 @@
 #include <alia/abi/kernel/timing.h>
 
-#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/events.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 
@@ -18,16 +18,19 @@ get_current_timer_cycle(alia_ui_system* sys)
 }
 
 inline void
-enqueue_timer(alia_ui_system* sys, alia_element_id target,
+enqueue_timer(
+    alia_ui_system* sys,
+    alia_element_id target,
     alia_nanosecond_count fire_time)
 {
     if (!sys)
         return;
 
-    sys->timer_requests.push(alia_ui_timer_request{
-        .target = target,
-        .fire_time = fire_time,
-        .queued_in_cycle = get_current_timer_cycle(sys)});
+    sys->timer_requests.push(
+        alia_ui_timer_request{
+            .target = target,
+            .fire_time = fire_time,
+            .queued_in_cycle = get_current_timer_cycle(sys)});
 }
 
 } // namespace
@@ -73,8 +76,7 @@ alia_timer_start(
     // system dispatcher.
     state->expected_fire_time = ctx->tick_count + duration;
     state->active = true;
-    if (!state->target)
-        state->target = static_cast<alia_element_id>(state);
+    ALIA_ASSERT(alia_element_id_is_valid(state->target));
 
     enqueue_timer(ctx->system, state->target, state->expected_fire_time);
 }
@@ -105,7 +107,7 @@ alia_timer_handle_event(alia_context* ctx, alia_timer_state* state)
     alia_timer payload;
     std::memcpy(&payload, ev->payload, sizeof(payload));
 
-    if (payload.target != state->target)
+    if (!alia_element_id_equal(payload.target, state->target))
         return false;
     if (payload.fire_time != state->expected_fire_time)
         return false;
@@ -117,4 +119,3 @@ alia_timer_handle_event(alia_context* ctx, alia_timer_state* state)
 }
 
 } // extern "C"
-

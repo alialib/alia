@@ -199,11 +199,7 @@ render_slider(
         = alia_palette_color_resolve(p, s->track_color);
 
     alia_draw_rounded_box(
-        ctx,
-        ctx->geometry->z_base + 2,
-        track_box,
-        track_rgba,
-        0.f);
+        ctx, ctx->geometry->z_base + 2, track_box, track_rgba, 0.f);
 
     alia_vec2f const thumb_center
         = get_thumb_center(box, axis, ctx, s, minimum, maximum, value);
@@ -267,7 +263,7 @@ do_slider_impl(
     {
         new (data) slider_data{.reserved = 0};
     }
-    alia_element_id const base_id = result.ptr;
+    alia_element_id const base_id = alia_make_element_id(ctx, result);
     alia_element_id const track_id = base_id;
     alia_element_id const thumb_id = alia_offset_id(base_id, 1);
 

@@ -43,7 +43,7 @@ alia_element_get_interaction_status(
 alia_element_id
 alia_element_get_identity(alia_context* ctx)
 {
-    return alia_substrate_use_memory(ctx, 1, 1).ptr;
+    return alia_make_element_id(ctx, alia_substrate_use_memory(ctx, 1, 1));
 }
 
 } // extern "C"

@@ -46,13 +46,13 @@ alia_input_click_duration(alia_context* ctx, alia_button_t button)
 static inline bool
 alia_element_is_hovered(alia_context* ctx, alia_element_id id)
 {
-    return ctx->input->hot_element.element == id;
+    return alia_element_id_equal(ctx->input->hot_element, id);
 }
 
 static inline bool
 alia_no_element_has_capture(alia_context* ctx)
 {
-    return !alia_element_id_is_valid(ctx->input->element_with_capture.element);
+    return !alia_element_id_is_valid(ctx->input->element_with_capture);
 }
 
 // Detect if an element has captured the mouse. - Capture is implicitly
@@ -61,7 +61,7 @@ alia_no_element_has_capture(alia_context* ctx)
 static inline bool
 alia_element_has_capture(alia_context* ctx, alia_element_id id)
 {
-    return ctx->input->element_with_capture.element == id;
+    return alia_element_id_equal(ctx->input->element_with_capture, id);
 }
 
 bool

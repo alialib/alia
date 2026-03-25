@@ -13,11 +13,11 @@ using namespace alia;
 
 namespace {
 
-alia_routable_element_id
+alia_element_id
 get_mouse_target(alia_ui_system* ui)
 {
     // If no widget has capture, send events to the widget under the mouse.
-    return alia_routable_element_id_is_valid(ui->input.element_with_capture)
+    return alia_element_id_is_valid(ui->input.element_with_capture)
              ? ui->input.element_with_capture
              : ui->input.hot_element;
 }
@@ -59,7 +59,7 @@ alia_ui_process_mouse_press(
     alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
-    if (alia_routable_element_id_is_valid(target))
+    if (alia_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_press_event(
             {.button = button,
@@ -87,7 +87,7 @@ alia_ui_process_mouse_release(
     alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
-    if (alia_routable_element_id_is_valid(target))
+    if (alia_element_id_is_valid(target))
     {
         alia_event event = alia_make_mouse_release_event(
             {.button = button,
@@ -100,7 +100,7 @@ alia_ui_process_mouse_release(
     ui->input.mouse_button_state &= ~(1 << unsigned(button));
     if (ui->input.mouse_button_state == 0)
     {
-        set_element_with_capture(*ui, alia_routable_element_id{});
+        set_element_with_capture(*ui, alia_element_id{});
         ui->input.dragging = false;
     }
 }
@@ -113,7 +113,7 @@ alia_ui_process_double_click(
     alia_kmods_t mods)
 {
     auto target = get_mouse_target(ui);
-    if (alia_routable_element_id_is_valid(target))
+    if (alia_element_id_is_valid(target))
     {
         alia_event event = alia_make_double_click_event(
             {.button = button,
@@ -132,7 +132,7 @@ alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
     alia_event hit_test_event = alia_make_wheel_hit_test_event(
         {.x = ui->input.mouse_position.x, .y = ui->input.mouse_position.y});
     dispatch_event(*ui, hit_test_event);
-    if (alia_routable_element_id_is_valid(
+    if (alia_element_id_is_valid(
             as_wheel_hit_test_event(hit_test_event).result))
     {
         alia_event wheel_event = alia_make_wheel_event({.delta = delta});
@@ -143,7 +143,7 @@ alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
 }
 
 void
-alia_ui_set_focus(alia_ui_system* ui, alia_routable_element_id widget)
+alia_ui_set_focus(alia_ui_system* ui, alia_element_id widget)
 {
     // TODO: Implement this logic once there is an internal event queue.
 

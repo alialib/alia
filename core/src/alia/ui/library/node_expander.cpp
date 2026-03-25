@@ -107,9 +107,9 @@ render_node_expander(
         = node_expander_triangle_box(ctx, placement, style);
     alia_vec2f const center = node_expander_center(placement);
 
-    alia_srgba8 const triangle_rgba = is_disabled
-        ? alia_palette_color_resolve(p, style->disabled_triangle)
-        : alia_palette_color_resolve(p, style->triangle);
+    alia_srgba8 const triangle_rgba
+        = is_disabled ? alia_palette_color_resolve(p, style->disabled_triangle)
+                      : alia_palette_color_resolve(p, style->triangle);
 
     alia_draw_equilateral_triangle(
         ctx,
@@ -169,7 +169,7 @@ alia_do_node_expander(
         };
     }
 
-    alia_element_id const id = result.ptr;
+    alia_element_id const id = alia_make_element_id(ctx, result);
 
     bool const is_disabled = (expanded == nullptr)
                           || ((expanded->flags & ALIA_SIGNAL_WRITABLE) == 0);

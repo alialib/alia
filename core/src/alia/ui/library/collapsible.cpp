@@ -136,7 +136,7 @@ struct collapsible_scope
     collapsible_layout_node* node = nullptr;
     collapsible_state* data = nullptr;
     collapsible_placement placement = {};
-    alia_element_id id = 0;
+    alia_element_id id = ALIA_ELEMENT_ID_NONE;
     float offset_factor = 1.f;
 };
 
@@ -168,7 +168,7 @@ alia_ui_collapsible_begin(
 
     scope.data = data;
     scope.offset_factor = offset_factor;
-    scope.id = result.ptr;
+    scope.id = alia_make_element_id(ctx, result);
 
     bool const expanded_state
         = (expanded != nullptr

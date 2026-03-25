@@ -11,6 +11,7 @@
 #include <alia/ui/system/internal_api.h>
 
 using namespace alia;
+using namespace alia::operators;
 
 extern "C" {
 
@@ -29,10 +30,10 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
         auto& event = as_focus_successor_event(*ctx);
         if (event.just_saw_target)
         {
-            event.successor = alia_make_routable_element_id(ctx, id);
+            event.successor = id;
             event.just_saw_target = false;
         }
-        if (id == event.target)
+        if (alia_element_id_equal(id, event.target))
         {
             event.just_saw_target = true;
         }
@@ -40,14 +41,14 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
     else if (get_event_type(*ctx) == ALIA_EVENT_FOCUS_PREDECESSOR)
     {
         auto& event = as_focus_predecessor_event(*ctx);
-        if (id == event.target
-            && alia_routable_element_id_is_valid(event.predecessor))
+        if (alia_element_id_equal(id, event.target)
+            && alia_element_id_is_valid(event.predecessor))
         {
             event.saw_target = true;
         }
         if (!event.saw_target)
         {
-            event.predecessor = alia_make_routable_element_id(ctx, id);
+            event.predecessor = id;
         }
     }
 }
@@ -55,8 +56,7 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
 bool
 alia_element_has_focus(alia_context* ctx, alia_element_id id)
 {
-    return alia_routable_element_id_matches(
-        ctx->input->element_with_focus, id);
+    return alia_element_id_equal(ctx->input->element_with_focus, id);
 }
 
 bool

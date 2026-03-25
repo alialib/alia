@@ -56,7 +56,7 @@ alia_element_report_mouse_hit(
         && (flags & ALIA_HIT_TEST_MOUSE))
     {
         auto& e = as_mouse_hit_test_event(*ctx);
-        e.result = {alia_make_routable_element_id(ctx, id), cursor};
+        e.result = {id, cursor};
         // TODO: Do we need the region?
         // transform_aabb(get_transformation(ctx), bounding_box)
     }
@@ -65,7 +65,7 @@ alia_element_report_mouse_hit(
         && (flags & ALIA_HIT_TEST_WHEEL))
     {
         auto& e = as_wheel_hit_test_event(*ctx);
-        e.result = alia_make_routable_element_id(ctx, id);
+        e.result = id;
     }
 }
 

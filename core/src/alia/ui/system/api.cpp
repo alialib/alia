@@ -10,6 +10,8 @@
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
 
+using namespace alia::operators;
+
 namespace alia {
 
 alia_struct_spec
@@ -155,11 +157,9 @@ alia_ui_system_update(alia_ui_system* ui)
             {.x = ui->input.mouse_position.x,
              .y = ui->input.mouse_position.y,
              .result
-             = {.id = alia_routable_element_id{},
-                .cursor = ALIA_CURSOR_DEFAULT}});
+             = {.id = alia_element_id{}, .cursor = ALIA_CURSOR_DEFAULT}});
         dispatch_event(*ui, event);
-        if (alia_routable_element_id_is_valid(
-                as_mouse_hit_test_event(event).result.id))
+        if (alia_element_id_is_valid(as_mouse_hit_test_event(event).result.id))
         {
             set_hot_element(*ui, as_mouse_hit_test_event(event).result.id);
             resolved_cursor = as_mouse_hit_test_event(event).result.cursor;
@@ -167,12 +167,12 @@ alia_ui_system_update(alia_ui_system* ui)
         }
         else
         {
-            set_hot_element(*ui, alia_routable_element_id{});
+            set_hot_element(*ui, alia_element_id{});
         }
     }
     else
     {
-        set_hot_element(*ui, alia_routable_element_id{});
+        set_hot_element(*ui, alia_element_id{});
     }
 
     // The block above gives us the mouse cursor that's been requested by the
@@ -871,12 +871,12 @@ clear_focus(ui_system& ui)
 #endif
 
 void
-set_element_with_capture(ui_system& ui, alia_routable_element_id element)
+set_element_with_capture(ui_system& ui, alia_element_id element)
 {
     // If there was an active element before, but we're removing it, this means
     // that the mouse is starting to hover over whatever it's over.
-    if (alia_routable_element_id_is_valid(ui.input.element_with_capture)
-        && !alia_routable_element_id_is_valid(element))
+    if (alia_element_id_is_valid(ui.input.element_with_capture)
+        && !alia_element_id_is_valid(element))
     {
         // TODO
         // ui.input.hover_start_time = ui.tick_count;
@@ -886,12 +886,12 @@ set_element_with_capture(ui_system& ui, alia_routable_element_id element)
 }
 
 void
-set_hot_element(ui_system& ui, alia_routable_element_id element)
+set_hot_element(ui_system& ui, alia_element_id element)
 {
     // If no widget has capture and the mouse is moving to a different
     // widget, this marks the start of a hover.
-    if (!alia_routable_element_id_is_valid(ui.input.element_with_capture)
-        && ui.input.hot_element.element != element.element)
+    if (!alia_element_id_is_valid(ui.input.element_with_capture)
+        && ui.input.hot_element != element)
     {
         ui.input.hover_start_time = ui.tick_count;
     }

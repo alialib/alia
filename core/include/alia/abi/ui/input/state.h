@@ -23,14 +23,14 @@ typedef struct alia_input_state
     alia_nanosecond_count last_mouse_press_time[ALIA_MAX_SUPPORTED_BUTTONS];
 
     // the element that the mouse is over
-    alia_routable_element_id hot_element;
+    alia_element_id hot_element;
 
     // the element that has the mouse captured - Note that this isn't
     // necessarily the same as the hot_element.
-    alia_routable_element_id element_with_capture;
+    alia_element_id element_with_capture;
 
     // the element that has the keyboard focus
-    alia_routable_element_id element_with_focus;
+    alia_element_id element_with_focus;
 
     // Is the user currently dragging the mouse (with a button pressed)?
     bool dragging = false;
