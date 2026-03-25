@@ -5,6 +5,7 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ids.h>
 #include <alia/abi/ui/input/state.h>
+#include <alia/abi/ui/msdf.h>
 #include <alia/base/stack.h>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
@@ -78,6 +79,9 @@ struct alia_ui_system
     alia_stack stack;
 
     alia_arena scratch;
+
+    // optional MSDF text engine used by core widgets that render glyphs
+    alia_msdf_text_engine* msdf_text_engine = nullptr;
 
     // pending timer events
     uint64_t timer_event_counter = 0;

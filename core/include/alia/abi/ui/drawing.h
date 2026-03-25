@@ -147,8 +147,6 @@ typedef struct alia_draw_primitive_command
     alia_primitive_payload payload;
 } alia_draw_primitive_command;
 
-// BOXES
-
 // TODO: Revisit this structure breakdown.
 typedef struct alia_box_paint
 {

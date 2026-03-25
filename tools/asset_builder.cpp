@@ -60,7 +60,126 @@ struct FontEntry
     /// If empty, load printable ASCII; otherwise icon font with these
     /// (name, codepoint) pairs in manifest order.
     std::vector<std::pair<std::string, uint32_t>> icon_codepoints;
+    /// Optional variable-font design coordinates by OpenType axis tag.
+    std::vector<std::pair<std::string, double>> variation_axes;
 };
+
+static int
+apply_variation_axes(
+    FontEntry const& entry,
+    msdfgen::FreetypeHandle* ft,
+    msdfgen::FontHandle* font)
+{
+    if (entry.variation_axes.empty())
+        return 0;
+
+    std::vector<msdfgen::FontVariationAxis> available_axes;
+    if (!msdfgen::listFontVariationAxes(available_axes, ft, font))
+    {
+        fprintf(
+            stderr,
+            "Font '%s': variable axes were requested, but this font does not "
+            "expose variation axes\n",
+            entry.id.c_str());
+        return 1;
+    }
+
+    auto canonicalize = [](std::string s) {
+        std::string out;
+        out.reserve(s.size());
+        for (char c : s)
+        {
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                || (c >= '0' && c <= '9'))
+            {
+                if (c >= 'A' && c <= 'Z')
+                    out.push_back(char(c - 'A' + 'a'));
+                else
+                    out.push_back(c);
+            }
+        }
+        return out;
+    };
+
+    auto normalized_axis_alias = [&](std::string const& requested) {
+        std::string norm = canonicalize(requested);
+        if (norm == "wght")
+            return std::string("weight");
+        if (norm == "wdth")
+            return std::string("width");
+        if (norm == "opsz")
+            return std::string("opticalsize");
+        if (norm == "slnt")
+            return std::string("slant");
+        if (norm == "ital")
+            return std::string("italic");
+        return norm;
+    };
+
+    std::unordered_map<std::string, msdfgen::FontVariationAxis const*> axis_lookup;
+    for (auto const& axis : available_axes)
+    {
+        std::string key = canonicalize(axis.name ? axis.name : "");
+        axis_lookup[key] = &axis;
+    }
+
+    for (auto const& axis_req : entry.variation_axes)
+    {
+        std::string key = normalized_axis_alias(axis_req.first);
+        auto it = axis_lookup.find(key);
+        if (it == axis_lookup.end())
+        {
+            fprintf(
+                stderr,
+                "Font '%s': unknown variation axis '%s' (available:",
+                entry.id.c_str(),
+                axis_req.first.c_str());
+            for (auto const& axis : available_axes)
+                fprintf(stderr, " %s", axis.name ? axis.name : "<null>");
+            fprintf(stderr, " )\n");
+            return 1;
+        }
+
+        auto const& axis = *it->second;
+        double requested = axis_req.second;
+        double min_v = axis.minValue;
+        double max_v = axis.maxValue;
+        double applied = requested;
+        if (applied < min_v)
+            applied = min_v;
+        if (applied > max_v)
+            applied = max_v;
+
+        if (applied != requested)
+        {
+            fprintf(
+                stderr,
+                "Font '%s': axis '%s' value %.4f out of range [%.4f, %.4f], "
+                "clamped to %.4f\n",
+                entry.id.c_str(),
+                axis_req.first.c_str(),
+                requested,
+                min_v,
+                max_v,
+                applied);
+        }
+
+        char const* axis_name = it->second->name;
+        if (!axis_name
+            || !msdfgen::setFontVariationAxis(ft, font, axis_name, applied))
+        {
+            fprintf(
+                stderr,
+                "Font '%s': failed to set variation axis '%s' to %.4f\n",
+                entry.id.c_str(),
+                axis_req.first.c_str(),
+                applied);
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 static bool
 is_valid_c_identifier(std::string const& s)
@@ -357,6 +476,7 @@ main(int argc, char const* const* argv)
         }
 
         YAML::Node icons_node = entry["icons"];
+        YAML::Node axes_node = entry["axes"];
         bool has_icons_list = icons_node && icons_node.IsSequence();
         bool has_icons = has_icons_list && icons_node.size() > 0;
         bool has_codepoints_path = entry["codepoints_path"].IsDefined();
@@ -392,6 +512,45 @@ main(int argc, char const* const* argv)
 
         FontEntry fe;
         fe.id = id;
+
+        if (axes_node)
+        {
+            if (!axes_node.IsMap())
+            {
+                fprintf(
+                    stderr,
+                    "Font '%s': 'axes' must be a mapping of axis_tag: value\n",
+                    id.c_str());
+                return 1;
+            }
+            for (auto const& axis_item : axes_node)
+            {
+                if (!axis_item.first.IsScalar() || !axis_item.second.IsScalar())
+                {
+                    fprintf(
+                        stderr,
+                        "Font '%s': axis entries must be scalar tag/value pairs\n",
+                        id.c_str());
+                    return 1;
+                }
+                std::string axis_tag = axis_item.first.as<std::string>();
+                double axis_value = 0;
+                try
+                {
+                    axis_value = axis_item.second.as<double>();
+                }
+                catch (YAML::Exception const&)
+                {
+                    fprintf(
+                        stderr,
+                        "Font '%s': axis '%s' value must be numeric\n",
+                        id.c_str(),
+                        axis_tag.c_str());
+                    return 1;
+                }
+                fe.variation_axes.push_back({std::move(axis_tag), axis_value});
+            }
+        }
 
         if (has_path)
         {
@@ -584,6 +743,12 @@ main(int argc, char const* const* argv)
             return 1;
         }
         FontGeometry font_geometry(&glyphs);
+        if (apply_variation_axes(font_entries[f], ft, font) != 0)
+        {
+            msdfgen::destroyFont(font);
+            msdfgen::deinitializeFreetype(ft);
+            return 1;
+        }
         int loaded = 0;
         if (font_entries[f].icon_codepoints.empty())
         {

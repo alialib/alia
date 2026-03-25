@@ -94,6 +94,44 @@ typedef struct alia_radio_style
     float flare_radius;
 } alia_radio_style;
 
+typedef struct alia_checkbox_state_style
+{
+    alia_palette_color outline;
+    alia_palette_color fill;
+} alia_checkbox_state_style;
+
+typedef struct alia_checkbox_style
+{
+    alia_checkbox_state_style unchecked;
+    alia_checkbox_state_style checked;
+
+    alia_checkbox_state_style disabled_unchecked;
+    alia_checkbox_state_style disabled_checked;
+
+    alia_palette_color checkmark;
+    alia_palette_color disabled_checkmark;
+
+    alia_palette_color highlight;
+
+    // size of the checkbox leaf (logical px)
+    float layout_width;
+    float layout_height;
+
+    // square box size + corner radius (logical px)
+    float box_size;
+    float box_corner_radius;
+
+    // border width for the checkbox square (logical px)
+    float border_width;
+
+    // icon glyph size for checkmark (logical px)
+    float checkmark_size;
+
+    // radius used for hover/active highlight + click flare (logical px)
+    float highlight_radius;
+    float flare_radius;
+} alia_checkbox_style;
+
 typedef struct alia_node_expander_style
 {
     alia_palette_color triangle;
@@ -164,6 +202,13 @@ alia_do_radio(
     alia_radio_style const* style);
 
 alia_element_id
+alia_do_checkbox(
+    alia_context* ctx,
+    alia_bool_signal* value,
+    alia_layout_flags_t layout_flags,
+    alia_checkbox_style const* style);
+
+alia_element_id
 alia_do_node_expander(
     alia_context* ctx,
     alia_bool_signal* expanded,
@@ -197,6 +242,8 @@ alia_slider_style const*
 alia_default_slider_style(void);
 alia_radio_style const*
 alia_default_radio_style(void);
+alia_checkbox_style const*
+alia_default_checkbox_style(void);
 alia_node_expander_style const*
 alia_default_node_expander_style(void);
 alia_scrollbar_style const*

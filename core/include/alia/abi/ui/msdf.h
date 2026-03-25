@@ -92,6 +92,13 @@ alia_msdf_measure_text_width(
     size_t length,
     float font_size);
 
+float
+alia_msdf_measure_codepoint_width(
+    alia_msdf_text_engine* ctx,
+    size_t font_index,
+    uint32_t codepoint,
+    float font_size);
+
 alia_msdf_break_result
 alia_msdf_break_text(
     alia_msdf_text_engine* ctx,
@@ -111,6 +118,17 @@ alia_msdf_draw_text(
     alia_z_index z_index,
     char const* text,
     size_t length,
+    float scale,
+    alia_vec2f position,
+    alia_srgba8 color,
+    size_t font_index);
+
+void
+alia_msdf_draw_codepoint(
+    alia_msdf_text_engine* fonts,
+    alia_context* ctx,
+    alia_z_index z_index,
+    uint32_t codepoint,
     float scale,
     alia_vec2f position,
     alia_srgba8 color,

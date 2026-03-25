@@ -49,6 +49,48 @@ struct msdf_font_data
     kerning_lookup kerning;
 };
 
+static inline alia_msdf_glyph const&
+require_glyph(msdf_font_data const& font, uint32_t unicode)
+{
+    alia_msdf_glyph const& glyph = font.glyphs.at(static_cast<int>(unicode));
+    assert(glyph.unicode == unicode);
+    return glyph;
+}
+
+static inline void
+emit_glyph_draw_command(
+    alia_context* ctx,
+    alia_z_index z_index,
+    alia_msdf_glyph const& glyph,
+    cached_glyph_data const& cached_glyph,
+    float sdf_scale,
+    alia_vec2f cursor,
+    float scale,
+    alia_srgba8 color)
+{
+    alia_box box;
+    box.min.x = cursor.x + glyph.plane_left * scale;
+    box.min.y = cursor.y - glyph.plane_top * scale;
+    box.size.x = (glyph.plane_right - glyph.plane_left) * scale;
+    box.size.y = (glyph.plane_top - glyph.plane_bottom) * scale;
+
+    auto* command = reinterpret_cast<alia_draw_primitive_command*>(
+        alia_draw_command_alloc(
+            ctx,
+            z_index,
+            ALIA_PRIMITIVE_MATERIAL_ID,
+            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command))));
+
+    command->box = box;
+    command->primitive_type = ALIA_PRIMITIVE_MSDF_GLYPH;
+    command->color = color;
+    std::memcpy(
+        command->payload.msdf_glyph.uv_rect,
+        cached_glyph.uv_rect,
+        sizeof(cached_glyph.uv_rect));
+    command->payload.msdf_glyph.sdf_scale = sdf_scale;
+}
+
 float
 get_kerning(msdf_font_data const& font, uint32_t left, uint32_t right)
 {
@@ -196,6 +238,18 @@ alia_msdf_measure_text_width(
     return width;
 }
 
+extern "C" float
+alia_msdf_measure_codepoint_width(
+    alia_msdf_text_engine* ctx,
+    size_t font_index,
+    uint32_t codepoint,
+    float font_size)
+{
+    msdf_font_data const& font = ctx->fonts[font_index];
+    alia_msdf_glyph const& glyph = require_glyph(font, codepoint);
+    return glyph.advance * font_size;
+}
+
 extern "C" alia_msdf_break_result
 alia_msdf_break_text(
     alia_msdf_text_engine* ctx,
@@ -274,42 +328,38 @@ alia_msdf_draw_text(
             continue;
 
         uint32_t unicode = static_cast<uint32_t>(c);
-        alia_msdf_glyph const& glyph
-            = font.glyphs.at(static_cast<int>(unicode));
-        assert(glyph.unicode == unicode);
-
-        auto const& cached_glyph
-            = font.glyph_cache.at(static_cast<int>(unicode));
-
-        float const plane_left = glyph.plane_left;
-        float const plane_bottom = glyph.plane_bottom;
-        float const plane_right = glyph.plane_right;
-        float const plane_top = glyph.plane_top;
-
-        alia_box box;
-        box.min.x = cursor.x + plane_left * scale;
-        box.min.y = cursor.y - plane_top * scale;
-        box.size.x = (plane_right - plane_left) * scale;
-        box.size.y = (plane_top - plane_bottom) * scale;
-
-        auto* command = reinterpret_cast<alia_draw_primitive_command*>(
-            alia_draw_command_alloc(
-                ctx,
-                z_index,
-                ALIA_PRIMITIVE_MATERIAL_ID,
-                ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command))));
-
-        command->box = box;
-        command->primitive_type = ALIA_PRIMITIVE_MSDF_GLYPH;
-        command->color = color;
-        std::memcpy(
-            command->payload.msdf_glyph.uv_rect,
-            cached_glyph.uv_rect,
-            sizeof(cached_glyph.uv_rect));
-        command->payload.msdf_glyph.sdf_scale = sdf_scale;
+        alia_msdf_glyph const& glyph = require_glyph(font, unicode);
+        auto const& cached_glyph = font.glyph_cache.at(static_cast<int>(unicode));
+        emit_glyph_draw_command(
+            ctx, z_index, glyph, cached_glyph, sdf_scale, cursor, scale, color);
 
         cursor.x += glyph.advance * scale;
         if (i + 1 < length)
             cursor.x += get_kerning(font, c, text[i + 1]) * scale;
     }
+}
+
+extern "C" void
+alia_msdf_draw_codepoint(
+    alia_msdf_text_engine* fonts,
+    alia_context* ctx,
+    alia_z_index z_index,
+    uint32_t codepoint,
+    float scale,
+    alia_vec2f position,
+    alia_srgba8 color,
+    size_t font_index)
+{
+    msdf_font_data& font = fonts->fonts[font_index];
+    alia_msdf_atlas_description const& atlas = fonts->atlas;
+    alia_msdf_glyph const& glyph = require_glyph(font, codepoint);
+    auto const& cached_glyph = font.glyph_cache.at(static_cast<int>(codepoint));
+
+    alia_vec2f cursor = alia_vec2f_add(
+        alia_vec2f_add(position, ctx->geometry->offset),
+        alia_vec2f{0, font.metrics.ascender * scale});
+    float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
+
+    emit_glyph_draw_command(
+        ctx, z_index, glyph, cached_glyph, sdf_scale, cursor, scale, color);
 }

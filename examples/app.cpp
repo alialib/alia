@@ -75,6 +75,7 @@ static alia_palette local_palette;
 static alia_switch_style local_switch_style;
 static alia_slider_style local_slider_style;
 static alia_radio_style local_radio_style;
+static alia_checkbox_style local_checkbox_style;
 static alia_node_expander_style local_node_expander_style;
 static bool local_styles_initialized = false;
 static float demo_hue = 0.55f;
@@ -207,6 +208,33 @@ do_radio_with_text(
         row(ctx, ALIGN_LEFT, [&]() {
             alia_element_id id
                 = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
+            do_text(
+                ctx,
+                2,
+                alia_srgba8_from_srgb8(
+                    value->flags & ALIA_SIGNAL_WRITABLE
+                        ? ctx.palette->foundation.text.base
+                        : ctx.palette->foundation.text.weaker_2),
+                alia_px(&ctx, 12),
+                text,
+                CENTER_Y);
+            alia_element_box_region(
+                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
+        });
+    });
+}
+
+void
+do_checkbox_with_text(
+    context& ctx,
+    alia_bool_signal* value,
+    char const* text,
+    alia_checkbox_style const* style)
+{
+    placement_hook(ctx, [&](auto const& placement) {
+        row(ctx, ALIGN_LEFT, [&]() {
+            alia_element_id id
+                = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, style);
             do_text(
                 ctx,
                 2,
@@ -422,6 +450,64 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
 }
 
 void
+do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
+{
+    do_heading(ctx, "CHECKBOXES");
+
+    {
+        static bool setting_one = false;
+        alia_bool_signal checkbox_signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = setting_one,
+        };
+        do_checkbox_with_text(
+            ctx, &checkbox_signal, "Initially Unchecked", style);
+        if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            setting_one = checkbox_signal.value;
+            abort_pass(ctx);
+        }
+    }
+
+    {
+        static bool setting_two = true;
+        alia_bool_signal checkbox_signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = setting_two,
+        };
+        do_checkbox_with_text(
+            ctx, &checkbox_signal, "Initially Checked", style);
+        if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            setting_two = checkbox_signal.value;
+            abort_pass(ctx);
+        }
+    }
+
+    {
+        static bool setting_disabled = false;
+        alia_bool_signal checkbox_signal{
+            .flags = ALIA_SIGNAL_READABLE,
+            .value = setting_disabled,
+        };
+        do_checkbox_with_text(
+            ctx, &checkbox_signal, "Disabled/Unchecked", style);
+        (void) setting_disabled;
+    }
+
+    {
+        static bool setting_disabled = true;
+        alia_bool_signal checkbox_signal{
+            .flags = ALIA_SIGNAL_READABLE,
+            .value = setting_disabled,
+        };
+        do_checkbox_with_text(
+            ctx, &checkbox_signal, "Disabled/Checked", style);
+        (void) setting_disabled;
+    }
+}
+
+void
 do_node_expander_demo(context& ctx, alia_node_expander_style const* style)
 {
     do_heading(ctx, "NODE EXPANDER");
@@ -507,6 +593,8 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_radio_demo(ctx, nullptr); //&local_radio_style);
         do_heading(ctx, "");
+        do_checkbox_demo(ctx, nullptr); //&local_checkbox_style);
+        do_heading(ctx, "");
         do_slider_demo(ctx, nullptr); //&local_slider_style);
         do_heading(ctx, "");
         do_collapsible_demo(ctx);
@@ -548,6 +636,7 @@ the_demo(context& ctx)
             local_switch_style = *alia_default_switch_style();
             local_slider_style = *alia_default_slider_style();
             local_radio_style = *alia_default_radio_style();
+            local_checkbox_style = *alia_default_checkbox_style();
             local_node_expander_style = *alia_default_node_expander_style();
             local_styles_initialized = true;
         }
@@ -999,6 +1088,7 @@ main()
         &the_renderer, atlas_rgb.data(), alia_atlas_width, alia_atlas_height);
     the_msdf_text_engine = alia_msdf_create_text_engine(
         alia_font_descriptions, alia_font_count);
+    the_system->msdf_text_engine = the_msdf_text_engine;
 
     while ((err = glGetError()) != GL_NO_ERROR)
         printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);

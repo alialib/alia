@@ -30,6 +30,7 @@ add_library(alia_core STATIC
     src/alia/ui/layout/system.cpp
     src/alia/ui/layout/utilities.cpp
     src/alia/ui/library/radio.cpp
+    src/alia/ui/library/checkbox.cpp
     src/alia/ui/library/slider.cpp
     src/alia/ui/library/switch.cpp
     src/alia/ui/library/node_expander.cpp

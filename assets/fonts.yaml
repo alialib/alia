@@ -7,12 +7,18 @@ fonts:
   - id: roboto_bold
     url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf"
 
-# Icon font example (Material Symbols): list `icons` and fetch the matching
-# `.codepoints` file from google/material-design-icons.
-#  - id: MaterialSymbolsOutlined
-#    url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
-#    codepoints_url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints"
-#    icons:
-#      - search
-#      - home
-#      - settings
+  - id: material_symbols_outlined
+    url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
+    codepoints_url: "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints"
+    # Optional variable-font axis coordinates.
+    # Common Material Symbols axes: FILL (0..1), GRAD, opsz, wght.
+    axes:
+      FILL: 0
+      GRAD: 200
+      opsz: 24
+      wght: 700
+    icons:
+      - search
+      - home
+      - settings
+      - check
