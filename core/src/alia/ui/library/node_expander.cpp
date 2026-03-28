@@ -30,8 +30,6 @@ struct node_expander_data
 };
 
 static alia_node_expander_style const default_node_expander_style = {
-    // Use structural base color for the triangle glyph and a slightly weaker
-    // variant for disabled state.
     .triangle = alia_palette_color_make(
         alia_palette_index_foundation_ramp(
             ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
@@ -40,7 +38,7 @@ static alia_node_expander_style const default_node_expander_style = {
     .disabled_triangle = alia_palette_color_make(
         alia_palette_index_foundation_ramp(
             ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+            ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
         0xff),
     .highlight = alia_palette_color_make(
         alia_palette_index_swatch(
@@ -52,7 +50,7 @@ static alia_node_expander_style const default_node_expander_style = {
 
     .triangle_side = 24.f,
 
-    // Legacy triangle "right" -> "down" rotation.
+    // triangle "right" -> "down" rotation
     .collapsed_rotation_degrees = 90.f,
     .expanded_rotation_degrees = 180.f,
 

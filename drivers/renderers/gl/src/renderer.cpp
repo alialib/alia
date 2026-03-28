@@ -149,9 +149,16 @@ vec2 rotate_point_clockwise(vec2 p, float radians)
     return vec2(cs * p.x - sn * p.y, sn * p.x + cs * p.y);
 }
 
-float cross2(vec2 u, vec2 v)
+float sd_equilateral_triangle(vec2 p, float r)
 {
-    return u.x * v.y - u.y * v.x;
+    // adapted from: https://iquilezles.org/articles/distfunctions2d/
+    const float k = sqrt(3.0);
+    p.x = abs(p.x) - r;
+    p.y = r / k - p.y;
+    if (p.x + k * p.y > 0.0)
+        p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+    p.x -= clamp(p.x, -2.0 * r, 0.0);
+    return -length(p) * sign(p.y);
 }
 
 float sd_squircle(vec2 p, float R)
@@ -161,58 +168,22 @@ float sd_squircle(vec2 p, float R)
     return sqrt(sqrt(x2 * x2 + y2 * y2)) - R;
 }
 
-float sd_segment(vec2 p, vec2 a, vec2 b)
-{
-    vec2 pa = p - a;
-    vec2 ba = b - a;
-    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h);
-}
-
-float sd_equilateral_triangle(vec2 p, float R, float rotation_radians)
-{
-    // Base (unrotated) triangle with circumradius R:
-    // - one vertex at (0, -R)
-    // - other two at (+sqrt(3)/2*R, +R/2) and (-sqrt(3)/2*R, +R/2)
-    float k = sqrt(3.0);
-    vec2 a = vec2(0.0, -R);
-    vec2 b = vec2(k * 0.5 * R, 0.5 * R);
-    vec2 c = vec2(-k * 0.5 * R, 0.5 * R);
-
-    // Rotate the triangle (not the point) to match the CPU-provided convention.
-    a = rotate_point_clockwise(a, rotation_radians);
-    b = rotate_point_clockwise(b, rotation_radians);
-    c = rotate_point_clockwise(c, rotation_radians);
-
-    float d = min(
-        sd_segment(p, a, b),
-        min(sd_segment(p, b, c), sd_segment(p, c, a)));
-
-    // Sign: point-in-triangle test using edge cross products.
-    float c1 = cross2(b - a, p - a);
-    float c2 = cross2(c - b, p - b);
-    float c3 = cross2(a - c, p - c);
-    float cmin = min(c1, min(c2, c3));
-    float cmax = max(c1, max(c2, c3));
-    float sign = (cmin >= 0.0 || cmax <= 0.0) ? -1.0 : 1.0;
-    return d * sign;
-}
-
 vec3 linear_to_srgb(vec3 linear) {
     vec3 s1 = sqrt(linear);
     vec3 s2 = sqrt(s1);
     vec3 s3 = sqrt(s2);
-    return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 - 0.0225411470 * linear;
+    return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 -
+        0.0225411470 * linear;
 }
 
 vec4 apply_aa_and_postprocess(vec4 color, float aa_alpha) {
-#ifdef EMSCRIPTEN
+  #ifdef EMSCRIPTEN
     vec3 unpremultiplied = color.a > 0.0 ? color.rgb / color.a : vec3(0.0);
     float alpha = color.a * aa_alpha;
     return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
-#else
+  #else
     return color * aa_alpha;
-#endif
+  #endif
 }
 
 vec4 sample_primitive(vec2 p)
@@ -241,9 +212,8 @@ vec4 sample_primitive(vec2 p)
         case 1:
         {
             float R = min(v_rect_half_size.x, v_rect_half_size.y);
-            float triangle_rotation_radians = v_data_a.x;
             float d = sd_equilateral_triangle(
-                local_p, R, triangle_rotation_radians);
+                rotate_point_clockwise(local_p, -v_data_a.x), R);
             float alpha = smoothstep(aa, -aa, d);
             return apply_aa_and_postprocess(v_color, alpha);
         }
