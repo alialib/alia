@@ -202,13 +202,7 @@ render_checkbox(
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(160)};
-    float const checkmark_opacity = alia_smooth_float(
-        ctx,
-        &transition,
-        ALIA_BITREF(data.bits, state_smoothing),
-        checked,
-        1.f,
-        0.f);
+    float checkmark_opacity = checked ? 1.f : 0.f;
 
     alia_srgba8 checkmark_color = alia_palette_color_resolve(
         p, disabled ? style->disabled_checkmark : style->checkmark);

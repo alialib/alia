@@ -259,6 +259,15 @@ vec4 sample_primitive(vec2 p)
             vec4 mix_color = mix(v_color, border_color, alpha_inner);
             return apply_aa_and_postprocess(mix_color, alpha_outer);
         }
+        // ALIA_PRIMITIVE_MSDF_GLYPH
+        case 3:
+        {
+            vec3 msd = texture(u_msdf, v_uv_msdf).rgb;
+            float sd = median_msdf(msd) - 0.5;
+            float screen_px_distance = v_msdf_sdf_scale * sd;
+            float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
+            return apply_aa_and_postprocess(v_color, opacity);
+        }
         default:
             return vec4(0.0);
     }
@@ -266,20 +275,7 @@ vec4 sample_primitive(vec2 p)
 
 void main()
 {
-    if (v_primitive_type == 3) {
-        vec3 msd = texture(u_msdf, v_uv_msdf).rgb;
-        float sd = median_msdf(msd) - 0.5;
-        float screen_px_distance = v_msdf_sdf_scale * sd;
-        float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-        #ifdef EMSCRIPTEN
-        vec3 unpremultiplied = v_color.a > 0.0 ? v_color.rgb / v_color.a : vec3(0.0);
-        frag_color = vec4(linear_to_srgb(unpremultiplied) * opacity, opacity);
-        #else
-        frag_color = vec4(v_color.rgb * opacity, v_color.a * opacity);
-        #endif
-    } else {
-        frag_color = sample_primitive(v_pos);
-    }
+    frag_color = sample_primitive(v_pos);
 }
 )";
 
@@ -468,7 +464,10 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
 
 void
 gl_renderer_upload_msdf_atlas(
-    gl_renderer* renderer, unsigned char const* atlas_rgb, int width, int height)
+    gl_renderer* renderer,
+    unsigned char const* atlas_rgb,
+    int width,
+    int height)
 {
     if (renderer->msdf_atlas_texture != 0)
     {
