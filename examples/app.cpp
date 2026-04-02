@@ -70,6 +70,13 @@ alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
+struct glfw_window_impl
+{
+    bool is_fullscreen = false;
+    alia_vec2i windowed_position, windowed_size;
+};
+glfw_window_impl the_window_impl;
+
 // Local palette and styles for the content pane (driven by controls).
 static alia_palette local_palette;
 static alia_switch_style local_switch_style;
@@ -802,6 +809,74 @@ scroll_callback(GLFWwindow* window, double x, double y)
 }
 
 void
+key_event_callback(
+    GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
+{
+    auto& system = the_system;
+    auto& impl = the_window_impl;
+    if (action == GLFW_PRESS || action == GLFW_REPEAT)
+    {
+        switch (key)
+        {
+            // TODO: Move all this out of here.
+            // case GLFW_KEY_TAB:
+            //     if (mods == GLFW_MOD_SHIFT)
+            //         regress_focus(system);
+            //     else if (mods == 0)
+            //         advance_focus(system);
+            //     break;
+            case GLFW_KEY_EQUAL: {
+                // if (mods == GLFW_MOD_CONTROL)
+                demo_scale *= 1.1f;
+                break;
+            }
+            case GLFW_KEY_MINUS: {
+                // if (mods == GLFW_MOD_CONTROL)
+                demo_scale /= 1.1f;
+                break;
+            }
+            case GLFW_KEY_F11: {
+                bool is_fullscreen = impl.is_fullscreen;
+                if (is_fullscreen)
+                {
+                    glfwSetWindowMonitor(
+                        window,
+                        NULL,
+                        impl.windowed_position.x,
+                        impl.windowed_position.y,
+                        impl.windowed_size.x,
+                        impl.windowed_size.y,
+                        GLFW_DONT_CARE);
+                }
+                else
+                {
+                    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                    GLFWvidmode const* mode = glfwGetVideoMode(monitor);
+                    glfwGetWindowPos(
+                        window,
+                        &impl.windowed_position.x,
+                        &impl.windowed_position.y);
+                    glfwGetWindowSize(
+                        window, &impl.windowed_size.x, &impl.windowed_size.y);
+                    glfwSetWindowMonitor(
+                        window, monitor, 0, 0, mode->width, mode->height, 0);
+                }
+                impl.is_fullscreen = !is_fullscreen;
+                break;
+            }
+            default:
+                alia_ui_process_key_press(
+                    system, alia_key_code_t(key), alia_kmods_t(mods));
+        }
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        alia_ui_process_key_release(
+            system, alia_key_code_t(key), alia_kmods_t(mods));
+    }
+}
+
+void
 update()
 {
     static std::chrono::time_point<std::chrono::high_resolution_clock>
@@ -1030,6 +1105,7 @@ main()
     glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
     glfwSetCursorPosCallback(the_window, cursor_position_callback);
     glfwSetScrollCallback(the_window, scroll_callback);
+    glfwSetKeyCallback(the_window, key_event_callback);
 
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);

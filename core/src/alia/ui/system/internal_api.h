@@ -29,21 +29,6 @@ get_time_until_next_update(ui_system& system, millisecond_count now);
 void
 render_ui(ui_system& system);
 
-// The following are for sending keyboard events to the UI.
-bool
-process_text_input(
-    ui_system& ui, millisecond_count time, utf8_string const& text);
-bool
-process_key_press(
-    ui_system& ui, millisecond_count time, key_event_info const& info);
-bool
-process_key_release(
-    ui_system& ui, millisecond_count time, key_event_info const& info);
-void
-process_focus_loss(ui_system& ui, millisecond_count time);
-void
-process_focus_gain(ui_system& ui, millisecond_count time);
-
 #endif
 
 // Move the keyboard focus forward and backwards through the focus order.

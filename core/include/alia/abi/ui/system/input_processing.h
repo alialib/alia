@@ -55,16 +55,34 @@ bool
 alia_ui_process_key_release(
     alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods);
 
-// process_key_press calls both of the following.
-// process_focused_key_press will only pass the key to the widget with the
+// `process_key_press` calls both of the following.
+// `process_focused_key_press` will only pass the key to the widget with the
 // keyboard focus (if any).
-// process_background_key_press will pass it to any widget that's listening.
+// `process_background_key_press` will pass it to any widget that's listening.
 bool
 alia_ui_process_focused_key_press(
     alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods);
 bool
 alia_ui_process_background_key_press(
     alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods);
+
+bool
+alia_ui_process_focused_key_release(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods);
+bool
+alia_ui_process_background_key_release(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods);
+
+// TODO: Implement text input.
+// bool
+// alia_ui_process_text_input(
+//     alia_ui_system* ui, alia_utf8_string const& text);
+
+void
+alia_ui_process_focus_loss(alia_ui_system* ui);
+
+void
+alia_ui_process_focus_gain(alia_ui_system* ui);
 
 ALIA_EXTERN_C_END
 

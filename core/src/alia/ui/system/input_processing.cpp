@@ -190,55 +190,78 @@ alia_ui_set_focus(alia_ui_system* ui, alia_element_id widget)
     // }
 }
 
-#if 0
-
 bool
 alia_ui_process_focused_key_press(
     alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
-    dispatch_targeted_event(*ui, event, ui->input.widget_with_focus);
-    if (event.key_press.acknowledged)
+    alia_event event = alia_make_key_press_event(
+        {.code = key, .mods = mods, .acknowledged = false});
+    dispatch_targeted_event(*ui, event, ui->input.element_with_focus);
+    bool acknowledged = as_key_press_event(event).acknowledged;
+    // TODO: Figure out the semantics of this.
+    if (acknowledged)
         refresh_system(*ui);
-    return event.key_press.acknowledged;
+    return acknowledged;
 }
 
 bool
 alia_ui_process_background_key_press(
     alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    alia_event event = alia_make_key_press_event({.mods = mods, .key = key});
-    dispatch_event(*ui, event, BACKGROUND_KEY_PRESS_EVENT);
-    if (event.acknowledged)
+    alia_event event = alia_make_background_key_press_event(
+        {.code = key, .mods = mods, .acknowledged = false});
+    dispatch_event(*ui, event);
+    bool acknowledged = as_background_key_press_event(event).acknowledged;
+    // TODO: Figure out the semantics of this.
+    if (acknowledged)
         refresh_system(*ui);
-    return event.acknowledged;
+    return acknowledged;
 }
 
 bool
-alia_ui_process_focused_key_release(alia_ui_system* ui, modded_key info)
+alia_ui_process_focused_key_release(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
-    key_event event{{}, info};
-    dispatch_targeted_event(
-        *ui, event, ui->input.widget_with_focus, KEY_RELEASE_EVENT);
-    if (event.acknowledged)
+    alia_event event = alia_make_key_release_event(
+        {.code = key, .mods = mods, .acknowledged = false});
+    dispatch_targeted_event(*ui, event, ui->input.element_with_focus);
+    bool acknowledged = as_key_release_event(event).acknowledged;
+    // TODO: Figure out the semantics of this.
+    if (acknowledged)
         refresh_system(*ui);
-    return event.acknowledged;
+    return acknowledged;
 }
+
 bool
-alia_ui_process_key_press(alia_ui_system* ui, modded_key info)
+alia_ui_process_background_key_release(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+{
+    alia_event event = alia_make_background_key_release_event(
+        {.code = key, .mods = mods, .acknowledged = false});
+    dispatch_event(*ui, event);
+    bool acknowledged = as_background_key_release_event(event).acknowledged;
+    // TODO: Figure out the semantics of this.
+    if (acknowledged)
+        refresh_system(*ui);
+    return acknowledged;
+}
+
+bool
+alia_ui_process_key_press(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
     ui->input.keyboard_interaction = true;
-    return process_focused_key_press(ui, info)
-        || process_background_key_press(ui, info);
+    return alia_ui_process_focused_key_press(ui, key, mods)
+        || alia_ui_process_background_key_press(ui, key, mods);
 }
 
 bool
-alia_ui_process_key_release(alia_ui_system* ui, modded_key info)
+alia_ui_process_key_release(
+    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
 {
     ui->input.keyboard_interaction = true;
-    return process_focused_key_release(ui, info);
+    return alia_ui_process_focused_key_release(ui, key, mods)
+        || alia_ui_process_background_key_release(ui, key, mods);
 }
-
-#endif
 
 } // extern "C"
