@@ -189,7 +189,7 @@ do_heading(context& ctx, char const* text)
         ctx,
         2,
         alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2),
-        alia_px(&ctx, 14),
+        18.f,
         text,
         NO_FLAGS,
         1);
@@ -202,7 +202,7 @@ do_subheading(context& ctx, char const* text)
         ctx,
         2,
         alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1),
-        alia_px(&ctx, 12),
+        14.f,
         text,
         NO_FLAGS,
         1);
@@ -228,7 +228,7 @@ do_radio_with_text(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base
                         : ctx.palette->foundation.text.weaker_2),
-                alia_px(&ctx, 12),
+                14.f,
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -255,7 +255,7 @@ do_checkbox_with_text(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base
                         : ctx.palette->foundation.text.weaker_2),
-                alia_px(&ctx, 12),
+                14.f,
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -284,7 +284,7 @@ do_switch_with_text(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base
                         : ctx.palette->foundation.text.weaker_2),
-                alia_px(&ctx, 12),
+                14.f,
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -313,7 +313,7 @@ do_node_expander_with_text(
                     value->flags & ALIA_SIGNAL_WRITABLE
                         ? ctx.palette->foundation.text.base
                         : ctx.palette->foundation.text.weaker_2),
-                alia_px(&ctx, 12),
+                14.f,
                 text,
                 CENTER_Y);
             alia_element_box_region(
@@ -359,7 +359,7 @@ do_controls(context& ctx)
     alia_do_slider_f(
         &ctx,
         &demo_node_expander_triangle_side,
-        12.f,
+        14.f,
         36.f,
         0.5f,
         0,
@@ -590,7 +590,7 @@ do_collapsible_demo(context& ctx)
                 ctx,
                 2,
                 alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                alia_px(&ctx, 12),
+                14.f,
                 lorem_ipsum);
         });
     });
@@ -618,13 +618,13 @@ do_content(context& ctx)
                 ctx,
                 2,
                 alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                alia_px(&ctx, 12),
+                14.f,
                 lorem_ipsum);
             do_text(
                 ctx,
                 2,
                 alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                alia_px(&ctx, 12),
+                14.f,
                 lorem_ipsum,
                 NO_FLAGS,
                 1);
@@ -632,7 +632,7 @@ do_content(context& ctx)
                 ctx,
                 2,
                 alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                alia_px(&ctx, 12),
+                14.f,
                 lorem_ipsum);
         });
     });

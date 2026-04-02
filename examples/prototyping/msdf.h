@@ -278,6 +278,8 @@ alia_layout_node_vtable text_layout_vtable
        measure_text_wrapped_vertical,
        assign_text_wrapped_boxes};
 
+// `scale` is logical font size in design pixels; `do_text` applies
+// ctx.geometry->scale once.
 bool
 do_text(
     context& ctx,
