@@ -1094,7 +1094,9 @@ content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
     alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
     // TODO: Support 2D DPI?
-    // TODO: Flag the window as needing a render.
+    // TODO: See if this is still needed once system-level control flow and
+    // event scheduling is actually worked out.
+    update();
 }
 
 void
