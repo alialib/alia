@@ -66,20 +66,20 @@ flow(context& ctx, layout_flag_set flags, Content&& content)
 
 template<class Content>
 void
-hyperflow(context& ctx, Content&& content)
+block_flow(context& ctx, Content&& content)
 {
-    alia_layout_hyperflow_begin(&ctx, 0);
+    alia_layout_block_flow_begin(&ctx, 0);
     std::forward<Content>(content)();
-    alia_layout_hyperflow_end(&ctx);
+    alia_layout_block_flow_end(&ctx);
 }
 
 template<class Content>
 void
-hyperflow(context& ctx, layout_flag_set flags, Content&& content)
+block_flow(context& ctx, layout_flag_set flags, Content&& content)
 {
-    alia_layout_hyperflow_begin(&ctx, raw_code(flags));
+    alia_layout_block_flow_begin(&ctx, raw_code(flags));
     std::forward<Content>(content)();
-    alia_layout_hyperflow_end(&ctx);
+    alia_layout_block_flow_end(&ctx);
 }
 
 template<class Content>

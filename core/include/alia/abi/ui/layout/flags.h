@@ -40,7 +40,7 @@ alia_layout_flags_t const ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12;
     /* combined alignment flags */                                            \
     X(0b0000000001001001, CENTER)                                             \
     X(0b0000000100100100, FILL)                                               \
-    /* justification flags - Apply to flow and hyperflow line layouts. */       \
+    /* justification flags - Apply to flow and block_flow line layouts. */    \
     X(0b0000111000000000, JUSTIFY_MASK)                                       \
     X(0b0000000000000000, JUSTIFY_START)                                      \
     X(0b0000001000000000, JUSTIFY_END)                                        \

@@ -613,7 +613,7 @@ do_content(context& ctx)
         do_collapsible_demo(ctx);
         do_heading(ctx, "");
         do_heading(ctx, "HYPERFLOW");
-        hyperflow_demo(ctx);
+        block_flow_demo(ctx);
         do_heading(ctx, "");
         do_heading(ctx, "MIXED FLOW");
         mixed_flow_demo(ctx);

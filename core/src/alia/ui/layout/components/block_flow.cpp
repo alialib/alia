@@ -4,7 +4,7 @@
 
 namespace alia {
 
-using hyperflow_layout_node = alia_layout_container;
+using block_flow_layout_node = alia_layout_container;
 
 struct child_requirements
 {
@@ -12,14 +12,14 @@ struct child_requirements
     alia_vertical_requirements y;
 };
 
-struct hyperflow_scratch
+struct block_flow_scratch
 {
     std::uint32_t child_count = 0;
     float total_height = 0, ascent = 0;
 };
 
 static void
-hyperflow_justify_line(
+block_flow_justify_line(
     alia_layout_flags_t flags,
     float line_width,
     float sum_widths,
@@ -77,13 +77,13 @@ hyperflow_justify_line(
 }
 
 alia_horizontal_requirements
-hyperflow_measure_horizontal(
+block_flow_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
-    auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = claim_scratch<hyperflow_scratch>(ctx->scratch);
+    auto& block_flow = *reinterpret_cast<block_flow_layout_node*>(node);
+    auto& scratch = claim_scratch<block_flow_scratch>(ctx->scratch);
 
-    for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
+    for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         ++scratch.child_count;
@@ -93,7 +93,7 @@ hyperflow_measure_horizontal(
         ctx->scratch, scratch.child_count);
 
     float max_child_width = 0;
-    for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
+    for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_x = alia_measure_horizontal(ctx, child);
@@ -104,11 +104,11 @@ hyperflow_measure_horizontal(
 
     return alia_horizontal_requirements{
         .min_size = max_child_width,
-        .growth_factor = alia_resolve_growth_factor(hyperflow.flags)};
+        .growth_factor = alia_resolve_growth_factor(block_flow.flags)};
 }
 
 void
-hyperflow_assign_widths(
+block_flow_assign_widths(
     alia_placement_context* ctx,
     alia_main_axis_index main_axis,
     alia_layout_node* node,
@@ -118,14 +118,14 @@ hyperflow_assign_widths(
 }
 
 alia_vertical_requirements
-hyperflow_measure_vertical(
+block_flow_measure_vertical(
     alia_measurement_context* ctx,
     alia_main_axis_index main_axis,
     alia_layout_node* node,
     float assigned_width)
 {
-    auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = use_scratch<hyperflow_scratch>(ctx->scratch);
+    auto& block_flow = *reinterpret_cast<block_flow_layout_node*>(node);
+    auto& scratch = use_scratch<block_flow_scratch>(ctx->scratch);
 
     auto* child_requirements = arena_alloc_array<alia::child_requirements>(
         ctx->scratch, scratch.child_count);
@@ -134,7 +134,7 @@ hyperflow_measure_vertical(
     float overall_height = 0, overall_ascent = 0;
     float current_x_offset = 0;
     bool wrapping_has_occurred = false;
-    for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
+    for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling, ++child_requirements)
     {
         auto const child_y = alia_measure_vertical(
@@ -173,25 +173,26 @@ hyperflow_measure_vertical(
 
     return alia_vertical_requirements{
         .min_size = overall_height,
-        .growth_factor = alia_resolve_growth_factor(hyperflow.flags),
-        .ascent = (hyperflow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
+        .growth_factor = alia_resolve_growth_factor(block_flow.flags),
+        .ascent = (block_flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
                     ? overall_ascent
                     : 0.0f,
-        .descent = (hyperflow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
-                     ? overall_height - overall_ascent
-                     : 0.0f};
+        .descent
+        = (block_flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
+            ? overall_height - overall_ascent
+            : 0.0f};
 }
 
 void
-hyperflow_assign_boxes(
+block_flow_assign_boxes(
     alia_placement_context* ctx,
     alia_main_axis_index main_axis,
     alia_layout_node* node,
     alia_box box,
     float baseline)
 {
-    auto& hyperflow = *reinterpret_cast<hyperflow_layout_node*>(node);
-    auto& scratch = use_scratch<hyperflow_scratch>(ctx->scratch);
+    auto& block_flow = *reinterpret_cast<block_flow_layout_node*>(node);
+    auto& scratch = use_scratch<block_flow_scratch>(ctx->scratch);
 
     auto* child_requirements = arena_alloc_array<alia::child_requirements>(
         ctx->scratch, scratch.child_count);
@@ -200,7 +201,7 @@ hyperflow_assign_boxes(
         return;
 
     auto const placement = alia_resolve_container_y(
-        alia_fold_in_cross_axis_flags(hyperflow.flags, main_axis),
+        alia_fold_in_cross_axis_flags(block_flow.flags, main_axis),
         box.size.y,
         baseline,
         scratch.total_height,
@@ -209,9 +210,9 @@ hyperflow_assign_boxes(
     float line_height = 0, line_ascent = 0, line_descent = 0;
 
     float current_x = 0, current_y = box.min.y + placement.offset;
-    alia_layout_node* line_start_child = hyperflow.first_child;
+    alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
-    for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
+    for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& requirements = child_requirements[child_index];
@@ -220,8 +221,8 @@ hyperflow_assign_boxes(
         {
             int const n = child_index - line_start_index;
             float leading, gap;
-            hyperflow_justify_line(
-                hyperflow.flags, box.size.x, current_x, n, &leading, &gap);
+            block_flow_justify_line(
+                block_flow.flags, box.size.x, current_x, n, &leading, &gap);
 
             float x = box.min.x + leading;
             int i = line_start_index;
@@ -238,7 +239,7 @@ hyperflow_assign_boxes(
                     {.min = {x, current_y},
                      .size = {child_x.min_size, line_height}},
                     alia_resolve_baseline(
-                        hyperflow.flags,
+                        block_flow.flags,
                         line_height,
                         line_ascent,
                         line_descent));
@@ -266,8 +267,8 @@ hyperflow_assign_boxes(
     {
         int const n = static_cast<int>(scratch.child_count) - line_start_index;
         float leading, gap;
-        hyperflow_justify_line(
-            hyperflow.flags, box.size.x, current_x, n, &leading, &gap);
+        block_flow_justify_line(
+            block_flow.flags, box.size.x, current_x, n, &leading, &gap);
 
         float x = box.min.x + leading;
         int i = line_start_index;
@@ -284,18 +285,18 @@ hyperflow_assign_boxes(
                 {.min = {x, current_y},
                  .size = {child_x.min_size, line_height}},
                 alia_resolve_baseline(
-                    hyperflow.flags, line_height, line_ascent, line_descent));
+                    block_flow.flags, line_height, line_ascent, line_descent));
             x += child_x.min_size + gap;
         }
     }
 }
 
-alia_layout_node_vtable hyperflow_vtable = {
-    hyperflow_measure_horizontal,
-    hyperflow_assign_widths,
-    hyperflow_measure_vertical,
-    hyperflow_assign_boxes,
-    hyperflow_measure_horizontal,
+alia_layout_node_vtable block_flow_vtable = {
+    block_flow_measure_horizontal,
+    block_flow_assign_widths,
+    block_flow_measure_vertical,
+    block_flow_assign_boxes,
+    block_flow_measure_horizontal,
     alia_default_measure_wrapped_vertical,
     nullptr,
 };
@@ -305,13 +306,13 @@ alia_layout_node_vtable hyperflow_vtable = {
 extern "C" {
 
 void
-alia_layout_hyperflow_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_block_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
 {
-    alia_layout_container_simple_begin(ctx, &alia::hyperflow_vtable, flags);
+    alia_layout_container_simple_begin(ctx, &alia::block_flow_vtable, flags);
 }
 
 void
-alia_layout_hyperflow_end(alia_context* ctx)
+alia_layout_block_flow_end(alia_context* ctx)
 {
     alia_layout_container_simple_end(ctx);
 }

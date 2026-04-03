@@ -192,10 +192,10 @@ mixed_flow_demo(alia_context& ctx)
 }
 
 void
-hyperflow_demo(alia_context& ctx)
+block_flow_demo(alia_context& ctx)
 {
     with_spacing(ctx, 10, [&] {
-        hyperflow(ctx, JUSTIFY_END, [&]() {
+        block_flow(ctx, JUSTIFY_END, [&]() {
             for (int i = 0; i < 20; ++i)
             {
                 float x = 0.0f;
@@ -223,7 +223,7 @@ void
 layout_demo_flow(context& ctx)
 {
     float x = 0.0f;
-    hyperflow(ctx, [&]() {
+    block_flow(ctx, [&]() {
         for (int i = 0; i < 600; ++i)
         {
             float intensity = ((i / 4) % 3) * 0.01f;
@@ -510,7 +510,7 @@ color_transition(context& ctx, alia_oklch start, alia_oklch end)
 void
 color_demo(context& ctx)
 {
-    hyperflow(ctx, [&]() {
+    block_flow(ctx, [&]() {
         alia_oklch oklch = {.l = 0.7f, .c = 0.2f, .h = 0.0f};
         for (int i = 0; i < 101; ++i)
         {
