@@ -1078,7 +1078,7 @@ void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     alia_ui_surface_set_size(the_system, {width, height});
-    update();
+    // TODO: Flag the window as needing a render.
 }
 
 void
@@ -1086,7 +1086,7 @@ content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
     alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
     // TODO: Support 2D DPI?
-    update();
+    // TODO: Flag the window as needing a render.
 }
 
 void
