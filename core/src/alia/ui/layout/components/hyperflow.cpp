@@ -18,6 +18,64 @@ struct hyperflow_scratch
     float total_height = 0, ascent = 0;
 };
 
+static void
+hyperflow_justify_line(
+    alia_layout_flags_t flags,
+    float line_width,
+    float sum_widths,
+    int n,
+    float* out_leading,
+    float* out_gap)
+{
+    float const extra = line_width - sum_widths;
+    if (extra <= 0.f || n <= 0)
+    {
+        *out_leading = 0.f;
+        *out_gap = 0.f;
+        return;
+    }
+    switch (flags & ALIA_JUSTIFY_MASK)
+    {
+        case ALIA_JUSTIFY_START:
+        default:
+            *out_leading = 0.f;
+            *out_gap = 0.f;
+            break;
+        case ALIA_JUSTIFY_END:
+            *out_leading = extra;
+            *out_gap = 0.f;
+            break;
+        case ALIA_JUSTIFY_CENTER:
+            *out_leading = extra * 0.5f;
+            *out_gap = 0.f;
+            break;
+        case ALIA_JUSTIFY_SPACE_BETWEEN:
+            if (n >= 2)
+            {
+                *out_leading = 0.f;
+                *out_gap = extra / static_cast<float>(n - 1);
+            }
+            else
+            {
+                *out_leading = 0.f;
+                *out_gap = 0.f;
+            }
+            break;
+        case ALIA_JUSTIFY_SPACE_AROUND: {
+            float const g = extra / static_cast<float>((std::max) (1, n));
+            *out_leading = g * 0.5f;
+            *out_gap = g;
+            break;
+        }
+        case ALIA_JUSTIFY_SPACE_EVENLY: {
+            float const g = extra / static_cast<float>(n + 1);
+            *out_leading = g;
+            *out_gap = g;
+            break;
+        }
+    }
+}
+
 alia_horizontal_requirements
 hyperflow_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
@@ -77,12 +135,11 @@ hyperflow_measure_vertical(
     float current_x_offset = 0;
     bool wrapping_has_occurred = false;
     for (alia_layout_node* child = hyperflow.first_child; child != nullptr;
-         child = child->next_sibling)
+         child = child->next_sibling, ++child_requirements)
     {
         auto const child_y = alia_measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, child_requirements->x.min_size);
         child_requirements->y = child_y;
-        ++child_requirements;
 
         if (child_requirements->x.min_size + current_x_offset > assigned_width)
         {
@@ -161,7 +218,12 @@ hyperflow_assign_boxes(
 
         if (current_x + requirements.x.min_size > box.size.x)
         {
-            float x = box.min.x;
+            int const n = child_index - line_start_index;
+            float leading, gap;
+            hyperflow_justify_line(
+                hyperflow.flags, box.size.x, current_x, n, &leading, &gap);
+
+            float x = box.min.x + leading;
             int i = line_start_index;
             line_height = (std::max) (line_height, line_ascent + line_descent);
             for (alia_layout_node* c = line_start_child; c != child;
@@ -180,7 +242,7 @@ hyperflow_assign_boxes(
                         line_height,
                         line_ascent,
                         line_descent));
-                x += child_x.min_size;
+                x += child_x.min_size + gap;
             }
 
             current_x = 0;
@@ -202,7 +264,12 @@ hyperflow_assign_boxes(
 
     if (line_start_child != nullptr)
     {
-        float x = box.min.x;
+        int const n = static_cast<int>(scratch.child_count) - line_start_index;
+        float leading, gap;
+        hyperflow_justify_line(
+            hyperflow.flags, box.size.x, current_x, n, &leading, &gap);
+
+        float x = box.min.x + leading;
         int i = line_start_index;
         line_height = (std::max) (line_height, line_ascent + line_descent);
         for (alia_layout_node* c = line_start_child; c != nullptr;
@@ -218,7 +285,7 @@ hyperflow_assign_boxes(
                  .size = {child_x.min_size, line_height}},
                 alia_resolve_baseline(
                     hyperflow.flags, line_height, line_ascent, line_descent));
-            x += child_x.min_size;
+            x += child_x.min_size + gap;
         }
     }
 }

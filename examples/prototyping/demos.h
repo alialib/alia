@@ -137,7 +137,7 @@ void
 mixed_flow_demo(alia_context& ctx)
 {
     with_spacing(ctx, 10, [&] {
-        flow(ctx, [&]() {
+        flow(ctx, JUSTIFY_SPACE_BETWEEN, [&]() {
             for (int i = 0; i < 10; ++i)
             {
                 float x = 0.0f;
@@ -156,29 +156,29 @@ mixed_flow_demo(alia_context& ctx)
                     x += 0.1f;
                 }
 
-                panel(
-                    ctx,
-                    1,
-                    alia_srgb8{
-                        uint8_t(0xff * 0.05f),
-                        uint8_t(0xff * 0.05f),
-                        uint8_t(0xff * 0.06f)},
-                    min_size({0, 0})
-                        | margins(
-                            {.left = 10,
-                             .right = 10,
-                             .top = 10,
-                             .bottom = 10}),
-                    [&] {
-                        do_text(
-                            ctx,
-                            2,
-                            alia_srgba8_from_srgb8(
-                                ctx.palette->foundation.text.base),
-                            12 + i * 6,
-                            "panel",
-                            BASELINE_Y);
-                    });
+                // panel(
+                //     ctx,
+                //     1,
+                //     alia_srgb8{
+                //         uint8_t(0xff * 0.05f),
+                //         uint8_t(0xff * 0.05f),
+                //         uint8_t(0xff * 0.06f)},
+                //     min_size({0, 0})
+                //         | margins(
+                //             {.left = 10,
+                //              .right = 10,
+                //              .top = 10,
+                //              .bottom = 10}),
+                //     [&] {
+                //         do_text(
+                //             ctx,
+                //             2,
+                //             alia_srgba8_from_srgb8(
+                //                 ctx.palette->foundation.text.base),
+                //             12 + i * 6,
+                //             "panel",
+                //             BASELINE_Y);
+                //     });
                 do_text(
                     ctx,
                     1,
@@ -186,6 +186,32 @@ mixed_flow_demo(alia_context& ctx)
                     12 + i * 4,
                     lorem_ipsum,
                     BASELINE_Y);
+            }
+        });
+    });
+}
+
+void
+hyperflow_demo(alia_context& ctx)
+{
+    with_spacing(ctx, 10, [&] {
+        hyperflow(ctx, JUSTIFY_END, [&]() {
+            for (int i = 0; i < 20; ++i)
+            {
+                float x = 0.0f;
+                for (int j = 0; j < 20; ++j)
+                {
+                    do_rect(
+                        ctx,
+                        0,
+                        {72 + float(j % 3) * 20, 72},
+                        alia_srgb8{
+                            uint8_t(0xff * x),
+                            uint8_t(0xff * 0.1f),
+                            uint8_t(0xff * (1.0f - x))},
+                        CENTER);
+                    x += 0.05f;
+                }
             }
         });
     });

@@ -612,6 +612,12 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_collapsible_demo(ctx);
         do_heading(ctx, "");
+        do_heading(ctx, "HYPERFLOW");
+        hyperflow_demo(ctx);
+        do_heading(ctx, "");
+        do_heading(ctx, "MIXED FLOW");
+        mixed_flow_demo(ctx);
+        do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
             do_text(
@@ -1078,7 +1084,9 @@ void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     alia_ui_surface_set_size(the_system, {width, height});
-    // TODO: Flag the window as needing a render.
+    // TODO: See if this is still needed once system-level control flow and
+    // event scheduling is actually worked out.
+    update();
 }
 
 void
