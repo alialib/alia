@@ -127,18 +127,19 @@ column_assign_boxes(
         auto const child_y = *y_requirements++;
         float const extra_space
             = total_extra_space * child_y.growth_factor / total_growth;
+        float const assigned_height = child_y.min_size + extra_space;
         alia_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_Y,
             child,
             {.min = {box.min.x + assignment.min.x, current_y},
-             .size = {assignment.size.x, child_y.min_size + extra_space}},
+             .size = {assignment.size.x, assigned_height}},
             alia_resolve_baseline(
                 column.flags,
-                assignment.size.y,
+                assigned_height,
                 child_y.ascent,
                 child_y.descent));
-        current_y += child_y.min_size + extra_space;
+        current_y += assigned_height;
     }
 }
 

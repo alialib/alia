@@ -152,8 +152,7 @@ static inline alia_layout_flags_t
 alia_fold_in_cross_axis_flags(
     alia_layout_flags_t flags, alia_main_axis_index main_axis)
 {
-    flags |= flags >> main_axis;
-    return flags;
+    return flags | ((flags & ALIA_CROSS_ALIGNMENT_MASK) >> main_axis);
 }
 
 // DEFAULT NODE IMPLEMENTATIONS
@@ -233,6 +232,51 @@ alia_assign_wrapped_boxes(
     alia_wrapping_assignment const* assignment)
 {
     node->vtable->assign_wrapped_boxes(ctx, main_axis, node, assignment);
+}
+
+// LINE WRAPPING UTILITIES
+
+static inline bool
+alia_layout_line_has_content(alia_line_requirements const& line)
+{
+    return line.height != 0 || line.ascent != 0 || line.descent != 0;
+}
+
+static void
+alia_layout_line_reset(alia_line_requirements& line)
+{
+    line.height = 0;
+    line.ascent = 0;
+    line.descent = 0;
+}
+
+static void
+alia_layout_line_fold_in_child(
+    alia_line_requirements& line, alia_vertical_requirements const& child)
+{
+    line.height = alia_max(line.height, child.min_size);
+    line.ascent = alia_max(line.ascent, child.ascent);
+    line.descent = alia_max(line.descent, child.descent);
+}
+
+static void
+alia_layout_line_finalize_height(alia_line_requirements& line)
+{
+    line.height = alia_max(line.height, line.ascent + line.descent);
+}
+
+static inline bool
+alia_layout_wrapping_has_first_line_content(
+    alia_wrapping_requirements const& requirements)
+{
+    return alia_layout_line_has_content(requirements.first_line);
+}
+
+static inline bool
+alia_layout_wrapping_has_wrapped_content(
+    alia_wrapping_requirements const& requirements)
+{
+    return alia_layout_line_has_content(requirements.last_line);
 }
 
 ALIA_EXTERN_C_END

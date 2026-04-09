@@ -41,6 +41,7 @@
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
 #include <alia/ui/library.hpp>
+#include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
 #include <chrono>
@@ -1285,6 +1286,8 @@ main()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    refresh_system(*the_system);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(main_loop_step, 0, 1);

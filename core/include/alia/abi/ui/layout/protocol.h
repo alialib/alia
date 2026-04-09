@@ -46,13 +46,6 @@ typedef struct alia_line_requirements
     float descent;
 } alia_line_requirements;
 
-static inline bool
-alia_layout_line_has_content(alia_line_requirements const& requirements)
-{
-    return requirements.height != 0 || requirements.ascent != 0
-        || requirements.descent != 0;
-}
-
 typedef struct alia_wrapping_requirements
 {
     // the child's contribution to the line that was already in progress when
@@ -71,20 +64,6 @@ typedef struct alia_wrapping_requirements
     // the X offset at which the child's content ends
     float end_x;
 } alia_wrapping_requirements;
-
-static inline bool
-alia_layout_wrapping_has_first_line_content(
-    alia_wrapping_requirements const& requirements)
-{
-    return alia_layout_line_has_content(requirements.first_line);
-}
-
-static inline bool
-alia_layout_wrapping_has_wrapped_content(
-    alia_wrapping_requirements const& requirements)
-{
-    return alia_layout_line_has_content(requirements.last_line);
-}
 
 typedef struct alia_vertical_assignment
 {

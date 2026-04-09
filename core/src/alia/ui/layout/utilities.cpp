@@ -67,6 +67,7 @@ alia_resolve_container_x(
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const sizes[8] = {1, 0, 0, 0, 1, 1, 1, 1};
+    static_assert(ALIA_X_ALIGNMENT_MASK >> ALIA_X_ALIGNMENT_BIT_OFFSET == 7);
     auto const index
         = (flags & ALIA_X_ALIGNMENT_MASK) >> ALIA_X_ALIGNMENT_BIT_OFFSET;
     float const extra_space = assigned_size - required_size;
@@ -86,6 +87,7 @@ alia_resolve_container_y(
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const baseline_offsets[8] = {0, 0, 0, 0, 0, 1, 0, 0};
     static float const sizes[8] = {1, 0, 0, 0, 1, 0, 1, 1};
+    static_assert(ALIA_Y_ALIGNMENT_MASK >> ALIA_Y_ALIGNMENT_BIT_OFFSET == 7);
     auto const index
         = (flags & ALIA_Y_ALIGNMENT_MASK) >> ALIA_Y_ALIGNMENT_BIT_OFFSET;
     float const extra_space = assigned_size - required_size;
@@ -121,6 +123,7 @@ alia_resolve_leaf_x(
 {
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const sizes[8] = {0, 0, 0, 0, 1, 1, 1, 1};
+    static_assert(ALIA_X_ALIGNMENT_MASK >> ALIA_X_ALIGNMENT_BIT_OFFSET == 7);
     auto const index
         = (flags & ALIA_X_ALIGNMENT_MASK) >> ALIA_X_ALIGNMENT_BIT_OFFSET;
     float const extra_space = assigned_size - (required_size + spacing * 2);
@@ -141,6 +144,7 @@ alia_resolve_leaf_y(
     static float const offsets[8] = {0, 0.5, 0, 1, 0, 0, 0, 0};
     static float const baseline_offsets[8] = {0, 0, 0, 0, 0, 1, 0, 0};
     static float const sizes[8] = {0, 0, 0, 0, 1, 0, 1, 1};
+    static_assert(ALIA_Y_ALIGNMENT_MASK >> ALIA_Y_ALIGNMENT_BIT_OFFSET == 7);
     auto const index
         = (flags & ALIA_Y_ALIGNMENT_MASK) >> ALIA_Y_ALIGNMENT_BIT_OFFSET;
     float const extra_space = assigned_size - (required_size + spacing * 2);
@@ -176,6 +180,10 @@ alia_resolve_baseline(
     float descent)
 {
     static float const offsets[4] = {0.5, 0, 1, 0.5};
+    static_assert(
+        ALIA_BASELINE_GROUP_ALIGNMENT_MASK
+            >> ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET
+        == 3);
     auto const index = (flags & ALIA_BASELINE_GROUP_ALIGNMENT_MASK)
                     >> ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET;
     return ascent + offsets[index] * (assigned_height - ascent - descent);

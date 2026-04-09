@@ -194,26 +194,38 @@ mixed_flow_demo(alia_context& ctx)
 void
 block_flow_demo(alia_context& ctx)
 {
+    alia::layout_flag_set const justification_flags[6] = {
+        JUSTIFY_START,
+        JUSTIFY_END,
+        JUSTIFY_CENTER,
+        JUSTIFY_SPACE_BETWEEN,
+        JUSTIFY_SPACE_EVENLY,
+        JUSTIFY_SPACE_AROUND,
+    };
+
     with_spacing(ctx, 10, [&] {
-        block_flow(ctx, JUSTIFY_END, [&]() {
-            for (int i = 0; i < 20; ++i)
-            {
-                float x = 0.0f;
-                for (int j = 0; j < 20; ++j)
+        for (int i = 0; i < 6; ++i)
+        {
+            block_flow(ctx, justification_flags[i], [&]() {
+                for (int i = 0; i < 5; ++i)
                 {
-                    do_rect(
-                        ctx,
-                        0,
-                        {72 + float(j % 3) * 20, 72},
-                        alia_srgb8{
-                            uint8_t(0xff * x),
-                            uint8_t(0xff * 0.1f),
-                            uint8_t(0xff * (1.0f - x))},
-                        CENTER);
-                    x += 0.05f;
+                    float x = 0.0f;
+                    for (int j = 0; j < 20; ++j)
+                    {
+                        do_rect(
+                            ctx,
+                            0,
+                            {72 + float(j % 3) * 20, 72},
+                            alia_srgb8{
+                                uint8_t(0xff * x),
+                                uint8_t(0xff * 0.1f),
+                                uint8_t(0xff * (1.0f - x))},
+                            CENTER);
+                        x += 0.05f;
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 }
 

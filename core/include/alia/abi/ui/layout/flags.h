@@ -6,11 +6,11 @@
 typedef uint32_t alia_layout_flags_t;
 
 // bit offsets for groupings of flags within the set
-alia_layout_flags_t const ALIA_X_ALIGNMENT_BIT_OFFSET = 0;
-alia_layout_flags_t const ALIA_Y_ALIGNMENT_BIT_OFFSET = 3;
-alia_layout_flags_t const ALIA_CROSS_ALIGNMENT_BIT_OFFSET = 6;
-alia_layout_flags_t const ALIA_JUSTIFICATION_BIT_OFFSET = 9;
-alia_layout_flags_t const ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12;
+int const ALIA_X_ALIGNMENT_BIT_OFFSET = 0;
+int const ALIA_Y_ALIGNMENT_BIT_OFFSET = 3;
+int const ALIA_CROSS_ALIGNMENT_BIT_OFFSET = 6;
+int const ALIA_JUSTIFICATION_BIT_OFFSET = 9;
+int const ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12;
 
 #define ALIA_LAYOUT_FLAGS(X)                                                  \
     /* alignment flags - Omitting alignment flags invokes "default" */        \

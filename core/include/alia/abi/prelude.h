@@ -208,4 +208,16 @@ alia_lerp(float a, float b, float t)
     return a + (b - a) * t;
 }
 
+static inline float
+alia_min(float a, float b)
+{
+    return a < b ? a : b;
+}
+
+static inline float
+alia_max(float a, float b)
+{
+    return a < b ? b : a;
+}
+
 #endif
