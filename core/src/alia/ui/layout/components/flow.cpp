@@ -75,7 +75,7 @@ flow_measure_vertical(
 
     auto* child_requirements = scratch.child_requirements;
 
-    float line_height = 0, line_ascent = 0, line_descent = 0;
+    alia_line_requirements line = {0};
     float overall_height = 0, overall_ascent = 0;
     float current_x_offset = 0;
     bool wrapping_has_occurred = false;
@@ -86,25 +86,20 @@ flow_measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, assigned_width);
         *child_requirements++ = requirements;
 
-        line_height = (std::max) (line_height, requirements.first_line.height);
-        line_ascent = (std::max) (line_ascent, requirements.first_line.ascent);
-        line_descent
-            = (std::max) (line_descent, requirements.first_line.descent);
+        alia_layout_line_fold_in_line(line, requirements.first_line);
 
         if (alia_layout_wrapping_has_wrapped_content(requirements))
         {
             if (!wrapping_has_occurred)
             {
-                overall_ascent = line_ascent;
+                overall_ascent = line.ascent;
                 wrapping_has_occurred = true;
             }
             overall_height
-                += (std::max) (line_height, line_ascent + line_descent)
+                += (std::max) (line.height, line.ascent + line.descent)
                  + requirements.interior_height;
 
-            line_height = requirements.last_line.height;
-            line_ascent = requirements.last_line.ascent;
-            line_descent = requirements.last_line.descent;
+            alia_layout_line_fold_in_line(line, requirements.last_line);
         }
 
         current_x_offset = requirements.end_x;
@@ -114,8 +109,8 @@ flow_measure_vertical(
         ctx->scratch, scratch.child_count);
 
     if (!wrapping_has_occurred)
-        overall_ascent = line_ascent;
-    overall_height += (std::max) (line_height, line_ascent + line_descent);
+        overall_ascent = line.ascent;
+    overall_height += alia_layout_line_final_height(line);
 
     scratch.total_height = overall_height;
     scratch.ascent = overall_ascent;
@@ -154,7 +149,7 @@ flow_assign_boxes(
         scratch.total_height,
         scratch.ascent);
 
-    float line_height = 0, line_ascent = 0, line_descent = 0;
+    alia_line_requirements line = {0};
 
     auto update_line_measures = [&](int i) {
         for (; i < scratch.child_count; ++i)
@@ -163,12 +158,7 @@ flow_assign_boxes(
             if (!alia_layout_wrapping_has_first_line_content(requirements))
                 break;
 
-            line_height
-                = (std::max) (line_height, requirements.first_line.height);
-            line_ascent
-                = (std::max) (line_ascent, requirements.first_line.ascent);
-            line_descent
-                = (std::max) (line_descent, requirements.first_line.descent);
+            alia_layout_line_fold_in_line(line, requirements.first_line);
 
             if (alia_layout_wrapping_has_wrapped_content(requirements))
                 break;
@@ -177,7 +167,7 @@ flow_assign_boxes(
 
     float current_x = 0, current_y = box.min.y + placement.offset;
     update_line_measures(0);
-    line_height = (std::max) (line_height, line_ascent + line_descent);
+    alia_layout_line_finalize_height(line);
 
     int child_index = 0;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
@@ -193,9 +183,9 @@ flow_assign_boxes(
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
         assignment.first_line = alia_vertical_assignment{
-            .line_height = line_height,
+            .line_height = line.height,
             .baseline_offset = alia_resolve_baseline(
-                flow.flags, line_height, line_ascent, line_descent)};
+                flow.flags, line.height, line.ascent, line.descent)};
 
         if (alia_layout_wrapping_has_wrapped_content(requirements))
         {
@@ -203,18 +193,16 @@ flow_assign_boxes(
             // and then incorporate any the requirements for any later children
             // that fit on that line.
 
-            line_height = requirements.last_line.height;
-            line_ascent = requirements.last_line.ascent;
-            line_descent = requirements.last_line.descent;
+            alia_layout_line_fold_in_line(line, requirements.last_line);
 
             ++child_index;
             update_line_measures(child_index);
-            line_height = (std::max) (line_height, line_ascent + line_descent);
+            alia_layout_line_finalize_height(line);
 
             assignment.last_line = alia_vertical_assignment{
-                .line_height = line_height,
+                .line_height = line.height,
                 .baseline_offset = alia_resolve_baseline(
-                    flow.flags, line_height, line_ascent, line_descent)};
+                    flow.flags, line.height, line.ascent, line.descent)};
 
             if (requirements.interior_height == 0
                 && !alia_layout_wrapping_has_first_line_content(requirements))
@@ -227,9 +215,9 @@ flow_assign_boxes(
                     ALIA_MAIN_AXIS_X,
                     child,
                     {.min = {box.min.x, current_y},
-                     .size = {requirements.end_x, line_height}},
+                     .size = {requirements.end_x, line.height}},
                     alia_resolve_baseline(
-                        flow.flags, line_height, line_ascent, line_descent));
+                        flow.flags, line.height, line.ascent, line.descent));
                 current_x = requirements.end_x;
             }
             else
@@ -256,9 +244,9 @@ flow_assign_boxes(
                 ALIA_MAIN_AXIS_X,
                 child,
                 {.min = {box.min.x + current_x, current_y},
-                 .size = {requirements.end_x - current_x, line_height}},
+                 .size = {requirements.end_x - current_x, line.height}},
                 alia_resolve_baseline(
-                    flow.flags, line_height, line_ascent, line_descent));
+                    flow.flags, line.height, line.ascent, line.descent));
             current_x = requirements.end_x;
             ++child_index;
         }
@@ -281,10 +269,10 @@ flow_measure_wrapped_vertical(
 
     auto* child_requirements = scratch.child_requirements;
 
-    float line_height = 0, line_ascent = 0, line_descent = 0;
     alia_line_requirements first_line;
     bool wrapping_has_occurred = false;
     float interior_height = 0;
+    alia_line_requirements line = {0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -292,32 +280,23 @@ flow_measure_wrapped_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, line_width);
         *child_requirements++ = requirements;
 
-        line_height = (std::max) (line_height, requirements.first_line.height);
-        line_ascent = (std::max) (line_ascent, requirements.first_line.ascent);
-        line_descent
-            = (std::max) (line_descent, requirements.first_line.descent);
+        alia_layout_line_fold_in_line(line, requirements.first_line);
 
         if (alia_layout_wrapping_has_wrapped_content(requirements))
         {
             if (!wrapping_has_occurred)
             {
-                first_line
-                    = {.height = line_height,
-                       .ascent = line_ascent,
-                       .descent = line_descent};
+                first_line = line;
                 wrapping_has_occurred = true;
             }
             else
             {
-                interior_height
-                    += (std::max) (line_height, line_ascent + line_descent);
+                interior_height += alia_layout_line_final_height(line);
             }
 
             interior_height += requirements.interior_height;
 
-            line_height = requirements.last_line.height;
-            line_ascent = requirements.last_line.ascent;
-            line_descent = requirements.last_line.descent;
+            alia_layout_line_fold_in_line(line, requirements.last_line);
         }
 
         current_x_offset = requirements.end_x;
@@ -326,28 +305,20 @@ flow_measure_wrapped_vertical(
     alia_line_requirements last_line;
     if (!wrapping_has_occurred)
     {
-        first_line
-            = {.height = line_height,
-               .ascent = line_ascent,
-               .descent = line_descent};
+        first_line = line;
         last_line = {.height = 0, .ascent = 0, .descent = 0};
     }
     else
     {
-        last_line
-            = {.height = line_height,
-               .ascent = line_ascent,
-               .descent = line_descent};
+        last_line = line;
     }
 
     arena_alloc_array<alia_wrapping_requirements>(
         ctx->scratch, scratch.child_count);
 
     scratch.total_height
-        = (std::max) (first_line.height,
-                      first_line.ascent + first_line.descent)
-        + interior_height
-        + (std::max) (last_line.height, last_line.ascent + last_line.descent);
+        = alia_layout_line_final_height(first_line) + interior_height
+        + alia_layout_line_final_height(last_line);
     scratch.ascent = first_line.ascent;
 
     return alia_wrapping_requirements{
@@ -372,9 +343,8 @@ flow_assign_wrapped_boxes(
     if (scratch.child_count == 0)
         return;
 
-    float line_height = assignment->first_line.line_height,
-          line_ascent = assignment->first_line.baseline_offset,
-          line_descent = line_height - line_ascent;
+    alia_line_requirements line
+        = alia_layout_line_from_assignment(assignment->first_line);
 
     auto update_line_measures = [&](int i) {
         for (; i < scratch.child_count; ++i)
@@ -383,31 +353,19 @@ flow_assign_wrapped_boxes(
             if (!alia_layout_wrapping_has_first_line_content(requirements))
                 return;
 
-            line_height
-                = (std::max) (line_height, requirements.first_line.height);
-            line_ascent
-                = (std::max) (line_ascent, requirements.first_line.ascent);
-            line_descent
-                = (std::max) (line_descent, requirements.first_line.descent);
+            alia_layout_line_fold_in_line(line, requirements.first_line);
 
             if (alia_layout_wrapping_has_wrapped_content(requirements))
                 return;
         }
 
-        line_height
-            = (std::max) (line_height, assignment->last_line.line_height);
-        line_ascent
-            = (std::max) (line_ascent, assignment->last_line.baseline_offset);
-        line_descent
-            = (std::max) (line_descent,
-                          assignment->last_line.line_height
-                              - assignment->last_line.baseline_offset);
+        alia_layout_line_fold_in_assignment(line, assignment->last_line);
     };
 
     float current_x = assignment->first_line_x_offset;
     float current_y = assignment->y_base;
     update_line_measures(0);
-    line_height = (std::max) (line_height, line_ascent + line_descent);
+    alia_layout_line_finalize_height(line);
 
     int child_index = 0;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
@@ -423,9 +381,9 @@ flow_assign_wrapped_boxes(
         // For the first line, we use the vertical requirements that existed
         // for the previous children.
         child_assignment.first_line = alia_vertical_assignment{
-            .line_height = line_height,
+            .line_height = line.height,
             .baseline_offset = alia_resolve_baseline(
-                flow.flags, line_height, line_ascent, line_descent)};
+                flow.flags, line.height, line.ascent, line.descent)};
 
         if (alia_layout_wrapping_has_wrapped_content(requirements))
         {
@@ -433,18 +391,16 @@ flow_assign_wrapped_boxes(
             // and then incorporate any the requirements for any later children
             // that fit on that line.
 
-            line_height = requirements.last_line.height;
-            line_ascent = requirements.last_line.ascent;
-            line_descent = requirements.last_line.descent;
+            alia_layout_line_fold_in_line(line, requirements.last_line);
 
             ++child_index;
             update_line_measures(child_index);
-            line_height = (std::max) (line_height, line_ascent + line_descent);
+            alia_layout_line_finalize_height(line);
 
             child_assignment.last_line = alia_vertical_assignment{
-                .line_height = line_height,
+                .line_height = line.height,
                 .baseline_offset = alia_resolve_baseline(
-                    flow.flags, line_height, line_ascent, line_descent)};
+                    flow.flags, line.height, line.ascent, line.descent)};
 
             if (requirements.interior_height == 0
                 && !alia_layout_wrapping_has_first_line_content(requirements))
@@ -457,9 +413,9 @@ flow_assign_wrapped_boxes(
                     ALIA_MAIN_AXIS_X,
                     child,
                     {.min = {assignment->x_base, current_y},
-                     .size = {requirements.end_x, line_height}},
+                     .size = {requirements.end_x, line.height}},
                     alia_resolve_baseline(
-                        flow.flags, line_height, line_ascent, line_descent));
+                        flow.flags, line.height, line.ascent, line.descent));
                 current_x = requirements.end_x;
             }
             else
@@ -487,9 +443,9 @@ flow_assign_wrapped_boxes(
                 child,
                 alia_box{
                     .min = {assignment->x_base + current_x, current_y},
-                    .size = {requirements.end_x - current_x, line_height}},
+                    .size = {requirements.end_x - current_x, line.height}},
                 alia_resolve_baseline(
-                    flow.flags, line_height, line_ascent, line_descent));
+                    flow.flags, line.height, line.ascent, line.descent));
             current_x = requirements.end_x;
             ++child_index;
         }

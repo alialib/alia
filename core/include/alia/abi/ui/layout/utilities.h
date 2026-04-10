@@ -236,13 +236,23 @@ alia_assign_wrapped_boxes(
 
 // LINE WRAPPING UTILITIES
 
+static inline alia_line_requirements
+alia_layout_line_from_assignment(alia_vertical_assignment const& assignment)
+{
+    return ALIA_BRACED_INIT(
+        alia_line_requirements,
+        assignment.line_height,
+        assignment.baseline_offset,
+        assignment.line_height - assignment.baseline_offset);
+}
+
 static inline bool
 alia_layout_line_has_content(alia_line_requirements const& line)
 {
     return line.height != 0 || line.ascent != 0 || line.descent != 0;
 }
 
-static void
+static inline void
 alia_layout_line_reset(alia_line_requirements& line)
 {
     line.height = 0;
@@ -250,7 +260,26 @@ alia_layout_line_reset(alia_line_requirements& line)
     line.descent = 0;
 }
 
-static void
+static inline void
+alia_layout_line_fold_in_line(
+    alia_line_requirements& line, alia_line_requirements const& other)
+{
+    line.height = alia_max(line.height, other.height);
+    line.ascent = alia_max(line.ascent, other.ascent);
+    line.descent = alia_max(line.descent, other.descent);
+}
+
+static inline void
+alia_layout_line_fold_in_assignment(
+    alia_line_requirements& line, alia_vertical_assignment const& assignment)
+{
+    line.height = alia_max(line.height, assignment.line_height);
+    line.ascent = alia_max(line.ascent, assignment.baseline_offset);
+    line.descent = alia_max(
+        line.descent, assignment.line_height - assignment.baseline_offset);
+}
+
+static inline void
 alia_layout_line_fold_in_child(
     alia_line_requirements& line, alia_vertical_requirements const& child)
 {
@@ -259,10 +288,16 @@ alia_layout_line_fold_in_child(
     line.descent = alia_max(line.descent, child.descent);
 }
 
-static void
+static inline float
+alia_layout_line_final_height(alia_line_requirements const& line)
+{
+    return alia_max(line.height, line.ascent + line.descent);
+}
+
+static inline void
 alia_layout_line_finalize_height(alia_line_requirements& line)
 {
-    line.height = alia_max(line.height, line.ascent + line.descent);
+    line.height = alia_layout_line_final_height(line);
 }
 
 static inline bool
