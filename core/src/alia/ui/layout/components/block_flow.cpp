@@ -60,6 +60,35 @@ block_flow_assign_widths(
     // TODO
 }
 
+static alia_line_requirements
+block_flow_measure_line_vertical(
+    alia_measurement_context* ctx,
+    int child_count,
+    alia_layout_node* line_start_child,
+    block_flow_child_scratch* child_scratch,
+    float extra_space,
+    float line_growth)
+{
+    alia_line_requirements line = {0};
+    alia_layout_node* child = line_start_child;
+    float const growth_scale
+        = line_growth > 0 ? extra_space / line_growth : 0.f;
+    for (int i = 0; i < child_count; ++i)
+    {
+        auto& cs = child_scratch[i];
+        float const assigned_width
+            = cs.x.min_size + cs.x.growth_factor * growth_scale;
+        cs.assigned_width = assigned_width;
+        auto const child_y = alia_measure_vertical(
+            ctx, ALIA_MAIN_AXIS_X, child, assigned_width);
+        cs.y = child_y;
+        alia_layout_line_fold_in_child(line, child_y);
+        child = child->next_sibling;
+    }
+    alia_layout_line_finalize_height(line);
+    return line;
+}
+
 alia_vertical_requirements
 block_flow_measure_vertical(
     alia_measurement_context* ctx,
@@ -73,38 +102,61 @@ block_flow_measure_vertical(
     auto* child_scratch = arena_alloc_array<block_flow_child_scratch>(
         ctx->scratch, scratch.child_count);
 
-    alia_line_requirements line = {0};
     float overall_height = 0, overall_ascent = 0;
-    float current_x_offset = 0;
+    float current_x_offset = 0, line_growth = 0;
     bool wrapping_has_occurred = false;
+    alia_layout_node* line_start_child = block_flow.first_child;
+    int child_index = 0, line_start_index = 0;
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
-         child = child->next_sibling, ++child_scratch)
+         child = child->next_sibling)
     {
-        auto const child_y = alia_measure_vertical(
-            ctx, ALIA_MAIN_AXIS_X, child, child_scratch->x.min_size);
-        child_scratch->y = child_y;
-
-        if (child_scratch->x.min_size + current_x_offset > assigned_width)
+        auto const& cs = child_scratch[child_index];
+        if (current_x_offset + cs.x.min_size > assigned_width)
         {
+            int const line_child_count = child_index - line_start_index;
+            auto line = block_flow_measure_line_vertical(
+                ctx,
+                line_child_count,
+                line_start_child,
+                child_scratch + line_start_index,
+                assigned_width - current_x_offset,
+                line_growth);
+
             if (!wrapping_has_occurred)
             {
                 overall_ascent = line.ascent;
                 wrapping_has_occurred = true;
             }
-            overall_height
-                += (std::max) (line.height, line.ascent + line.descent);
+            overall_height += line.height;
 
             current_x_offset = 0;
-            alia_layout_line_reset(line);
+            line_growth = 0;
+            line_start_index = child_index;
+            line_start_child = child;
         }
 
-        alia_layout_line_fold_in_child(line, child_y);
-        current_x_offset += child_scratch->x.min_size;
+        current_x_offset += cs.x.min_size;
+        line_growth += cs.x.growth_factor;
+        ++child_index;
     }
 
-    if (!wrapping_has_occurred)
-        overall_ascent = line.ascent;
-    overall_height += (std::max) (line.height, line.ascent + line.descent);
+    {
+        int const line_child_count = child_index - line_start_index;
+        auto line = block_flow_measure_line_vertical(
+            ctx,
+            line_child_count,
+            line_start_child,
+            child_scratch + line_start_index,
+            assigned_width - current_x_offset,
+            line_growth);
+
+        if (!wrapping_has_occurred)
+        {
+            overall_ascent = line.ascent;
+            wrapping_has_occurred = true;
+        }
+        overall_height += line.height;
+    }
 
     scratch.total_height = overall_height;
     scratch.ascent = overall_ascent;
@@ -194,16 +246,16 @@ block_flow_assign_line_boxes(
     float const baseline = alia_resolve_baseline(
         block_flags, line.height, line.ascent, line.descent);
     alia_layout_node* child = line_start_child;
-    for (int i = 0; i != child_count; ++i)
+    for (int i = 0; i < child_count; ++i)
     {
-        auto const& child_x = child_scratch[i].x;
+        auto const& cs = child_scratch[i];
         alia_assign_boxes(
             ctx,
             ALIA_MAIN_AXIS_X,
             child,
-            {.min = position, .size = {child_x.min_size, line.height}},
+            {.min = position, .size = {cs.assigned_width, line.height}},
             baseline);
-        position.x += child_x.min_size + gap;
+        position.x += cs.assigned_width + gap;
         child = child->next_sibling;
     }
 }
@@ -240,7 +292,7 @@ block_flow_assign_boxes(
          child = child->next_sibling)
     {
         auto const& cs = child_scratch[child_index];
-        if (current_x + cs.x.min_size > box.size.x)
+        if (current_x + cs.assigned_width > box.size.x)
         {
             int const line_child_count = child_index - line_start_index;
 
@@ -271,7 +323,7 @@ block_flow_assign_boxes(
         }
 
         alia_layout_line_fold_in_child(line, cs.y);
-        current_x += cs.x.min_size;
+        current_x += cs.assigned_width;
         ++child_index;
     }
 

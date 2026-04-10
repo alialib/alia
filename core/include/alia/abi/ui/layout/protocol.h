@@ -4,6 +4,25 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/geometry.h>
 
+// Layout resolution consists of four phases:
+// 1. Measure horizontal requirements.
+// 2. Assign widths.
+// 3. Measure vertical requirements based on the assigned widths.
+// 4. Assign boxes.
+//
+// Note that #2 and #3 are typically combined into a single pass, but a
+// separate interface is provided for specifically assigning widths in case it
+// is useful for responsive layouts. (It isn't currently used or even fully
+// implemented.)
+//
+// All passes start at the root node and recurse through descendants. The
+// scratch space is used to store intermediate results. Each pass starts with
+// the scratch allocator reset to the start of the scratch space, but the data
+// itself is preserved across passes within a single layout resolution. Each
+// pass is required to walk the tree in the same order as the previous pass.
+// (i.e., Individual nodes must (re-)allocate the same data every pass, in the
+// same order, and they must recursively visit each child in the same order.)
+
 ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_layout_node_vtable alia_layout_node_vtable;

@@ -220,7 +220,7 @@ block_flow_demo(alia_context& ctx)
                                 uint8_t(0xff * x),
                                 uint8_t(0xff * 0.1f),
                                 uint8_t(0xff * (1.0f - x))},
-                            CENTER);
+                            (!(j & 7) ? (GROW | FILL) : CENTER));
                         x += 0.05f;
                     }
                 }
