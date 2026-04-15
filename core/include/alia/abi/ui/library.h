@@ -169,7 +169,7 @@ typedef struct alia_scrollbar_style
     float minimum_thumb_length;
     float thumb_corner_radius;
     float line_size;
-    float wheel_scale;
+    float scroll_input_scale;
 } alia_scrollbar_style;
 
 alia_element_id

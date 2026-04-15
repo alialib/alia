@@ -21,7 +21,7 @@ typedef uint8_t alia_hit_test_flags_t;
 
 #define ALIA_HIT_TEST_FLAGS(X)                                                \
     X(0x1, MOUSE)                                                             \
-    X(0x2, WHEEL)
+    X(0x2, SCROLL_INPUT)
 
 #define ALIA_DEFINE_HIT_TEST_FLAG(code, name) ALIA_HIT_TEST_##name = (code),
 enum

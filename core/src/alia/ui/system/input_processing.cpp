@@ -129,15 +129,18 @@ alia_ui_process_double_click(
 void
 alia_ui_process_scroll(alia_ui_system* ui, alia_vec2f delta)
 {
-    alia_event hit_test_event = alia_make_wheel_hit_test_event(
+    alia_event hit_test_event = alia_make_scroll_input_hit_test_event(
         {.x = ui->input.mouse_position.x, .y = ui->input.mouse_position.y});
     dispatch_event(*ui, hit_test_event);
     if (alia_element_id_is_valid(
-            as_wheel_hit_test_event(hit_test_event).result))
+            as_scroll_input_hit_test_event(hit_test_event).result))
     {
-        alia_event wheel_event = alia_make_wheel_event({.delta = delta});
+        alia_event scroll_input_event
+            = alia_make_scroll_input_event({.delta = delta});
         dispatch_targeted_event(
-            *ui, wheel_event, as_wheel_hit_test_event(hit_test_event).result);
+            *ui,
+            scroll_input_event,
+            as_scroll_input_hit_test_event(hit_test_event).result);
         refresh_system(*ui);
     }
 }

@@ -179,10 +179,10 @@ bool
 alia_element_detect_scroll(
     alia_context* ctx, alia_element_id id, alia_vec2f* out_delta)
 {
-    if (get_event_type(*ctx) == ALIA_EVENT_WHEEL
+    if (get_event_type(*ctx) == ALIA_EVENT_SCROLL_INPUT
         && get_event_target(*ctx) == id)
     {
-        *out_delta = as_wheel_event(*ctx).delta;
+        *out_delta = as_scroll_input_event(*ctx).delta;
         return true;
     }
     return false;

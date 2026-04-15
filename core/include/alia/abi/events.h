@@ -59,9 +59,9 @@ enum
     X(0x32,                                                                   \
       SPATIAL,                                                                \
       NONE,                                                                   \
-      WHEEL_HIT_TEST,                                                         \
-      wheel_hit_test,                                                         \
-      alia_wheel_hit_test)                                                    \
+      SCROLL_INPUT_HIT_TEST,                                                  \
+      scroll_input_hit_test,                                                  \
+      alia_scroll_input_hit_test)                                             \
     /* keyboard */                                                            \
     X(0x40, INPUT, TARGETED, TEXT_INPUT, text_input, alia_text_input)         \
     X(0x41,                                                                   \
@@ -115,7 +115,7 @@ enum
       alia_mouse_notification)                                                \
     X(0x67, INPUT, TARGETED, CURSOR_QUERY, cursor_query, alia_cursor_query)   \
     /* scroll */                                                              \
-    X(0x70, INPUT, TARGETED, WHEEL, wheel, alia_wheel)                        \
+    X(0x70, INPUT, TARGETED, SCROLL_INPUT, scroll_input, alia_scroll_input)   \
     /* timer */                                                               \
     X(0x82, INPUT, TARGETED, TIMER, timer, alia_timer)
 /* misc */
@@ -168,12 +168,12 @@ typedef struct alia_mouse_hit_test
     alia_mouse_hit_test_result result;
 } alia_mouse_hit_test;
 
-typedef struct alia_wheel_hit_test
+typedef struct alia_scroll_input_hit_test
 {
     float x;
     float y;
     alia_element_id result;
-} alia_wheel_hit_test;
+} alia_scroll_input_hit_test;
 
 typedef struct alia_cursor_query
 {
@@ -234,10 +234,10 @@ typedef struct alia_mouse_motion
     float last_y;
 } alia_mouse_motion;
 
-typedef struct alia_wheel
+typedef struct alia_scroll_input
 {
     alia_vec2f delta;
-} alia_wheel;
+} alia_scroll_input;
 
 typedef struct alia_mouse_notification
 {

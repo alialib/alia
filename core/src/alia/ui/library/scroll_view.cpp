@@ -97,7 +97,7 @@ static alia_scrollbar_style const default_scrollbar_style = {
     .minimum_thumb_length = 20.f,
     .thumb_corner_radius = 0.f,
     .line_size = 72.f,
-    .wheel_scale = 120.f,
+    .scroll_input_scale = 120.f,
 };
 
 static inline float
@@ -757,14 +757,14 @@ alia_ui_scroll_view_begin(
             ctx,
             scope.id,
             &scope.placement.viewport_box,
-            ALIA_HIT_TEST_WHEEL,
+            ALIA_HIT_TEST_SCROLL_INPUT,
             ALIA_CURSOR_DEFAULT);
     }
 
     if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)
     {
-        alia_vec2f wheel_delta = {};
-        if (alia_element_detect_scroll(ctx, scope.id, &wheel_delta))
+        alia_vec2f scroll_input_delta = {};
+        if (alia_element_detect_scroll(ctx, scope.id, &scroll_input_delta))
         {
             if (scope.placement.scrollbar_on[0])
             {
@@ -773,7 +773,8 @@ alia_ui_scroll_view_begin(
                     scope.placement,
                     0,
                     data->bar[0].logical
-                        - wheel_delta.x * data->style.wheel_scale);
+                        - scroll_input_delta.x
+                              * data->style.scroll_input_scale);
             }
             if (scope.placement.scrollbar_on[1])
             {
@@ -782,7 +783,8 @@ alia_ui_scroll_view_begin(
                     scope.placement,
                     1,
                     data->bar[1].logical
-                        - wheel_delta.y * data->style.wheel_scale);
+                        - scroll_input_delta.y
+                              * data->style.scroll_input_scale);
             }
         }
 

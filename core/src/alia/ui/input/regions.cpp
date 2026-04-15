@@ -19,7 +19,7 @@ alia_element_box_region(
     alia_box const* region,
     alia_cursor_t cursor)
 {
-    // TODO: Shouldn't this allow handling wheel hit tests too?
+    // TODO: Shouldn't this allow handling scroll_input hit tests too?
     switch (get_event_type(*ctx))
     {
         case ALIA_EVENT_MOUSE_HIT_TEST:
@@ -61,10 +61,10 @@ alia_element_report_mouse_hit(
         // transform_aabb(get_transformation(ctx), bounding_box)
     }
     else if (
-        get_event_type(*ctx) == ALIA_EVENT_WHEEL_HIT_TEST
-        && (flags & ALIA_HIT_TEST_WHEEL))
+        get_event_type(*ctx) == ALIA_EVENT_SCROLL_INPUT_HIT_TEST
+        && (flags & ALIA_HIT_TEST_SCROLL_INPUT))
     {
-        auto& e = as_wheel_hit_test_event(*ctx);
+        auto& e = as_scroll_input_hit_test_event(*ctx);
         e.result = id;
     }
 }
