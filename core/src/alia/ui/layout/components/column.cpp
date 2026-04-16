@@ -3,6 +3,8 @@
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 struct column_scratch
@@ -116,6 +118,12 @@ column_assign_boxes(
         baseline,
         {scratch.max_width, scratch.total_height},
         scratch.baseline);
+    if ((column.flags & ALIA_PROVIDE_BOX) != 0)
+    {
+        alia_box* provided_box = arena_alloc<alia_box>(ctx->arena);
+        provided_box->min = box.min + assignment.min;
+        provided_box->size = assignment.size;
+    }
     float const total_extra_space
         = (std::max) (0.f, assignment.size.y - scratch.total_height);
     // TODO: Figure out how to handle 0 total growth.

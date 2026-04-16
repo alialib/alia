@@ -274,18 +274,22 @@ do_slider_impl(
 
     unsigned const axis = vertical ? 1u : 0u;
 
-    switch (get_event_category(*ctx))
+    alia_event_category const category = get_event_category(*ctx);
+    if (category == ALIA_CATEGORY_REFRESH)
     {
-        case ALIA_CATEGORY_REFRESH:
-            alia_layout_leaf_emit(
-                ctx,
-                {alia_px(ctx, effective_style->layout_width),
-                 alia_px(ctx, effective_style->layout_height)},
-                layout_flags);
-            break;
+        alia_layout_leaf_emit(
+            ctx,
+            {alia_px(ctx, effective_style->layout_width),
+             alia_px(ctx, effective_style->layout_height)},
+            layout_flags);
+        return base_id;
+    }
 
+    alia_box const box = alia_layout_consume_box(ctx);
+
+    switch (category)
+    {
         case ALIA_CATEGORY_SPATIAL: {
-            alia_box box = alia_layout_leaf_read(ctx);
             alia_element_box_region(ctx, track_id, &box, ALIA_CURSOR_DEFAULT);
             double const current = read_value();
             alia_box const thumb_box = get_thumb_region(
@@ -298,8 +302,6 @@ do_slider_impl(
         case ALIA_CATEGORY_INPUT: {
             if (is_disabled)
                 break;
-
-            alia_box box = alia_layout_leaf_read(ctx);
 
             // TODO: Implement focus order.
             // alia_element_add_to_focus_order(ctx, thumb_id);
@@ -403,7 +405,6 @@ do_slider_impl(
         }
 
         case ALIA_CATEGORY_DRAWING: {
-            alia_box box = alia_layout_leaf_read(ctx);
             double const current = read_value();
             alia_interaction_status_t const thumb_status
                 = alia_element_get_interaction_status(
@@ -421,10 +422,6 @@ do_slider_impl(
                 thumb_status);
             break;
         }
-
-        default:
-            alia_layout_leaf_read(ctx);
-            break;
     }
 
     (void) data;

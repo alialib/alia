@@ -105,24 +105,25 @@ static float demo_node_expander_triangle_side = 24.f;
 #include "prototyping/panel.h"
 #include "prototyping/rect.h"
 
-template<class Content>
-void
-button(
-    context& ctx,
-    alia_z_index z_index,
-    alia_rgba color,
-    layout_flag_set flags,
-    Content&& content)
-{
-    placement_hook(ctx, flags, [&](auto const& placement) {
-        if (get_event_type(ctx) == ALIA_EVENT_DRAW)
-        {
-            alia_draw_rounded_box(&ctx, z_index, placement.box, color, 0.0f);
-        }
+// template<class Content>
+// void
+// button(
+//     context& ctx,
+//     alia_z_index z_index,
+//     alia_rgba color,
+//     layout_flag_set flags,
+//     Content&& content)
+// {
+//     alia_box button_box;
+//     row(ctx, flags, &button_box, [&]() {
+//         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
+//         {
+//             alia_draw_rounded_box(&ctx, z_index, button_box, color, 0.0f);
+//         }
 
-        std::forward<Content>(content)();
-    });
-}
+//         std::forward<Content>(content)();
+//     });
+// }
 
 template<class Content>
 void
@@ -216,25 +217,20 @@ do_radio_with_text(
     char const* text,
     alia_radio_style const* style)
 {
-    // TODO: The hook gets the full placement, before the alignment is applied.
-    // (But also the hook is only supposed to have a single child.)
-    placement_hook(ctx, [&](auto const& placement) {
-        row(ctx, ALIGN_LEFT, [&]() {
-            alia_element_id id
-                = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
-            do_text(
-                ctx,
-                2,
-                alia_srgba8_from_srgb8(
-                    value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base
-                        : ctx.palette->foundation.text.weaker_2),
-                14.f,
-                text,
-                CENTER_Y);
-            alia_element_box_region(
-                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
-        });
+    alia_box row_box;
+    row(ctx, ALIGN_LEFT, &row_box, [&]() {
+        alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
+        do_text(
+            ctx,
+            2,
+            alia_srgba8_from_srgb8(
+                value->flags & ALIA_SIGNAL_WRITABLE
+                    ? ctx.palette->foundation.text.base
+                    : ctx.palette->foundation.text.weaker_2),
+            14.f,
+            text,
+            CENTER_Y);
+        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
     });
 }
 
@@ -245,23 +241,21 @@ do_checkbox_with_text(
     char const* text,
     alia_checkbox_style const* style)
 {
-    placement_hook(ctx, [&](auto const& placement) {
-        row(ctx, ALIGN_LEFT, [&]() {
-            alia_element_id id
-                = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, style);
-            do_text(
-                ctx,
-                2,
-                alia_srgba8_from_srgb8(
-                    value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base
-                        : ctx.palette->foundation.text.weaker_2),
-                14.f,
-                text,
-                CENTER_Y);
-            alia_element_box_region(
-                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
-        });
+    alia_box row_box;
+    row(ctx, ALIGN_LEFT, &row_box, [&]() {
+        alia_element_id id
+            = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, style);
+        do_text(
+            ctx,
+            2,
+            alia_srgba8_from_srgb8(
+                value->flags & ALIA_SIGNAL_WRITABLE
+                    ? ctx.palette->foundation.text.base
+                    : ctx.palette->foundation.text.weaker_2),
+            14.f,
+            text,
+            CENTER_Y);
+        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
     });
 }
 
@@ -272,25 +266,20 @@ do_switch_with_text(
     char const* text,
     alia_switch_style const* style)
 {
-    // TODO: The hook gets the full placement, before the alignment is applied.
-    // (But also the hook is only supposed to have a single child.)
-    placement_hook(ctx, [&](auto const& placement) {
-        row(ctx, ALIGN_LEFT, [&]() {
-            alia_element_id id
-                = alia_do_switch(&ctx, value, ALIA_CENTER_Y, style);
-            do_text(
-                ctx,
-                2,
-                alia_srgba8_from_srgb8(
-                    value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base
-                        : ctx.palette->foundation.text.weaker_2),
-                14.f,
-                text,
-                CENTER_Y);
-            alia_element_box_region(
-                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
-        });
+    alia_box row_box;
+    row(ctx, ALIGN_LEFT, &row_box, [&]() {
+        alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y, style);
+        do_text(
+            ctx,
+            2,
+            alia_srgba8_from_srgb8(
+                value->flags & ALIA_SIGNAL_WRITABLE
+                    ? ctx.palette->foundation.text.base
+                    : ctx.palette->foundation.text.weaker_2),
+            14.f,
+            text,
+            CENTER_Y);
+        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
     });
 }
 
@@ -301,25 +290,21 @@ do_node_expander_with_text(
     char const* text,
     alia_node_expander_style const* style)
 {
-    // TODO: The hook gets the full placement, before the alignment is applied.
-    // (But also the hook is only supposed to have a single child.)
-    placement_hook(ctx, [&](auto const& placement) {
-        row(ctx, ALIGN_LEFT, [&]() {
-            alia_element_id id
-                = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y, style);
-            do_text(
-                ctx,
-                2,
-                alia_srgba8_from_srgb8(
-                    value->flags & ALIA_SIGNAL_WRITABLE
-                        ? ctx.palette->foundation.text.base
-                        : ctx.palette->foundation.text.weaker_2),
-                14.f,
-                text,
-                CENTER_Y);
-            alia_element_box_region(
-                &ctx, id, &placement.box, ALIA_CURSOR_DEFAULT);
-        });
+    alia_box row_box;
+    row(ctx, ALIGN_LEFT, &row_box, [&]() {
+        alia_element_id id
+            = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y, style);
+        do_text(
+            ctx,
+            2,
+            alia_srgba8_from_srgb8(
+                value->flags & ALIA_SIGNAL_WRITABLE
+                    ? ctx.palette->foundation.text.base
+                    : ctx.palette->foundation.text.weaker_2),
+            14.f,
+            text,
+            CENTER_Y);
+        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
     });
 }
 
@@ -696,20 +681,14 @@ the_demo(context& ctx)
                     ctx.palette->foundation.background.stronger_2,
                     FILL,
                     [&]() {
-                        column(ctx, [&]() {
-                            inset(
-                                ctx,
-                                {.left = 40,
-                                 .right = 40,
-                                 .top = 40,
-                                 .bottom = 40},
-                                [&]() {
-                                    with_spacing(ctx, 6, [&] {
-                                        column(
-                                            ctx, [&]() { do_controls(ctx); });
-                                    });
+                        inset(
+                            ctx,
+                            {.left = 40, .right = 40, .top = 40, .bottom = 40},
+                            [&]() {
+                                with_spacing(ctx, 6, [&] {
+                                    column(ctx, [&]() { do_controls(ctx); });
                                 });
-                        });
+                            });
                     });
                 with_palette(ctx, &local_palette, [&] {
                     with_ui_scale(ctx, demo_scale, [&] {
@@ -718,7 +697,7 @@ the_demo(context& ctx)
                                 ctx,
                                 0,
                                 ctx.palette->foundation.background.base,
-                                FILL,
+                                GROW,
                                 [&]() {
                                     column(ctx, GROW, [&]() {
                                         alia_ui_scroll_view_begin(

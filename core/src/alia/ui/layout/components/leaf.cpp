@@ -100,7 +100,7 @@ alia_layout_leaf_emit(
 }
 
 alia_box
-alia_layout_leaf_read(alia_context* ctx)
+alia_layout_consume_box(alia_context* ctx)
 {
     return *arena_alloc<alia_box>(*alia_layout_placement_arena(ctx));
 }

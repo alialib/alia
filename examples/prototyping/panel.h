@@ -9,15 +9,12 @@ concrete_panel(
     layout_flag_set flags,
     Content&& content)
 {
-    placement_hook(ctx, flags, [&](auto const& placement) {
+    alia_box panel_box;
+    column(ctx, flags, &panel_box, [&]() {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             alia_draw_rounded_box(
-                &ctx,
-                z_index,
-                placement.box,
-                alia_srgba8_from_srgb8(color),
-                0.0f);
+                &ctx, z_index, panel_box, alia_srgba8_from_srgb8(color), 0.0f);
         }
 
         std::forward<Content>(content)();

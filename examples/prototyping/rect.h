@@ -17,12 +17,12 @@ do_rect(
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             alia_element_box_region(&ctx, id, &box, ALIA_CURSOR_DEFAULT);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             alia_interaction_status_t status
                 = alia_element_get_interaction_status(&ctx, id, 0);
             if (status & ALIA_INTERACTION_STATUS_HOVERED)
@@ -42,7 +42,7 @@ do_rect(
             break;
         }
         case ALIA_CATEGORY_INPUT: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             if (alia_element_detect_click(&ctx, id, ALIA_BUTTON_LEFT))
                 return true;
             break;
@@ -67,18 +67,18 @@ do_rect_with_offset(
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             // box_region(ctx, id, box);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             alia_draw_rounded_box(
                 &ctx, z_index, box, alia_srgba8_from_srgb8(color), 0.0f);
             break;
         }
         case ALIA_CATEGORY_INPUT: {
-            alia_box box = alia_layout_leaf_read(&ctx);
+            alia_box box = alia_layout_consume_box(&ctx);
             break;
         }
     }
@@ -96,6 +96,8 @@ do_rect(
 {
     apply_mods(ctx, mods, [&] { do_rect(ctx, z_index, size, color, FILL); });
 }
+
+#if 0
 
 void
 do_animated_rect(
@@ -127,3 +129,5 @@ do_animated_rect(
         });
     });
 }
+
+#endif

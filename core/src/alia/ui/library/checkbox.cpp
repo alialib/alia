@@ -250,6 +250,20 @@ alia_do_checkbox(
     alia_checkbox_style const* const effective_style
         = style != nullptr ? style : &default_checkbox_style;
 
+    alia_event_category const category = get_event_category(*ctx);
+    if (category == ALIA_CATEGORY_REFRESH)
+    {
+        alia_layout_leaf_emit(
+            ctx,
+            alia_vec2f{
+                alia_px(ctx, effective_style->layout_width),
+                alia_px(ctx, effective_style->layout_height)},
+            layout_flags);
+        return id;
+    }
+
+    alia_box box = alia_layout_consume_box(ctx);
+
     bool const is_disabled
         = (value == nullptr) || ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
     bool const checked
@@ -257,27 +271,14 @@ alia_do_checkbox(
             ? value->value
             : false;
 
-    switch (get_event_category(*ctx))
+    switch (category)
     {
-        case ALIA_CATEGORY_REFRESH:
-            alia_layout_leaf_emit(
-                ctx,
-                alia_vec2f{
-                    alia_px(ctx, effective_style->layout_width),
-                    alia_px(ctx, effective_style->layout_height)},
-                layout_flags);
-            break;
-
         case ALIA_CATEGORY_SPATIAL: {
-            alia_box box = alia_layout_leaf_read(ctx);
             alia_element_box_region(ctx, id, &box, ALIA_CURSOR_DEFAULT);
             break;
         }
 
         case ALIA_CATEGORY_INPUT: {
-            alia_box box = alia_layout_leaf_read(ctx);
-            (void) box;
-
             if (is_disabled)
                 break;
 
@@ -292,7 +293,6 @@ alia_do_checkbox(
         }
 
         case ALIA_CATEGORY_DRAWING: {
-            alia_box box = alia_layout_leaf_read(ctx);
             alia_interaction_status_t interaction_status
                 = alia_element_get_interaction_status(
                     ctx,
@@ -305,10 +305,6 @@ alia_do_checkbox(
                 ctx, box, *data, checked, interaction_status, effective_style);
             break;
         }
-
-        default:
-            alia_layout_leaf_read(ctx);
-            break;
     }
 
     return id;

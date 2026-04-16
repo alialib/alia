@@ -1,6 +1,8 @@
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
+using namespace alia::operators;
+
 namespace alia {
 
 using flow_layout_node = alia_layout_container;
@@ -148,6 +150,13 @@ flow_assign_boxes(
         baseline,
         scratch.total_height,
         scratch.ascent);
+
+    if ((flow.flags & ALIA_PROVIDE_BOX) != 0)
+    {
+        alia_box* provided_box = arena_alloc<alia_box>(ctx->arena);
+        provided_box->min = {box.min.x, box.min.y + placement.offset};
+        provided_box->size = {box.size.x, placement.size};
+    }
 
     alia_line_requirements line = {0};
 

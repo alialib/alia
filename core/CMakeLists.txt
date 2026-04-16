@@ -25,7 +25,6 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/growth_override.cpp
     src/alia/ui/layout/components/min_size.cpp
     src/alia/ui/layout/components/inset.cpp
-    src/alia/ui/layout/components/placement_hook.cpp
     src/alia/ui/layout/components/leaf.cpp
     src/alia/ui/layout/system.cpp
     src/alia/ui/layout/utilities.cpp

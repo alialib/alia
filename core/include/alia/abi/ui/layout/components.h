@@ -80,11 +80,6 @@ struct alia_layout_placement
     float baseline;
 };
 
-alia_layout_placement*
-alia_layout_placement_hook_begin(alia_context* ctx, alia_layout_flags_t flags);
-void
-alia_layout_placement_hook_end(alia_context* ctx);
-
 // LEAVES
 
 // Emit a leaf node.
@@ -93,10 +88,12 @@ void
 alia_layout_leaf_emit(
     alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags);
 
-// Read the placement box for a leaf node.
+// BOX CONSUMPTION
+
+// Consume the placement box for a node.
 // This must be called on NON-refresh passes (and never on refresh passes).
 alia_box
-alia_layout_leaf_read(alia_context* ctx);
+alia_layout_consume_box(alia_context* ctx);
 
 ALIA_EXTERN_C_END
 

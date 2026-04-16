@@ -16,51 +16,54 @@ int const ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12;
     /* alignment flags - Omitting alignment flags invokes "default" */        \
     /* alignment, which is FILL for containers and LEFT/TOP for leaves. */    \
     /* X alignment flags */                                                   \
-    X(0b0000000000000111, X_ALIGNMENT_MASK)                                   \
-    X(0b0000000000000001, CENTER_X)                                           \
-    X(0b0000000000000010, ALIGN_LEFT)                                         \
-    X(0b0000000000000011, ALIGN_RIGHT)                                        \
-    X(0b0000000000000100, FILL_X)                                             \
+    X(0b00000000000000111, X_ALIGNMENT_MASK)                                  \
+    X(0b00000000000000001, CENTER_X)                                          \
+    X(0b00000000000000010, ALIGN_LEFT)                                        \
+    X(0b00000000000000011, ALIGN_RIGHT)                                       \
+    X(0b00000000000000100, FILL_X)                                            \
     /* Y alignment flags */                                                   \
-    X(0b0000000000111000, Y_ALIGNMENT_MASK)                                   \
-    X(0b0000000000001000, CENTER_Y)                                           \
-    X(0b0000000000010000, ALIGN_TOP)                                          \
-    X(0b0000000000011000, ALIGN_BOTTOM)                                       \
-    X(0b0000000000100000, FILL_Y)                                             \
-    X(0b0000000000101000, BASELINE_Y)                                         \
+    X(0b00000000000111000, Y_ALIGNMENT_MASK)                                  \
+    X(0b00000000000001000, CENTER_Y)                                          \
+    X(0b00000000000010000, ALIGN_TOP)                                         \
+    X(0b00000000000011000, ALIGN_BOTTOM)                                      \
+    X(0b00000000000100000, FILL_Y)                                            \
+    X(0b00000000000101000, BASELINE_Y)                                        \
     /* cross-axis alignment flags - It is the app's responsibility to */      \
     /* ensure that the cross-axis alignment doesn't contradict the X/Y */     \
     /* alignment flags. */                                                    \
-    X(0b0000000111000000, CROSS_ALIGNMENT_MASK)                               \
-    X(0b0000000001000000, CENTER_CROSS)                                       \
-    X(0b0000000010000000, ALIGN_START)                                        \
-    X(0b0000000011000000, ALIGN_END)                                          \
-    X(0b0000000100000000, FILL_CROSS)                                         \
-    X(0b0000000101000000, BASELINE_CROSS)                                     \
+    X(0b00000000111000000, CROSS_ALIGNMENT_MASK)                              \
+    X(0b00000000001000000, CENTER_CROSS)                                      \
+    X(0b00000000010000000, ALIGN_START)                                       \
+    X(0b00000000011000000, ALIGN_END)                                         \
+    X(0b00000000100000000, FILL_CROSS)                                        \
+    X(0b00000000101000000, BASELINE_CROSS)                                    \
     /* combined alignment flags */                                            \
-    X(0b0000000001001001, CENTER)                                             \
-    X(0b0000000100100100, FILL)                                               \
+    X(0b00000000001001001, CENTER)                                            \
+    X(0b00000000100100100, FILL)                                              \
     /* justification flags - Apply to flow and block_flow line layouts. */    \
-    X(0b0000111000000000, JUSTIFY_MASK)                                       \
-    X(0b0000000000000000, JUSTIFY_START)                                      \
-    X(0b0000001000000000, JUSTIFY_END)                                        \
-    X(0b0000010000000000, JUSTIFY_CENTER)                                     \
-    X(0b0000011000000000, JUSTIFY_SPACE_BETWEEN)                              \
-    X(0b0000100000000000, JUSTIFY_SPACE_AROUND)                               \
-    X(0b0000101000000000, JUSTIFY_SPACE_EVENLY)                               \
+    X(0b00000111000000000, JUSTIFY_MASK)                                      \
+    X(0b00000000000000000, JUSTIFY_START)                                     \
+    X(0b00000001000000000, JUSTIFY_END)                                       \
+    X(0b00000010000000000, JUSTIFY_CENTER)                                    \
+    X(0b00000011000000000, JUSTIFY_SPACE_BETWEEN)                             \
+    X(0b00000100000000000, JUSTIFY_SPACE_AROUND)                              \
+    X(0b00000101000000000, JUSTIFY_SPACE_EVENLY)                              \
     /* baseline group alignment flags - When nodes use baseline alignment, */ \
     /* they are constrained relative to one another, but they are not */      \
     /* necessarily constrained within the larger container space. These */    \
     /* flags control how the group of nodes with baseline alignment are */    \
     /* positioned when there is extra vertical space. */                      \
-    X(0b0011000000000000, BASELINE_GROUP_ALIGNMENT_MASK)                      \
-    X(0b0001000000000000, BASELINE_GROUP_ALIGN_TOP)                           \
-    X(0b0010000000000000, BASELINE_GROUP_ALIGN_BOTTOM)                        \
-    X(0b0011000000000000, BASELINE_GROUP_ALIGN_CENTER)                        \
+    X(0b00011000000000000, BASELINE_GROUP_ALIGNMENT_MASK)                     \
+    X(0b00001000000000000, BASELINE_GROUP_ALIGN_TOP)                          \
+    X(0b00010000000000000, BASELINE_GROUP_ALIGN_BOTTOM)                       \
+    X(0b00011000000000000, BASELINE_GROUP_ALIGN_CENTER)                       \
     /* Setting the GROW flag sets the node's growth factor to 1.0. */         \
-    X(0b0100000000000000, GROW)                                               \
+    X(0b00100000000000000, GROW)                                              \
     /* For leaf nodes, the FLUSH flag disables spacing around the node. */    \
-    X(0b1000000000000000, FLUSH)
+    X(0b01000000000000000, FLUSH)                                             \
+    /* For containers, the PROVIDE_BOX flag tells the container to provide */ \
+    /* its box back to the component code for consumption. */                 \
+    X(0b10000000000000000, PROVIDE_BOX)
 
 enum
 {
