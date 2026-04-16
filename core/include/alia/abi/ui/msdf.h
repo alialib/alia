@@ -18,6 +18,7 @@ typedef struct alia_msdf_font_metrics
     float descender;
     float underline_y;
     float underline_thickness;
+    float cap_height;
 } alia_msdf_font_metrics;
 
 typedef struct alia_msdf_atlas_description

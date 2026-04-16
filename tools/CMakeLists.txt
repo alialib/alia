@@ -34,6 +34,7 @@ add_executable(alia_asset_builder asset_builder.cpp)
 target_link_libraries(alia_asset_builder PRIVATE
     msdfgen::msdfgen
     msdf-atlas-gen::msdf-atlas-gen
+    Freetype::Freetype
     CURL::libcurl
     yaml-cpp::yaml-cpp)
 target_compile_features(alia_asset_builder PRIVATE cxx_std_17)

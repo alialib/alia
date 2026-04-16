@@ -37,9 +37,28 @@
 #include <curl/curl.h>
 #include <yaml-cpp/yaml.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_MULTIPLE_MASTERS_H
+#include FT_TRUETYPE_TABLES_H
+
 using namespace msdf_atlas;
 
 namespace fs = std::filesystem;
+
+namespace {
+
+struct scoped_ft_library
+{
+    FT_Library lib = nullptr;
+    ~scoped_ft_library()
+    {
+        if (lib)
+            FT_Done_FreeType(lib);
+    }
+};
+
+} // namespace
 
 static bool
 is_ident_start(unsigned char c)
@@ -167,6 +186,165 @@ apply_variation_axes(
         char const* axis_name = it->second->name;
         if (!axis_name
             || !msdfgen::setFontVariationAxis(ft, font, axis_name, applied))
+        {
+            fprintf(
+                stderr,
+                "Font '%s': failed to set variation axis '%s' to %.4f\n",
+                entry.id.c_str(),
+                axis_req.first.c_str(),
+                applied);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/// Cap height in font units (same coordinate system as `face->ascender`).
+static double
+cap_height_font_units(FT_Face face)
+{
+    TT_OS2 const* os2 = static_cast<TT_OS2 const*>(
+        FT_Get_Sfnt_Table(face, FT_SFNT_OS2));
+    if (os2 && os2->sCapHeight != 0)
+        return static_cast<double>(os2->sCapHeight);
+    if (FT_Load_Char(face, 'H', FT_LOAD_NO_SCALE) == 0)
+        return static_cast<double>(face->glyph->metrics.horiBearingY);
+    return static_cast<double>(face->ascender);
+}
+
+/// Mirrors [`apply_variation_axes`] using FreeType on a standalone `FT_Face`
+/// (same axis matching and clamping as msdfgen).
+/// `ft_library` must be the `FT_Library` that owns `face` (for `FT_Done_MM_Var`).
+static int
+apply_variation_axes_ft(
+    FontEntry const& entry, FT_Face face, FT_Library ft_library)
+{
+    if (entry.variation_axes.empty())
+        return 0;
+
+    auto canonicalize = [](std::string s) {
+        std::string out;
+        out.reserve(s.size());
+        for (char c : s)
+        {
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                || (c >= '0' && c <= '9'))
+            {
+                if (c >= 'A' && c <= 'Z')
+                    out.push_back(char(c - 'A' + 'a'));
+                else
+                    out.push_back(c);
+            }
+        }
+        return out;
+    };
+
+    auto normalized_axis_alias = [&](std::string const& requested) {
+        std::string norm = canonicalize(requested);
+        if (norm == "wght")
+            return std::string("weight");
+        if (norm == "wdth")
+            return std::string("width");
+        if (norm == "opsz")
+            return std::string("opticalsize");
+        if (norm == "slnt")
+            return std::string("slant");
+        if (norm == "ital")
+            return std::string("italic");
+        return norm;
+    };
+
+    if (!(face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS))
+    {
+        fprintf(
+            stderr,
+            "Font '%s': variable axes were requested, but this font does not "
+            "expose variation axes\n",
+            entry.id.c_str());
+        return 1;
+    }
+
+    FT_MM_Var* master = nullptr;
+    if (FT_Get_MM_Var(face, &master))
+        return 1;
+
+    struct mm_var_guard
+    {
+        FT_Library lib;
+        FT_MM_Var* m;
+        ~mm_var_guard()
+        {
+            if (m)
+                FT_Done_MM_Var(lib, m);
+        }
+    } guard{ft_library, master};
+
+    std::unordered_map<std::string, unsigned> axis_index_by_key;
+    std::vector<double> axis_min;
+    std::vector<double> axis_max;
+    axis_min.reserve(master->num_axis);
+    axis_max.reserve(master->num_axis);
+    for (unsigned i = 0; i < master->num_axis; ++i)
+    {
+        FT_Var_Axis const& ax = master->axis[i];
+        std::string key = canonicalize(ax.name ? ax.name : "");
+        axis_index_by_key[key] = i;
+        axis_min.push_back(static_cast<double>(ax.minimum) / 65536.0);
+        axis_max.push_back(static_cast<double>(ax.maximum) / 65536.0);
+    }
+
+    std::vector<FT_Fixed> coords(master->num_axis);
+    if (FT_Get_Var_Design_Coordinates(
+            face, FT_UInt(coords.size()), coords.data()))
+        return 1;
+
+    for (auto const& axis_req : entry.variation_axes)
+    {
+        std::string key = normalized_axis_alias(axis_req.first);
+        auto it = axis_index_by_key.find(key);
+        if (it == axis_index_by_key.end())
+        {
+            fprintf(
+                stderr,
+                "Font '%s': unknown variation axis '%s' (available:",
+                entry.id.c_str(),
+                axis_req.first.c_str());
+            for (unsigned i = 0; i < master->num_axis; ++i)
+            {
+                FT_Var_Axis const& ax = master->axis[i];
+                fprintf(stderr, " %s", ax.name ? ax.name : "<null>");
+            }
+            fprintf(stderr, " )\n");
+            return 1;
+        }
+        unsigned ix = it->second;
+        double requested = axis_req.second;
+        double min_v = axis_min[ix];
+        double max_v = axis_max[ix];
+        double applied = requested;
+        if (applied < min_v)
+            applied = min_v;
+        if (applied > max_v)
+            applied = max_v;
+
+        if (applied != requested)
+        {
+            fprintf(
+                stderr,
+                "Font '%s': axis '%s' value %.4f out of range [%.4f, %.4f], "
+                "clamped to %.4f\n",
+                entry.id.c_str(),
+                axis_req.first.c_str(),
+                requested,
+                min_v,
+                max_v,
+                applied);
+        }
+
+        coords[ix] = static_cast<FT_Fixed>(applied * 65536.0);
+        if (FT_Set_Var_Design_Coordinates(
+                face, FT_UInt(coords.size()), coords.data()))
         {
             fprintf(
                 stderr,
@@ -728,8 +906,18 @@ main(int argc, char const* const* argv)
         return 1;
     }
 
+    scoped_ft_library ft_metrics_lib;
+    if (FT_Init_FreeType(&ft_metrics_lib.lib))
+    {
+        fprintf(stderr, "Failed to initialize FreeType (cap metrics)\n");
+        msdfgen::deinitializeFreetype(ft);
+        return 1;
+    }
+
     std::vector<GlyphGeometry> glyphs;
     std::vector<FontGeometry> fonts;
+    std::vector<double> cap_heights;
+    cap_heights.reserve(font_entries.size());
     double font_scale = 1.0;
 
     for (size_t f = 0; f < font_entries.size(); ++f)
@@ -770,6 +958,29 @@ main(int argc, char const* const* argv)
             msdfgen::deinitializeFreetype(ft);
             return 1;
         }
+
+        FT_Face cap_face = nullptr;
+        if (FT_New_Face(ft_metrics_lib.lib, path, 0, &cap_face))
+        {
+            fprintf(stderr, "Failed to open font for cap height: %s\n", path);
+            msdfgen::destroyFont(font);
+            msdfgen::deinitializeFreetype(ft);
+            return 1;
+        }
+        if (apply_variation_axes_ft(
+                font_entries[f], cap_face, ft_metrics_lib.lib)
+            != 0)
+        {
+            FT_Done_Face(cap_face);
+            msdfgen::destroyFont(font);
+            msdfgen::deinitializeFreetype(ft);
+            return 1;
+        }
+        double cap_height_em = cap_height_font_units(cap_face)
+            * font_geometry.getGeometryScale();
+        FT_Done_Face(cap_face);
+        cap_heights.push_back(cap_height_em);
+
         fprintf(stderr, "Loaded %d glyphs from %s\n", loaded, path);
         fonts.push_back(std::move(font_geometry));
         msdfgen::destroyFont(font);
@@ -1023,7 +1234,8 @@ inline alia_msdf_font_description const& alia_font_description(std::size_t index
               << static_cast<float>(m.ascenderY) << "f, "
               << static_cast<float>(m.descenderY) << "f, "
               << static_cast<float>(m.underlineY) << "f, "
-              << static_cast<float>(m.underlineThickness) << "f}, {"
+              << static_cast<float>(m.underlineThickness) << "f, "
+              << static_cast<float>(cap_heights[font_idx]) << "f}, {"
               << dist_range << "f, 0.f, " << em_sz << "f, "
               << static_cast<float>(w) << "f, " << static_cast<float>(h)
               << "f}, alia_font_" << symid << "_glyphs, alia_font_" << symid
