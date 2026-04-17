@@ -1,9 +1,9 @@
 #ifndef ALIA_ABI_KERNEL_TIMING_H
 #define ALIA_ABI_KERNEL_TIMING_H
 
+#include <alia/abi/kernel/ids.h>
 #include <alia/abi/prelude.h>
 #include <alia/context.h>
-#include <alia/abi/ids.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -35,7 +35,9 @@ alia_timer_use(alia_context* ctx);
 
 // Arm a timer for `duration` after the current tick count.
 void
-alia_timer_start(alia_context* ctx, alia_timer_state* state,
+alia_timer_start(
+    alia_context* ctx,
+    alia_timer_state* state,
     alia_nanosecond_count duration);
 
 // Disarm a timer (in-flight scheduled timer events may still be dispatched

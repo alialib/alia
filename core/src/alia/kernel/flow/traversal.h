@@ -1,6 +1,5 @@
 #pragma once
 
-#include <alia/abi/events.h>
 #include <alia/context.h>
 
 #include <memory>

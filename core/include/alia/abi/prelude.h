@@ -182,7 +182,25 @@ alia_min_aligned_size(size_t n)
     return ((n) + ALIA_MIN_ALIGN - 1) & ~(ALIA_MIN_ALIGN - 1);
 }
 
-// COUNTERS
+// PREFETCHING
+
+#if defined(__GNUC__) || defined(__clang__)
+#define ALIA_PREFETCH_READ_ONLY(ptr)                                          \
+    __builtin_prefetch((const void*) (ptr), 0, 3)
+#define ALIA_PREFETCH_READ_WRITE(ptr)                                         \
+    __builtin_prefetch((const void*) (ptr), 1, 3)
+#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+#include <intrin.h>
+#define ALIA_PREFETCH_READ_ONLY(ptr)                                          \
+    _mm_prefetch((const char*) (ptr), _MM_HINT_T0)
+#define ALIA_PREFETCH_READ_WRITE(ptr)                                         \
+    _m_prefetchw((volatile const void*) (ptr))
+#else
+#define ALIA_PREFETCH_READ_ONLY(ptr)
+#define ALIA_PREFETCH_READ_WRITE(ptr)
+#endif
+
+// COUNTERS - TODO: Move these to a separate file?
 
 typedef int64_t alia_nanosecond_count;
 

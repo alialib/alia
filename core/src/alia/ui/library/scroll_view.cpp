@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <cstdint>
 
-#include <alia/abi/events.h>
-#include <alia/abi/ids.h>
+#include <alia/abi/kernel/ids.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/kernel/timing.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/input/keyboard.h>
