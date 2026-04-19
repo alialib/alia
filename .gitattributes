@@ -13,6 +13,7 @@ CNAME text eol=lf
 *.sh text eol=lf
 *.txt text eol=lf
 *.yml text eol=lf
+*.yaml text eol=lf
 *.cmake text eol=lf
 *.html text eol=lf
 *.css text eol=lf
