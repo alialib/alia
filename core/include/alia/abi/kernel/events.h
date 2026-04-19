@@ -1,7 +1,7 @@
 #ifndef ALIA_ABI_KERNEL_EVENTS_H
 #define ALIA_ABI_KERNEL_EVENTS_H
 
-#include <alia/abi/kernel/ids.h>
+#include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN

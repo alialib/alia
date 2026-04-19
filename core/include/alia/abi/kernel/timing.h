@@ -1,7 +1,7 @@
 #ifndef ALIA_ABI_KERNEL_TIMING_H
 #define ALIA_ABI_KERNEL_TIMING_H
 
-#include <alia/abi/kernel/ids.h>
+#include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
 #include <alia/context.h>
 

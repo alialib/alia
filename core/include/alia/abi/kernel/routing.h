@@ -1,5 +1,5 @@
-#ifndef ALIA_ABI_IDS_H
-#define ALIA_ABI_IDS_H
+#ifndef ALIA_ABI_ROUTING_H
+#define ALIA_ABI_ROUTING_H
 
 #include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
@@ -50,4 +50,4 @@ alia_make_element_id(alia_context* ctx, alia_substrate_usage_result result)
 
 ALIA_EXTERN_C_END
 
-#endif // ALIA_ABI_IDS_H
+#endif // ALIA_ABI_ROUTING_H
