@@ -19,14 +19,21 @@ using timer_pq = std::priority_queue<
     std::vector<timer_request>,
     alia_ui_timer_request_compare>;
 
+alia_element_id
+make_test_element_id(std::uintptr_t raw)
+{
+    return alia_element_id{
+        .ptr = reinterpret_cast<void*>(raw), .generation = 0, .route = 0};
+}
+
 } // namespace
 
 TEST_CASE("timer request queue emits in fire_time order")
 {
     timer_pq pq;
 
-    alia_element_id t1 = reinterpret_cast<alia_element_id>(1u);
-    alia_element_id t2 = reinterpret_cast<alia_element_id>(2u);
+    alia_element_id t1 = make_test_element_id(1u);
+    alia_element_id t2 = make_test_element_id(2u);
 
     pq.push(
         timer_request{.target = t1, .fire_time = 10, .queued_in_cycle = 0});
@@ -52,8 +59,8 @@ TEST_CASE("timer requests queued in current cycle are deferred")
     timer_pq pq;
 
     uint64_t cycle = 7;
-    alia_element_id t1 = reinterpret_cast<alia_element_id>(1u);
-    alia_element_id t2 = reinterpret_cast<alia_element_id>(2u);
+    alia_element_id t1 = make_test_element_id(1u);
+    alia_element_id t2 = make_test_element_id(2u);
 
     // Both are due (<= now), but only one is eligible for dispatch.
     pq.push(
@@ -89,7 +96,7 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
     alia_timer_state state{
         .active = true,
         .expected_fire_time = 100,
-        .target = reinterpret_cast<alia_element_id>(0x1234u)};
+        .target = make_test_element_id(0x1234u)};
 
     // Build a minimal event traversal + context.
     alia_event_traversal traversal{};
@@ -109,7 +116,7 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
     // Fire with wrong target.
     {
         alia_timer payload{
-            .target = reinterpret_cast<alia_element_id>(0xdeadbeefu),
+            .target = make_test_element_id(0xdeadbeefu),
             .fire_time = 100};
         alia_event event = alia_make_timer_event(payload);
         traversal.event = &event;

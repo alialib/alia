@@ -12,25 +12,6 @@
 #define TEST_NO_MAIN
 #include "acutest.h"
 
-// --------- substrate allocator (backed by malloc/free) ---------
-
-static void*
-test_block_alloc(void* user_data, size_t size, size_t alignment)
-{
-    (void) user_data;
-    (void) alignment;
-    return malloc(size);
-}
-
-static void
-test_block_free(void* user_data, void* ptr, size_t size, size_t alignment)
-{
-    (void) user_data;
-    (void) size;
-    (void) alignment;
-    free(ptr);
-}
-
 // --------- aligned allocation helpers ---------
 
 static int
@@ -68,6 +49,28 @@ aligned_free_portable(void* p)
 #endif
 }
 
+// --------- substrate allocator (honors alignment for block storage) ---------
+
+static void*
+test_block_alloc(void* user_data, size_t size, size_t alignment)
+{
+    (void) user_data;
+    if (alignment <= sizeof(void*))
+        return malloc(size);
+    return aligned_alloc_portable(alignment, size);
+}
+
+static void
+test_block_free(void* user_data, void* ptr, size_t size, size_t alignment)
+{
+    (void) user_data;
+    (void) size;
+    if (alignment <= sizeof(void*))
+        free(ptr);
+    else
+        aligned_free_portable(ptr);
+}
+
 // --------- destructor ordering test support ---------
 
 typedef struct test_state
@@ -83,8 +86,9 @@ typedef struct test_object
 } test_object;
 
 static void
-test_object_destructor(void* p)
+test_object_destructor(alia_substrate_system* system, void* p)
 {
+    (void) system;
     test_object* obj = (test_object*) p;
     obj->state->ids[obj->state->count++] = obj->id;
 }
@@ -156,8 +160,8 @@ test_basic_block(void)
     substrate_test_ctx t;
     substrate_test_ctx_init(&t);
 
-    alia_substrate_block* root
-        = alia_test_substrate_fixture_root_block(t.fixture);
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     alia_test_substrate_fixture_reset_traversal(t.fixture);
@@ -194,14 +198,15 @@ test_basic_block_discovery(void)
     substrate_test_ctx t;
     substrate_test_ctx_init(&t);
 
-    alia_substrate_block* root
-        = alia_test_substrate_fixture_root_block(t.fixture);
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
 
     alia_test_substrate_fixture_reset_traversal(t.fixture);
     alia_stack_reset(t.stack);
 
     // Enter discovery mode by passing align=0.
     alia_struct_spec discovery_spec = {.size = 0u, .align = 0u};
+    alia_test_substrate_fixture_prepare_refresh_event(t.fixture, &t.ctx);
     alia_substrate_begin_block(&t.ctx, root, &discovery_spec);
 
     alia_substrate_usage_result use1
@@ -222,7 +227,9 @@ test_basic_block_discovery(void)
     TEST_CHECK(use3.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY);
 
     alia_struct_spec computed = alia_substrate_end_block(&t.ctx);
-    TEST_CHECK(computed.size == 768u);
+    // 32 is the current size of a block header.
+    // (Hopefully this will decrease soon.)
+    TEST_CHECK(computed.size == 768u + 32u);
     TEST_CHECK(computed.align == 16u);
 
     // Now allocate/init using computed spec.
@@ -256,13 +263,13 @@ test_basic_block_discovery(void)
 }
 
 static void
-test_substrate_use_block(void)
+test_substrate_use_anchor(void)
 {
     substrate_test_ctx t;
     substrate_test_ctx_init(&t);
 
-    alia_substrate_block* root
-        = alia_test_substrate_fixture_root_block(t.fixture);
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     alia_test_substrate_fixture_reset_traversal(t.fixture);
@@ -270,7 +277,7 @@ test_substrate_use_block(void)
 
     alia_substrate_begin_block(&t.ctx, root, &spec);
 
-    alia_substrate_block* child = alia_substrate_use_block(&t.ctx);
+    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx);
     TEST_ASSERT(child != NULL);
 
     // Allocate inside the child.
@@ -299,8 +306,8 @@ test_substrate_destructors(void)
     substrate_test_ctx t;
     substrate_test_ctx_init(&t);
 
-    alia_substrate_block* root
-        = alia_test_substrate_fixture_root_block(t.fixture);
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     test_state state;
@@ -334,7 +341,7 @@ test_substrate_destructors(void)
     ((test_object*) r2.ptr)->id = 2;
 
     // Child block.
-    alia_substrate_block* child = alia_substrate_use_block(&t.ctx);
+    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx);
     TEST_ASSERT(child != NULL);
 
     alia_substrate_begin_block(&t.ctx, child, &spec);
@@ -406,8 +413,8 @@ test_substrate_generations(void)
     substrate_test_ctx t;
     substrate_test_ctx_init(&t);
 
-    alia_substrate_block* root
-        = alia_test_substrate_fixture_root_block(t.fixture);
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     for (int generation = 0; generation < 2; ++generation)
@@ -436,7 +443,7 @@ substrate_tests(void)
 {
     test_basic_block();
     test_basic_block_discovery();
-    test_substrate_use_block();
+    test_substrate_use_anchor();
     test_substrate_destructors();
     test_substrate_generations();
 }

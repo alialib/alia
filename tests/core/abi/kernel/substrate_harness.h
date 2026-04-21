@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alia/abi/context.h>
 #include <alia/abi/kernel/substrate.h>
 
 // test-only substrate harness
@@ -25,8 +26,15 @@ alia_test_substrate_fixture_traversal(alia_test_substrate_fixture* fixture);
 alia_substrate_system*
 alia_test_substrate_fixture_system(alia_test_substrate_fixture* fixture);
 
-alia_substrate_block*
-alia_test_substrate_fixture_root_block(alia_test_substrate_fixture* fixture);
+alia_substrate_anchor*
+alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture);
+
+// Discovery mode requires a refresh event on the context; wire one from the
+// fixture into `ctx` before calling `alia_substrate_begin_block` with a
+// spec that needs discovery.
+void
+alia_test_substrate_fixture_prepare_refresh_event(
+    alia_test_substrate_fixture* fixture, alia_context* ctx);
 
 // Reset traversal state (especially scratch arena allocation offset).
 void

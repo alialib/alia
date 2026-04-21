@@ -1,6 +1,8 @@
 #include <alia/abi/kernel/substrate.h>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/ui/events.h>
+#include <alia/impl/events.hpp>
 
 #include "substrate_harness.h"
 #include <alia/kernel/substrate.h>
@@ -68,6 +70,10 @@ struct alia_test_substrate_fixture
     alia_arena* arena = nullptr;
     void* arena_storage = nullptr;
     alia_bump_allocator scratch = {};
+
+    // minimal event state so discovery mode can mark refresh incomplete
+    alia_event_traversal event_traversal = {};
+    alia_event refresh_event = {};
 };
 
 extern "C" {
@@ -122,8 +128,10 @@ alia_test_substrate_fixture_destroy(alia_test_substrate_fixture* fixture)
     if (!fixture)
         return;
 
-    // Run destructor lists and free substrate block storage.
-    alia::substrate_system_cleanup(fixture->system);
+    // Run destructor lists and free substrate block storage if root still
+    // exists (tests may have explicitly cleaned it already).
+    if (fixture->system.root_anchor.block)
+        alia::substrate_system_cleanup(fixture->system);
 
     if (fixture->arena)
     {
@@ -152,10 +160,23 @@ alia_test_substrate_fixture_system(alia_test_substrate_fixture* fixture)
     return fixture ? &fixture->system : nullptr;
 }
 
-alia_substrate_block*
-alia_test_substrate_fixture_root_block(alia_test_substrate_fixture* fixture)
+alia_substrate_anchor*
+alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture)
 {
-    return fixture ? &fixture->system.root_block : nullptr;
+    return fixture ? &fixture->system.root_anchor : nullptr;
+}
+
+void
+alia_test_substrate_fixture_prepare_refresh_event(
+    alia_test_substrate_fixture* fixture, alia_context* ctx)
+{
+    if (!fixture || !ctx)
+        return;
+
+    fixture->refresh_event = alia_make_refresh_event(alia_refresh{false});
+    fixture->event_traversal.event = &fixture->refresh_event;
+    fixture->event_traversal.aborted = false;
+    ctx->events = &fixture->event_traversal;
 }
 
 void
@@ -179,7 +200,12 @@ alia_test_substrate_fixture_cleanup_root_block(
     if (!fixture)
         return;
 
-    alia::substrate_block_cleanup(fixture->system, fixture->system.root_block);
+    if (fixture->system.root_anchor.block)
+    {
+        alia::substrate_block_cleanup(
+            fixture->system, fixture->system.root_anchor.block);
+        fixture->system.root_anchor.block = nullptr;
+    }
 }
 
 } // extern "C"
