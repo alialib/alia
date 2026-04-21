@@ -61,14 +61,14 @@ condition_is_strictly_false(T&& x)
 
 struct if_else_chain_scope
 {
-    alia_substrate_block* block;
+    alia_substrate_anchor* anchor;
     bool else_eligible;
     int branch_counter;
     int* active_branch;
 
     template<class Condition>
     bool
-    eval(Condition&& condition)
+    eval(alia_context* ctx, Condition&& condition)
     {
         ++branch_counter;
         bool current_condition_is_true
@@ -79,7 +79,7 @@ struct if_else_chain_scope
            && condition_is_strictly_false(std::forward<Condition>(condition));
         if (current_condition_is_true && *active_branch != branch_counter)
         {
-            alia_substrate_reset_block(block);
+            alia_substrate_reset_anchor(ctx, anchor);
             *active_branch = branch_counter;
         }
         return current_condition_is_true;
@@ -90,7 +90,7 @@ static inline if_else_chain_scope
 get_if_else_chain_scope(alia_context* ctx)
 {
     // TODO: Merge block and branch storage into a single allocation.
-    alia_substrate_block* block = alia_substrate_use_block(ctx);
+    alia_substrate_anchor* anchor = alia_substrate_use_anchor(ctx);
     // TODO: Use C++ interface for this.
     auto branch_storage
         = alia_substrate_use_memory(ctx, sizeof(int), alignof(int));
@@ -98,7 +98,7 @@ get_if_else_chain_scope(alia_context* ctx)
     if (branch_storage.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL)
         *active_branch = -1;
     return {
-        block,
+        anchor,
         true,
         0,
         active_branch,
@@ -114,19 +114,21 @@ struct inner_if_scope
     int pass_number_;
 
     inner_if_scope(
-        alia_context* ctx, alia_substrate_block* block, alia_struct_spec* spec)
+        alia_context* ctx,
+        alia_substrate_anchor* anchor,
+        alia_struct_spec* spec)
     {
         ctx_ = ctx;
         spec_ = spec;
         pass_number_ = 0;
-        alia_substrate_begin_block(ctx, block, spec);
+        alia_substrate_begin_block((ctx), (anchor), (spec));
     }
 
     void
     advance()
     {
         // TODO: Address thread-safety issues here.
-        *spec_ = alia_substrate_end_block(ctx_);
+        *spec_ = alia_substrate_end_block((ctx_));
         ++pass_number_;
     }
 
@@ -146,7 +148,7 @@ struct inner_if_scope
 #define ALIA_INVOKE_CONDITIONAL_BLOCK(ctx, chain)                             \
     for (auto _alia_inner_if = alia::inner_if_scope(                          \
              (ctx),                                                           \
-             chain.block,                                                     \
+             chain.anchor,                                                    \
              get_memoized_block_spec<struct ALIA_UNIQUE_ID(                   \
                  alia_if_block_spec_memo_tag_)>());                           \
          !_alia_inner_if.done();                                              \
@@ -155,7 +157,7 @@ struct inner_if_scope
 #define ALIA_IF_(ctx, condition)                                              \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
     if (auto _alia_chain_scope = alia::get_if_else_chain_scope(ctx);          \
-        _alia_chain_scope.eval(condition))                                    \
+        _alia_chain_scope.eval((ctx), condition))                             \
         ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
     ALIA_REENABLE_MACRO_WARNINGS
 
@@ -164,7 +166,7 @@ struct inner_if_scope
 #define ALIA_ELSE_IF_(ctx, condition)                                         \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
     if (auto _alia_chain_scope = alia::get_if_else_chain_scope(ctx);          \
-        _alia_chain_scope.eval(condition))                                    \
+        _alia_chain_scope.eval((ctx), condition))                             \
         ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
     ALIA_REENABLE_MACRO_WARNINGS
 
@@ -172,8 +174,9 @@ struct inner_if_scope
 
 #define ALIA_ELSE_(ctx)                                                       \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    else if (_alia_chain_scope.eval(true)) ALIA_INVOKE_CONDITIONAL_BLOCK(     \
-        (ctx), _alia_chain_scope) ALIA_REENABLE_MACRO_WARNINGS
+    else if (_alia_chain_scope.eval((ctx), true))                             \
+        ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
+            ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_ELSE ALIA_ELSE_(ctx)
 

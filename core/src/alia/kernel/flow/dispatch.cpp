@@ -75,7 +75,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     };
 
     alia_substrate_begin_block(
-        &ctx, &sys.substrate.root_block, &sys.substrate.root_block_spec);
+        &ctx, &sys.substrate.root_anchor, &sys.substrate.root_block_spec);
 
     sys.controller(ctx);
 

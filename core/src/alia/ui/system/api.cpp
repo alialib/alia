@@ -32,7 +32,7 @@ block_alloc(void* user, size_t size, size_t alignment)
     return malloc(size);
 }
 static void
-block_free(void* user, void* ptr)
+block_free(void* user, void* ptr, size_t size, size_t alignment)
 {
     free(ptr);
 }
@@ -60,7 +60,7 @@ alia_ui_system_init(
     // TODO: Sort this out.
     alia::initialize_lazy_commit_arena(&ui->substrate_discovery_arena);
 
-    alia_substrate_allocator allocator;
+    alia_general_allocator allocator;
     allocator.user_data = nullptr;
     allocator.alloc = block_alloc;
     allocator.free = block_free;

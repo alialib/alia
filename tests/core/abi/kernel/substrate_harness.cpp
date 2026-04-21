@@ -73,7 +73,7 @@ struct alia_test_substrate_fixture
 extern "C" {
 
 alia_test_substrate_fixture*
-alia_test_substrate_fixture_create(alia_substrate_allocator allocator)
+alia_test_substrate_fixture_create(alia_general_allocator allocator)
 {
     auto* fixture = static_cast<alia_test_substrate_fixture*>(
         std::malloc(sizeof(alia_test_substrate_fixture)));

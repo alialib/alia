@@ -1,7 +1,9 @@
 #ifndef ALIA_ABI_KERNEL_SUBSTRATE_H
 #define ALIA_ABI_KERNEL_SUBSTRATE_H
 
+#include <alia/abi/base/allocator.h>
 #include <alia/abi/base/arena.h>
+#include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
 
 #include <alia/abi/context.h>
@@ -64,13 +66,6 @@ typedef struct alia_substrate_block alia_substrate_block;
 typedef struct alia_substrate_traversal alia_substrate_traversal;
 typedef struct alia_context alia_context;
 
-typedef struct alia_substrate_allocator
-{
-    void* (*alloc)(void* user_data, size_t size, size_t alignment);
-    void (*free)(void* user_data, void* ptr);
-    void* user_data;
-} alia_substrate_allocator;
-
 enum alia_substrate_block_traversal_mode
 {
     // normal mode
@@ -120,17 +115,26 @@ alia_substrate_use_object(
     alia_context* ctx,
     size_t size,
     size_t alignment,
-    void (*destructor)(void*));
+    void (*destructor)(alia_substrate_system*, void*));
 
-// 'Use' a child block from the active substrate block.
-// This is the primary way to anchor conditional blocks within their parents.
-alia_substrate_block*
-alia_substrate_use_block(alia_context* ctx);
+// An anchor is a point of attachment for a substrate block. - Technically it's
+// just a pointer to a block, but it tends to act as a slot where blocks
+// (especially conditional blocks) can attach to the substrate.
+typedef struct alia_substrate_anchor
+{
+    alia_substrate_block* block;
+} alia_substrate_anchor;
 
-// Clean up the current contents of a block and reset it to an empty state.
+// 'Use' an anchor from the current substrate block.
+alia_substrate_anchor*
+alia_substrate_use_anchor(alia_context* ctx);
+
+// Reset an anchor, detaching any block that was attached to it.
 void
-alia_substrate_reset_block(alia_substrate_block* block);
+alia_substrate_reset_anchor(alia_context* ctx, alia_substrate_anchor* anchor);
 
+// Determine if a block needs to be discovered.
+// `spec` is the memoized memory layout specification of the block.
 inline bool
 alia_substrate_block_needs_discovery(alia_struct_spec* spec)
 {
@@ -143,7 +147,7 @@ alia_substrate_block_needs_discovery(alia_struct_spec* spec)
 // traversal will enter discovery mode for the block.
 void
 alia_substrate_begin_block(
-    alia_context* ctx, alia_substrate_block* block, alia_struct_spec* spec);
+    alia_context* ctx, alia_substrate_anchor* anchor, alia_struct_spec* spec);
 
 // End the scope of the current substrate block.
 // Returns the layout specification of the block. - If the block was in

@@ -23,9 +23,11 @@ test_block_alloc(void* user_data, size_t size, size_t alignment)
 }
 
 static void
-test_block_free(void* user_data, void* ptr)
+test_block_free(void* user_data, void* ptr, size_t size, size_t alignment)
 {
     (void) user_data;
+    (void) size;
+    (void) alignment;
     free(ptr);
 }
 
@@ -103,7 +105,7 @@ substrate_test_ctx_init(substrate_test_ctx* t)
 {
     memset(t, 0, sizeof(*t));
 
-    alia_substrate_allocator allocator = {
+    alia_general_allocator allocator = {
         .alloc = test_block_alloc, .free = test_block_free, .user_data = NULL};
     t->fixture = alia_test_substrate_fixture_create(allocator);
     TEST_ASSERT(t->fixture != NULL);

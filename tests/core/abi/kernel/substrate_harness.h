@@ -14,7 +14,7 @@ ALIA_EXTERN_C_BEGIN
 typedef struct alia_test_substrate_fixture alia_test_substrate_fixture;
 
 alia_test_substrate_fixture*
-alia_test_substrate_fixture_create(alia_substrate_allocator allocator);
+alia_test_substrate_fixture_create(alia_general_allocator allocator);
 
 void
 alia_test_substrate_fixture_destroy(alia_test_substrate_fixture* fixture);

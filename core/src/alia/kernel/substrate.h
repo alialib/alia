@@ -4,14 +4,14 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 
+struct alia_substrate_system;
+
 struct alia_substrate_destructor_record
 {
     alia_substrate_destructor_record* next;
-    void (*destructor)(void*);
+    void (*destructor)(alia_substrate_system*, void*);
     void* ptr;
 };
-
-struct alia_substrate_system;
 
 // An `alia_substrate_block` represents the basic block of the substrate
 // system. During a single traversal of the substrate system:
@@ -24,19 +24,20 @@ struct alia_substrate_system;
 //
 struct alia_substrate_block
 {
-    // the system that owns this block - This is needed to destruct the block
-    // using only a pointer to the block itself.
-    alia_substrate_system* system;
-    uint8_t* storage;
+    // linked list of destructors for nodes in the block
     alia_substrate_destructor_record* destructors;
     // the generation ID for this block - assigned at allocation time
+    // TODO: Make this 32 bits.
     alia_generation_counter generation;
+    // TODO: We should be able to squeeze this into 32 bits: 24 bits for the
+    // size, 8 bits for the alignment (in powers of 2).
+    alia_struct_spec spec;
 };
 
 struct alia_substrate_system
 {
-    alia_substrate_allocator allocator;
-    alia_substrate_block root_block;
+    alia_general_allocator allocator;
+    alia_substrate_anchor root_anchor;
     alia_struct_spec root_block_spec;
     // incremented whenever a block is freed (and thus might be reused)
     alia_generation_counter current_generation;
@@ -44,7 +45,7 @@ struct alia_substrate_system
 
 struct alia_substrate_block_traversal_state
 {
-    alia_substrate_block* data;
+    alia_substrate_block* block;
 
     alia_substrate_block_traversal_mode mode;
 
@@ -73,14 +74,14 @@ namespace alia {
 
 void
 substrate_system_init(
-    alia_substrate_system& system, alia_substrate_allocator allocator);
+    alia_substrate_system& system, alia_general_allocator allocator);
 
 void
 substrate_system_cleanup(alia_substrate_system& system);
 
 void
 substrate_block_cleanup(
-    alia_substrate_system& system, alia_substrate_block& block);
+    alia_substrate_system& system, alia_substrate_block* block);
 
 void
 substrate_traversal_init(
