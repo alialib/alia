@@ -174,8 +174,11 @@ alia_substrate_use_anchor(alia_context* ctx)
 void
 alia_substrate_reset_anchor(alia_context* ctx, alia_substrate_anchor* anchor)
 {
-    substrate_block_cleanup(*ctx->substrate->system, anchor->block);
-    anchor->block = nullptr;
+    if (anchor->block)
+    {
+        substrate_block_cleanup(*ctx->substrate->system, anchor->block);
+        anchor->block = nullptr;
+    }
 }
 
 static alia_substrate_block*
