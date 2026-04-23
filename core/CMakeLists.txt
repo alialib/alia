@@ -2,6 +2,7 @@ add_library(alia_core STATIC
     src/alia/base/arena.cpp
     src/alia/base/color.cpp
     src/alia/base/stack.cpp
+    src/alia/kernel/ids.cpp
     src/alia/kernel/substrate.cpp
     src/alia/kernel/animation/flares.cpp
     src/alia/kernel/animation/transitions.cpp

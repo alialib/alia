@@ -22,6 +22,8 @@ vec2_tests(void);
 
 void
 substrate_tests(void);
+void
+ids_tests(void);
 
 TEST_LIST
     = {{"base/geometry/affine2", affine2_tests},
@@ -31,5 +33,6 @@ TEST_LIST
        {"base/arena", arena_tests},
        {"base/color", color_tests},
        {"base/stack", stack_tests},
+       {"kernel/ids", ids_tests},
        {"kernel/substrate", substrate_tests},
        {NULL, NULL}};

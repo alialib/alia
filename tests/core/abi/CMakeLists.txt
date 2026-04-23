@@ -7,6 +7,7 @@ add_executable(test_core_c
     base/geometry/test_box.c
     base/geometry/test_insets.c
     base/geometry/test_vec2.c
+    kernel/test_ids.c
     kernel/test_substrate.c
     kernel/substrate_harness.cpp)
 target_link_libraries(test_core_c PRIVATE alia_core)
