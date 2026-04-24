@@ -14,26 +14,6 @@
 
 static size_t const max_arena_capacity = 16384;
 
-static size_t
-test_grow_fn(
-    void* user, void* base, size_t existing_capacity, size_t bytes_requested)
-{
-    (void) user;
-    (void) base;
-    (void) bytes_requested;
-
-    TEST_ASSERT(existing_capacity * 2 <= max_arena_capacity);
-    return existing_capacity * 2;
-}
-
-static void
-test_free(void* user, void* base, size_t capacity)
-{
-    (void) user;
-    (void) capacity;
-    free(base);
-}
-
 static void*
 aligned_alloc_portable(size_t align, size_t size)
 {
@@ -56,6 +36,26 @@ aligned_free_portable(void* p)
 #endif
 }
 
+static size_t
+test_grow_fn(
+    void* user, void* base, size_t existing_capacity, size_t bytes_requested)
+{
+    (void) user;
+    (void) base;
+    (void) bytes_requested;
+
+    TEST_ASSERT(existing_capacity * 2 <= max_arena_capacity);
+    return existing_capacity * 2;
+}
+
+static void
+test_free(void* user, void* base, size_t capacity)
+{
+    (void) user;
+    (void) capacity;
+    aligned_free_portable(base);
+}
+
 typedef struct test_rig
 {
     void* storage;
@@ -70,7 +70,7 @@ test_rig_init(test_rig* rig, size_t initial_capacity)
     rig->storage = aligned_alloc_portable(spec.align, spec.size);
     TEST_ASSERT(rig->storage != NULL);
 
-    void* buffer = malloc(max_arena_capacity);
+    void* buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, max_arena_capacity);
     TEST_ASSERT(buffer != NULL);
 
     rig->arena = alia_arena_init(
@@ -194,17 +194,17 @@ test_stats(void)
     test_rig_init(&rig, 1024);
 
     (void) alia_arena_alloc(test_rig_view(&rig), 112);
-    (void) alia_arena_alloc(test_rig_view(&rig), 203);
+    (void) alia_arena_alloc(test_rig_view(&rig), 200);
 
     alia_bump_allocator_commit_peak(test_rig_view(&rig));
     alia_arena_stats stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 315);
-    TEST_CHECK(rig.alloc.offset == 315);
+    TEST_CHECK(stats.peak_usage == 312);
+    TEST_CHECK(rig.alloc.offset == 312);
 
     alia_arena_reset(test_rig_view(&rig));
 
     stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 315);
+    TEST_CHECK(stats.peak_usage == 312);
     TEST_CHECK(rig.alloc.offset == 0);
 
     test_rig_destroy(&rig);

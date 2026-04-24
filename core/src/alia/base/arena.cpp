@@ -99,7 +99,7 @@ alia_arena_alloc_aligned(
     ALIA_ASSERT(align <= ALIA_MAX_ALIGN);
 
     if (align <= ALIA_MIN_ALIGN)
-        return alia_arena_alloc(alloc, bytes);
+        return alia_arena_alloc(alloc, alia_min_aligned_size(bytes));
 
     size_t aligned_offset = align_offset(alloc->offset, align);
     if (aligned_offset + bytes > alloc->capacity)

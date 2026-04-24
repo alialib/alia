@@ -62,16 +62,19 @@ alia_id_capture_reserve(
         ctx->max_align = align;
 
     size_t const rounded = alia_align_up(size, align);
+    // Arena bump allocations are at least ALIA_MIN_ALIGN bytes; keep discovery
+    // accounting in sync with what write mode allocates.
+    size_t const alloc_size = alia_min_aligned_size(rounded);
     if (alia_id_capture_is_discovery(ctx))
     {
         ctx->discovered_size = alia_align_up(ctx->discovered_size, align);
-        ctx->discovered_size += rounded;
+        ctx->discovered_size += alloc_size;
         return NULL;
     }
 
     ALIA_ASSERT(ctx->bump);
-    ALIA_ASSERT(rounded <= (ctx->bump->capacity - ctx->bump->offset));
-    alia_offset off = alia_arena_alloc_aligned(ctx->bump, rounded, align);
+    ALIA_ASSERT(alloc_size <= (ctx->bump->capacity - ctx->bump->offset));
+    alia_offset off = alia_arena_alloc_aligned(ctx->bump, alloc_size, align);
     return alia_arena_ptr(ctx->bump, off);
 }
 
