@@ -103,11 +103,14 @@ if(ALIA_ENABLE_ASSET_PIPELINE)
     set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
 endif()
 
-add_library(alia_font_assets STATIC "${ALIA_FONTS_CPP}")
-target_include_directories(alia_font_assets PUBLIC
-    "${ALIA_GEN_DIR}"
-    ${CMAKE_SOURCE_DIR}/core/include)
-target_link_libraries(alia_font_assets PUBLIC alia_core)
+# TODO: Use a different option test for this.
+if(ALIA_ENABLE_EXAMPLES)
+    add_library(alia_font_assets STATIC "${ALIA_FONTS_CPP}")
+    target_include_directories(alia_font_assets PUBLIC
+        "${ALIA_GEN_DIR}"
+        ${CMAKE_SOURCE_DIR}/core/include)
+    target_link_libraries(alia_font_assets PUBLIC alia_core)
+endif()
 
 if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_app ${PROJECT_SOURCE_DIR}/examples/app.cpp)
@@ -139,7 +142,7 @@ endif()
 if(ALIA_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(tests/core)
-    add_test(NAME test_core_cpp COMMAND test_core_cpp)
+    add_test(NAME test_core_impl COMMAND test_core_impl)
     add_test(NAME test_core_c COMMAND test_core_c)
 endif()
 

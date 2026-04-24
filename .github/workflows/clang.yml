@@ -1,0 +1,80 @@
+name: Clang
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+  linux-clang:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: friendlyanon/setup-vcpkg@v1
+        with:
+          # Match vcpkg.json builtin-baseline for reproducible dependency resolution.
+          committish: 41c447cc210dc39aa85d4a5f58b4a1b9e573b3dc
+          path: the-vcpkg
+          cache-version: ubuntu-24-clang-18
+
+      - name: Install toolchain and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 llvm-18 ninja-build gcovr
+
+      - name: Configure
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: |
+          COVERAGE_FLAGS=""
+          if [ "${{ matrix.config }}" = "Debug" ]; then
+            COVERAGE_FLAGS="-DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
+          fi
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE="${{ matrix.config }}" \
+            -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
+            -DALIA_ENABLE_TESTING=ON \
+            -DALIA_ENABLE_EXAMPLES=OFF \
+            -DALIA_ENABLE_BENCHMARKS=OFF \
+            -DALIA_ENABLE_OPENGL=OFF \
+            -DALIA_ENABLE_GLFW=OFF \
+            -DALIA_ENABLE_ASSET_PIPELINE=OFF \
+            ${COVERAGE_FLAGS} \
+            .
+
+      - name: Build
+        run: cmake --build build --parallel 4
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+      - name: Generate coverage report
+        if: matrix.config == 'Debug'
+        run: |
+          gcovr --root "${GITHUB_WORKSPACE}" \
+            --gcov-executable "llvm-cov-18 gcov" \
+            --xml -o "${GITHUB_WORKSPACE}/coverage.xml" \
+            "${GITHUB_WORKSPACE}/build"
+
+      - name: Upload coverage to Codecov
+        if: matrix.config == 'Debug'
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: core
+          fail_ci_if_error: false
