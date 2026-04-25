@@ -1,9 +1,0 @@
-ignore:
-  - "**/unit_tests"
-coverage:
-  status:
-    patch: off
-    project:
-      default:
-        target: 93%
-comment: off
