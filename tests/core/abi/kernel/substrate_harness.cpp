@@ -56,7 +56,7 @@ test_free_fn(void* user, void* base, size_t capacity)
 {
     (void) user;
     (void) capacity;
-    free(base);
+    aligned_free_portable(base);
 }
 
 } // namespace
@@ -96,7 +96,8 @@ alia_test_substrate_fixture_create(alia_general_allocator allocator)
         return nullptr;
     }
 
-    void* arena_buffer = std::malloc(max_arena_capacity);
+    void* arena_buffer
+        = aligned_alloc_portable(ALIA_MAX_ALIGN, max_arena_capacity);
     if (!arena_buffer)
     {
         aligned_free_portable(fixture->arena_storage);

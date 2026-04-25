@@ -91,13 +91,6 @@ alia_animation_curve const alia_ease_in_curve = {0.42, 0, 1, 1};
 alia_animation_curve const alia_ease_out_curve = {0, 0, 0.58, 1};
 alia_animation_curve const alia_ease_in_out_curve = {0.42, 0, 0.58, 1};
 
-// TODO: Move this somewhere in base/.
-float
-lerp(float a, float b, float t)
-{
-    return a + (b - a) * t;
-}
-
 float
 alia_smooth_float(
     alia_context* ctx,
@@ -108,7 +101,13 @@ alia_smooth_float(
     float false_value)
 {
     return impl::smooth(
-        ctx, *transition, lerp, bits, current_state, true_value, false_value);
+        ctx,
+        *transition,
+        alia_lerp,
+        bits,
+        current_state,
+        true_value,
+        false_value);
 }
 
 alia_rgb

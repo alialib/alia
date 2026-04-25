@@ -1,5 +1,8 @@
 # A Library for Interactive Applications
 
+[![Clang Build Status](https://github.com/alialib/alia/workflows/Clang/badge.svg)](https://github.com/alialib/alia/actions)
+[![Code Coverage](https://codecov.io/gh/alialib/alia/branch/main/graph/badge.svg)](https://codecov.io/gh/alialib/alia)
+
 Alia (pronounced uh-LEE-uh) is a declarative UI library for C/C++. It aims to
 achieve the polished, modern aesthetics of web-style interfaces while still
 living in the low-level world of memory arenas, draw commands, and C ABIs.
