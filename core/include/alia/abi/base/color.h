@@ -186,7 +186,7 @@ alia_relative_luminance_rgb(alia_rgb c);
 float
 alia_relative_luminance_rgba(alia_rgba c);
 
-inline float
+static inline float
 alia_relative_luminance_srgb8(alia_srgb8 c)
 {
     return alia_relative_luminance_rgb(alia_rgb_from_srgb8(c));
