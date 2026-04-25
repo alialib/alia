@@ -25,7 +25,6 @@ jobs:
 
       - uses: friendlyanon/setup-vcpkg@v1
         with:
-          # Match vcpkg.json builtin-baseline for reproducible dependency resolution.
           committish: 41c447cc210dc39aa85d4a5f58b4a1b9e573b3dc
           path: the-vcpkg
           cache-version: ubuntu-24-clang-18
@@ -77,4 +76,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: core
-          fail_ci_if_error: false
