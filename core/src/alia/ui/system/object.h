@@ -15,9 +15,11 @@
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
 #include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/system/work.h>
 #include <alia/ui/drawing.h>
 
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <queue>
 #include <vector>
@@ -90,6 +92,14 @@ struct alia_ui_system
         std::vector<alia_ui_timer_request>,
         alia_ui_timer_request_compare>
         timer_requests;
+
+    // pending dispatch events (input and other queueable work)
+    std::deque<alia_event> event_queue;
+
+    alia_ui_refresh_policy refresh_policy{};
+
+    // When true, `ALIA_UI_REFRESH_IF_DIRTY` may run `refresh_system`.
+    bool ui_dirty = true;
 
     // alia::routable_widget_id overlay_id;
 

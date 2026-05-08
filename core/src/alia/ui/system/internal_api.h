@@ -1,7 +1,6 @@
 #pragma once
 
 #include <alia/context.h>
-#include <functional>
 
 #include <alia/ui/system/object.h>
 

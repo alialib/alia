@@ -1,5 +1,6 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/ui/system/internal_api.h>
+#include <alia/ui/system/work_internal.h>
 
 #include <chrono>
 
@@ -71,10 +72,13 @@ alia_ui_system_init(
 
     // ui.os = std::move(os);
     // ui.window = std::move(window);
-    // TODO
-    // ui.theme = blue_dark_theme;
 
     ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
+
+    ui->refresh_policy.before_input = ALIA_UI_REFRESH_ALWAYS;
+    ui->refresh_policy.before_draw = ALIA_UI_REFRESH_ALWAYS;
+
+    ui->ui_dirty = true;
 
     return ui;
 }
@@ -119,12 +123,17 @@ alia_ui_system_update(alia_ui_system* ui)
     ++ui->timer_event_counter;
     uint64_t const current_cycle = ui->timer_event_counter;
 
-    refresh_system(*ui);
+    if (ui->event_queue.empty())
+        refresh_system(*ui);
 
+    drain_event_queue(*ui);
+
+    // Input is drained before timers so keyed timeout behavior stays closer to
+    // “handle platform input, then service timers” within one update.
     process_due_timers(*ui, ui->tick_count, current_cycle);
 
-    alia_layout_system_resolve(
-        &ui->layout, alia_vec2i_to_vec2f(ui->surface_size));
+    run_layout_resolve(*ui);
+    update_hot_from_pointer(*ui);
 
     // Once layout has been resolved, we can honor requests to make a
     // particular widget visible.
@@ -148,31 +157,11 @@ alia_ui_system_update(alia_ui_system* ui)
 
     // routable_widget_id previous_mouse_target = get_mouse_target(ui);
 
-    alia_cursor_t resolved_cursor = ALIA_CURSOR_DEFAULT;
-
-    // Determine which widget is under the mouse cursor.
-    if (ui->input.mouse_inside_window)
+    if (evaluate_refresh_hook_policy(*ui, ui->refresh_policy.before_draw))
     {
-        alia_event event = alia_make_mouse_hit_test_event(
-            {.x = ui->input.mouse_position.x,
-             .y = ui->input.mouse_position.y,
-             .result
-             = {.id = alia_element_id{}, .cursor = ALIA_CURSOR_DEFAULT}});
-        dispatch_event(*ui, event);
-        if (alia_element_id_is_valid(as_mouse_hit_test_event(event).result.id))
-        {
-            set_hot_element(*ui, as_mouse_hit_test_event(event).result.id);
-            resolved_cursor = as_mouse_hit_test_event(event).result.cursor;
-            // record_tooltip(ui, hit_test);
-        }
-        else
-        {
-            set_hot_element(*ui, alia_element_id{});
-        }
-    }
-    else
-    {
-        set_hot_element(*ui, alia_element_id{});
+        refresh_system(*ui);
+        run_layout_resolve(*ui);
+        update_hot_from_pointer(*ui);
     }
 
     // The block above gives us the mouse cursor that's been requested by the
@@ -314,6 +303,8 @@ refresh_system(ui_system& sys)
         if (attempts >= 100)
             break;
     }
+
+    sys.ui_dirty = false;
 
     // long long refresh_time;
     // {
