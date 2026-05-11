@@ -92,6 +92,9 @@ struct alia_ui_system
         std::vector<alia_ui_timer_request>,
         alia_ui_timer_request_compare>
         timer_requests;
+    // timer dispatch cycle for the current `begin_update` / `work_step` frame
+    // TODO: Consider moving this into a per-frame structure.
+    uint64_t update_timer_cycle = 0;
 
     // pending dispatch events (input and other queueable work)
     std::deque<alia_event> event_queue;

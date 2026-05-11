@@ -1,4 +1,5 @@
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/work_internal.h>
 
@@ -83,22 +84,16 @@ alia_ui_system_init(
     return ui;
 }
 
-int64_t
-get_nanosecond_count()
+alia_nanosecond_count
+steady_clock_now_ns()
 {
-    // Get the current time from the steady clock
     auto now = std::chrono::steady_clock::now();
-
-    // Get the duration since the clock's epoch
     auto duration = now.time_since_epoch();
-
-    // Cast the duration to nanoseconds and extract the 64-bit integer
-    // count
     return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
         .count();
 }
 
-static void
+void
 process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
 {
     // Dispatch all timers that are due as of `now`, except those that were
@@ -116,96 +111,13 @@ process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
 void
 alia_ui_system_update(alia_ui_system* ui)
 {
-    ui->tick_count = get_nanosecond_count();
+    if (!ui)
+        return;
 
-    // Start a new timer dispatch cycle before running refresh. Timer requests
-    // made during refresh will be deferred by `process_due_timers`.
-    ++ui->timer_event_counter;
-    uint64_t const current_cycle = ui->timer_event_counter;
-
-    if (ui->event_queue.empty())
-        refresh_system(*ui);
-
-    drain_event_queue(*ui);
-
-    // Input is drained before timers so keyed timeout behavior stays closer to
-    // “handle platform input, then service timers” within one update.
-    process_due_timers(*ui, ui->tick_count, current_cycle);
-
-    run_layout_resolve(*ui);
-    update_hot_from_pointer(*ui);
-
-    // Once layout has been resolved, we can honor requests to make a
-    // particular widget visible.
-    // if (!ui.pending_visibility_requests.empty())
-    // {
-    //     for (std::vector<widget_visibility_request>::const_iterator i
-    //          = ui.pending_visibility_requests.begin();
-    //          i != ui.pending_visibility_requests.end();
-    //          ++i)
-    //     {
-    //         make_widget_visible_event e{{i->widget.id}, i->flags};
-    //         dispatch_targeted_event(
-    //             ui, e, i->widget, MAKE_WIDGET_VISIBLE_EVENT);
-    //     }
-    //     ui.pending_visibility_requests.clear();
-    //     // The movement may have caused changes that require a refresh, so
-    //     // issue another one.
-    //     // TODO
-    //     // refresh_ui(ui);
-    // }
-
-    // routable_widget_id previous_mouse_target = get_mouse_target(ui);
-
-    if (evaluate_refresh_hook_policy(*ui, ui->refresh_policy.before_draw))
-    {
-        refresh_system(*ui);
-        run_layout_resolve(*ui);
-        update_hot_from_pointer(*ui);
-    }
-
-    // The block above gives us the mouse cursor that's been requested by the
-    // widget under the mouse. However, if there's a different widget that has
-    // the mouse captured, it should take priority, so we need to see what
-    // cursor it wants.
-
-    // if (ui.input.id_with_capture.id && ui.input.id_with_capture.id !=
-    // ui.input.hot_id.id)
-    // {
-    //     mouse_cursor_query query(ui.input.id_with_capture.id);
-    //     issue_targeted_event(ui, query, ui.input.id_with_capture);
-    //     resolved_cursor = query.cursor;
-    // }
-
-    // Communicate the desired mouse cursor back to window.
-    // if (resolved_cursor != ui.input.current_mouse_cursor)
-    // {
-    //     ui.window->set_mouse_cursor(resolved_cursor);
-    //     ui.input.current_mouse_cursor = resolved_cursor;
-    // }
-
-    // Update the state of the tooltip based on the passage of time.
-    // update_tooltip(ui);
-
-    // If there's been a change in which widget the mouse is interacting with,
-    // issue notification events.
-    // routable_widget_id current_mouse_target = get_mouse_target(ui);
-    // if (current_mouse_target.id != previous_mouse_target.id)
-    // {
-    //     {
-    //         mouse_notification_event e(
-    //             MOUSE_LOSS_EVENT, previous_mouse_target.id);
-    //         issue_targeted_event(ui, e, previous_mouse_target);
-    //     }
-    //     {
-    //         mouse_notification_event e(
-    //             MOUSE_GAIN_EVENT, current_mouse_target.id);
-    //         issue_targeted_event(ui, e, current_mouse_target);
-    //     }
-
-    //     // This may have caused state changes, so we need to refresh again.
-    //     refresh_ui(ui);
-    // }
+    alia_ui_system_begin_update(ui);
+    while (alia_ui_work_step(ui) != ALIA_UI_WORK_STEP_IDLE)
+        ;
+    alia_ui_system_end_update(ui);
 }
 
 void

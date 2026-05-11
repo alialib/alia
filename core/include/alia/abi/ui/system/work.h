@@ -8,6 +8,43 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_ui_system alia_ui_system;
 
+// Typical host frame: enqueue input from the platform, then:
+//   alia_ui_system_begin_update(ui);
+//   while (alia_ui_work_step(ui) != ALIA_UI_WORK_STEP_IDLE) { }
+//   alia_ui_system_end_update(ui);
+// Or call alia_ui_system_update(ui) for the same behavior in one call.
+
+void
+alia_ui_system_poll_clock(alia_ui_system* ui);
+
+void
+alia_ui_system_begin_update(alia_ui_system* ui);
+
+typedef enum alia_ui_work_step_kind
+{
+    ALIA_UI_WORK_STEP_IDLE = 0,
+    ALIA_UI_WORK_STEP_INPUT,
+    ALIA_UI_WORK_STEP_TIMER,
+} alia_ui_work_step_kind;
+
+alia_ui_work_step_kind
+alia_ui_work_step(alia_ui_system* ui);
+
+void
+alia_ui_system_end_update(alia_ui_system* ui);
+
+// True if pending input, a due timer at the current tick_count, or ui is
+// conservatively dirty (refresh may be needed before draw policies).
+bool
+alia_ui_needs_tick(alia_ui_system* ui);
+
+// Next absolute steady-clock time (nanoseconds) the UI suggests waking, or
+// false if no timer is scheduled (host may still wait on external input).
+// When the event queue is non-empty, returns the current tick_count (wake
+// now). Animation-driven wake is not included yet.
+bool
+alia_ui_next_wake_ns(alia_ui_system* ui, alia_nanosecond_count* out_wake_ns);
+
 void
 alia_ui_enqueue_event(alia_ui_system* ui, alia_event const* event);
 

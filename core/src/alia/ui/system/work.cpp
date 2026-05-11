@@ -6,6 +6,8 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/work_internal.h>
 
+#include <cstdint>
+
 using namespace alia;
 using namespace alia::operators;
 
@@ -56,6 +58,15 @@ apply_pointer_state_from_event(alia_ui_system& ui, alia_event const& ev)
 }
 
 } // namespace
+
+bool
+timer_is_due(ui_system const& ui)
+{
+    if (ui.timer_requests.empty())
+        return false;
+    auto const& top = ui.timer_requests.top();
+    return static_cast<int64_t>(ui.tick_count - top.fire_time) >= 0;
+}
 
 bool
 evaluate_refresh_hook_policy(ui_system& ui, alia_ui_refresh_hook_policy mode)
@@ -210,24 +221,43 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
     }
 }
 
+bool
+drain_one_queued_event(ui_system& ui)
+{
+    if (ui.event_queue.empty())
+        return false;
+
+    alia_event ev = ui.event_queue.front();
+    ui.event_queue.pop_front();
+
+    apply_refresh_hook_policy(ui, ui.refresh_policy.before_input);
+    run_layout_resolve(ui);
+
+    apply_pointer_state_from_event(ui, ev);
+    update_hot_from_pointer(ui);
+    deliver_queued_event(ui, ev);
+
+    ui.ui_dirty = true;
+    return true;
+}
+
 void
 drain_event_queue(ui_system& ui)
 {
-    while (!ui.event_queue.empty())
+    while (drain_one_queued_event(ui))
+        ;
+}
+
+void
+finalize_update(ui_system& ui)
+{
+    run_layout_resolve(ui);
+    update_hot_from_pointer(ui);
+    if (evaluate_refresh_hook_policy(ui, ui.refresh_policy.before_draw))
     {
-        alia_event ev = ui.event_queue.front();
-        ui.event_queue.pop_front();
-
-        apply_refresh_hook_policy(ui, ui.refresh_policy.before_input);
+        refresh_system(ui);
         run_layout_resolve(ui);
-
-        apply_pointer_state_from_event(ui, ev);
         update_hot_from_pointer(ui);
-        deliver_queued_event(ui, ev);
-
-        // Conservative: dispatch or chained handlers may require another
-        // refresh before draw.
-        ui.ui_dirty = true;
     }
 }
 
@@ -236,14 +266,104 @@ drain_event_queue(ui_system& ui)
 extern "C" {
 
 void
+alia_ui_system_poll_clock(alia_ui_system* ui)
+{
+    if (!ui)
+        return;
+    ui->tick_count = alia::steady_clock_now_ns();
+}
+
+void
+alia_ui_system_begin_update(alia_ui_system* ui)
+{
+    if (!ui)
+        return;
+
+    alia_ui_system_poll_clock(ui);
+
+    ++ui->timer_event_counter;
+    ui->update_timer_cycle = ui->timer_event_counter;
+
+    if (ui->event_queue.empty())
+        refresh_system(*ui);
+}
+
+alia_ui_work_step_kind
+alia_ui_work_step(alia_ui_system* ui)
+{
+    if (!ui)
+        return ALIA_UI_WORK_STEP_IDLE;
+
+    if (alia::drain_one_queued_event(*ui))
+        return ALIA_UI_WORK_STEP_INPUT;
+
+    if (alia::timer_is_due(*ui))
+    {
+        alia::process_due_timers(
+            *ui, ui->tick_count, ui->update_timer_cycle);
+        return ALIA_UI_WORK_STEP_TIMER;
+    }
+
+    return ALIA_UI_WORK_STEP_IDLE;
+}
+
+void
+alia_ui_system_end_update(alia_ui_system* ui)
+{
+    if (!ui)
+        return;
+    alia::finalize_update(*ui);
+}
+
+bool
+alia_ui_needs_tick(alia_ui_system* ui)
+{
+    if (!ui)
+        return false;
+    if (!ui->event_queue.empty())
+        return true;
+    if (alia::timer_is_due(*ui))
+        return true;
+    if (ui->ui_dirty)
+        return true;
+    return false;
+}
+
+bool
+alia_ui_next_wake_ns(
+    alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
+{
+    if (!ui || !out_wake_ns)
+        return false;
+
+    if (!ui->event_queue.empty())
+    {
+        *out_wake_ns = ui->tick_count;
+        return true;
+    }
+
+    if (!ui->timer_requests.empty())
+    {
+        *out_wake_ns = ui->timer_requests.top().fire_time;
+        return true;
+    }
+
+    return false;
+}
+
+void
 alia_ui_enqueue_event(alia_ui_system* ui, alia_event const* event)
 {
+    if (!ui || !event)
+        return;
     ui->event_queue.push_back(*event);
 }
 
 void
 alia_ui_mark_dirty(alia_ui_system* ui)
 {
+    if (!ui)
+        return;
     ui->ui_dirty = true;
 }
 
@@ -251,6 +371,8 @@ void
 alia_ui_set_refresh_policy(
     alia_ui_system* ui, alia_ui_refresh_policy const* policy)
 {
+    if (!ui || !policy)
+        return;
     ui->refresh_policy = *policy;
 }
 
