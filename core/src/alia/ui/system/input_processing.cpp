@@ -117,68 +117,65 @@ alia_ui_set_focus(alia_ui_system* ui, alia_element_id widget)
     //     focus_notification_event event{{{}, ui_event_type::FOCUS_GAIN}};
     //     deliver_input_event(sys, element.widget, event);
     // }
+    (void) ui;
+    (void) widget;
+}
+
+static alia_key_input
+make_key_input(alia_key_info key)
+{
+    alia_key_input in{};
+    in.key = key;
+    in.acknowledged = false;
+    return in;
 }
 
 bool
-alia_ui_enqueue_focused_key_press(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_enqueue_focused_key_press(alia_ui_system* ui, alia_key_info key)
 {
-    alia_event event = alia_make_key_press_event(
-        {.code = key, .mods = mods, .acknowledged = false});
-    alia_ui_enqueue_event(ui, &event);
-    // Acknowledgement is determined when `alia_ui_system_update` drains the
-    // queue.
-    return false;
-}
-
-bool
-alia_ui_enqueue_global_key_press(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
-{
-    alia_event event = alia_make_global_key_press_event(
-        {.code = key, .mods = mods, .acknowledged = false});
+    alia_event event = alia_make_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
 }
 
 bool
-alia_ui_enqueue_focused_key_release(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_enqueue_global_key_press(alia_ui_system* ui, alia_key_info key)
 {
-    alia_event event = alia_make_key_release_event(
-        {.code = key, .mods = mods, .acknowledged = false});
+    alia_event event = alia_make_global_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
 }
 
 bool
-alia_ui_enqueue_global_key_release(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_enqueue_focused_key_release(alia_ui_system* ui, alia_key_info key)
 {
-    alia_event event = alia_make_global_key_release_event(
-        {.code = key, .mods = mods, .acknowledged = false});
+    alia_event event = alia_make_key_release_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
 }
 
 bool
-alia_ui_enqueue_key_press(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_enqueue_global_key_release(alia_ui_system* ui, alia_key_info key)
+{
+    alia_event event = alia_make_global_key_release_event(make_key_input(key));
+    alia_ui_enqueue_event(ui, &event);
+    return false;
+}
+
+bool
+alia_ui_enqueue_key_press(alia_ui_system* ui, alia_key_info key)
 {
     ui->input.keyboard_interaction = true;
-    alia_event event = alia_make_key_press_event(
-        {.code = key, .mods = mods, .acknowledged = false});
+    alia_event event = alia_make_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
 }
 
 bool
-alia_ui_enqueue_key_release(
-    alia_ui_system* ui, alia_key_code_t key, alia_kmods_t mods)
+alia_ui_enqueue_key_release(alia_ui_system* ui, alia_key_info key)
 {
     ui->input.keyboard_interaction = true;
-    alia_event event = alia_make_key_release_event(
-        {.code = key, .mods = mods, .acknowledged = false});
+    alia_event event = alia_make_key_release_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
 }

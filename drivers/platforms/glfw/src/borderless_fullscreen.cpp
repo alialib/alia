@@ -129,7 +129,7 @@ alia_glfw_fullscreen_host_toggle(void* user)
             my,
             mode->width,
             mode->height,
-            mode->refreshRate);
+            GLFW_DONT_CARE);
     }
     impl.is_fullscreen = !is_fullscreen;
 }
