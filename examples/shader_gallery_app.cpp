@@ -31,7 +31,7 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/platforms/glfw/input_glue.hpp>
+#include <alia/platforms/glfw/input_glue.h>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/components.hpp>
