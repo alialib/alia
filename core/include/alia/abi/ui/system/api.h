@@ -1,55 +1,48 @@
-#pragma once
+#ifndef ALIA_ABI_UI_SYSTEM_API_H
+#define ALIA_ABI_UI_SYSTEM_API_H
 
-#include <alia/context.h>
-#include <functional>
+#include <alia/abi/base/geometry.h>
+#include <alia/abi/context.h>
+#include <alia/abi/prelude.h>
 
-extern "C" {
-// TODO: This isn't technically correct.
+ALIA_EXTERN_C_BEGIN
+
 typedef struct alia_ui_system alia_ui_system;
-} // extern "C"
 
-// TODO: Make this C-friendly!
+// Invoked by the UI system during update/dispatch with a fully prepared
+// context.
+typedef void (*alia_ui_controller_fn)(void* user_data, alia_context* ctx);
 
-namespace alia {
-
-struct os_interface;
-struct window_interface;
-
+// Size and alignment for placement-new / malloc storage of `alia_ui_system`.
 alia_struct_spec
 alia_ui_system_object_spec(void);
 
-// Initialize the UI system.
+// `controller` must be non-null. `controller_user_data` may be null.
+// `object_storage` must point to at least `alia_ui_system_object_spec().size`
+// bytes aligned to `alia_ui_system_object_spec().align`.
 alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
-    std::function<void(context&)> controller,
-    alia_vec2i surface_size
-    /*external_interface* external,
-    std::shared_ptr<os_interface> os,
-    std::shared_ptr<window_interface> window*/);
+    alia_ui_controller_fn controller,
+    void* controller_user_data,
+    alia_vec2i surface_size);
 
-// TODO: cleanup function
-
-// Update the UI system.
-// This detects changes in the UI contents and updates the layout of the UI.
-// It also resolves what's under the mouse cursor and updates the UI
-// accordingly.
+// Detects changes in UI contents, updates layout, and processes input routing.
 void
 alia_ui_system_update(alia_ui_system* ui);
 
-// Set the size of the surface.
 void
 alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size);
 
 alia_vec2i
 alia_ui_surface_get_size(alia_ui_system* ui);
 
-// Set the DPI of the UI system.
 void
 alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi);
 
-// Get the DPI of the UI system.
 float
 alia_ui_surface_get_dpi(alia_ui_system* ui);
 
-} // namespace alia
+ALIA_EXTERN_C_END
+
+#endif /* ALIA_ABI_UI_SYSTEM_API_H */

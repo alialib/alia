@@ -6,7 +6,9 @@ else()
 endif()
 
 add_library(alia_glfw_platform STATIC
-    src/window.cpp)
+    src/window.cpp
+    src/input_glue.cpp
+    src/borderless_fullscreen.cpp)
 target_include_directories(alia_glfw_platform PUBLIC
     include)
 if (EMSCRIPTEN)

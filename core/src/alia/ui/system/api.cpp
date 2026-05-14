@@ -1,4 +1,5 @@
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/work_internal.h>
@@ -12,77 +13,32 @@
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
 
+#include <cstdlib>
+
 using namespace alia::operators;
 
-namespace alia {
-
-alia_struct_spec
-alia_ui_system_object_spec(void)
+static void*
+ui_system_block_alloc(void* user, size_t size, size_t alignment)
 {
-    return alia_struct_spec{
-        .size = sizeof(alia_ui_system), .align = alignof(alia_ui_system)};
+    (void) user;
+    (void) alignment;
+    return malloc(size);
 }
+
+static void
+ui_system_block_free(void* user, void* ptr, size_t size, size_t alignment)
+{
+    (void) user;
+    (void) size;
+    (void) alignment;
+    free(ptr);
+}
+
+namespace alia {
 
 // TODO: Sort this out.
 void*
 allocate_virtual_block(std::size_t size);
-
-// TODO: Sort this out too.
-static void*
-block_alloc(void* user, size_t size, size_t alignment)
-{
-    return malloc(size);
-}
-static void
-block_free(void* user, void* ptr, size_t size, size_t alignment)
-{
-    free(ptr);
-}
-
-alia_ui_system*
-alia_ui_system_init(
-    void* object_storage,
-    std::function<void(context&)> controller,
-    alia_vec2i surface_size
-    /*external_interface* external,
-    std::shared_ptr<os_interface> os,
-    std::shared_ptr<window_interface> window*/)
-{
-    alia_ui_system* ui = new (object_storage) alia_ui_system;
-
-    ui->controller = std::move(controller);
-
-    // TODO: Sort this out.
-    void* block = allocate_virtual_block(1024 * 1024);
-    alia_stack_init(&ui->stack, block, 1024 * 1024);
-
-    alia_layout_system_init(&ui->layout);
-    ui->surface_size = surface_size;
-
-    // TODO: Sort this out.
-    alia::initialize_lazy_commit_arena(&ui->substrate_discovery_arena);
-
-    alia_general_allocator allocator;
-    allocator.user_data = nullptr;
-    allocator.alloc = block_alloc;
-    allocator.free = block_free;
-    substrate_system_init(ui->substrate, allocator);
-
-    // TODO: Sort this out.
-    alia::initialize_lazy_commit_arena(&ui->scratch, 1024 * 1024);
-
-    // ui.os = std::move(os);
-    // ui.window = std::move(window);
-
-    ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
-
-    ui->refresh_policy.before_input = ALIA_UI_REFRESH_ALWAYS;
-    ui->refresh_policy.before_draw = ALIA_UI_REFRESH_ALWAYS;
-
-    ui->ui_dirty = true;
-
-    return ui;
-}
 
 alia_nanosecond_count
 steady_clock_now_ns()
@@ -92,6 +48,9 @@ steady_clock_now_ns()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(duration)
         .count();
 }
+
+void
+refresh_system(ui_system& sys);
 
 void
 process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
@@ -106,6 +65,61 @@ process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
             dispatch_event(ui, event);
             refresh_system(ui);
         });
+}
+
+} // namespace alia
+
+extern "C" {
+
+alia_struct_spec
+alia_ui_system_object_spec(void)
+{
+    return alia_struct_spec{
+        .size = sizeof(alia_ui_system), .align = alignof(alia_ui_system)};
+}
+
+alia_ui_system*
+alia_ui_system_init(
+    void* object_storage,
+    alia_ui_controller_fn controller,
+    void* controller_user_data,
+    alia_vec2i surface_size)
+{
+    ALIA_ASSERT(controller != nullptr);
+    ALIA_ASSERT(object_storage != nullptr);
+
+    alia_ui_system* ui = new (object_storage) alia_ui_system;
+
+    ui->controller_fn = controller;
+    ui->controller_user_data = controller_user_data;
+
+    // TODO: Sort this out.
+    void* block = alia::allocate_virtual_block(1024 * 1024);
+    alia_stack_init(&ui->stack, block, 1024 * 1024);
+
+    alia_layout_system_init(&ui->layout);
+    ui->surface_size = surface_size;
+
+    // TODO: Sort this out.
+    alia::initialize_lazy_commit_arena(&ui->substrate_discovery_arena);
+
+    alia_general_allocator allocator;
+    allocator.user_data = nullptr;
+    allocator.alloc = ui_system_block_alloc;
+    allocator.free = ui_system_block_free;
+    alia::substrate_system_init(ui->substrate, allocator);
+
+    // TODO: Sort this out.
+    alia::initialize_lazy_commit_arena(&ui->scratch, 1024 * 1024);
+
+    ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
+
+    ui->refresh_policy.before_input = ALIA_UI_REFRESH_ALWAYS;
+    ui->refresh_policy.before_draw = ALIA_UI_REFRESH_ALWAYS;
+
+    ui->ui_dirty = true;
+
+    return ui;
 }
 
 void
@@ -123,72 +137,64 @@ alia_ui_system_update(alia_ui_system* ui)
 void
 alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size)
 {
-    // // If the surface changes size, that could invalidate popup positioning,
-    // // so close any active popups.
-    // if (ui.surface_size != new_size)
-    //     ui.overlay_id = null_widget_id;
+    if (!ui)
+        return;
 
+    if (ui->surface_size.x != new_size.x || ui->surface_size.y != new_size.y)
+        ui->ui_dirty = true;
     ui->surface_size = new_size;
 }
 
 alia_vec2i
 alia_ui_surface_get_size(alia_ui_system* ui)
 {
+    if (!ui)
+        return {0, 0};
     return ui->surface_size;
 }
 
 void
 alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi)
 {
+    if (!ui)
+        return;
+    if (ui->dpi != dpi)
+        ui->ui_dirty = true;
     ui->dpi = dpi;
 }
 
 float
 alia_ui_surface_get_dpi(alia_ui_system* ui)
 {
+    if (!ui)
+        return 0.f;
     return ui->dpi;
 }
 
-// struct initial_styling_data
-// {
-//     owned_id id;
-//     primary_style_properties props;
-//     layout_style_info info;
-//     style_search_path path;
-// };
+void
+alia_ui_system_set_host_window_ops(
+    alia_ui_system* ui, alia_host_window_ops const* ops)
+{
+    if (!ui)
+        return;
+    if (!ops)
+    {
+        ui->host_window = {};
+        return;
+    }
+    ui->host_window = *ops;
+}
 
-// static void
-// setup_initial_styling(ui_context& ctx)
-// {
-//     initial_styling_data* data;
-//     get_data(ctx, &data);
+} // extern "C"
 
-//     if (!data->id.matches(get_id(ctx.system->style.id)))
-//     {
-//         data->path.rest = 0;
-//         data->path.tree = &*ctx.system->style.styles;
-
-//         read_primary_style_properties(*ctx.system, &data->props,
-//         &data->path);
-
-//         data->id.store(get_id(ctx.system->style.id));
-
-//         read_layout_style_info(
-//             ctx, &data->info, data->props.font, &data->path);
-//     }
-//     get_layout_traversal(ctx).style_info = &data->info;
-
-//     ctx.style.path = &data->path;
-//     ctx.style.properties = &data->props;
-//     ctx.style.id = &data->id.get();
-//     ctx.style.theme = &ctx.system->style.theme;
-// }
+namespace alia {
 
 bool
 system_needs_refresh(ui_system& sys)
 {
     // TODO
     // return sys.refresh_needed;
+    (void) sys;
     return true;
 }
 
@@ -272,41 +278,6 @@ struct tooltip_overlay_state
     layout_box generating_region;
     float opacity;
 };
-
-bool static
-operator==(tooltip_overlay_state const& a, tooltip_overlay_state const& b)
-{
-    return
-        a.message == b.message &&
-        a.generating_region == b.generating_region &&
-        a.opacity == b.opacity;
-}
-
-bool static
-operator!=(tooltip_overlay_state const& a, tooltip_overlay_state const& b)
-{
-    return !(a == b);
-}
-
-tooltip_overlay_state static
-lerp(tooltip_overlay_state const& a, tooltip_overlay_state const& b, double factor)
-{
-    tooltip_overlay_state interpolated;
-    // Transition the message/region instantly unless there's no message to transition to.
-    if (!b.message.empty())
-    {
-        interpolated.message = b.message;
-        interpolated.generating_region = b.generating_region;
-    }
-    else
-    {
-        interpolated.message = a.message;
-        interpolated.generating_region = a.generating_region;
-    }
-    // Transition the opacity smoothly.
-    interpolated.opacity = lerp(a.opacity, b.opacity, factor);
-    return interpolated;
-}
 
 static void
 do_tooltip_overlay(ui_context& ctx)
@@ -547,11 +518,6 @@ void refresh_ui(ui_system& ui)
     resolve_layout(ui.layout, layout_vector(ui.surface_size));
 }
 
-int get_last_refresh_duration(ui_system& ui)
-{
-    return ui.last_refresh_duration;
-}
-
 void static
 record_tooltip(ui_system& ui, mouse_hit_test_event const& hit_test)
 {
@@ -585,123 +551,6 @@ update_tooltip(ui_system& ui)
         ui.tooltip.enabled = tooltips_enabled;
         refresh_ui(ui);
     }
-}
-
-bool process_timer_requests(ui_system& ui, ui_time_type now)
-{
-    ++ui.timer_event_counter;
-    bool update_required = false;
-    while (1)
-    {
-        // Ideally, the list would be stored sorted, but it has to be
-        // sorted relative to the current tick count (to handle wrapping),
-        // and the list is generally not very long anyway.
-        ui_timer_request_list::iterator next_event =
-            ui.timer_requests.end();
-        for (ui_timer_request_list::iterator
-            i = ui.timer_requests.begin();
-            i != ui.timer_requests.end(); ++i)
-        {
-            if (i->frame_issued != ui.timer_event_counter &&
-                int(now - i->trigger_time) >= 0 &&
-                (next_event == ui.timer_requests.end() ||
-                int(next_event->trigger_time - i->trigger_time) >= 0))
-            {
-                next_event = i;
-            }
-        }
-        if (next_event == ui.timer_requests.end())
-            break;
-
-        update_required = true;
-
-        ui_timer_request request = *next_event;
-        ui.timer_requests.erase(next_event);
-
-        {
-            timer_event e(request.id.id, request.trigger_time, now);
-            issue_targeted_event(ui, e, request.id);
-        }
-
-        refresh_ui(ui);
-    }
-    if (ui.next_update && int(now - get(ui.next_update)) >= 0)
-        update_required = true;
-    return update_required;
-}
-
-bool has_timer_requests(ui_system& ui)
-{
-    return ui.next_update || !ui.timer_requests.empty();
-}
-
-optional<ui_time_type>
-get_time_until_next_update(ui_system& ui, ui_time_type now)
-{
-    optional<ui_time_type> time_remaining;
-
-    ui_timer_request_list::iterator next_event =
-        ui.timer_requests.end();
-    for (ui_timer_request_list::iterator
-        i = ui.timer_requests.begin();
-        i != ui.timer_requests.end(); ++i)
-    {
-        if (next_event == ui.timer_requests.end() ||
-            int(next_event->trigger_time - i->trigger_time) >= 0)
-        {
-            next_event = i;
-        }
-    }
-    if (next_event != ui.timer_requests.end())
-        time_remaining = next_event->trigger_time - now;
-
-    if (ui.next_update)
-    {
-        if (!time_remaining || get(ui.next_update) < get(time_remaining))
-            time_remaining = get(ui.next_update);
-    }
-
-    return time_remaining;
-}
-
-bool process_text_input(ui_system& ui, ui_time_type time,
-    utf8_string const& text)
-{
-    text_input_event e(time, text);
-    if (is_valid(ui.input.focused_id))
-        issue_targeted_event(ui, e, ui.input.focused_id);
-    if (!e.acknowledged)
-    {
-        e.type = BACKGROUND_TEXT_INPUT_EVENT;
-        issue_event(ui, e);
-    }
-    return e.acknowledged;
-}
-bool process_background_key_press(ui_system& ui, ui_time_type time,
-    key_event_info const& info)
-{
-    key_event e(BACKGROUND_KEY_PRESS_EVENT, time, info);
-    issue_event(ui, e);
-    return e.acknowledged;
-}
-bool process_key_press(ui_system& ui, ui_time_type time,
-    key_event_info const& info)
-{
-    return process_focused_key_press(ui, time, info) ||
-        process_background_key_press(ui, time, info);
-}
-bool process_key_release(ui_system& ui, ui_time_type time,
-    key_event_info const& info)
-{
-    key_event e(KEY_RELEASE_EVENT, time, info);
-    if (is_valid(ui.input.focused_id))
-        issue_targeted_event(ui, e, ui.input.focused_id);
-    if (!e.acknowledged)
-    {
-        e.type = BACKGROUND_KEY_RELEASE_EVENT;
-        issue_event(ui, e);
-    }
-    return e.acknowledged;
 }
 
 void process_focus_loss(ui_system& ui, ui_time_type time)

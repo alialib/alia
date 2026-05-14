@@ -113,14 +113,24 @@ if(ALIA_ENABLE_EXAMPLES)
 endif()
 
 if(ALIA_ENABLE_EXAMPLES)
-    add_executable(alia_app ${PROJECT_SOURCE_DIR}/examples/app.cpp)
+    add_executable(alia_app
+        ${PROJECT_SOURCE_DIR}/examples/app.cpp)
     target_link_libraries(alia_app PRIVATE
         alia_cpp alia_core alia_gl_renderer alia_glfw_platform
         alia_font_assets)
     target_include_directories(alia_app PRIVATE "${ALIA_GEN_DIR}")
 
+    add_executable(alia_shader_gallery
+        ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
+    target_link_libraries(alia_shader_gallery PRIVATE
+        alia_cpp alia_core alia_gl_renderer alia_glfw_platform
+        alia_font_assets)
+    target_include_directories(alia_shader_gallery PRIVATE "${ALIA_GEN_DIR}")
+
     if(EMSCRIPTEN)
         target_compile_options(alia_app PRIVATE
+            "-fwasm-exceptions")
+        target_compile_options(alia_shader_gallery PRIVATE
             "-fwasm-exceptions")
         # -s USE_GLFW=3 enables internal GLFW
         # --preload-file maps source assets to virtual filesystem
@@ -135,7 +145,18 @@ if(ALIA_ENABLE_EXAMPLES)
             "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
             "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
         )
+        target_link_options(alia_shader_gallery PRIVATE
+            "-sUSE_GLFW=3"
+            "-sUSE_WEBGL2=1"
+            "-sFULL_ES3=1"
+            "-sWASM=1"
+            "-fwasm-exceptions"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
+            "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
+        )
         set_target_properties(alia_app PROPERTIES SUFFIX ".html")
+        set_target_properties(alia_shader_gallery PROPERTIES SUFFIX ".html")
     endif()
 endif()
 

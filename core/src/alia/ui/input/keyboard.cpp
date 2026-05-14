@@ -18,8 +18,20 @@ extern "C" {
 void
 alia_input_acknowledge_key_event(alia_context* ctx)
 {
-    if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS)
-        as_key_press_event(*ctx).acknowledged = true;
+    ALIA_ASSERT(
+        get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS
+        || get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE
+        || get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_PRESS
+        || get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_RELEASE);
+    using Payload = alia_key_input;
+    static_assert(
+        std::is_same_v<decltype(as_key_press_event(*ctx)), Payload&>
+        && std::is_same_v<decltype(as_key_release_event(*ctx)), Payload&>
+        && std::is_same_v<decltype(as_global_key_press_event(*ctx)), Payload&>
+        && std::
+            is_same_v<decltype(as_global_key_release_event(*ctx)), Payload&>);
+    Payload& payload = unsafe_get_event_payload<Payload>(*ctx);
+    payload.acknowledged = true;
 }
 
 void
@@ -143,6 +155,36 @@ alia_input_detect_key_release(alia_context* ctx, alia_modded_key* out)
     if (get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE)
     {
         auto const& event = as_key_release_event(*ctx);
+        if (!event.acknowledged)
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+alia_input_detect_global_key_press(alia_context* ctx, alia_modded_key* out)
+{
+    if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_PRESS)
+    {
+        auto const& event = as_global_key_press_event(*ctx);
+        if (!event.acknowledged)
+        {
+            *out = {event.code, event.mods};
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+alia_input_detect_global_key_release(alia_context* ctx, alia_modded_key* out)
+{
+    if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_RELEASE)
+    {
+        auto const& event = as_global_key_release_event(*ctx);
         if (!event.acknowledged)
         {
             *out = {event.code, event.mods};

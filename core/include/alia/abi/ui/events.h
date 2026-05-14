@@ -59,22 +59,17 @@ enum
     X(0x51,                                                                   \
       INPUT,                                                                  \
       NONE,                                                                   \
-      BACKGROUND_TEXT_INPUT,                                                  \
-      background_text_input,                                                  \
+      GLOBAL_TEXT_INPUT,                                                      \
+      global_text_input,                                                      \
       alia_text_input)                                                        \
     X(0x52, INPUT, TARGETED, KEY_PRESS, key_press, alia_key_input)            \
-    X(0x53,                                                                   \
-      INPUT,                                                                  \
-      NONE,                                                                   \
-      BACKGROUND_KEY_PRESS,                                                   \
-      background_key_press,                                                   \
-      alia_key_input)                                                         \
+    X(0x53, INPUT, NONE, GLOBAL_KEY_PRESS, global_key_press, alia_key_input)  \
     X(0x54, INPUT, TARGETED, KEY_RELEASE, key_release, alia_key_input)        \
     X(0x55,                                                                   \
       INPUT,                                                                  \
       NONE,                                                                   \
-      BACKGROUND_KEY_RELEASE,                                                 \
-      background_key_release,                                                 \
+      GLOBAL_KEY_RELEASE,                                                     \
+      global_key_release,                                                     \
       alia_key_input)                                                         \
     /* focus */                                                               \
     X(0x60, INPUT, TARGETED, FOCUS_GAIN, focus_gain, alia_focus_notification) \

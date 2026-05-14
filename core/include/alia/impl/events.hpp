@@ -78,6 +78,13 @@ is_refresh_event(ephemeral_context& ctx)
 
 // ACCESSORS
 
+template<class Payload>
+inline Payload&
+unsafe_get_event_payload(ephemeral_context& ctx)
+{
+    return *reinterpret_cast<Payload*>(ctx.events->event->payload);
+}
+
 #define X(code, CATEGORY, flags, NAME, name, data_type)                       \
     inline data_type& as_##name##_event(ephemeral_context& ctx)               \
     {                                                                         \

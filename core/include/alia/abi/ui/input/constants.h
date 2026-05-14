@@ -63,7 +63,7 @@ enum
 
 // KEYS
 
-typedef uint8_t alia_key_code_t;
+typedef uint16_t alia_key_code_t;
 
 #define ALIA_KEY_CODES(X)                                                     \
     X(0, UNKNOWN, unknown)                                                    \
@@ -119,11 +119,21 @@ typedef uint8_t alia_key_code_t;
     X(268, HOME, home)                                                        \
     X(269, END, end)                                                          \
     X(280, CAPS_LOCK, caps_lock)                                              \
+    X(290, F1, f1)                                                            \
     X(291, F2, f2)                                                            \
     X(292, F3, f3)                                                            \
     X(293, F4, f4)                                                            \
     X(294, F5, f5)                                                            \
     X(295, F6, f6)                                                            \
+    X(296, F7, f7)                                                            \
+    X(297, F8, f8)                                                            \
+    X(298, F9, f9)                                                            \
+    X(299, F10, f10)                                                          \
+    X(300, F11, f11)                                                          \
+    X(301, F12, f12)                                                          \
+    X(302, F13, f13)                                                          \
+    X(303, F14, f14)                                                          \
+    X(304, F15, f15)                                                          \
     X(305, F16, f16)                                                          \
     X(306, F17, f17)                                                          \
     X(307, F18, f18)                                                          \

@@ -77,7 +77,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_substrate_begin_block(
         &ctx, &sys.substrate.root_anchor, &sys.substrate.root_block_spec);
 
-    sys.controller(ctx);
+    sys.controller_fn(sys.controller_user_data, &ctx);
 
     if (!ctx.events->aborted)
         sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
