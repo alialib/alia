@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/state.h>
@@ -98,7 +99,7 @@ alia_element_focus_on_click(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_detect_key_press(
-    alia_context* ctx, alia_element_id id, alia_modded_key* out)
+    alia_context* ctx, alia_element_id id, alia_key_info* out)
 {
     alia_element_focus_on_click(ctx, id);
     // TODO: The event should be targeted to the element.
@@ -108,7 +109,7 @@ alia_element_detect_key_press(
         auto const& event = as_key_press_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -117,7 +118,7 @@ alia_element_detect_key_press(
 
 bool
 alia_element_detect_key_release(
-    alia_context* ctx, alia_element_id id, alia_modded_key* out)
+    alia_context* ctx, alia_element_id id, alia_key_info* out)
 {
     alia_element_focus_on_click(ctx, id);
     // TODO: The event should be targeted to the element.
@@ -127,7 +128,7 @@ alia_element_detect_key_release(
         auto const& event = as_key_release_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -135,14 +136,14 @@ alia_element_detect_key_release(
 }
 
 bool
-alia_input_detect_key_press(alia_context* ctx, alia_modded_key* out)
+alia_input_detect_key_press(alia_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS)
     {
         auto const& event = as_key_press_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -150,14 +151,14 @@ alia_input_detect_key_press(alia_context* ctx, alia_modded_key* out)
 }
 
 bool
-alia_input_detect_key_release(alia_context* ctx, alia_modded_key* out)
+alia_input_detect_key_release(alia_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE)
     {
         auto const& event = as_key_release_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -165,14 +166,14 @@ alia_input_detect_key_release(alia_context* ctx, alia_modded_key* out)
 }
 
 bool
-alia_input_detect_global_key_press(alia_context* ctx, alia_modded_key* out)
+alia_input_detect_global_key_press(alia_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_PRESS)
     {
         auto const& event = as_global_key_press_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -180,14 +181,14 @@ alia_input_detect_global_key_press(alia_context* ctx, alia_modded_key* out)
 }
 
 bool
-alia_input_detect_global_key_release(alia_context* ctx, alia_modded_key* out)
+alia_input_detect_global_key_release(alia_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_RELEASE)
     {
         auto const& event = as_global_key_release_event(*ctx);
         if (!event.acknowledged)
         {
-            *out = {event.code, event.mods};
+            *out = event.key;
             return true;
         }
     }
@@ -199,35 +200,31 @@ alia_element_detect_keyboard_click(
     alia_context* ctx,
     alia_keyboard_click_state* state,
     alia_element_id id,
-    alia_key_code_t code,
-    alia_kmods_t mods)
+    alia_key_info spec)
 {
-    // TODO: This is broken somehow.
-    // auto key = detect_key_press(ctx, id);
-    // if (key)
-    // {
-    //     if (key->code == code && key->mods == modifiers)
-    //     {
-    //         if (state.state == 0)
-    //             state.state = 1;
-    //         acknowledge_key_event(ctx);
-    //     }
-    //     // This behavior doesn't really feel right, but it was apparently
-    //     here
-    //     // for a reason.
-    //     // else if (state.state == 1)
-    //     //     state.state = 2;
-    // }
-    // else if (detect_key_release(ctx, id, code, modifiers))
-    // {
-    //     bool proper = state.state == 1;
-    //     state.state = 0;
-    //     return proper;
-    // }
-    // else if (detect_focus_loss(ctx, id))
-    // {
-    //     state.state = 0;
-    // }
+    alia_key_info incoming;
+    if (alia_element_detect_key_press(ctx, id, &incoming))
+    {
+        if (alia_key_info_matches_spec(incoming, spec))
+        {
+            if (state->state == 0)
+                state->state = 1;
+            alia_input_acknowledge_key_event(ctx);
+        }
+    }
+    else if (alia_element_detect_key_release(ctx, id, &incoming))
+    {
+        if (alia_key_info_matches_spec(incoming, spec))
+        {
+            bool const proper = state->state == 1;
+            state->state = 0;
+            return proper;
+        }
+    }
+    else if (alia_element_detect_focus_loss(ctx, id))
+    {
+        state->state = 0;
+    }
     return false;
 }
 

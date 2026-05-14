@@ -166,8 +166,7 @@ typedef struct alia_text_input
 
 typedef struct alia_key_input
 {
-    alia_key_code_t code;
-    alia_kmods_t mods;
+    alia_key_info key;
     bool acknowledged;
 } alia_key_input;
 

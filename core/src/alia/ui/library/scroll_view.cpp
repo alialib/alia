@@ -302,42 +302,41 @@ static void
 scroll_view_handle_key(
     scroll_view_state& data,
     scroll_view_placement const& p,
-    alia_modded_key const& key)
+    alia_key_info const& key)
 {
     if (key.mods != 0)
         return;
     float const line = data.style.line_size;
-    switch (key.code)
-    {
-        case ALIA_KEY_UP:
-            set_logical(data, p, 1, data.bar[1].logical - line);
-            break;
-        case ALIA_KEY_DOWN:
-            set_logical(data, p, 1, data.bar[1].logical + line);
-            break;
-        case ALIA_KEY_LEFT:
-            set_logical(data, p, 0, data.bar[0].logical - line);
-            break;
-        case ALIA_KEY_RIGHT:
-            set_logical(data, p, 0, data.bar[0].logical + line);
-            break;
-        case ALIA_KEY_PAGE_UP:
-            set_logical(
-                data, p, 1, data.bar[1].logical - axis_of(p.view_size, 1));
-            break;
-        case ALIA_KEY_PAGE_DOWN:
-            set_logical(
-                data, p, 1, data.bar[1].logical + axis_of(p.view_size, 1));
-            break;
-        case ALIA_KEY_HOME:
-            set_logical(data, p, 1, 0.f);
-            break;
-        case ALIA_KEY_END:
-            set_logical(data, p, 1, max_logical(p, 1));
-            break;
-        default:
-            break;
-    }
+    if (alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_UP_ARROW, ALIA_KEY_UP_ARROW))
+        set_logical(data, p, 1, data.bar[1].logical - line);
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_DOWN_ARROW, ALIA_KEY_DOWN_ARROW))
+        set_logical(data, p, 1, data.bar[1].logical + line);
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_LEFT_ARROW, ALIA_KEY_LEFT_ARROW))
+        set_logical(data, p, 0, data.bar[0].logical - line);
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_RIGHT_ARROW, ALIA_KEY_RIGHT_ARROW))
+        set_logical(data, p, 0, data.bar[0].logical + line);
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_PAGE_UP, ALIA_KEY_PAGE_UP))
+        set_logical(data, p, 1, data.bar[1].logical - axis_of(p.view_size, 1));
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_PAGE_DOWN, ALIA_KEY_PAGE_DOWN))
+        set_logical(data, p, 1, data.bar[1].logical + axis_of(p.view_size, 1));
+    else if (
+        alia_key_info_matches_hid_or_logical(
+            key, ALIA_HID_HOME, ALIA_KEY_HOME))
+        set_logical(data, p, 1, 0.f);
+    else if (
+        alia_key_info_matches_hid_or_logical(key, ALIA_HID_END, ALIA_KEY_END))
+        set_logical(data, p, 1, max_logical(p, 1));
 }
 
 static void
@@ -789,7 +788,7 @@ alia_ui_scroll_view_begin(
         }
 
         alia_element_focus_on_click(ctx, scope.id);
-        alia_modded_key key = {};
+        alia_key_info key = {};
         if (alia_element_detect_key_press(ctx, scope.id, &key))
             scroll_view_handle_key(*data, scope.placement, key);
     }
@@ -835,7 +834,7 @@ alia_ui_scroll_view_end(alia_context* ctx)
     }
     else if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)
     {
-        alia_modded_key key = {};
+        alia_key_info key = {};
         if (alia_input_detect_key_press(ctx, &key))
             scroll_view_handle_key(*scope.data, scope.placement, key);
     }

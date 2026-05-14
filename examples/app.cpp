@@ -633,10 +633,10 @@ the_demo(context& ctx)
 {
     try
     {
-        alia_modded_key k;
+        alia_key_info k;
         if (alia_input_detect_global_key_press(&ctx, &k))
         {
-            if (k.code == ALIA_KEY_F11 && k.mods == ALIA_KMOD_NONE)
+            if (k.logical == ALIA_KEY_F11 && k.mods == ALIA_KMOD_NONE)
             {
                 if (ctx.system->host_window.toggle_fullscreen)
                 {
@@ -645,12 +645,12 @@ the_demo(context& ctx)
                 }
                 alia_input_acknowledge_key_event(&ctx);
             }
-            else if (k.code == ALIA_KEY_EQUAL && k.mods == ALIA_KMOD_NONE)
+            else if (k.logical == ALIA_KEY_EQUAL && k.mods == ALIA_KMOD_NONE)
             {
                 demo_scale *= 1.1f;
                 alia_input_acknowledge_key_event(&ctx);
             }
-            else if (k.code == ALIA_KEY_MINUS && k.mods == ALIA_KMOD_NONE)
+            else if (k.logical == ALIA_KEY_MINUS && k.mods == ALIA_KMOD_NONE)
             {
                 demo_scale /= 1.1f;
                 alia_input_acknowledge_key_event(&ctx);

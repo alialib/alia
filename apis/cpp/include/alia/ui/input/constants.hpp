@@ -33,10 +33,4 @@ ALIA_DEFINE_FLAG_TYPE(alia_kmods_t, kmods)
 ALIA_KEY_MODS(X)
 #undef X
 
-struct modded_key
-{
-    alia_key_code_t code;
-    kmods_flag_set mods;
-};
-
 } // namespace alia

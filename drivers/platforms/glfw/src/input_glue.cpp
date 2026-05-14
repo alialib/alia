@@ -6,6 +6,141 @@
 
 #include <GLFW/glfw3.h>
 
+static alia_hid_key_t
+glfw_key_to_hid(int key)
+{
+    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z)
+        return (alia_hid_key_t) (ALIA_HID_A + (key - GLFW_KEY_A));
+    if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9)
+        return (alia_hid_key_t) (ALIA_HID_DIGIT_1 + (key - GLFW_KEY_1));
+    if (key == GLFW_KEY_0)
+        return ALIA_HID_DIGIT_0;
+    if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F12)
+        return (alia_hid_key_t) (ALIA_HID_F1 + (key - GLFW_KEY_F1));
+
+    switch (key)
+    {
+        case GLFW_KEY_SPACE:
+            return ALIA_HID_SPACE;
+        case GLFW_KEY_APOSTROPHE:
+            return ALIA_HID_APOSTROPHE;
+        case GLFW_KEY_COMMA:
+            return ALIA_HID_COMMA;
+        case GLFW_KEY_MINUS:
+            return ALIA_HID_MINUS;
+        case GLFW_KEY_PERIOD:
+            return ALIA_HID_PERIOD;
+        case GLFW_KEY_SLASH:
+            return ALIA_HID_SLASH;
+        case GLFW_KEY_SEMICOLON:
+            return ALIA_HID_SEMICOLON;
+        case GLFW_KEY_EQUAL:
+            return ALIA_HID_EQUAL;
+        case GLFW_KEY_LEFT_BRACKET:
+            return ALIA_HID_LEFT_BRACKET;
+        case GLFW_KEY_RIGHT_BRACKET:
+            return ALIA_HID_RIGHT_BRACKET;
+        case GLFW_KEY_BACKSLASH:
+            return ALIA_HID_BACKSLASH;
+        case GLFW_KEY_GRAVE_ACCENT:
+            return ALIA_HID_GRAVE_ACCENT;
+        case GLFW_KEY_WORLD_1:
+            return ALIA_HID_INTL_BACKSLASH;
+        case GLFW_KEY_ESCAPE:
+            return ALIA_HID_ESCAPE;
+        case GLFW_KEY_ENTER:
+            return ALIA_HID_ENTER;
+        case GLFW_KEY_TAB:
+            return ALIA_HID_TAB;
+        case GLFW_KEY_BACKSPACE:
+            return ALIA_HID_BACKSPACE;
+        case GLFW_KEY_INSERT:
+            return ALIA_HID_INSERT;
+        case GLFW_KEY_DELETE:
+            return ALIA_HID_DELETE_FORWARD;
+        case GLFW_KEY_RIGHT:
+            return ALIA_HID_RIGHT_ARROW;
+        case GLFW_KEY_LEFT:
+            return ALIA_HID_LEFT_ARROW;
+        case GLFW_KEY_DOWN:
+            return ALIA_HID_DOWN_ARROW;
+        case GLFW_KEY_UP:
+            return ALIA_HID_UP_ARROW;
+        case GLFW_KEY_PAGE_UP:
+            return ALIA_HID_PAGE_UP;
+        case GLFW_KEY_PAGE_DOWN:
+            return ALIA_HID_PAGE_DOWN;
+        case GLFW_KEY_HOME:
+            return ALIA_HID_HOME;
+        case GLFW_KEY_END:
+            return ALIA_HID_END;
+        case GLFW_KEY_CAPS_LOCK:
+            return ALIA_HID_CAPS_LOCK;
+        case GLFW_KEY_SCROLL_LOCK:
+            return ALIA_HID_SCROLL_LOCK;
+        case GLFW_KEY_NUM_LOCK:
+            return ALIA_HID_NUM_LOCK;
+        case GLFW_KEY_PRINT_SCREEN:
+            return ALIA_HID_PRINT_SCREEN;
+        case GLFW_KEY_PAUSE:
+            return ALIA_HID_PAUSE;
+        case GLFW_KEY_LEFT_SHIFT:
+            return ALIA_HID_LEFT_SHIFT;
+        case GLFW_KEY_LEFT_CONTROL:
+            return ALIA_HID_LEFT_CTRL;
+        case GLFW_KEY_LEFT_ALT:
+            return ALIA_HID_LEFT_ALT;
+        case GLFW_KEY_LEFT_SUPER:
+            return ALIA_HID_LEFT_GUI;
+        case GLFW_KEY_RIGHT_SHIFT:
+            return ALIA_HID_RIGHT_SHIFT;
+        case GLFW_KEY_RIGHT_CONTROL:
+            return ALIA_HID_RIGHT_CTRL;
+        case GLFW_KEY_RIGHT_ALT:
+            return ALIA_HID_RIGHT_ALT;
+        case GLFW_KEY_RIGHT_SUPER:
+            return ALIA_HID_RIGHT_GUI;
+        case GLFW_KEY_MENU:
+            return ALIA_HID_APPLICATION;
+        case GLFW_KEY_KP_0:
+            return ALIA_HID_KP_0;
+        case GLFW_KEY_KP_1:
+            return ALIA_HID_KP_1;
+        case GLFW_KEY_KP_2:
+            return ALIA_HID_KP_2;
+        case GLFW_KEY_KP_3:
+            return ALIA_HID_KP_3;
+        case GLFW_KEY_KP_4:
+            return ALIA_HID_KP_4;
+        case GLFW_KEY_KP_5:
+            return ALIA_HID_KP_5;
+        case GLFW_KEY_KP_6:
+            return ALIA_HID_KP_6;
+        case GLFW_KEY_KP_7:
+            return ALIA_HID_KP_7;
+        case GLFW_KEY_KP_8:
+            return ALIA_HID_KP_8;
+        case GLFW_KEY_KP_9:
+            return ALIA_HID_KP_9;
+        case GLFW_KEY_KP_DECIMAL:
+            return ALIA_HID_KP_DECIMAL;
+        case GLFW_KEY_KP_DIVIDE:
+            return ALIA_HID_KP_DIVIDE;
+        case GLFW_KEY_KP_MULTIPLY:
+            return ALIA_HID_KP_MULTIPLY;
+        case GLFW_KEY_KP_SUBTRACT:
+            return ALIA_HID_KP_MINUS;
+        case GLFW_KEY_KP_ADD:
+            return ALIA_HID_KP_PLUS;
+        case GLFW_KEY_KP_ENTER:
+            return ALIA_HID_KP_ENTER;
+        case GLFW_KEY_KP_EQUAL:
+            return ALIA_HID_KEYPAD_EQUAL;
+        default:
+            return ALIA_HID_UNKNOWN;
+    }
+}
+
 extern "C" {
 
 alia_kmods_t
@@ -46,11 +181,7 @@ alia_glfw_cursor_window_to_framebuffer(GLFWwindow* window, double x, double y)
 
 void
 alia_glfw_enqueue_mouse_button(
-    alia_ui_system* ui,
-    GLFWwindow* window,
-    int button,
-    int action,
-    int mods)
+    alia_ui_system* ui, GLFWwindow* window, int button, int action, int mods)
 {
     if (!ui || !window)
         return;
@@ -89,8 +220,8 @@ alia_glfw_enqueue_scroll(alia_ui_system* ui, double x, double y)
 {
     if (!ui)
         return;
-    alia_vec2f const delta
-        = ALIA_BRACED_INIT(alia_vec2f, static_cast<float>(x), static_cast<float>(y));
+    alia_vec2f const delta = ALIA_BRACED_INIT(
+        alia_vec2f, static_cast<float>(x), static_cast<float>(y));
     alia_ui_enqueue_scroll(ui, delta);
 }
 
@@ -100,18 +231,32 @@ alia_glfw_enqueue_key(alia_ui_system* ui, int key, int action, int mods)
     if (!ui)
         return;
     alia_kmods_t const km = alia_glfw_mods_to_kmods(mods);
+    alia_hid_key_t const hid = glfw_key_to_hid(key);
+    alia_key_info mk{};
+    mk.logical = static_cast<alia_key_code_t>(key);
+    mk.mods = km;
+    mk.fields_present = ALIA_KEY_FIELD_LOGICAL;
+    if (hid != ALIA_HID_UNKNOWN)
+    {
+        mk.hid = hid;
+        mk.fields_present = (alia_key_fields_present_t) (mk.fields_present
+                                                         | ALIA_KEY_FIELD_HID);
+    }
+    else
+    {
+        mk.hid = ALIA_HID_UNKNOWN;
+    }
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
-        alia_ui_enqueue_key_press(ui, alia_key_code_t(key), km);
+        alia_ui_enqueue_key_press(ui, mk);
     else if (action == GLFW_RELEASE)
-        alia_ui_enqueue_key_release(ui, alia_key_code_t(key), km);
+        alia_ui_enqueue_key_release(ui, mk);
 }
 
 static void
-mouse_button_callback(
-    GLFWwindow* window, int button, int action, int mods)
+mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     alia_glfw_enqueue_mouse_button(binding->ui, window, button, action, mods);
@@ -120,8 +265,8 @@ mouse_button_callback(
 static void
 cursor_position_callback(GLFWwindow* window, double x, double y)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     alia_glfw_enqueue_cursor_pos(binding->ui, window, x, y);
@@ -130,8 +275,8 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
 static void
 scroll_callback(GLFWwindow* window, double x, double y)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     alia_glfw_enqueue_scroll(binding->ui, x, y);
@@ -141,8 +286,8 @@ static void
 key_callback(
     GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     alia_glfw_enqueue_key(binding->ui, key, action, mods);
@@ -151,8 +296,8 @@ key_callback(
 static void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     alia_vec2i const size = ALIA_BRACED_INIT(alia_vec2i, width, height);
@@ -162,13 +307,12 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 static void
 content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
-    auto* binding = static_cast<alia_glfw_ui_binding*>(
-        glfwGetWindowUserPointer(window));
+    auto* binding
+        = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
     (void) window;
-    alia_ui_surface_set_dpi(
-        binding->ui, ((xscale + yscale) / 2.0f) * 96.f);
+    alia_ui_surface_set_dpi(binding->ui, ((xscale + yscale) / 2.0f) * 96.f);
 }
 
 void

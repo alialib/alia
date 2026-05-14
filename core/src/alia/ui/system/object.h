@@ -95,8 +95,9 @@ struct alia_ui_system
         std::vector<alia_ui_timer_request>,
         alia_ui_timer_request_compare>
         timer_requests;
-    // This prevents timer requests from being serviced in the same frame that
-    // they're requested, thus throwing the event handler into a loop.
+    // timer event cycle counter - This prevents timer requests from being
+    // serviced in the same frame that they're requested (which could throw the
+    // event handler into a loop).
     uint64_t timer_event_cycle = 0;
     // timer dispatch cycle for the current `begin_update` / `work_step` frame
     // TODO: Consider moving this into a per-frame structure.

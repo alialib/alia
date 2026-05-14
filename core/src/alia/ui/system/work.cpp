@@ -192,7 +192,7 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             {
                 alia_key_input const& k = as_key_press_event(ev);
                 alia_event global = alia_make_global_key_press_event(
-                    {.code = k.code, .mods = k.mods, .acknowledged = false});
+                    {.key = k.key, .acknowledged = false});
                 dispatch_event(ui, global);
             }
             break;
@@ -207,7 +207,7 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             {
                 alia_key_input const& k = as_key_release_event(ev);
                 alia_event global = alia_make_global_key_release_event(
-                    {.code = k.code, .mods = k.mods, .acknowledged = false});
+                    {.key = k.key, .acknowledged = false});
                 dispatch_event(ui, global);
             }
             break;
