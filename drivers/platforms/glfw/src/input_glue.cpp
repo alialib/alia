@@ -1,9 +1,12 @@
-#include <alia/platforms/glfw/input_glue.hpp>
+#include <alia/platforms/glfw/input_glue.h>
 
+#include <alia/abi/prelude.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 
 #include <GLFW/glfw3.h>
+
+extern "C" {
 
 alia_kmods_t
 alia_glfw_mods_to_kmods(int glfw_mods)
@@ -32,13 +35,13 @@ alia_glfw_cursor_window_to_framebuffer(GLFWwindow* window, double x, double y)
     glfwGetWindowSize(window, &window_width, &window_height);
 
     if (window_width <= 0 || window_height <= 0)
-        return {0.f, 0.f};
+        return ALIA_BRACED_INIT(alia_vec2f, 0.f, 0.f);
 
     float const internal_x = static_cast<float>(x) * framebuffer_width
                            / static_cast<float>(window_width);
     float const internal_y = static_cast<float>(y) * framebuffer_height
                            / static_cast<float>(window_height);
-    return {internal_x, internal_y};
+    return ALIA_BRACED_INIT(alia_vec2f, internal_x, internal_y);
 }
 
 void
@@ -86,7 +89,9 @@ alia_glfw_enqueue_scroll(alia_ui_system* ui, double x, double y)
 {
     if (!ui)
         return;
-    alia_ui_enqueue_scroll(ui, {static_cast<float>(x), static_cast<float>(y)});
+    alia_vec2f const delta
+        = ALIA_BRACED_INIT(alia_vec2f, static_cast<float>(x), static_cast<float>(y));
+    alia_ui_enqueue_scroll(ui, delta);
 }
 
 void
@@ -101,9 +106,7 @@ alia_glfw_enqueue_key(alia_ui_system* ui, int key, int action, int mods)
         alia_ui_enqueue_key_release(ui, alia_key_code_t(key), km);
 }
 
-namespace {
-
-void
+static void
 mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
 {
@@ -114,7 +117,7 @@ mouse_button_callback(
     alia_glfw_enqueue_mouse_button(binding->ui, window, button, action, mods);
 }
 
-void
+static void
 cursor_position_callback(GLFWwindow* window, double x, double y)
 {
     auto* binding = static_cast<alia_glfw_ui_binding*>(
@@ -124,7 +127,7 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
     alia_glfw_enqueue_cursor_pos(binding->ui, window, x, y);
 }
 
-void
+static void
 scroll_callback(GLFWwindow* window, double x, double y)
 {
     auto* binding = static_cast<alia_glfw_ui_binding*>(
@@ -134,7 +137,7 @@ scroll_callback(GLFWwindow* window, double x, double y)
     alia_glfw_enqueue_scroll(binding->ui, x, y);
 }
 
-void
+static void
 key_callback(
     GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
 {
@@ -145,17 +148,18 @@ key_callback(
     alia_glfw_enqueue_key(binding->ui, key, action, mods);
 }
 
-void
+static void
 framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     auto* binding = static_cast<alia_glfw_ui_binding*>(
         glfwGetWindowUserPointer(window));
     if (!binding || !binding->ui)
         return;
-    alia_ui_surface_set_size(binding->ui, {width, height});
+    alia_vec2i const size = ALIA_BRACED_INIT(alia_vec2i, width, height);
+    alia_ui_surface_set_size(binding->ui, size);
 }
 
-void
+static void
 content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
     auto* binding = static_cast<alia_glfw_ui_binding*>(
@@ -166,8 +170,6 @@ content_scale_callback(GLFWwindow* window, float xscale, float yscale)
     alia_ui_surface_set_dpi(
         binding->ui, ((xscale + yscale) / 2.0f) * 96.f);
 }
-
-} // namespace
 
 void
 alia_glfw_install_default_input_callbacks(
@@ -192,3 +194,5 @@ alia_glfw_install_surface_callbacks(
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetWindowContentScaleCallback(window, content_scale_callback);
 }
+
+} // extern "C"

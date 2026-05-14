@@ -1,4 +1,4 @@
-#include <alia/platforms/glfw/borderless_fullscreen.hpp>
+#include <alia/platforms/glfw/borderless_fullscreen.h>
 
 #include <GLFW/glfw3.h>
 
@@ -75,15 +75,17 @@ glfw_request_win32_frame_refresh(GLFWwindow* window)
 }
 #endif
 
+extern "C" {
+
 void
-glfw_fullscreen_host_toggle(void* user)
+alia_glfw_fullscreen_host_toggle(void* user)
 {
-    auto* binding = static_cast<glfw_fullscreen_host_binding*>(user);
+    auto* binding = static_cast<alia_glfw_fullscreen_host_binding*>(user);
     if (!binding || !binding->window || !binding->state)
         return;
 
     GLFWwindow* const window = binding->window;
-    glfw_borderless_fullscreen_state& impl = *binding->state;
+    alia_glfw_borderless_fullscreen_state& impl = *binding->state;
 
     bool const is_fullscreen = impl.is_fullscreen;
     if (is_fullscreen)
@@ -131,3 +133,5 @@ glfw_fullscreen_host_toggle(void* user)
     }
     impl.is_fullscreen = !is_fullscreen;
 }
+
+} // extern "C"

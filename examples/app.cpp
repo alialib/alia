@@ -38,8 +38,8 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/platforms/glfw/borderless_fullscreen.hpp>
-#include <alia/platforms/glfw/input_glue.hpp>
+#include <alia/platforms/glfw/borderless_fullscreen.h>
+#include <alia/platforms/glfw/input_glue.h>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
@@ -77,9 +77,9 @@ alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
-glfw_borderless_fullscreen_state the_window_impl;
+alia_glfw_borderless_fullscreen_state the_window_impl;
 
-static glfw_fullscreen_host_binding the_fullscreen_host_binding{};
+static alia_glfw_fullscreen_host_binding the_fullscreen_host_binding{};
 static alia_glfw_ui_binding the_glfw_ui_binding{};
 
 // Local palette and styles for the content pane (driven by controls).
@@ -965,7 +965,7 @@ main()
     the_fullscreen_host_binding.state = &the_window_impl;
     {
         alia_host_window_ops const fullscreen_ops
-            = glfw_make_fullscreen_host_ops(&the_fullscreen_host_binding);
+            = alia_glfw_make_fullscreen_host_ops(&the_fullscreen_host_binding);
         alia_ui_system_set_host_window_ops(the_system, &fullscreen_ops);
     }
 
