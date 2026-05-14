@@ -5,7 +5,6 @@
 #include <alia/ui/system/object.h>
 
 extern "C" {
-// TODO: This isn't technically correct.
 typedef struct alia_ui_system alia_ui_system;
 } // extern "C"
 
@@ -45,33 +44,6 @@ clear_focus(ui_system& ui);
 // necessary to call this separately.
 void
 refresh_system(ui_system& ui);
-
-#if 0
-
-// Issue an untargeted event to the UI system.
-void
-issue_event(ui_system& system, ui_event& event);
-
-// Issue a targeted event to the UI system.
-void
-issue_targeted_event(
-    ui_system& system, ui_event& event, routable_widget_id const& target);
-
-// Get the time in microseconds that the last refresh event took to process.
-int
-get_last_refresh_duration(ui_system& ui);
-
-// Set a new style for the UI system.
-void
-set_system_style(ui_system& system, alia__shared_ptr<style_tree> const& style);
-
-inline void
-on_ui_style_change(ui_system& system)
-{
-    inc_version(system.style.id);
-}
-
-#endif
 
 void
 set_focus(ui_system& sys, alia_element_id element);

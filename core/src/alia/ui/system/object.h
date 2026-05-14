@@ -15,12 +15,13 @@
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
 #include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/drawing.h>
 
 #include <cstdint>
 #include <deque>
-#include <functional>
 #include <queue>
 #include <vector>
 
@@ -54,7 +55,10 @@ struct alia_ui_system
 
     alia_draw_system draw;
 
-    std::function<void(alia::context&)> controller;
+    alia_ui_controller_fn controller_fn = nullptr;
+    void* controller_user_data = nullptr;
+
+    alia_host_window_ops host_window{};
 
     // alia__shared_ptr<alia::surface> surface;
     alia_vec2i surface_size;
@@ -86,12 +90,14 @@ struct alia_ui_system
     alia_msdf_text_engine* msdf_text_engine = nullptr;
 
     // pending timer events
-    uint64_t timer_event_counter = 0;
     std::priority_queue<
         alia_ui_timer_request,
         std::vector<alia_ui_timer_request>,
         alia_ui_timer_request_compare>
         timer_requests;
+    // This prevents timer requests from being serviced in the same frame that
+    // they're requested, thus throwing the event handler into a loop.
+    uint64_t timer_event_cycle = 0;
     // timer dispatch cycle for the current `begin_update` / `work_step` frame
     // TODO: Consider moving this into a per-frame structure.
     uint64_t update_timer_cycle = 0;
@@ -101,17 +107,9 @@ struct alia_ui_system
 
     alia_ui_refresh_policy refresh_policy{};
 
-    // When true, `ALIA_UI_REFRESH_IF_DIRTY` may run `refresh_system`.
+    // TODO: Create a hierarchical component status tree.
+    // For now, this is essentially the root flag.
     bool ui_dirty = true;
-
-    // alia::routable_widget_id overlay_id;
-
-    // std::vector<alia::widget_visibility_request>
-    // pending_visibility_requests;
-
-    // This prevents timer requests from being serviced in the same frame that
-    // they're requested and thus throwing the event handler into a loop.
-    // alia::counter_type timer_event_counter;
 
     // int last_refresh_duration;
 

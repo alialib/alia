@@ -14,7 +14,7 @@ get_current_timer_cycle(alia_ui_system* sys)
 {
     // Component code uses this as a "do not dispatch in the same cycle"
     // token.
-    return sys ? sys->timer_event_counter : 0u;
+    return sys ? sys->timer_event_cycle : 0u;
 }
 
 inline void

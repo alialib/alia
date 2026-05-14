@@ -191,13 +191,13 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             if (!as_key_press_event(ev).acknowledged)
             {
                 alia_key_input const& k = as_key_press_event(ev);
-                alia_event bg = alia_make_background_key_press_event(
+                alia_event global = alia_make_global_key_press_event(
                     {.code = k.code, .mods = k.mods, .acknowledged = false});
-                dispatch_event(ui, bg);
+                dispatch_event(ui, global);
             }
             break;
 
-        case ALIA_EVENT_BACKGROUND_KEY_PRESS:
+        case ALIA_EVENT_GLOBAL_KEY_PRESS:
             dispatch_event(ui, ev);
             break;
 
@@ -206,13 +206,13 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             if (!as_key_release_event(ev).acknowledged)
             {
                 alia_key_input const& k = as_key_release_event(ev);
-                alia_event bg = alia_make_background_key_release_event(
+                alia_event global = alia_make_global_key_release_event(
                     {.code = k.code, .mods = k.mods, .acknowledged = false});
-                dispatch_event(ui, bg);
+                dispatch_event(ui, global);
             }
             break;
 
-        case ALIA_EVENT_BACKGROUND_KEY_RELEASE:
+        case ALIA_EVENT_GLOBAL_KEY_RELEASE:
             dispatch_event(ui, ev);
             break;
 
@@ -281,8 +281,8 @@ alia_ui_system_begin_update(alia_ui_system* ui)
 
     alia_ui_system_poll_clock(ui);
 
-    ++ui->timer_event_counter;
-    ui->update_timer_cycle = ui->timer_event_counter;
+    ++ui->timer_event_cycle;
+    ui->update_timer_cycle = ui->timer_event_cycle;
 
     if (ui->event_queue.empty())
         refresh_system(*ui);
@@ -299,8 +299,7 @@ alia_ui_work_step(alia_ui_system* ui)
 
     if (alia::timer_is_due(*ui))
     {
-        alia::process_due_timers(
-            *ui, ui->tick_count, ui->update_timer_cycle);
+        alia::process_due_timers(*ui, ui->tick_count, ui->update_timer_cycle);
         return ALIA_UI_WORK_STEP_TIMER;
     }
 
@@ -330,8 +329,7 @@ alia_ui_needs_tick(alia_ui_system* ui)
 }
 
 bool
-alia_ui_next_wake_ns(
-    alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
+alia_ui_next_wake_ns(alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
 {
     if (!ui || !out_wake_ns)
         return false;

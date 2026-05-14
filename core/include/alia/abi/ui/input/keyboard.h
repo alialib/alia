@@ -46,11 +46,16 @@ alia_element_detect_key_release(
 //     size_t buf_size,
 //     size_t* out_len);
 
-// key events (background)
 bool
 alia_input_detect_key_press(alia_context* ctx, alia_modded_key* out);
 bool
 alia_input_detect_key_release(alia_context* ctx, alia_modded_key* out);
+
+// key events (global)
+bool
+alia_input_detect_global_key_press(alia_context* ctx, alia_modded_key* out);
+bool
+alia_input_detect_global_key_release(alia_context* ctx, alia_modded_key* out);
 
 // keyboard "clicking"
 

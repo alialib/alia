@@ -19,6 +19,7 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/drawing.h>
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -29,6 +30,7 @@
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/style.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
 #include <alia/context.h>
@@ -36,7 +38,8 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/platforms/glfw/window.hpp>
+#include <alia/platforms/glfw/borderless_fullscreen.hpp>
+#include <alia/platforms/glfw/input_glue.hpp>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/components.hpp>
 #include <alia/ui/layout/flags.hpp>
@@ -44,17 +47,14 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
-#include <chrono>
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #endif
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#include <GLFW/glfw3.h>
+#ifndef __EMSCRIPTEN__
+#include <glad/glad.h>
 #endif
 
 using namespace alia;
@@ -77,12 +77,10 @@ alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
-struct glfw_window_impl
-{
-    bool is_fullscreen = false;
-    alia_vec2i windowed_position, windowed_size;
-};
-glfw_window_impl the_window_impl;
+glfw_borderless_fullscreen_state the_window_impl;
+
+static glfw_fullscreen_host_binding the_fullscreen_host_binding{};
+static alia_glfw_ui_binding the_glfw_ui_binding{};
 
 // Local palette and styles for the content pane (driven by controls).
 static alia_palette local_palette;
@@ -635,6 +633,30 @@ the_demo(context& ctx)
 {
     try
     {
+        alia_modded_key k;
+        if (alia_input_detect_global_key_press(&ctx, &k))
+        {
+            if (k.code == ALIA_KEY_F11 && k.mods == ALIA_KMOD_NONE)
+            {
+                if (ctx.system->host_window.toggle_fullscreen)
+                {
+                    ctx.system->host_window.toggle_fullscreen(
+                        ctx.system->host_window.user);
+                }
+                alia_input_acknowledge_key_event(&ctx);
+            }
+            else if (k.code == ALIA_KEY_EQUAL && k.mods == ALIA_KMOD_NONE)
+            {
+                demo_scale *= 1.1f;
+                alia_input_acknowledge_key_event(&ctx);
+            }
+            else if (k.code == ALIA_KEY_MINUS && k.mods == ALIA_KMOD_NONE)
+            {
+                demo_scale /= 1.1f;
+                alia_input_acknowledge_key_event(&ctx);
+            }
+        }
+
         // Initialize local style structs from library defaults once.
         if (!local_styles_initialized)
         {
@@ -723,242 +745,11 @@ the_demo(context& ctx)
     }
 }
 
-alia_kmods_t
-to_alia_kmods_t(int mods)
-{
-    alia_kmods_t result = 0;
-    if (mods & GLFW_MOD_SHIFT)
-        result |= ALIA_KMOD_SHIFT;
-    if (mods & GLFW_MOD_CONTROL)
-        result |= ALIA_KMOD_CTRL;
-    if (mods & GLFW_MOD_ALT)
-        result |= ALIA_KMOD_ALT;
-    // TODO: Finish this.
-    return result;
-}
-
-void
-mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-
-    int framebuffer_width, framebuffer_height;
-    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
-
-    int window_width, window_height;
-    glfwGetWindowSize(window, &window_width, &window_height);
-
-    float internal_x
-        = (static_cast<float>(x) * framebuffer_width
-           / window_width); // / the_ui_scale.x;
-    float internal_y
-        = (static_cast<float>(y) * framebuffer_height
-           / window_height); // / the_ui_scale.y;
-
-    switch (action)
-    {
-        case GLFW_PRESS: {
-            alia_ui_process_mouse_press(
-                the_system,
-                {internal_x, internal_y},
-                button,
-                to_alia_kmods_t(mods));
-            break;
-        }
-        case GLFW_RELEASE: {
-            alia_ui_process_mouse_release(
-                the_system,
-                {internal_x, internal_y},
-                button,
-                to_alia_kmods_t(mods));
-            break;
-        }
-    }
-}
-void
-cursor_position_callback(GLFWwindow* window, double x, double y)
-{
-    int framebuffer_width, framebuffer_height;
-    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
-
-    int window_width, window_height;
-    glfwGetWindowSize(window, &window_width, &window_height);
-
-    float internal_x
-        = (static_cast<float>(x) * framebuffer_width / window_width);
-    float internal_y
-        = (static_cast<float>(y) * framebuffer_height / window_height);
-
-    alia_ui_process_mouse_motion(the_system, {internal_x, internal_y});
-}
-
-void
-scroll_callback(GLFWwindow* window, double x, double y)
-{
-    alia_ui_process_scroll(
-        the_system, {static_cast<float>(x), static_cast<float>(y)});
-}
-
-// For windowed windows, glfwGetWindowMonitor is NULL; pick the monitor whose
-// virtual-area rectangle overlaps the window the most (straddling uses the
-// majority monitor).
-static GLFWmonitor*
-glfw_monitor_covering_most_of_window(GLFWwindow* window)
-{
-    int wx, wy, ww, wh;
-    glfwGetWindowPos(window, &wx, &wy);
-    glfwGetWindowSize(window, &ww, &wh);
-
-    int n = 0;
-    GLFWmonitor** monitors = glfwGetMonitors(&n);
-    GLFWmonitor* best = glfwGetPrimaryMonitor();
-    long long best_area = -1;
-
-    for (int i = 0; i < n; ++i)
-    {
-        GLFWmonitor* m = monitors[i];
-        int mx, my;
-        glfwGetMonitorPos(m, &mx, &my);
-        GLFWvidmode const* mode = glfwGetVideoMode(m);
-        if (!mode)
-            continue;
-        int const mw = mode->width;
-        int const mh = mode->height;
-
-        int const ix1 = (wx > mx) ? wx : mx;
-        int const iy1 = (wy > my) ? wy : my;
-        int const ix2 = (wx + ww < mx + mw) ? wx + ww : mx + mw;
-        int const iy2 = (wy + wh < my + mh) ? wy + wh : my + mh;
-        int const iw = ix2 - ix1;
-        int const ih = iy2 - iy1;
-        if (iw <= 0 || ih <= 0)
-            continue;
-        long long const area
-            = static_cast<long long>(iw) * static_cast<long long>(ih);
-        if (area > best_area)
-        {
-            best_area = area;
-            best = m;
-        }
-    }
-    return best;
-}
-
-#ifdef _WIN32
-// After toggling GLFW_DECORATED, DWM sometimes skips repainting the caption
-// until the next pointer message; SWP_FRAMECHANGED forces a non-client
-// refresh.
 static void
-glfw_request_win32_frame_refresh(GLFWwindow* window)
+the_demo_controller(void* user_data, alia_context* ctx)
 {
-    HWND const hwnd = glfwGetWin32Window(window);
-    if (!hwnd)
-        return;
-    SetWindowPos(
-        hwnd,
-        nullptr,
-        0,
-        0,
-        0,
-        0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-}
-#endif
-
-void
-key_event_callback(
-    GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
-{
-    auto& system = the_system;
-    auto& impl = the_window_impl;
-    if (action == GLFW_PRESS || action == GLFW_REPEAT)
-    {
-        switch (key)
-        {
-            // TODO: Move all this out of here.
-            // case GLFW_KEY_TAB:
-            //     if (mods == GLFW_MOD_SHIFT)
-            //         regress_focus(system);
-            //     else if (mods == 0)
-            //         advance_focus(system);
-            //     break;
-            case GLFW_KEY_EQUAL: {
-                // if (mods == GLFW_MOD_CONTROL)
-                demo_scale *= 1.1f;
-                break;
-            }
-            case GLFW_KEY_MINUS: {
-                // if (mods == GLFW_MOD_CONTROL)
-                demo_scale /= 1.1f;
-                break;
-            }
-            case GLFW_KEY_F11: {
-                bool is_fullscreen = impl.is_fullscreen;
-                if (is_fullscreen)
-                {
-                    // Shrink to saved rect while still borderless first. If
-                    // GLFW_DECORATED is enabled while the window is still
-                    // fullscreen-sized, Windows can show the taskbar (normal
-                    // window) while the client area stays fullscreen for a
-                    // noticeable stretch.
-                    glfwSetWindowMonitor(
-                        window,
-                        NULL,
-                        impl.windowed_position.x,
-                        impl.windowed_position.y,
-                        impl.windowed_size.x,
-                        impl.windowed_size.y,
-                        GLFW_DONT_CARE);
-                    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
-                    glfwPollEvents();
-#ifdef _WIN32
-                    glfw_request_win32_frame_refresh(window);
-#endif
-                }
-                else
-                {
-                    GLFWmonitor* monitor
-                        = glfw_monitor_covering_most_of_window(window);
-                    GLFWvidmode const* mode = glfwGetVideoMode(monitor);
-                    if (!mode)
-                    {
-                        monitor = glfwGetPrimaryMonitor();
-                        mode = glfwGetVideoMode(monitor);
-                    }
-                    if (!mode)
-                        break;
-                    glfwGetWindowPos(
-                        window,
-                        &impl.windowed_position.x,
-                        &impl.windowed_position.y);
-                    glfwGetWindowSize(
-                        window, &impl.windowed_size.x, &impl.windowed_size.y);
-                    int mx, my;
-                    glfwGetMonitorPos(monitor, &mx, &my);
-                    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
-                    glfwSetWindowMonitor(
-                        window,
-                        NULL,
-                        mx,
-                        my,
-                        mode->width,
-                        mode->height,
-                        mode->refreshRate);
-                }
-                impl.is_fullscreen = !is_fullscreen;
-                break;
-            }
-            default:
-                alia_ui_process_key_press(
-                    system, alia_key_code_t(key), alia_kmods_t(mods));
-        }
-    }
-    else if (action == GLFW_RELEASE)
-    {
-        alia_ui_process_key_release(
-            system, alia_key_code_t(key), alia_kmods_t(mods));
-    }
+    (void) user_data;
+    the_demo(*ctx);
 }
 
 void
@@ -970,8 +761,6 @@ update()
 
     AllocProbeResult result = probe_allocations([&]() {
         alia_ui_system_update(the_system);
-
-        update_glfw_window_info(the_system, the_window);
 
         // glfwMakeContextCurrent(the_window);
 
@@ -1061,25 +850,6 @@ update()
 }
 
 void
-framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    alia_ui_surface_set_size(the_system, {width, height});
-    // TODO: See if this is still needed once system-level control flow and
-    // event scheduling is actually worked out.
-    update();
-}
-
-void
-content_scale_callback(GLFWwindow* window, float xscale, float yscale)
-{
-    alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
-    // TODO: Support 2D DPI?
-    // TODO: See if this is still needed once system-level control flow and
-    // event scheduling is actually worked out.
-    update();
-}
-
-void
 check_and_update_resolution()
 {
 #ifdef __EMSCRIPTEN__
@@ -1147,7 +917,8 @@ main()
 
     // TODO: Guarantee alignment.
     void* ui_system_storage = malloc(alia_ui_system_object_spec().size);
-    the_system = alia_ui_system_init(ui_system_storage, the_demo, {0, 0});
+    the_system = alia_ui_system_init(
+        ui_system_storage, the_demo_controller, nullptr, {0, 0});
 
     static bool theme_initialized = false;
     if (!theme_initialized)
@@ -1190,18 +961,23 @@ main()
         return -1;
     }
 
-    glfwSetMouseButtonCallback(the_window, mouse_button_callback);
-    glfwSetFramebufferSizeCallback(the_window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(the_window, cursor_position_callback);
-    glfwSetScrollCallback(the_window, scroll_callback);
-    glfwSetKeyCallback(the_window, key_event_callback);
+    the_fullscreen_host_binding.window = the_window;
+    the_fullscreen_host_binding.state = &the_window_impl;
+    {
+        alia_host_window_ops const fullscreen_ops
+            = glfw_make_fullscreen_host_ops(&the_fullscreen_host_binding);
+        alia_ui_system_set_host_window_ops(the_system, &fullscreen_ops);
+    }
+
+    the_glfw_ui_binding.ui = the_system;
+    alia_glfw_install_surface_callbacks(the_window, &the_glfw_ui_binding);
+    alia_glfw_install_default_input_callbacks(
+        the_window, &the_glfw_ui_binding);
 
     float xscale, yscale;
     glfwGetWindowContentScale(the_window, &xscale, &yscale);
     // TODO: Support 2D DPI?
     alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
-
-    glfwSetWindowContentScaleCallback(the_window, content_scale_callback);
 
 #ifndef __EMSCRIPTEN__
     glfwMakeContextCurrent(the_window);
