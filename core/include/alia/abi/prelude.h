@@ -216,7 +216,7 @@ alia_milliseconds(int32_t ms)
     return (alia_nanosecond_count) ms * 1000000;
 }
 
-typedef int32_t alia_generation_counter;
+typedef uint32_t alia_generation_counter;
 
 // MATH - TODO: Move these to a separate file?
 
