@@ -68,6 +68,7 @@ substrate_block_cleanup(
             block->spec.size,
             block->spec.align);
         ++system.current_generation;
+        ALIA_ASSERT(system.current_generation != 0);
     }
 }
 
