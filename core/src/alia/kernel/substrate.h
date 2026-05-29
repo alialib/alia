@@ -80,19 +80,10 @@ substrate_system_init(
 void
 substrate_system_destroy(alia_substrate_system& system);
 
+// Reset the system, destroying the root block if it exists.
+// This is mainly intended for test/harness usage.
 void
-substrate_block_invoke_cleanup_records(
-    alia_substrate_system* system,
-    alia_substrate_block* block,
-    alia_substrate_cleanup_mode mode);
-
-void
-substrate_block_release(
-    alia_substrate_system* system, alia_substrate_block* block);
-
-void
-substrate_block_destroy(
-    alia_substrate_system* system, alia_substrate_block* block);
+substrate_system_reset(alia_substrate_system& system);
 
 void
 substrate_traversal_init(
