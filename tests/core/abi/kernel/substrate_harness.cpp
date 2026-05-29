@@ -202,11 +202,7 @@ alia_test_substrate_fixture_cleanup_root_block(
         return;
 
     if (fixture->system.root_anchor.block)
-    {
-        alia::substrate_block_destroy(
-            &fixture->system, fixture->system.root_anchor.block);
-        fixture->system.root_anchor.block = nullptr;
-    }
+        alia::substrate_system_reset(fixture->system);
 }
 
 } // extern "C"
