@@ -29,7 +29,7 @@ id_view_get_data(alia_id_view const& id)
             return (id.size_and_flags & ALIA_ID_EXTERNAL_FLAG)
                      ? id.payload.external_data
                      : id.payload.inline_data;
-        case ALIA_ID_TYPE_COMPOSITE:
+        case ALIA_ID_TYPE_PAIR:
             return id.payload.external_data;
         default:
             return (id.size_and_flags & ALIA_ID_EXTERNAL_FLAG)
@@ -96,24 +96,22 @@ capture_view_into(alia_id_view src, alia_id_capture_context* ctx)
             return src;
         }
 
-        case ALIA_ID_TYPE_COMPOSITE: {
-            uint32_t const n = id_view_get_size(src);
-            auto const* src_children
-                = static_cast<alia_id_view const*>(src.payload.external_data);
-            void* arr_mem = alia_id_capture_reserve(
-                ctx,
-                static_cast<size_t>(n) * sizeof(alia_id_view),
-                alignof(alia_id_view));
-            auto* dst_children = static_cast<alia_id_view*>(
-                alia_id_capture_is_discovery(ctx) ? nullptr : arr_mem);
-            for (uint32_t i = 0; i < n; ++i)
+        case ALIA_ID_TYPE_PAIR: {
+            auto const* src_pair
+                = static_cast<alia_id_pair const*>(src.payload.external_data);
+            void* pair_mem = alia_id_capture_reserve(
+                ctx, sizeof(alia_id_pair), alignof(alia_id_pair));
+            alia_id_view captured_left
+                = capture_view_into(src_pair->left, ctx);
+            alia_id_view captured_right
+                = capture_view_into(src_pair->right, ctx);
+            if (!alia_id_capture_is_discovery(ctx))
             {
-                alia_id_view captured_child
-                    = capture_view_into(src_children[i], ctx);
-                if (dst_children)
-                    dst_children[i] = captured_child;
+                auto* dst_pair = static_cast<alia_id_pair*>(pair_mem);
+                dst_pair->left = captured_left;
+                dst_pair->right = captured_right;
             }
-            src.payload.external_data = arr_mem;
+            src.payload.external_data = pair_mem;
             return src;
         }
 
@@ -155,12 +153,11 @@ release_view_in_slab(alia_id_view* v)
         case ALIA_ID_TYPE_BYTES:
             break;
 
-        case ALIA_ID_TYPE_COMPOSITE: {
-            uint32_t const n = id_view_get_size(*v);
-            auto* children = static_cast<alia_id_view*>(const_cast<void*>(
+        case ALIA_ID_TYPE_PAIR: {
+            auto* pair = static_cast<alia_id_pair*>(const_cast<void*>(
                 static_cast<void const*>(v->payload.external_data)));
-            for (uint32_t i = 0; i < n; ++i)
-                release_view_in_slab(&children[i]);
+            release_view_in_slab(&pair->right);
+            release_view_in_slab(&pair->left);
             break;
         }
 
@@ -282,18 +279,13 @@ alia_id_view_equals(alia_id_view a, alia_id_view b)
             return std::memcmp(a_data, b_data, size) == 0;
         }
 
-        case ALIA_ID_TYPE_COMPOSITE: {
-            uint32_t const count = id_view_get_size(a);
-            alia_id_view const* a_arr
-                = static_cast<const alia_id_view*>(a.payload.external_data);
-            alia_id_view const* b_arr
-                = static_cast<const alia_id_view*>(b.payload.external_data);
-            for (uint32_t i = 0; i < count; ++i)
-            {
-                if (!alia_id_view_equals(a_arr[i], b_arr[i]))
-                    return false;
-            }
-            return true;
+        case ALIA_ID_TYPE_PAIR: {
+            alia_id_pair const* a_pair
+                = static_cast<alia_id_pair const*>(a.payload.external_data);
+            alia_id_pair const* b_pair
+                = static_cast<alia_id_pair const*>(b.payload.external_data);
+            return alia_id_view_equals(a_pair->left, b_pair->left)
+                && alia_id_view_equals(a_pair->right, b_pair->right);
         }
 
         default: {
@@ -348,13 +340,12 @@ alia_id_view_hash(alia_id_view id)
             return alia_hash_bytes(
                 alia_id_view_data_ptr(id), size, 0x6a09e667U);
 
-        case ALIA_ID_TYPE_COMPOSITE: {
-            uint32_t h = alia_hash_u32(size, 0x3c6ef372U);
-            alia_id_view const* items
-                = static_cast<alia_id_view const*>(id.payload.external_data);
-            for (uint32_t i = 0; i < size; ++i)
-                h = alia_hash_combine(h, alia_id_view_hash(items[i]));
-            return h;
+        case ALIA_ID_TYPE_PAIR: {
+            alia_id_pair const* pair
+                = static_cast<alia_id_pair const*>(id.payload.external_data);
+            uint32_t h = alia_hash_u32(ALIA_ID_TYPE_PAIR, 0x3c6ef372U);
+            h = alia_hash_combine(h, alia_id_view_hash(pair->left));
+            return alia_hash_combine(h, alia_id_view_hash(pair->right));
         }
 
         default: {
@@ -439,9 +430,13 @@ alia_captured_id_matches_view(
 }
 
 extern "C" alia_id_view
-alia_id_view_make_composite(alia_id_view const* ids, uint32_t count)
+alia_id_view_make_pair(
+    alia_id_pair* storage, alia_id_view left, alia_id_view right)
 {
-    alia_id_view id = {ALIA_ID_TYPE_COMPOSITE, count};
-    id.payload.external_data = ids;
+    ALIA_ASSERT(storage);
+    storage->left = left;
+    storage->right = right;
+    alia_id_view id = {ALIA_ID_TYPE_PAIR, 0};
+    id.payload.external_data = storage;
     return id;
 }
