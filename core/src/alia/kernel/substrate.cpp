@@ -1,6 +1,7 @@
 #include <alia/abi/kernel/substrate.h>
 
 #include <alia/abi/context.h>
+#include <alia/abi/kernel/ids.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/substrate.h>
@@ -287,6 +288,99 @@ alia_substrate_end_block(alia_context* ctx)
     alia_struct_spec const completed_block_spec = traversal.block.spec;
     traversal.block = parent_scope;
     return completed_block_spec;
+}
+
+static alia_id_pair*
+substrate_scratch_alloc_pair(alia_bump_allocator* scratch)
+{
+    return static_cast<alia_id_pair*>(alia_arena_ptr(
+        scratch,
+        alia_arena_alloc_aligned(
+            scratch, sizeof(alia_id_pair), alignof(alia_id_pair))));
+}
+
+static alia_id_view
+substrate_fold_id_segments(
+    alia_bump_allocator* scratch, alia_id_view const* segments, size_t count)
+{
+    ALIA_ASSERT(count > 0);
+    alia_id_view acc = segments[count - 1];
+    for (size_t i = count - 1; i > 0; --i)
+    {
+        acc = alia_id_view_make_pair(
+            substrate_scratch_alloc_pair(scratch), acc, segments[i - 1]);
+    }
+    return acc;
+}
+
+static size_t
+substrate_count_path_segments(
+    alia_substrate_block_traversal_state const* block)
+{
+    size_t count = 1;
+    alia_substrate_block_traversal_state const* state = block;
+    while (state->parent != nullptr && state->parent->block != nullptr)
+    {
+        ++count;
+        state = state->parent;
+    }
+    return count;
+}
+
+static alia_id_view*
+substrate_push_path_segments_for_object(
+    alia_context* ctx,
+    void* object,
+    alia_substrate_block_traversal_state const* block,
+    size_t* out_count)
+{
+    alia_bump_allocator* scratch = &ctx->substrate->scratch;
+    size_t const count = substrate_count_path_segments(block);
+    alia_id_view* segments = static_cast<alia_id_view*>(alia_arena_ptr(
+        scratch,
+        alia_arena_alloc_aligned(
+            scratch, count * sizeof(alia_id_view), alignof(alia_id_view))));
+
+    size_t index = 0;
+    segments[index++] = alia_id_view_make_u64(
+        static_cast<uint64_t>(
+            static_cast<std::uint8_t*>(object)
+            - static_cast<std::uint8_t*>(static_cast<void*>(block->block))));
+
+    alia_substrate_block_traversal_state const* state = block;
+    while (state->parent != nullptr && state->parent->block != nullptr)
+    {
+        segments[index++] = alia_id_view_make_u64(
+            static_cast<uint64_t>(state->offset_in_parent));
+        state = state->parent;
+    }
+
+    ALIA_ASSERT(index == count);
+    *out_count = count;
+    return segments;
+}
+
+alia_id_view
+alia_substrate_path_for_object(alia_context* ctx, void* object)
+{
+    ALIA_ASSERT(ctx && ctx->substrate && object);
+
+    alia_substrate_block_traversal_state const& block = ctx->substrate->block;
+    if (block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
+        return alia_id_view_null();
+
+    ALIA_ASSERT(block.block);
+    auto* block_base
+        = static_cast<std::uint8_t*>(static_cast<void*>(block.block));
+    auto* block_end = block_base + block.spec.size;
+    auto* object_ptr = static_cast<std::uint8_t*>(object);
+    ALIA_ASSERT(object_ptr >= block_base && object_ptr < block_end);
+
+    size_t count = 0;
+    alia_id_view* segments
+        = substrate_push_path_segments_for_object(ctx, object, &block, &count);
+    return substrate_fold_id_segments(
+        &ctx->substrate->scratch, segments, count);
 }
 
 ALIA_EXTERN_C_END
