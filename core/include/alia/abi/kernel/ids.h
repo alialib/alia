@@ -19,7 +19,7 @@ enum
     ALIA_ID_TYPE_U64,
     ALIA_ID_TYPE_POINTER,
     ALIA_ID_TYPE_BYTES,
-    ALIA_ID_TYPE_COMPOSITE,
+    ALIA_ID_TYPE_PAIR,
 
     ALIA_RESERVED_ID_TYPE_COUNT,
 };
@@ -127,7 +127,7 @@ typedef struct alia_id_view
     // - NONE / fixed-size built-ins: ignored
     // - BYTES / CUSTOM: top bit storage mode (external vs inline), lower bits
     // size
-    // - COMPOSITE: lower bits element count (external array implied)
+    // - PAIR: ignored (external `alia_id_pair` implied)
     uint32_t size_and_flags;
 
     union
@@ -136,6 +136,12 @@ typedef struct alia_id_view
         void const* external_data;
     } payload;
 } alia_id_view;
+
+typedef struct alia_id_pair
+{
+    alia_id_view left;
+    alia_id_view right;
+} alia_id_pair;
 
 // stable captured identity - wraps a view whose external payloads (if any)
 // live entirely inside the same caller-owned slab as this struct
@@ -200,7 +206,7 @@ bool
 alia_captured_id_matches_view(
     alia_captured_id const* captured, alia_id_view view);
 
-// --- Built-in constructors (return transient views) ---
+// Constructors for built-in ID types...
 
 static inline alia_id_view
 alia_id_view_make_i32(int32_t val)
@@ -264,6 +270,10 @@ alia_id_view_make_bytes(char const* text, uint32_t length)
     return id;
 }
 
+alia_id_view
+alia_id_view_make_pair(
+    alia_id_pair* storage, alia_id_view left, alia_id_view right);
+
 // Construct an external custom ID view.
 // `type_id` must be a registered custom type ID.
 static inline alia_id_view
@@ -287,8 +297,24 @@ alia_id_view_make_custom_inline(
     return id;
 }
 
-alia_id_view
-alia_id_view_make_composite(alia_id_view const* ids, uint32_t count);
+static inline alia_id_pair const*
+alia_id_view_pair_payload(alia_id_view id)
+{
+    ALIA_ASSERT(id.type_id == ALIA_ID_TYPE_PAIR);
+    return (alia_id_pair const*) id.payload.external_data;
+}
+
+static inline alia_id_view
+alia_id_view_pair_left(alia_id_view id)
+{
+    return alia_id_view_pair_payload(id)->left;
+}
+
+static inline alia_id_view
+alia_id_view_pair_right(alia_id_view id)
+{
+    return alia_id_view_pair_payload(id)->right;
+}
 
 ALIA_EXTERN_C_END
 

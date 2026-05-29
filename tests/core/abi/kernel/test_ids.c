@@ -255,30 +255,69 @@ test_equality_and_hash_for_builtin_ids(void)
     TEST_CHECK(alia_id_view_hash(bytes1) == alia_id_view_hash(bytes2));
 }
 
-static void
-test_composite_equality_and_hash(void)
+static alia_id_view
+make_three_leaf_tree(
+    alia_id_pair* ab_storage,
+    alia_id_pair* root_storage,
+    alia_id_view first,
+    alia_id_view second,
+    alia_id_view third)
 {
-    alia_id_view a_parts[3]
-        = {alia_id_view_make_i32(1),
-           alia_id_view_make_u32(2),
-           alia_id_view_make_u64(3)};
-    alia_id_view b_parts[3]
-        = {alia_id_view_make_i32(1),
-           alia_id_view_make_u32(2),
-           alia_id_view_make_u64(3)};
-    alia_id_view c_parts[3]
-        = {alia_id_view_make_u32(2),
-           alia_id_view_make_i32(1),
-           alia_id_view_make_u64(3)};
+    return alia_id_view_make_pair(
+        root_storage,
+        alia_id_view_make_pair(ab_storage, first, second),
+        third);
+}
 
-    alia_id_view a = alia_id_view_make_composite(a_parts, 3u);
-    alia_id_view b = alia_id_view_make_composite(b_parts, 3u);
-    alia_id_view c = alia_id_view_make_composite(c_parts, 3u);
+static void
+test_pair_equality_and_hash(void)
+{
+    alia_id_pair ab_a, root_a;
+    alia_id_pair ab_b, root_b;
+    alia_id_pair ab_c, root_c;
+
+    alia_id_view a = make_three_leaf_tree(
+        &ab_a,
+        &root_a,
+        alia_id_view_make_i32(1),
+        alia_id_view_make_u32(2),
+        alia_id_view_make_u64(3));
+    alia_id_view b = make_three_leaf_tree(
+        &ab_b,
+        &root_b,
+        alia_id_view_make_i32(1),
+        alia_id_view_make_u32(2),
+        alia_id_view_make_u64(3));
+    alia_id_view c = make_three_leaf_tree(
+        &ab_c,
+        &root_c,
+        alia_id_view_make_u32(2),
+        alia_id_view_make_i32(1),
+        alia_id_view_make_u64(3));
 
     TEST_CHECK(alia_id_view_equals(a, b));
     TEST_CHECK(!alia_id_view_equals(a, c));
     TEST_CHECK(alia_id_view_hash(a) == alia_id_view_hash(b));
     TEST_CHECK(alia_id_view_hash(a) != alia_id_view_hash(c));
+}
+
+static void
+test_pair_tree_shape(void)
+{
+    alia_id_view a = alia_id_view_make_i32(1);
+    alia_id_view b = alia_id_view_make_u32(2);
+    alia_id_view c = alia_id_view_make_u64(3);
+
+    alia_id_pair ab_left_deep, root_left_deep;
+    alia_id_view left_deep = alia_id_view_make_pair(
+        &root_left_deep, alia_id_view_make_pair(&ab_left_deep, a, b), c);
+
+    alia_id_pair bc_right_deep, root_right_deep;
+    alia_id_view right_deep = alia_id_view_make_pair(
+        &root_right_deep, a, alia_id_view_make_pair(&bc_right_deep, b, c));
+
+    TEST_CHECK(!alia_id_view_equals(left_deep, right_deep));
+    TEST_CHECK(alia_id_view_hash(left_deep) != alia_id_view_hash(right_deep));
 }
 
 static void
@@ -314,7 +353,7 @@ test_hash_bucket_spread_for_sequential_values(void)
 }
 
 static void
-test_capture_into_bytes_and_composite(void)
+test_capture_into_bytes_and_pair(void)
 {
     char const external_bytes[] = "abcdefghijk";
 
@@ -331,18 +370,19 @@ test_capture_into_bytes_and_composite(void)
     alia_captured_id_release(mem);
     aligned_free_portable(mem);
 
-    alia_id_view parts[2]
-        = {alia_id_view_make_i32(7),
-           alia_id_view_make_bytes(external_bytes, 11u)};
-    alia_id_view transient_composite = alia_id_view_make_composite(parts, 2u);
-    spec = alia_captured_id_spec(transient_composite);
+    alia_id_pair pair_storage;
+    alia_id_view transient_pair = alia_id_view_make_pair(
+        &pair_storage,
+        alia_id_view_make_i32(7),
+        alia_id_view_make_bytes(external_bytes, 11u));
+    spec = alia_captured_id_spec(transient_pair);
     TEST_ASSERT(spec.size > 0);
     mem = aligned_alloc_portable(spec.align, spec.size);
     TEST_ASSERT(mem != NULL);
-    alia_captured_id_capture_into(transient_composite, mem, spec.size);
+    alia_captured_id_capture_into(transient_pair, mem, spec.size);
     cap = (alia_captured_id*) mem;
     TEST_CHECK(alia_id_view_equals(
-        transient_composite, *alia_captured_id_as_view(cap)));
+        transient_pair, *alia_captured_id_as_view(cap)));
     alia_captured_id_release(mem);
     aligned_free_portable(mem);
 }
@@ -351,31 +391,33 @@ static void
 test_captured_id_matches_view(void)
 {
     char const external_bytes[] = "abcdefghijk";
-    alia_id_view parts[2]
-        = {alia_id_view_make_i32(7),
-           alia_id_view_make_bytes(external_bytes, 11u)};
-    alia_id_view composite = alia_id_view_make_composite(parts, 2u);
+    alia_id_pair pair_storage;
+    alia_id_view pair_id = alia_id_view_make_pair(
+        &pair_storage,
+        alia_id_view_make_i32(7),
+        alia_id_view_make_bytes(external_bytes, 11u));
 
-    alia_struct_spec spec = alia_captured_id_spec(composite);
+    alia_struct_spec spec = alia_captured_id_spec(pair_id);
     void* mem = aligned_alloc_portable(spec.align, spec.size);
     TEST_ASSERT(mem != NULL);
-    alia_captured_id_capture_into(composite, mem, spec.size);
+    alia_captured_id_capture_into(pair_id, mem, spec.size);
     alia_captured_id* captured = (alia_captured_id*) mem;
 
-    TEST_CHECK(alia_captured_id_matches_view(captured, composite));
+    TEST_CHECK(alia_captured_id_matches_view(captured, pair_id));
     TEST_CHECK(!alia_captured_id_matches_view(captured, alia_id_view_make_i32(7)));
 
-    alia_id_view parts_diff[2]
-        = {alia_id_view_make_i32(8),
-           alia_id_view_make_bytes(external_bytes, 11u)};
-    alia_id_view composite_diff = alia_id_view_make_composite(parts_diff, 2u);
-    alia_struct_spec spec3 = alia_captured_id_spec(composite_diff);
+    alia_id_pair pair_storage_diff;
+    alia_id_view pair_id_diff = alia_id_view_make_pair(
+        &pair_storage_diff,
+        alia_id_view_make_i32(8),
+        alia_id_view_make_bytes(external_bytes, 11u));
+    alia_struct_spec spec3 = alia_captured_id_spec(pair_id_diff);
     void* mem3 = aligned_alloc_portable(spec3.align, spec3.size);
     TEST_ASSERT(mem3 != NULL);
-    alia_captured_id_capture_into(composite_diff, mem3, spec3.size);
+    alia_captured_id_capture_into(pair_id_diff, mem3, spec3.size);
     alia_captured_id* captured_diff = (alia_captured_id*) mem3;
-    TEST_CHECK(alia_captured_id_matches_view(captured_diff, composite_diff));
-    TEST_CHECK(!alia_captured_id_matches_view(captured_diff, composite));
+    TEST_CHECK(alia_captured_id_matches_view(captured_diff, pair_id_diff));
+    TEST_CHECK(!alia_captured_id_matches_view(captured_diff, pair_id));
 
     alia_captured_id null_cap = alia_captured_id_null();
     TEST_CHECK(alia_captured_id_matches_view(&null_cap, alia_id_view_null()));
@@ -518,9 +560,10 @@ ids_tests(void)
     test_null_ids();
     test_builtin_constructors_and_matchers();
     test_equality_and_hash_for_builtin_ids();
-    test_composite_equality_and_hash();
+    test_pair_equality_and_hash();
+    test_pair_tree_shape();
     test_hash_bucket_spread_for_sequential_values();
-    test_capture_into_bytes_and_composite();
+    test_capture_into_bytes_and_pair();
     test_captured_id_matches_view();
     test_custom_type_and_release();
     test_custom_inline_constructor();
