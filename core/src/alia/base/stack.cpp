@@ -109,7 +109,7 @@ alia_stack_init(void* object_storage, void* buffer, size_t capacity)
 }
 
 void
-alia_stack_cleanup(alia_stack* s)
+alia_stack_destroy(alia_stack* s)
 {
     if (!s)
         return;

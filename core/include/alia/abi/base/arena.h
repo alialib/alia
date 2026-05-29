@@ -52,7 +52,7 @@ alia_arena_init(
     alia_arena_controller controller);
 
 void
-alia_arena_cleanup(alia_arena* arena);
+alia_arena_destroy(alia_arena* arena);
 
 // BUMP ALLOCATOR
 

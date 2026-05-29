@@ -56,7 +56,7 @@
 // in a list of items where you can remove or shuffle items). In cases like
 // this, we allow the application to attach an explicit key to the subgraph
 // representing the evaluation of that expression, and we ensure that that
-// subgraph is always used where that name is encountered.
+// subgraph is always used where that key is encountered.
 
 ALIA_EXTERN_C_BEGIN
 
@@ -101,21 +101,28 @@ typedef struct alia_substrate_usage_result
 alia_substrate_usage_result
 alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment);
 
+typedef enum
+{
+    ALIA_SUBSTRATE_CLEAR_CACHE,
+    ALIA_SUBSTRATE_DESTROY
+} alia_substrate_cleanup_mode;
+
 // 'Use' an 'object' from the current substrate block.
 //
 // By using an object, you are both using memory to store that object and
-// providing a destructor that will be called when the memory is freed.
+// providing a cleanup function that will be called when the memory is freed.
 //
-// Note that currently, the destructor is called even when cleaning up after
-// discovery. TODO: Maybe the caller can pass a null destructor to disable
-// this.
+// Note that currently, the cleanup function is called even when cleaning up
+// after discovery. TODO: Maybe the caller can pass a null cleanup function to
+// disable this.
 //
 alia_substrate_usage_result
 alia_substrate_use_object(
     alia_context* ctx,
     size_t size,
     size_t alignment,
-    void (*destructor)(alia_substrate_system*, void*));
+    void (*cleanup)(
+        alia_substrate_system*, void*, alia_substrate_cleanup_mode mode));
 
 // An anchor is a point of attachment for a substrate block. - Technically it's
 // just a pointer to a block, but it tends to act as a slot where blocks
@@ -132,6 +139,13 @@ alia_substrate_use_anchor(alia_context* ctx);
 // Reset an anchor, detaching any block that was attached to it.
 void
 alia_substrate_reset_anchor(alia_context* ctx, alia_substrate_anchor* anchor);
+
+// Deactivate an anchor. If a block is attached to the anchor, any cached data
+// will be cleared from it, but the block itself will be retained for possible
+// reactivation.
+void
+alia_substrate_deactivate_anchor(
+    alia_context* ctx, alia_substrate_anchor* anchor);
 
 // Determine if a block needs to be discovered.
 // `spec` is the memoized memory layout specification of the block.

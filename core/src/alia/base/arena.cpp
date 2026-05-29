@@ -40,7 +40,7 @@ alia_arena_init(
 }
 
 void
-alia_arena_cleanup(alia_arena* arena)
+alia_arena_destroy(alia_arena* arena)
 {
     if (arena->controller.free)
     {
@@ -83,10 +83,7 @@ alia_arena_handle_out_of_memory(
     alia_arena* arena = alloc->arena;
     ALIA_ASSERT(arena && arena->controller.grow);
     arena->capacity = arena->controller.grow(
-        arena->controller.user,
-        arena->base,
-        arena->capacity,
-        bytes_requested);
+        arena->controller.user, arena->base, arena->capacity, bytes_requested);
     alloc->base = arena->base;
     alloc->capacity = arena->capacity;
 }

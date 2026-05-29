@@ -95,7 +95,7 @@ test_stack_lifecycle_reset_empty(void)
     alia_stack_reset(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_cleanup(s);
+    alia_stack_destroy(s);
     aligned_free_portable(buf);
     aligned_free_portable(obj);
 }
@@ -143,7 +143,7 @@ test_stack_push_pop_min_aligned_single(void)
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
     TEST_ASSERT(alia_stack_peek_payload(s) == NULL);
 
-    alia_stack_cleanup(s);
+    alia_stack_destroy(s);
     aligned_free_portable(buf);
     aligned_free_portable(obj);
 }
@@ -236,7 +236,7 @@ test_stack_push_aligned_and_prev_chain(void)
     alia_stack_pop(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_cleanup(s);
+    alia_stack_destroy(s);
     aligned_free_portable(buf);
     aligned_free_portable(obj);
 }
@@ -275,7 +275,7 @@ test_stack_reset_discards_entries(void)
     alia_stack_pop(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_cleanup(s);
+    alia_stack_destroy(s);
     aligned_free_portable(buf);
     aligned_free_portable(obj);
 }
@@ -288,4 +288,3 @@ stack_tests(void)
     test_stack_push_aligned_and_prev_chain();
     test_stack_reset_discards_entries();
 }
-
