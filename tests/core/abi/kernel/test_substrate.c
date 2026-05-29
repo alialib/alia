@@ -2,6 +2,7 @@
 
 #include <alia/abi/base/stack.h>
 #include <alia/abi/context.h>
+#include <alia/abi/kernel/ids.h>
 #include <alia/abi/kernel/substrate.h>
 
 #include <stdint.h>
@@ -505,6 +506,201 @@ test_substrate_deactivate_anchor(void)
     substrate_test_ctx_destroy(&t);
 }
 
+static uint64_t
+test_u64_from_id(alia_id_view id)
+{
+    TEST_ASSERT(id.type_id == ALIA_ID_TYPE_U64);
+    uint64_t value;
+    memcpy(&value, id.payload.inline_data, sizeof(value));
+    return value;
+}
+
+static void
+test_substrate_path_for_object_flat(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+
+    alia_substrate_usage_result use1
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    alia_substrate_usage_result use2
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(use1.ptr != NULL);
+    TEST_ASSERT(use2.ptr != NULL);
+
+    alia_id_view path1a = alia_substrate_path_for_object(&t.ctx, use1.ptr);
+    alia_id_view path1b = alia_substrate_path_for_object(&t.ctx, use1.ptr);
+    alia_id_view path2 = alia_substrate_path_for_object(&t.ctx, use2.ptr);
+
+    TEST_CHECK(!alia_id_view_is_null(path1a));
+    TEST_CHECK(path1a.type_id == ALIA_ID_TYPE_U64);
+    TEST_CHECK(alia_id_view_equals(path1a, path1b));
+    TEST_CHECK(alia_id_view_hash(path1a) == alia_id_view_hash(path1b));
+    TEST_CHECK(!alia_id_view_equals(path1a, path2));
+    TEST_CHECK(test_u64_from_id(path1a) == 32u);
+    TEST_CHECK(test_u64_from_id(path2) == 288u);
+
+    (void) alia_substrate_end_block(&t.ctx);
+
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    substrate_test_ctx_destroy(&t);
+}
+
+static void
+test_substrate_path_for_object_nested(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+
+    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx);
+    TEST_ASSERT(child != NULL);
+
+    alia_substrate_begin_block(&t.ctx, child, &spec);
+    alia_substrate_usage_result use
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(use.ptr != NULL);
+
+    alia_id_view path = alia_substrate_path_for_object(&t.ctx, use.ptr);
+    TEST_CHECK(path.type_id == ALIA_ID_TYPE_PAIR);
+    TEST_CHECK(
+        test_u64_from_id(alia_id_view_pair_right(path))
+        == (uint64_t) ((uint8_t*) use.ptr - (uint8_t*) child->block));
+    TEST_CHECK(alia_id_view_pair_left(path).type_id == ALIA_ID_TYPE_U64);
+    TEST_CHECK(
+        test_u64_from_id(alia_id_view_pair_left(path))
+        != test_u64_from_id(alia_id_view_pair_right(path)));
+
+    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    substrate_test_ctx_destroy(&t);
+}
+
+static void
+test_substrate_path_for_object_stable_normal_pass(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+    alia_substrate_usage_result init_use
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(init_use.ptr != NULL);
+    TEST_CHECK(init_use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
+    alia_id_view init_path
+        = alia_substrate_path_for_object(&t.ctx, init_use.ptr);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+    alia_substrate_usage_result normal_use
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(normal_use.ptr != NULL);
+    TEST_CHECK(normal_use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
+    alia_id_view normal_path
+        = alia_substrate_path_for_object(&t.ctx, normal_use.ptr);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    TEST_CHECK(alia_id_view_equals(init_path, normal_path));
+
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    substrate_test_ctx_destroy(&t);
+}
+
+static void
+test_substrate_path_for_object_discovery(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_struct_spec discovery_spec = {.size = 0u, .align = 0u};
+    alia_test_substrate_fixture_prepare_refresh_event(t.fixture, &t.ctx);
+    alia_substrate_begin_block(&t.ctx, root, &discovery_spec);
+
+    alia_substrate_usage_result use
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(use.ptr != NULL);
+    TEST_CHECK(
+        alia_id_view_is_null(alia_substrate_path_for_object(&t.ctx, use.ptr)));
+
+    (void) alia_substrate_end_block(&t.ctx);
+
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    substrate_test_ctx_destroy(&t);
+}
+
+static void
+test_substrate_path_capture_smoke(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx);
+    alia_substrate_begin_block(&t.ctx, child, &spec);
+    alia_substrate_usage_result use
+        = alia_substrate_use_memory(&t.ctx, 256u, 16u);
+    TEST_ASSERT(use.ptr != NULL);
+
+    alia_id_view path = alia_substrate_path_for_object(&t.ctx, use.ptr);
+    alia_struct_spec cap_spec = alia_captured_id_spec(path);
+    TEST_ASSERT(cap_spec.size > 0);
+    void* mem = aligned_alloc_portable(cap_spec.align, cap_spec.size);
+    TEST_ASSERT(mem != NULL);
+    alia_captured_id_capture_into(path, mem, cap_spec.size);
+    alia_captured_id* captured = (alia_captured_id*) mem;
+    TEST_CHECK(alia_captured_id_matches_view(captured, path));
+    alia_captured_id_release(mem);
+    aligned_free_portable(mem);
+
+    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    substrate_test_ctx_destroy(&t);
+}
+
 static void
 test_substrate_generations(void)
 {
@@ -544,5 +740,10 @@ substrate_tests(void)
     test_substrate_use_anchor();
     test_substrate_destructors();
     test_substrate_deactivate_anchor();
+    test_substrate_path_for_object_flat();
+    test_substrate_path_for_object_nested();
+    test_substrate_path_for_object_stable_normal_pass();
+    test_substrate_path_for_object_discovery();
+    test_substrate_path_capture_smoke();
     test_substrate_generations();
 }

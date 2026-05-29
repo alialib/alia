@@ -4,6 +4,7 @@
 #include <alia/abi/base/allocator.h>
 #include <alia/abi/base/arena.h>
 #include <alia/abi/context.h>
+#include <alia/abi/kernel/ids.h>
 #include <alia/abi/prelude.h>
 
 #include <alia/abi/context.h>
@@ -168,6 +169,17 @@ alia_substrate_begin_block(
 // discovery mode, this should be used to update the memoized spec value.
 alia_struct_spec
 alia_substrate_end_block(alia_context* ctx);
+
+// Get the structural path to `object` as an ID view.
+//
+// NOTES:
+// - `object` must lie in the current substrate block).
+// - This isn't intended to be used in discovery mode. It returns a null ID if
+//   it detects discovery mode.
+// - The returned ID view uses the context's scratch arena, so it should be
+//   separately captured if it needs to persist.
+alia_id_view
+alia_substrate_path_for_object(alia_context* ctx, void* object);
 
 ALIA_EXTERN_C_END
 
