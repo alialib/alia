@@ -132,11 +132,11 @@ alia_test_substrate_fixture_destroy(alia_test_substrate_fixture* fixture)
     // Run destructor lists and free substrate block storage if root still
     // exists (tests may have explicitly cleaned it already).
     if (fixture->system.root_anchor.block)
-        alia::substrate_system_cleanup(fixture->system);
+        alia::substrate_system_destroy(fixture->system);
 
     if (fixture->arena)
     {
-        alia_arena_cleanup(fixture->arena);
+        alia_arena_destroy(fixture->arena);
         fixture->arena = nullptr;
     }
 
@@ -203,8 +203,8 @@ alia_test_substrate_fixture_cleanup_root_block(
 
     if (fixture->system.root_anchor.block)
     {
-        alia::substrate_block_cleanup(
-            fixture->system, fixture->system.root_anchor.block);
+        alia::substrate_block_destroy(
+            &fixture->system, fixture->system.root_anchor.block);
         fixture->system.root_anchor.block = nullptr;
     }
 }

@@ -19,9 +19,9 @@ alia_stack_object_spec(void);
 ALIA_API alia_stack*
 alia_stack_init(void* object_storage, void* buffer, size_t capacity);
 
-// Clean up the stack.
+// Destroy the stack.
 ALIA_API void
-alia_stack_cleanup(alia_stack* s);
+alia_stack_destroy(alia_stack* s);
 
 // Reset the stack to empty.
 ALIA_API void

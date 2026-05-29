@@ -18,9 +18,9 @@ substrate_system_init(
 }
 
 void
-substrate_system_cleanup(alia_substrate_system& system)
+substrate_system_destroy(alia_substrate_system& system)
 {
-    substrate_block_cleanup(system, system.root_anchor.block);
+    substrate_block_destroy(&system, system.root_anchor.block);
     system.root_anchor.block = nullptr;
 }
 
@@ -36,40 +36,49 @@ substrate_traversal_init(
 }
 
 void
-substrate_anchor_destructor(alia_substrate_system* system, void* ptr)
+substrate_anchor_cleanup(
+    alia_substrate_system* system, void* ptr, alia_substrate_cleanup_mode mode)
 {
     alia_substrate_anchor* anchor = static_cast<alia_substrate_anchor*>(ptr);
-    substrate_block_cleanup(*system, anchor->block);
+    substrate_block_invoke_cleanup_records(system, anchor->block, mode);
+    if (mode == ALIA_SUBSTRATE_DESTROY)
+        substrate_block_release(system, anchor->block);
 }
 
 void
-substrate_block_invoke_destructors(
-    alia_substrate_system* system, alia_substrate_block* block)
+substrate_block_invoke_cleanup_records(
+    alia_substrate_system* system,
+    alia_substrate_block* block,
+    alia_substrate_cleanup_mode mode)
 {
-    for (alia_substrate_destructor_record* d = block->destructors;
+    for (alia_substrate_cleanup_record* d = block->cleanup_records;
          d != nullptr;
          d = d->next)
     {
-        d->destructor(system, d->ptr);
+        d->cleanup(system, d->ptr, mode);
     }
 }
 
 void
-substrate_block_cleanup(
-    alia_substrate_system& system, alia_substrate_block* block)
+substrate_block_release(
+    alia_substrate_system* system, alia_substrate_block* block)
 {
-    substrate_block_invoke_destructors(&system, block);
-    block->destructors = nullptr;
+    system->allocator.free(
+        system->allocator.user_data,
+        block,
+        block->spec.size,
+        block->spec.align);
+    ++system->current_generation;
+    ALIA_ASSERT(system->current_generation != 0);
+}
 
-    {
-        system.allocator.free(
-            system.allocator.user_data,
-            block,
-            block->spec.size,
-            block->spec.align);
-        ++system.current_generation;
-        ALIA_ASSERT(system.current_generation != 0);
-    }
+void
+substrate_block_destroy(
+    alia_substrate_system* system, alia_substrate_block* block)
+{
+    substrate_block_invoke_cleanup_records(
+        system, block, ALIA_SUBSTRATE_DESTROY);
+    substrate_block_release(system, block);
 }
 
 } // namespace alia
@@ -115,17 +124,18 @@ alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
 }
 
 static void
-alia_substrate_add_destructor(
+alia_substrate_add_cleanup_record(
     alia_context* ctx,
     void* storage,
-    void (*destructor)(alia_substrate_system*, void*),
+    void (*cleanup)(
+        alia_substrate_system*, void*, alia_substrate_cleanup_mode mode),
     void* object)
 {
     auto& traversal = *ctx->substrate;
-    alia_substrate_destructor_record* record
-        = new (storage) alia_substrate_destructor_record{
-            traversal.block.block->destructors, destructor, object};
-    traversal.block.block->destructors = record;
+    alia_substrate_cleanup_record* record
+        = new (storage) alia_substrate_cleanup_record{
+            traversal.block.block->cleanup_records, cleanup, object};
+    traversal.block.block->cleanup_records = record;
 }
 
 alia_substrate_usage_result
@@ -133,7 +143,8 @@ alia_substrate_use_object(
     alia_context* ctx,
     size_t size,
     size_t alignment,
-    void (*destructor)(alia_substrate_system*, void*))
+    void (*cleanup)(
+        alia_substrate_system*, void*, alia_substrate_cleanup_mode mode))
 {
     // 'Use' the memory for the object.
     alia_substrate_usage_result mr
@@ -141,12 +152,12 @@ alia_substrate_use_object(
     // 'Use' the memory for the destructor record.
     alia_substrate_usage_result dr = alia_substrate_use_memory(
         ctx,
-        sizeof(alia_substrate_destructor_record),
-        alignof(alia_substrate_destructor_record));
+        sizeof(alia_substrate_cleanup_record),
+        alignof(alia_substrate_cleanup_record));
     // If the destructor record is new, initialize it and add it to the block's
     // destructor list.
     if (dr.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL)
-        alia_substrate_add_destructor(ctx, dr.ptr, destructor, mr.ptr);
+        alia_substrate_add_cleanup_record(ctx, dr.ptr, cleanup, mr.ptr);
     return mr;
 }
 
@@ -162,12 +173,12 @@ alia_substrate_use_anchor(alia_context* ctx)
     }
     alia_substrate_usage_result dr = alia_substrate_use_memory(
         ctx,
-        sizeof(alia_substrate_destructor_record),
-        alignof(alia_substrate_destructor_record));
+        sizeof(alia_substrate_cleanup_record),
+        alignof(alia_substrate_cleanup_record));
     if (dr.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
-        alia_substrate_add_destructor(
-            ctx, dr.ptr, substrate_anchor_destructor, mr.ptr);
+        alia_substrate_add_cleanup_record(
+            ctx, dr.ptr, substrate_anchor_cleanup, mr.ptr);
     }
     return static_cast<alia_substrate_anchor*>(mr.ptr);
 }
@@ -177,8 +188,19 @@ alia_substrate_reset_anchor(alia_context* ctx, alia_substrate_anchor* anchor)
 {
     if (anchor->block)
     {
-        substrate_block_cleanup(*ctx->substrate->system, anchor->block);
+        substrate_block_destroy(ctx->substrate->system, anchor->block);
         anchor->block = nullptr;
+    }
+}
+
+void
+alia_substrate_deactivate_anchor(
+    alia_context* ctx, alia_substrate_anchor* anchor)
+{
+    if (anchor->block)
+    {
+        substrate_block_invoke_cleanup_records(
+            ctx->substrate->system, anchor->block, ALIA_SUBSTRATE_CLEAR_CACHE);
     }
 }
 
@@ -186,7 +208,7 @@ static alia_substrate_block*
 initialize_block(alia_context* ctx, void* ptr, alia_struct_spec spec)
 {
     return new (ptr) alia_substrate_block{
-        .destructors = nullptr,
+        .cleanup_records = nullptr,
         .generation = ctx->substrate->system->current_generation,
         .spec = spec};
 }
@@ -255,8 +277,10 @@ alia_substrate_end_block(alia_context* ctx)
 {
     if (ctx->substrate->block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
     {
-        substrate_block_invoke_destructors(
-            ctx->substrate->system, ctx->substrate->block.block);
+        substrate_block_invoke_cleanup_records(
+            ctx->substrate->system,
+            ctx->substrate->block.block,
+            ALIA_SUBSTRATE_DESTROY);
     }
     auto& parent_scope = stack_pop<alia_substrate_block_traversal_state>(ctx);
     auto& traversal = *ctx->substrate;

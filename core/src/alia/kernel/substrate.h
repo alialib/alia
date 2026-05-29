@@ -6,10 +6,11 @@
 
 struct alia_substrate_system;
 
-struct alia_substrate_destructor_record
+struct alia_substrate_cleanup_record
 {
-    alia_substrate_destructor_record* next;
-    void (*destructor)(alia_substrate_system*, void*);
+    alia_substrate_cleanup_record* next;
+    void (*cleanup)(
+        alia_substrate_system*, void*, alia_substrate_cleanup_mode mode);
     void* ptr;
 };
 
@@ -24,8 +25,8 @@ struct alia_substrate_destructor_record
 //
 struct alia_substrate_block
 {
-    // linked list of destructors for nodes in the block
-    alia_substrate_destructor_record* destructors;
+    // linked list of cleanup records for nodes in the block
+    alia_substrate_cleanup_record* cleanup_records;
     // the generation ID for this block - assigned at allocation time
     // TODO: Make this 32 bits.
     alia_generation_counter generation;
@@ -77,11 +78,21 @@ substrate_system_init(
     alia_substrate_system& system, alia_general_allocator allocator);
 
 void
-substrate_system_cleanup(alia_substrate_system& system);
+substrate_system_destroy(alia_substrate_system& system);
 
 void
-substrate_block_cleanup(
-    alia_substrate_system& system, alia_substrate_block* block);
+substrate_block_invoke_cleanup_records(
+    alia_substrate_system* system,
+    alia_substrate_block* block,
+    alia_substrate_cleanup_mode mode);
+
+void
+substrate_block_release(
+    alia_substrate_system* system, alia_substrate_block* block);
+
+void
+substrate_block_destroy(
+    alia_substrate_system* system, alia_substrate_block* block);
 
 void
 substrate_traversal_init(

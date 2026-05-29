@@ -77,20 +77,34 @@ typedef struct test_state
 {
     int ids[6];
     int count;
+    int clear_cache_ids[6];
+    int clear_cache_count;
 } test_state;
 
 typedef struct test_object
 {
     test_state* state;
     int id;
+    int cached_value;
 } test_object;
 
 static void
-test_object_destructor(alia_substrate_system* system, void* p)
+test_object_cleanup(
+    alia_substrate_system* system, void* p, alia_substrate_cleanup_mode mode)
 {
     (void) system;
     test_object* obj = (test_object*) p;
-    obj->state->ids[obj->state->count++] = obj->id;
+    switch (mode)
+    {
+        case ALIA_SUBSTRATE_CLEAR_CACHE:
+            obj->state->clear_cache_ids[obj->state->clear_cache_count++]
+                = obj->id;
+            obj->cached_value = 0;
+            break;
+        case ALIA_SUBSTRATE_DESTROY:
+            obj->state->ids[obj->state->count++] = obj->id;
+            break;
+    }
 }
 
 // --------- helpers to build a minimal C substrate context ---------
@@ -139,7 +153,7 @@ substrate_test_ctx_destroy(substrate_test_ctx* t)
         return;
 
     if (t->stack)
-        alia_stack_cleanup(t->stack);
+        alia_stack_destroy(t->stack);
 
     if (t->stack_buffer)
         aligned_free_portable(t->stack_buffer);
@@ -324,7 +338,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(r1.ptr != NULL);
     TEST_CHECK(r1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) r1.ptr)->state = &state;
@@ -334,7 +348,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(r2.ptr != NULL);
     TEST_CHECK(r2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) r2.ptr)->state = &state;
@@ -350,7 +364,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(c1.ptr != NULL);
     TEST_CHECK(c1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) c1.ptr)->state = &state;
@@ -360,7 +374,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(c2.ptr != NULL);
     TEST_CHECK(c2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) c2.ptr)->state = &state;
@@ -373,7 +387,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(r3.ptr != NULL);
     TEST_CHECK(r3.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) r3.ptr)->state = &state;
@@ -383,7 +397,7 @@ test_substrate_destructors(void)
         &t.ctx,
         sizeof(test_object),
         _Alignof(test_object),
-        test_object_destructor);
+        test_object_cleanup);
     TEST_ASSERT(r4.ptr != NULL);
     TEST_CHECK(r4.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
     ((test_object*) r4.ptr)->state = &state;
@@ -403,6 +417,90 @@ test_substrate_destructors(void)
     TEST_CHECK(state.ids[3] == 3);
     TEST_CHECK(state.ids[4] == 2);
     TEST_CHECK(state.ids[5] == 1);
+
+    substrate_test_ctx_destroy(&t);
+}
+
+static void
+test_substrate_deactivate_anchor(void)
+{
+    substrate_test_ctx t;
+    substrate_test_ctx_init(&t);
+
+    alia_substrate_anchor* root
+        = alia_test_substrate_fixture_root_anchor(t.fixture);
+    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+
+    test_state state;
+    memset(&state, 0, sizeof(state));
+
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_anchor* child;
+    void* child_obj_ptr;
+
+    // First traversal: create a child block with cached data.
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+
+    child = alia_substrate_use_anchor(&t.ctx);
+    TEST_ASSERT(child != NULL);
+
+    alia_substrate_begin_block(&t.ctx, child, &spec);
+
+    alia_substrate_usage_result c1 = alia_substrate_use_object(
+        &t.ctx,
+        sizeof(test_object),
+        _Alignof(test_object),
+        test_object_cleanup);
+    TEST_ASSERT(c1.ptr != NULL);
+    TEST_CHECK(c1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
+    child_obj_ptr = c1.ptr;
+    ((test_object*) c1.ptr)->state = &state;
+    ((test_object*) c1.ptr)->id = 1;
+    ((test_object*) c1.ptr)->cached_value = 42;
+
+    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    TEST_CHECK(state.clear_cache_count == 0);
+    TEST_CHECK(state.count == 0);
+
+    // Deactivate the child block: cached data should be cleared, but the block
+    // is retained for possible reactivation.
+    alia_substrate_deactivate_anchor(&t.ctx, child);
+    TEST_CHECK(state.clear_cache_count == 1);
+    TEST_CHECK(state.clear_cache_ids[0] == 1);
+    TEST_CHECK(state.count == 0);
+    TEST_CHECK(((test_object*) child_obj_ptr)->cached_value == 0);
+
+    // Second traversal: the block should be reused in normal mode.
+    alia_test_substrate_fixture_reset_traversal(t.fixture);
+    alia_stack_reset(t.stack);
+
+    alia_substrate_begin_block(&t.ctx, root, &spec);
+
+    alia_substrate_anchor* child2 = alia_substrate_use_anchor(&t.ctx);
+    TEST_ASSERT(child2 == child);
+
+    alia_substrate_begin_block(&t.ctx, child, &spec);
+
+    alia_substrate_usage_result c2 = alia_substrate_use_object(
+        &t.ctx,
+        sizeof(test_object),
+        _Alignof(test_object),
+        test_object_cleanup);
+    TEST_ASSERT(c2.ptr != NULL);
+    TEST_CHECK(c2.ptr == child_obj_ptr);
+    TEST_CHECK(c2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
+
+    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx);
+
+    // Full cleanup should still run destroy callbacks.
+    alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+    TEST_CHECK(state.count == 1);
+    TEST_CHECK(state.ids[0] == 1);
 
     substrate_test_ctx_destroy(&t);
 }
@@ -445,5 +543,6 @@ substrate_tests(void)
     test_basic_block_discovery();
     test_substrate_use_anchor();
     test_substrate_destructors();
+    test_substrate_deactivate_anchor();
     test_substrate_generations();
 }

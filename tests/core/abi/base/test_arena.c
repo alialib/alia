@@ -87,7 +87,7 @@ test_rig_init(test_rig* rig, size_t initial_capacity)
 static void
 test_rig_destroy(test_rig* rig)
 {
-    alia_arena_cleanup(rig->arena);
+    alia_arena_destroy(rig->arena);
     rig->arena = NULL;
     aligned_free_portable(rig->storage);
     rig->storage = NULL;
