@@ -210,6 +210,7 @@ refresh_system(ui_system& sys)
     //     = std::chrono::steady_clock::now();
 
     int attempts = 0;
+    ++sys.frame_counter;
     while (true)
     {
         auto refresh_event = alia_make_refresh_event({.incomplete = false});
