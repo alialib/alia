@@ -79,7 +79,8 @@ struct if_else_chain_scope
            && condition_is_strictly_false(std::forward<Condition>(condition));
         if (current_condition_is_true && *active_branch != branch_counter)
         {
-            alia_substrate_reset_anchor(ctx, anchor);
+            alia_substrate_reset_anchor(
+                alia_ctx_substrate_system(ctx), anchor);
             *active_branch = branch_counter;
         }
         return current_condition_is_true;
@@ -161,7 +162,7 @@ struct inner_if_scope
         ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
     ALIA_REENABLE_MACRO_WARNINGS
 
-#define ALIA_IF(condition) ALIA_IF_(ctx, condition)
+#define ALIA_IF(condition) ALIA_IF_ (ctx, condition)
 
 #define ALIA_ELSE_IF_(ctx, condition)                                         \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
@@ -170,7 +171,7 @@ struct inner_if_scope
         ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
     ALIA_REENABLE_MACRO_WARNINGS
 
-#define ALIA_ELSE_IF(condition) ALIA_ELSE_IF_(ctx, condition)
+#define ALIA_ELSE_IF(condition) ALIA_ELSE_IF_ (ctx, condition)
 
 #define ALIA_ELSE_(ctx)                                                       \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
@@ -178,12 +179,12 @@ struct inner_if_scope
         ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
             ALIA_REENABLE_MACRO_WARNINGS
 
-#define ALIA_ELSE ALIA_ELSE_(ctx)
+#define ALIA_ELSE ALIA_ELSE_ (ctx)
 
 #ifndef ALIA_STRICT_MACROS
-#define alia_if_(ctx, condition) ALIA_IF_(ctx, condition)
+#define alia_if_(ctx, condition) ALIA_IF_ (ctx, condition)
 #define alia_if(condition) ALIA_IF (condition)
-#define alia_else_if_(ctx, condition) ALIA_ELSE_IF_(ctx, condition)
+#define alia_else_if_(ctx, condition) ALIA_ELSE_IF_ (ctx, condition)
 #define alia_else_if(condition) ALIA_ELSE_IF (condition)
 #define alia_else_(ctx) ALIA_ELSE(ctx)
 #define alia_else ALIA_ELSE

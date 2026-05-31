@@ -61,11 +61,14 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// TODO: Fix forward declarations.
 typedef struct alia_substrate_system alia_substrate_system;
 typedef struct alia_substrate_block alia_substrate_block;
 typedef struct alia_substrate_traversal alia_substrate_traversal;
 typedef struct alia_context alia_context;
+
+// TODO: There's probably a better way to do this.
+alia_substrate_system*
+alia_ctx_substrate_system(alia_context* ctx);
 
 enum alia_substrate_block_traversal_mode
 {
@@ -139,14 +142,15 @@ alia_substrate_use_anchor(alia_context* ctx);
 
 // Reset an anchor, detaching any block that was attached to it.
 void
-alia_substrate_reset_anchor(alia_context* ctx, alia_substrate_anchor* anchor);
+alia_substrate_reset_anchor(
+    alia_substrate_system* system, alia_substrate_anchor* anchor);
 
 // Deactivate an anchor. If a block is attached to the anchor, any cached data
 // will be cleared from it, but the block itself will be retained for possible
 // reactivation.
 void
 alia_substrate_deactivate_anchor(
-    alia_context* ctx, alia_substrate_anchor* anchor);
+    alia_substrate_system* system, alia_substrate_anchor* anchor);
 
 // Determine if a block needs to be discovered.
 // `spec` is the memoized memory layout specification of the block.
@@ -180,6 +184,78 @@ alia_substrate_end_block(alia_context* ctx);
 //   separately captured if it needs to persist.
 alia_id_view
 alia_substrate_path_for_object(alia_context* ctx, void* object);
+
+// KEY TABLES AND SCOPES
+//
+// Key tables associate substrate blocks with explicit `alia_id_view` keys so
+// keyed blocks can move within the evaluation order without losing state.
+//
+// A key table is a persistent object. Like most persistent objects, it can be
+// retrieved from the substrate (similar to an anchor). Each traversal pass
+// that uses keyed blocks should call `begin_key_scope` / `end_key_scope`
+// around the keyed blocks.
+//
+// Garbage collection is explicit via `sweep_table_keys` / `sweep_system_keys`.
+// By default, sweeping collects all blocks that haven't been seen in the
+// most recent pass through the key table.
+// This can be overridden by setting the `requires_explicit_delete` flag on the
+// key table. When this flag is set, entries are only collected when they are
+// explicitly marked for deletion (and are no longer in use).
+
+typedef struct alia_substrate_key_table alia_substrate_key_table;
+typedef struct alia_substrate_key_entry alia_substrate_key_entry;
+typedef struct alia_substrate_key_scope alia_substrate_key_scope;
+
+typedef enum alia_substrate_key_table_flags
+{
+    ALIA_SUBSTRATE_KEY_TABLE_NORMAL = 0,
+    ALIA_SUBSTRATE_KEY_TABLE_REQUIRES_EXPLICIT_DELETE = 1,
+} alia_substrate_key_table_flags;
+
+enum
+{
+    ALIA_SUBSTRATE_KEY_EXPLICITLY_DELETED = 1u << 0,
+};
+
+// 'Use' a key table from the substrate.
+alia_substrate_key_table*
+alia_substrate_use_key_table(
+    alia_context* ctx, alia_substrate_key_table_flags flags);
+
+// Begin a key scope.
+// This marks the beginning of the traversal through the keys in the table.
+alia_substrate_key_scope*
+alia_substrate_begin_key_scope(
+    alia_context* ctx, alia_substrate_key_table* table);
+
+// End a key scope.
+void
+alia_substrate_end_key_scope(
+    alia_context* ctx, alia_substrate_key_scope* scope);
+
+void
+alia_substrate_begin_keyed_block(
+    alia_context* ctx,
+    alia_substrate_key_scope* scope,
+    alia_id_view key,
+    alia_struct_spec* spec);
+
+void
+alia_substrate_end_keyed_block(alia_context* ctx);
+
+// Remove stale entries from a key table.
+void
+alia_substrate_sweep_table_keys(
+    alia_context* ctx, alia_substrate_key_table* table);
+
+// Remove stale entries from all key tables in the substrate system.
+void
+alia_substrate_sweep_system_keys(alia_substrate_system* system);
+
+// Mark a key for deletion when it becomes stale.
+// TODO: Add a scope-based version of this?
+void
+alia_substrate_delete_key(alia_substrate_key_table* table, alia_id_view key);
 
 ALIA_EXTERN_C_END
 

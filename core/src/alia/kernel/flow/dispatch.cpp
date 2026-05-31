@@ -54,9 +54,11 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_bump_allocator_init(
         &substrate_bump_allocator, &sys.substrate_discovery_arena);
     substrate_traversal_init(
-        substrate_traversal, sys.substrate, &substrate_bump_allocator);
-    // TODO: Only use refresh events to decide when data is no longer needed.
-    // data.gc_enabled = data.cache_clearing_enabled = events.is_refresh;
+        substrate_traversal,
+        sys.substrate,
+        &substrate_bump_allocator,
+        sys.frame_counter,
+        events.event->type == ALIA_EVENT_REFRESH);
 
     alia_context ctx = {
         .kernel = nullptr,

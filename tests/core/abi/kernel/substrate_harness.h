@@ -39,12 +39,17 @@ alia_test_substrate_fixture_prepare_refresh_event(
 // Reset traversal state (especially scratch arena allocation offset).
 void
 alia_test_substrate_fixture_reset_traversal(
-    alia_test_substrate_fixture* fixture);
+    alia_test_substrate_fixture* fixture, bool allow_prediction_updates);
 
 // Cleanup the root block and run all registered destructors for it.
 // This also increments the substrate system generation counter.
 void
 alia_test_substrate_fixture_cleanup_root_block(
+    alia_test_substrate_fixture* fixture);
+
+// Advance the frame counter before a full refresh traversal.
+void
+alia_test_substrate_fixture_advance_frame(
     alia_test_substrate_fixture* fixture);
 
 ALIA_EXTERN_C_END
