@@ -84,84 +84,33 @@ inset_assign_boxes(
         baseline - inset.insets.top);
 }
 
-alia_horizontal_requirements
-inset_measure_wrapped_horizontal(
+int
+inset_count_flow_fragments(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& inset = *reinterpret_cast<inset_layout_node*>(node);
-    auto const child_x
-        = alia_measure_wrapped_horizontal(ctx, inset.container.first_child);
-    return alia_horizontal_requirements{
-        .min_size = child_x.min_size + inset.insets.left + inset.insets.right,
-        .growth_factor = child_x.growth_factor};
-}
-
-alia_wrapping_requirements
-inset_measure_wrapped_vertical(
-    alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float current_x_offset,
-    float line_width)
-{
-    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
-
-    auto const child = alia_measure_wrapped_vertical(
-        ctx,
-        main_axis,
-        inset.container.first_child,
-        current_x_offset,
-        line_width - inset.insets.left - inset.insets.right);
-
-    alia_wrapping_requirements requirements = child;
-
-    if (alia_layout_wrapping_has_first_line_content(child))
-    {
-        requirements.first_line.height += inset.insets.top;
-        requirements.first_line.ascent += inset.insets.top;
-    }
-    else if (alia_layout_wrapping_has_wrapped_content(child))
-    {
-        if (requirements.interior_height > 0)
-        {
-            requirements.interior_height += inset.insets.top;
-        }
-        else
-        {
-            requirements.last_line.height += inset.insets.top;
-            requirements.last_line.ascent += inset.insets.top;
-        }
-    }
-
-    if (alia_layout_wrapping_has_wrapped_content(child))
-    {
-        requirements.last_line.height += inset.insets.bottom;
-        requirements.last_line.descent += inset.insets.bottom;
-    }
-    else if (alia_layout_wrapping_has_first_line_content(child))
-    {
-        requirements.first_line.height += inset.insets.bottom;
-        requirements.first_line.descent += inset.insets.bottom;
-    }
-
-    requirements.end_x += inset.insets.left + inset.insets.right;
-
-    return requirements;
+    return alia_count_flow_fragments(ctx, inset.container.first_child);
 }
 
 void
-inset_assign_wrapped_boxes(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
+inset_emit_flow_fragments(
+    alia_measurement_context* ctx,
     alia_layout_node* node,
-    alia_wrapping_assignment const* assignment)
+    alia_flow_fragment_emitter* emitter)
 {
     auto& inset = *reinterpret_cast<inset_layout_node*>(node);
-    alia_wrapping_assignment inset_assignment = *assignment;
-    inset_assignment.x_base += inset.insets.left;
-    inset_assignment.line_width -= inset.insets.left + inset.insets.right;
-    alia_assign_wrapped_boxes(
-        ctx, main_axis, inset.container.first_child, &inset_assignment);
+    alia_emit_flow_fragments(ctx, inset.container.first_child, emitter);
+}
+
+void
+inset_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader)
+{
+    auto& inset = *reinterpret_cast<inset_layout_node*>(node);
+    alia_layout_read_fragment_placements(
+        ctx, inset.container.first_child, reader);
 }
 
 alia_layout_node_vtable inset_vtable
@@ -169,9 +118,9 @@ alia_layout_node_vtable inset_vtable
        inset_assign_widths,
        inset_measure_vertical,
        inset_assign_boxes,
-       inset_measure_wrapped_horizontal,
-       inset_measure_wrapped_vertical,
-       inset_assign_wrapped_boxes};
+       inset_count_flow_fragments,
+       inset_emit_flow_fragments,
+       inset_read_fragment_placements};
 
 } // namespace alia
 

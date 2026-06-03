@@ -9,9 +9,10 @@ using flow_layout_node = alia_layout_container;
 
 struct flow_scratch
 {
-    std::uint32_t child_count = 0;
-    float total_height = 0, ascent = 0;
-    alia_wrapping_requirements* child_requirements = nullptr;
+    int fragment_count = 0;
+    float max_fragment_width = 0;
+    float overall_height = 0, overall_ascent = 0;
+    alia_arena_marker scratch_end = {};
 };
 
 alia_horizontal_requirements
@@ -20,22 +21,39 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
     auto& scratch = claim_scratch<flow_scratch>(ctx->scratch);
 
-    float max_child_width = 0;
+    int fragment_count = 0;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_requirements
-            = alia_measure_wrapped_horizontal(ctx, child);
-        max_child_width
-            = (std::max) (max_child_width, child_requirements.min_size);
-        ++scratch.child_count;
+        fragment_count += alia_count_flow_fragments(ctx, child);
+    }
+    scratch.fragment_count = fragment_count;
+
+    alia_flow_fragment* fragments
+        = arena_alloc_array<alia_flow_fragment>(ctx->scratch, fragment_count);
+    // Reserve space for the fragment placements.
+    arena_alloc_array<alia_flow_fragment_placement>(
+        ctx->scratch, fragment_count);
+
+    alia_flow_fragment_emitter emitter = {.fragments = fragments, .index = 0};
+    for (alia_layout_node* child = flow.first_child; child != nullptr;
+         child = child->next_sibling)
+    {
+        alia_emit_flow_fragments(ctx, child, &emitter);
     }
 
-    scratch.child_requirements = arena_alloc_array<alia_wrapping_requirements>(
-        ctx->scratch, scratch.child_count);
+    scratch.scratch_end = alia_arena_mark(&ctx->scratch);
+
+    float max_fragment_width = 0;
+    for (int i = 0; i < fragment_count; ++i)
+    {
+        max_fragment_width
+            = (std::max) (max_fragment_width, fragments[i].width);
+    }
+    scratch.max_fragment_width = max_fragment_width;
 
     return alia_horizontal_requirements{
-        .min_size = max_child_width,
+        .min_size = max_fragment_width,
         .growth_factor = alia_resolve_growth_factor(flow.flags)};
 }
 
@@ -75,47 +93,48 @@ flow_measure_vertical(
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
     auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
-    auto* child_requirements = scratch.child_requirements;
+    alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
+        ctx->scratch, scratch.fragment_count);
+
+    // We don't actually invoke the children at all during this step, so we
+    // need to jump over the scratch space that they would have used.
+    // (Note that we are also jumping over the fragment placements since we
+    // don't need them here either.)
+    alia_arena_jump(&ctx->scratch, scratch.scratch_end);
+
+    auto const assignment = alia_resolve_container_x(
+        alia_fold_in_cross_axis_flags(flow.flags, main_axis),
+        assigned_width,
+        scratch.max_fragment_width);
 
     alia_line_requirements line = {0};
     float overall_height = 0, overall_ascent = 0;
     float current_x_offset = 0;
     bool wrapping_has_occurred = false;
-    for (alia_layout_node* child = flow.first_child; child != nullptr;
-         child = child->next_sibling)
+    for (int i = 0; i < scratch.fragment_count; ++i)
     {
-        auto const requirements = alia_measure_wrapped_vertical(
-            ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, assigned_width);
-        *child_requirements++ = requirements;
-
-        alia_layout_line_fold_in_line(line, requirements.first_line);
-
-        if (alia_layout_wrapping_has_wrapped_content(requirements))
+        alia_layout_line_fold_in_fragment(line, fragments[i]);
+        if (current_x_offset + fragments[i].width > assignment.size)
         {
+            alia_layout_line_finalize_height(line);
             if (!wrapping_has_occurred)
             {
                 overall_ascent = line.ascent;
                 wrapping_has_occurred = true;
             }
-            overall_height
-                += (std::max) (line.height, line.ascent + line.descent)
-                 + requirements.interior_height;
+            overall_height += line.height;
 
-            alia_layout_line_fold_in_line(line, requirements.last_line);
+            current_x_offset = 0;
         }
-
-        current_x_offset = requirements.end_x;
+        current_x_offset += fragments[i].width;
     }
-
-    arena_alloc_array<alia_wrapping_requirements>(
-        ctx->scratch, scratch.child_count);
 
     if (!wrapping_has_occurred)
         overall_ascent = line.ascent;
     overall_height += alia_layout_line_final_height(line);
 
-    scratch.total_height = overall_height;
-    scratch.ascent = overall_ascent;
+    scratch.overall_height = overall_height;
+    scratch.overall_ascent = overall_ascent;
 
     return alia_vertical_requirements{
         .min_size = overall_height,
@@ -129,6 +148,27 @@ flow_measure_vertical(
 }
 
 void
+flow_assign_line_boxes(
+    alia_placement_context* ctx,
+    alia_layout_flags_t flow_flags,
+    alia_vec2f position,
+    float gap,
+    alia_line_requirements& line,
+    int fragment_count,
+    alia_flow_fragment* fragments,
+    alia_flow_fragment_placement* placements)
+{
+    alia_layout_line_finalize_height(line);
+    float const baseline = alia_resolve_baseline(
+        flow_flags, line.height, line.ascent, line.descent);
+    for (int i = 0; i < fragment_count; ++i)
+    {
+        placements[i] = {.position = position, .baseline = baseline};
+        position.x += fragments[i].width + gap;
+    }
+}
+
+void
 flow_assign_boxes(
     alia_placement_context* ctx,
     alia_main_axis_index main_axis,
@@ -139,329 +179,127 @@ flow_assign_boxes(
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
     auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
-    auto* child_requirements = scratch.child_requirements;
+    alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
+        ctx->scratch, scratch.fragment_count);
+    alia_flow_fragment_placement* placements
+        = arena_alloc_array<alia_flow_fragment_placement>(
+            ctx->scratch, scratch.fragment_count);
 
-    if (scratch.child_count == 0)
+    // TODO: Is this correct/useful?
+    if (scratch.fragment_count == 0)
         return;
 
-    auto const placement = alia_resolve_container_y(
+    auto const placement = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(flow.flags, main_axis),
-        box.size.y,
+        box.size,
         baseline,
-        scratch.total_height,
-        scratch.ascent);
+        {scratch.max_fragment_width, scratch.overall_height},
+        scratch.overall_ascent);
 
     if ((flow.flags & ALIA_PROVIDE_BOX) != 0)
     {
         alia_box* provided_box = arena_alloc<alia_box>(ctx->arena);
-        provided_box->min = {box.min.x, box.min.y + placement.offset};
-        provided_box->size = {box.size.x, placement.size};
+        provided_box->min = box.min + placement.min;
+        provided_box->size = placement.size;
     }
 
     alia_line_requirements line = {0};
-
-    auto update_line_measures = [&](int i) {
-        for (; i < scratch.child_count; ++i)
-        {
-            auto const requirements = child_requirements[i];
-            if (!alia_layout_wrapping_has_first_line_content(requirements))
-                break;
-
-            alia_layout_line_fold_in_line(line, requirements.first_line);
-
-            if (alia_layout_wrapping_has_wrapped_content(requirements))
-                break;
-        }
-    };
-
-    float current_x = 0, current_y = box.min.y + placement.offset;
-    update_line_measures(0);
-    alia_layout_line_finalize_height(line);
-
-    int child_index = 0;
-    for (alia_layout_node* child = flow.first_child; child != nullptr;
-         child = child->next_sibling)
+    float x_assignment_base = box.min.x + placement.min.x;
+    float current_x = 0, current_y = box.min.y + placement.min.y;
+    int line_start_index = 0;
+    for (int i = 0; i < scratch.fragment_count; ++i)
     {
-        auto const& requirements = child_requirements[child_index];
-
-        alia_wrapping_assignment assignment;
-        assignment.x_base = box.min.x;
-        assignment.line_width = box.size.x;
-        assignment.first_line_x_offset = current_x;
-
-        // For the first line, we use the vertical requirements that existed
-        // for the previous children.
-        assignment.first_line = alia_vertical_assignment{
-            .line_height = line.height,
-            .baseline_offset = alia_resolve_baseline(
-                flow.flags, line.height, line.ascent, line.descent)};
-
-        if (alia_layout_wrapping_has_wrapped_content(requirements))
+        alia_layout_line_fold_in_fragment(line, fragments[i]);
+        if (current_x + fragments[i].width > placement.size.x)
         {
-            // For the last line, we need to reset to the child's requirements
-            // and then incorporate any the requirements for any later children
-            // that fit on that line.
-
-            alia_layout_line_fold_in_line(line, requirements.last_line);
-
-            ++child_index;
-            update_line_measures(child_index);
             alia_layout_line_finalize_height(line);
 
-            assignment.last_line = alia_vertical_assignment{
-                .line_height = line.height,
-                .baseline_offset = alia_resolve_baseline(
-                    flow.flags, line.height, line.ascent, line.descent)};
-
-            if (requirements.interior_height == 0
-                && !alia_layout_wrapping_has_first_line_content(requirements))
-            {
-                // If the child wraps only once and does so immediately, then
-                // we can just assign it using the non-wrapping interface.
-                current_y += assignment.first_line.line_height;
-                alia_assign_boxes(
-                    ctx,
-                    ALIA_MAIN_AXIS_X,
-                    child,
-                    {.min = {box.min.x, current_y},
-                     .size = {requirements.end_x, line.height}},
-                    alia_resolve_baseline(
-                        flow.flags, line.height, line.ascent, line.descent));
-                current_x = requirements.end_x;
-            }
-            else
-            {
-                assignment.y_base = current_y;
-
-                // Otherwise, there is real wrapping going on, so we need to do
-                // an actual wrapped assignment.
-                alia_assign_wrapped_boxes(
-                    ctx, ALIA_MAIN_AXIS_X, child, &assignment);
-
-                // Update our X and Y positions.
-                current_y += assignment.first_line.line_height
-                           + requirements.interior_height;
-                current_x = requirements.end_x;
-            }
-        }
-        else
-        {
-            // If the child doesn't wrap, then we can just assign it using
-            // the non-wrapping interface.
-            alia_assign_boxes(
+            auto const spacing = alia_layout_justify_line(
+                flow.flags,
+                placement.size.x - current_x,
+                i - line_start_index);
+            flow_assign_line_boxes(
                 ctx,
-                ALIA_MAIN_AXIS_X,
-                child,
-                {.min = {box.min.x + current_x, current_y},
-                 .size = {requirements.end_x - current_x, line.height}},
-                alia_resolve_baseline(
-                    flow.flags, line.height, line.ascent, line.descent));
-            current_x = requirements.end_x;
-            ++child_index;
+                flow.flags,
+                {x_assignment_base + spacing.leading, current_y},
+                spacing.gap,
+                line,
+                i - line_start_index,
+                fragments + line_start_index,
+                placements + line_start_index);
+
+            current_y += line.height;
+
+            current_x = 0;
+            line_start_index = i;
         }
+        current_x += fragments[i].width;
     }
 
-    arena_alloc_array<alia_wrapping_requirements>(
-        ctx->scratch, scratch.child_count);
-}
+    alia_layout_line_finalize_height(line);
+    auto const spacing = alia_layout_justify_line(
+        flow.flags,
+        placement.size.x - current_x,
+        scratch.fragment_count - line_start_index);
+    flow_assign_line_boxes(
+        ctx,
+        flow.flags,
+        {x_assignment_base + spacing.leading, current_y},
+        spacing.gap,
+        line,
+        scratch.fragment_count - line_start_index,
+        fragments + line_start_index,
+        placements + line_start_index);
 
-alia_wrapping_requirements
-flow_measure_wrapped_vertical(
-    alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float current_x_offset,
-    float line_width)
-{
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
-
-    auto* child_requirements = scratch.child_requirements;
-
-    alia_line_requirements first_line;
-    bool wrapping_has_occurred = false;
-    float interior_height = 0;
-    alia_line_requirements line = {0};
+    alia_flow_fragment_reader reader
+        = {.fragments = fragments, .placements = placements, .index = 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const requirements = alia_measure_wrapped_vertical(
-            ctx, ALIA_MAIN_AXIS_X, child, current_x_offset, line_width);
-        *child_requirements++ = requirements;
-
-        alia_layout_line_fold_in_line(line, requirements.first_line);
-
-        if (alia_layout_wrapping_has_wrapped_content(requirements))
-        {
-            if (!wrapping_has_occurred)
-            {
-                first_line = line;
-                wrapping_has_occurred = true;
-            }
-            else
-            {
-                interior_height += alia_layout_line_final_height(line);
-            }
-
-            interior_height += requirements.interior_height;
-
-            alia_layout_line_fold_in_line(line, requirements.last_line);
-        }
-
-        current_x_offset = requirements.end_x;
+        alia_layout_read_fragment_placements(ctx, child, &reader);
     }
+}
 
-    alia_line_requirements last_line;
-    if (!wrapping_has_occurred)
+int
+flow_count_flow_fragments(
+    alia_measurement_context* ctx, alia_layout_node* node)
+{
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    int fragment_count = 0;
+    for (alia_layout_node* child = flow.first_child; child != nullptr;
+         child = child->next_sibling)
     {
-        first_line = line;
-        last_line = {.height = 0, .ascent = 0, .descent = 0};
+        fragment_count += alia_count_flow_fragments(ctx, child);
     }
-    else
-    {
-        last_line = line;
-    }
-
-    arena_alloc_array<alia_wrapping_requirements>(
-        ctx->scratch, scratch.child_count);
-
-    scratch.total_height
-        = alia_layout_line_final_height(first_line) + interior_height
-        + alia_layout_line_final_height(last_line);
-    scratch.ascent = first_line.ascent;
-
-    return alia_wrapping_requirements{
-        .first_line = first_line,
-        .interior_height = interior_height,
-        .last_line = last_line,
-        .end_x = current_x_offset};
+    return fragment_count;
 }
 
 void
-flow_assign_wrapped_boxes(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
+flow_emit_flow_fragments(
+    alia_measurement_context* ctx,
     alia_layout_node* node,
-    alia_wrapping_assignment const* assignment)
+    alia_flow_fragment_emitter* emitter)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
-
-    auto* child_requirements = scratch.child_requirements;
-
-    if (scratch.child_count == 0)
-        return;
-
-    alia_line_requirements line
-        = alia_layout_line_from_assignment(assignment->first_line);
-
-    auto update_line_measures = [&](int i) {
-        for (; i < scratch.child_count; ++i)
-        {
-            auto const requirements = child_requirements[i];
-            if (!alia_layout_wrapping_has_first_line_content(requirements))
-                return;
-
-            alia_layout_line_fold_in_line(line, requirements.first_line);
-
-            if (alia_layout_wrapping_has_wrapped_content(requirements))
-                return;
-        }
-
-        alia_layout_line_fold_in_assignment(line, assignment->last_line);
-    };
-
-    float current_x = assignment->first_line_x_offset;
-    float current_y = assignment->y_base;
-    update_line_measures(0);
-    alia_layout_line_finalize_height(line);
-
-    int child_index = 0;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const& requirements = child_requirements[child_index];
-
-        alia_wrapping_assignment child_assignment;
-        child_assignment.x_base = assignment->x_base;
-        child_assignment.line_width = assignment->line_width;
-        child_assignment.first_line_x_offset = current_x;
-
-        // For the first line, we use the vertical requirements that existed
-        // for the previous children.
-        child_assignment.first_line = alia_vertical_assignment{
-            .line_height = line.height,
-            .baseline_offset = alia_resolve_baseline(
-                flow.flags, line.height, line.ascent, line.descent)};
-
-        if (alia_layout_wrapping_has_wrapped_content(requirements))
-        {
-            // For the last line, we need to reset to the child's requirements
-            // and then incorporate any the requirements for any later children
-            // that fit on that line.
-
-            alia_layout_line_fold_in_line(line, requirements.last_line);
-
-            ++child_index;
-            update_line_measures(child_index);
-            alia_layout_line_finalize_height(line);
-
-            child_assignment.last_line = alia_vertical_assignment{
-                .line_height = line.height,
-                .baseline_offset = alia_resolve_baseline(
-                    flow.flags, line.height, line.ascent, line.descent)};
-
-            if (requirements.interior_height == 0
-                && !alia_layout_wrapping_has_first_line_content(requirements))
-            {
-                // If the child wraps only once and does so immediately, then
-                // we can just assign it using the non-wrapping interface.
-                current_y += child_assignment.first_line.line_height;
-                alia_assign_boxes(
-                    ctx,
-                    ALIA_MAIN_AXIS_X,
-                    child,
-                    {.min = {assignment->x_base, current_y},
-                     .size = {requirements.end_x, line.height}},
-                    alia_resolve_baseline(
-                        flow.flags, line.height, line.ascent, line.descent));
-                current_x = requirements.end_x;
-            }
-            else
-            {
-                child_assignment.y_base = current_y;
-
-                // Otherwise, there is real wrapping going on, so we need to do
-                // an actual wrapped assignment.
-                alia_assign_wrapped_boxes(
-                    ctx, ALIA_MAIN_AXIS_X, child, &child_assignment);
-
-                // Update our X and Y positions.
-                current_y += child_assignment.first_line.line_height
-                           + requirements.interior_height;
-                current_x = requirements.end_x;
-            }
-        }
-        else
-        {
-            // If the child doesn't wrap, then we can just assign it using
-            // the non-wrapping interface.
-            alia_assign_boxes(
-                ctx,
-                ALIA_MAIN_AXIS_X,
-                child,
-                alia_box{
-                    .min = {assignment->x_base + current_x, current_y},
-                    .size = {requirements.end_x - current_x, line.height}},
-                alia_resolve_baseline(
-                    flow.flags, line.height, line.ascent, line.descent));
-            current_x = requirements.end_x;
-            ++child_index;
-        }
+        alia_emit_flow_fragments(ctx, child, emitter);
     }
+}
 
-    arena_alloc_array<alia_wrapping_requirements>(
-        ctx->scratch, scratch.child_count);
+void
+flow_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader)
+{
+    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    for (alia_layout_node* child = flow.first_child; child != nullptr;
+         child = child->next_sibling)
+    {
+        alia_layout_read_fragment_placements(ctx, child, reader);
+    }
 }
 
 alia_layout_node_vtable flow_vtable = {
@@ -469,9 +307,9 @@ alia_layout_node_vtable flow_vtable = {
     flow_assign_widths,
     flow_measure_vertical,
     flow_assign_boxes,
-    flow_measure_horizontal,
-    flow_measure_wrapped_vertical,
-    flow_assign_wrapped_boxes,
+    flow_count_flow_fragments,
+    flow_emit_flow_fragments,
+    flow_read_fragment_placements,
 };
 
 } // namespace alia

@@ -183,64 +183,6 @@ block_flow_measure_vertical(
 }
 
 static void
-block_flow_justify_line(
-    alia_layout_flags_t flags,
-    float line_width,
-    float sum_widths,
-    int n,
-    float* out_leading,
-    float* out_gap)
-{
-    float const extra = line_width - sum_widths;
-    if (extra <= 0.f || n <= 0)
-    {
-        *out_leading = 0.f;
-        *out_gap = 0.f;
-        return;
-    }
-    switch (flags & ALIA_JUSTIFY_MASK)
-    {
-        case ALIA_JUSTIFY_START:
-        default:
-            *out_leading = 0.f;
-            *out_gap = 0.f;
-            break;
-        case ALIA_JUSTIFY_END:
-            *out_leading = extra;
-            *out_gap = 0.f;
-            break;
-        case ALIA_JUSTIFY_CENTER:
-            *out_leading = extra * 0.5f;
-            *out_gap = 0.f;
-            break;
-        case ALIA_JUSTIFY_SPACE_BETWEEN:
-            if (n >= 2)
-            {
-                *out_leading = 0.f;
-                *out_gap = extra / static_cast<float>(n - 1);
-            }
-            else
-            {
-                *out_leading = 0.f;
-                *out_gap = 0.f;
-            }
-            break;
-        case ALIA_JUSTIFY_SPACE_AROUND: {
-            float const gap = extra / static_cast<float>(n);
-            *out_leading = gap * 0.5f;
-            *out_gap = gap;
-            break;
-        }
-        case ALIA_JUSTIFY_SPACE_EVENLY: {
-            float const gap = extra / static_cast<float>(n + 1);
-            *out_leading = gap;
-            *out_gap = gap;
-            break;
-        }
-    }
-}
-
-static void
 block_flow_assign_line_boxes(
     alia_placement_context* ctx,
     alia_layout_flags_t block_flags,
@@ -317,20 +259,16 @@ block_flow_assign_boxes(
         {
             int const line_child_count = child_index - line_start_index;
 
-            float leading, gap;
-            block_flow_justify_line(
+            auto const spacing = alia_layout_justify_line(
                 block_flow.flags,
-                placement.size.x,
-                assignment_x_offset,
-                line_child_count,
-                &leading,
-                &gap);
+                placement.size.x - assignment_x_offset,
+                line_child_count);
 
             block_flow_assign_line_boxes(
                 ctx,
                 block_flow.flags,
-                {assignment_x_base + leading, assignment_y},
-                gap,
+                {assignment_x_base + spacing.leading, assignment_y},
+                spacing.gap,
                 line,
                 line_child_count,
                 line_start_child,
@@ -355,20 +293,16 @@ block_flow_assign_boxes(
     {
         int const line_child_count
             = static_cast<int>(scratch.child_count) - line_start_index;
-        float leading, gap;
-        block_flow_justify_line(
+        auto spacing = alia_layout_justify_line(
             block_flow.flags,
-            placement.size.x,
-            assignment_x_offset,
-            line_child_count,
-            &leading,
-            &gap);
+            placement.size.x - assignment_x_offset,
+            line_child_count);
 
         block_flow_assign_line_boxes(
             ctx,
             block_flow.flags,
-            {assignment_x_base + leading, assignment_y},
-            gap,
+            {assignment_x_base + spacing.leading, assignment_y},
+            spacing.gap,
             line,
             line_child_count,
             line_start_child,
@@ -376,15 +310,14 @@ block_flow_assign_boxes(
     }
 }
 
-alia_layout_node_vtable block_flow_vtable = {
-    block_flow_measure_horizontal,
-    block_flow_assign_widths,
-    block_flow_measure_vertical,
-    block_flow_assign_boxes,
-    block_flow_measure_horizontal,
-    alia_default_measure_wrapped_vertical,
-    nullptr,
-};
+alia_layout_node_vtable block_flow_vtable
+    = {block_flow_measure_horizontal,
+       block_flow_assign_widths,
+       block_flow_measure_vertical,
+       block_flow_assign_boxes,
+       alia_default_count_flow_fragments,
+       alia_default_emit_flow_fragments,
+       alia_default_read_fragment_placements};
 
 } // namespace alia
 

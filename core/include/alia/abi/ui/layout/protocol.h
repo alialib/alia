@@ -65,54 +65,38 @@ typedef struct alia_line_requirements
     float descent;
 } alia_line_requirements;
 
-typedef struct alia_wrapping_requirements
-{
-    // the child's contribution to the line that was already in progress when
-    // it was invoked - This may be all 0s if the child doesn't actually place
-    // anything on that line.
-    alia_line_requirements first_line;
-
-    // the total height that the child uses in between the first line and the
-    // last line
-    float interior_height;
-
-    // the child's contribution to the last line that it places content on -
-    // This should be all 0s if the child never wraps.
-    alia_line_requirements last_line;
-
-    // the X offset at which the child's content ends
-    float end_x;
-} alia_wrapping_requirements;
-
 typedef struct alia_vertical_assignment
 {
     float line_height;
     float baseline_offset;
 } alia_vertical_assignment;
 
-typedef struct alia_wrapping_assignment
+typedef struct alia_flow_fragment
 {
-    // X position of the flow layout
-    float x_base;
+    float width;
+    float height;
+    float ascent;
+    float descent;
+} alia_flow_fragment;
 
-    // width of the flow layout
-    float line_width;
+typedef struct alia_flow_fragment_emitter
+{
+    alia_flow_fragment* fragments;
+    int index;
+} alia_flow_fragment_emitter;
 
-    // X offset of the first line - relative to `x_base`; to be used for any
-    // content that fits before any wrapping occurs
-    float first_line_x_offset;
+typedef struct alia_flow_fragment_placement
+{
+    alia_vec2f position;
+    float baseline;
+} alia_flow_fragment_placement;
 
-    // Y position of the first line
-    float y_base;
-
-    // vertical assignment for first line - to be used for any content that
-    // fits before any wrapping occurs
-    alia_vertical_assignment first_line;
-
-    // vertical assignment for last line - to be used for content on the last
-    // line (i.e., where later nodes might share the same line)
-    alia_vertical_assignment last_line;
-} alia_wrapping_assignment;
+typedef struct alia_flow_fragment_reader
+{
+    alia_flow_fragment const* fragments;
+    alia_flow_fragment_placement const* placements;
+    int index;
+} alia_flow_fragment_reader;
 
 typedef uint8_t alia_main_axis_index;
 #define ALIA_MAIN_AXIS_X 3
@@ -142,21 +126,19 @@ typedef struct alia_layout_node_vtable
         alia_box box,
         float baseline);
 
-    alia_horizontal_requirements (*measure_wrapped_horizontal)(
+    // NOTE: This shouldn't move the scratch pointer.
+    int (*count_flow_fragments)(
         alia_measurement_context* ctx, alia_layout_node* node);
 
-    alia_wrapping_requirements (*measure_wrapped_vertical)(
+    void (*emit_flow_fragments)(
         alia_measurement_context* ctx,
-        alia_main_axis_index main_axis,
         alia_layout_node* node,
-        float current_x_offset,
-        float line_width);
+        alia_flow_fragment_emitter* emitter);
 
-    void (*assign_wrapped_boxes)(
+    void (*read_fragment_placements)(
         alia_placement_context* ctx,
-        alia_main_axis_index main_axis,
         alia_layout_node* node,
-        alia_wrapping_assignment const* assignment);
+        alia_flow_fragment_reader* reader);
 
 } alia_layout_node_vtable;
 

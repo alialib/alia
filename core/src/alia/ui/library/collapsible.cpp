@@ -127,9 +127,9 @@ alia_layout_node_vtable collapsible_vtable
        collapsible_assign_widths,
        collapsible_measure_vertical,
        collapsible_assign_boxes,
-       collapsible_measure_horizontal,
-       alia_default_measure_wrapped_vertical,
-       nullptr};
+       alia_default_count_flow_fragments,
+       alia_default_emit_flow_fragments,
+       alia_default_read_fragment_placements};
 
 struct collapsible_scope
 {

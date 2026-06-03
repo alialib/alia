@@ -189,41 +189,84 @@ alia_resolve_baseline(
     return ascent + offsets[index] * (assigned_height - ascent - descent);
 }
 
-alia_wrapping_requirements
-alia_default_measure_wrapped_vertical(
+int
+alia_default_count_flow_fragments(
+    alia_measurement_context* ctx, alia_layout_node* node)
+{
+    return 1;
+}
+
+void
+alia_default_emit_flow_fragments(
     alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
     alia_layout_node* node,
-    float current_x_offset,
-    float line_width)
+    alia_flow_fragment_emitter* emitter)
 {
     auto const marker = alia_arena_mark(&ctx->scratch);
     auto horizontal = alia_measure_horizontal(ctx, node);
     alia_arena_jump(&ctx->scratch, marker);
-    auto vertical
-        = alia_measure_vertical(ctx, main_axis, node, horizontal.min_size);
-    if (current_x_offset + horizontal.min_size > line_width)
+    auto vertical = alia_measure_vertical(
+        ctx, ALIA_MAIN_AXIS_X, node, horizontal.min_size);
+    alia_layout_emit_flow_fragment(
+        emitter,
+        alia_flow_fragment{
+            .width = horizontal.min_size,
+            .height = vertical.min_size,
+            .ascent = vertical.ascent,
+            .descent = vertical.descent});
+}
+
+void
+alia_default_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader)
+{
+    auto const* fragment = alia_layout_read_fragment_spec(reader);
+    auto const* placement = alia_layout_read_fragment_placement(reader);
+    alia_layout_advance_fragment(reader);
+    alia_assign_boxes(
+        ctx,
+        ALIA_MAIN_AXIS_X,
+        node,
+        alia_box{placement->position, {fragment->width, fragment->height}},
+        placement->baseline);
+}
+
+alia_layout_line_spacing
+alia_layout_justify_line(
+    alia_layout_flags_t flags, float extra_space, int count)
+{
+    if (extra_space <= 0.f || count <= 0)
+        return {0.f, 0.f};
+
+    switch (flags & ALIA_JUSTIFY_MASK)
     {
-        return alia_wrapping_requirements{
-            .first_line = {.height = 0, .ascent = 0, .descent = 0},
-            .interior_height = 0,
-            .last_line
-            = {.height = vertical.min_size,
-               .ascent = vertical.ascent,
-               .descent = vertical.descent},
-            .end_x = horizontal.min_size};
+        case ALIA_JUSTIFY_START:
+        default:
+            return {0.f, 0.f};
+        case ALIA_JUSTIFY_END:
+            return {extra_space, 0.f};
+        case ALIA_JUSTIFY_CENTER:
+            return {extra_space * 0.5f, 0.f};
+        case ALIA_JUSTIFY_SPACE_BETWEEN:
+            if (count >= 2)
+            {
+                return {0.f, extra_space / static_cast<float>(count - 1)};
+            }
+            else
+            {
+                return {0.f, 0.f};
+            }
+        case ALIA_JUSTIFY_SPACE_AROUND: {
+            float const gap = extra_space / static_cast<float>(count);
+            return {gap * 0.5f, gap};
+        }
+        case ALIA_JUSTIFY_SPACE_EVENLY: {
+            float const gap = extra_space / static_cast<float>(count + 1);
+            return {gap, gap};
+        }
     }
-    else
-    {
-        return alia_wrapping_requirements{
-            .first_line
-            = {.height = vertical.min_size,
-               .ascent = vertical.ascent,
-               .descent = vertical.descent},
-            .interior_height = 0,
-            .last_line = {.height = 0, .ascent = 0, .descent = 0},
-            .end_x = current_x_offset + horizontal.min_size};
-    };
 }
 
 } // extern "C"

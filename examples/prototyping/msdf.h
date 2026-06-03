@@ -70,26 +70,130 @@ struct text_layout_placement_fragment
     size_t font_index;
 };
 
-void
-assign_text_boxes(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    alia_box box,
-    float baseline)
+struct text_line_metrics
 {
-    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = alia_msdf_get_font_metrics(text.engine, text.font_index);
+    float height;
+    float ascent;
+    float descent;
+};
 
-    // TODO: Don't repeatedly measure the text width.
-    float width = alia_msdf_measure_text_width(
+static bool
+text_is_space(char c)
+{
+    return c == ' ' || c == '\t';
+}
+
+static text_line_metrics
+text_fragment_metrics(
+    msdf_text_layout_node const& text, alia_msdf_font_metrics const* metrics)
+{
+    return {
+        .height = metrics->line_height * text.font_size + text.spacing * 2,
+        .ascent = metrics->ascender * text.font_size + text.spacing,
+        .descent = -metrics->descender * text.font_size + text.spacing};
+}
+
+template<class F>
+static void
+text_for_each_word(char const* text, size_t length, F&& f)
+{
+    size_t i = 0;
+    while (i < length)
+    {
+        while (i < length && text_is_space(text[i]))
+            ++i;
+        if (i >= length)
+            break;
+
+        size_t const start = i;
+        while (i < length && !text_is_space(text[i]) && text[i] != '\n'
+               && text[i] != '\r')
+            ++i;
+
+        // TODO: Figure this out.
+        if (i > start)
+            f(start, i - start);
+
+        if (text_is_space(text[i]))
+            f(i, 1);
+
+        while (i < length && (text[i] == '\n' || text[i] == '\r'))
+            ++i;
+    }
+}
+
+static int
+text_count_words(char const* text, size_t length)
+{
+    int count = 0;
+    text_for_each_word(text, length, [&](size_t, size_t) { ++count; });
+    return count;
+}
+
+static float
+text_measure_word_width(
+    msdf_text_layout_node const& text, size_t start, size_t length)
+{
+    return alia_msdf_measure_text_width(
         text.engine,
         text.font_index,
-        text.text,
-        strlen(text.text),
+        text.text + start,
+        length,
         text.font_size);
+}
 
+static void
+text_emit_word_fragment(
+    msdf_text_layout_node const& text,
+    alia_msdf_font_metrics const* metrics,
+    alia_flow_fragment_emitter* emitter,
+    size_t start,
+    size_t length)
+{
+    auto const line = text_fragment_metrics(text, metrics);
+    float const word_width = text_measure_word_width(text, start, length);
+    alia_layout_emit_flow_fragment(
+        emitter,
+        alia_flow_fragment{
+            .width = word_width,
+            .height = line.height,
+            .ascent = line.ascent,
+            .descent = line.descent});
+}
+
+static void
+text_write_placement_fragment(
+    alia_placement_context* ctx,
+    msdf_text_layout_node const& text,
+    alia_msdf_font_metrics const* metrics,
+    alia_flow_fragment_placement const* placement,
+    alia_flow_fragment const* spec,
+    size_t start,
+    size_t length)
+{
+    text_layout_placement_fragment* fragment
+        = arena_alloc<text_layout_placement_fragment>(ctx->arena);
+    fragment->position
+        = {placement->position.x + text.spacing,
+           placement->position.y + placement->baseline
+               - metrics->ascender * text.font_size};
+    fragment->size
+        = {spec->width - text.spacing * 2, spec->height - text.spacing * 2};
+    fragment->text = text.text + start;
+    fragment->length = length;
+    fragment->font_index = text.font_index;
+}
+
+static void
+text_place_whole_string(
+    alia_placement_context* ctx,
+    msdf_text_layout_node const& text,
+    alia_msdf_font_metrics const* metrics,
+    alia_main_axis_index main_axis,
+    alia_box box,
+    float baseline,
+    float width)
+{
     auto const placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(text.flags, main_axis),
         box.size,
@@ -111,162 +215,82 @@ assign_text_boxes(
     fragment->font_index = text.font_index;
 }
 
-alia_horizontal_requirements
-measure_text_wrapped_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
-{
-    return alia_horizontal_requirements{0, 0};
-}
-
-alia_wrapping_requirements
-measure_text_wrapped_vertical(
-    alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float current_x_offset,
-    float line_width)
-{
-    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
-    auto const* metrics
-        = alia_msdf_get_font_metrics(text.engine, text.font_index);
-
-    size_t length = strlen(text.text);
-
-    alia_wrapping_requirements requirements;
-
-    auto first_break = alia_msdf_break_text(
-        text.engine,
-        text.font_index,
-        text.text,
-        0,
-        length,
-        length,
-        text.font_size,
-        line_width - current_x_offset - text.spacing * 2,
-        current_x_offset == 0);
-
-    // If there is content on the first line, then we need to assign the
-    // vertical requirements for it.
-    if (first_break.next != 0)
-    {
-        requirements.first_line = {
-            .height = metrics->line_height * text.font_size + text.spacing * 2,
-            .ascent = metrics->ascender * text.font_size + text.spacing,
-            .descent = -metrics->descender * text.font_size + text.spacing};
-    }
-    else
-    {
-        requirements.first_line = {.height = 0, .ascent = 0, .descent = 0};
-    }
-
-    // If everything fits on the first line, then we're done.
-    if (first_break.next == length)
-    {
-        requirements.interior_height = 0;
-        requirements.last_line = {.height = 0, .ascent = 0, .descent = 0};
-        requirements.end_x
-            = current_x_offset + first_break.width + text.spacing * 2;
-        return requirements;
-    }
-
-    // Otherwise, wrap the rest of the text...
-
-    int wrap_count = 0;
-    size_t index = first_break.next;
-    float new_x = 0;
-    while (index < length)
-    {
-        ++wrap_count;
-        auto break_result = alia_msdf_break_text(
-            text.engine,
-            text.font_index,
-            text.text,
-            index,
-            length,
-            length,
-            text.font_size,
-            line_width - text.spacing * 2,
-            true);
-        index = break_result.next;
-        new_x = break_result.width;
-    }
-
-    requirements.interior_height
-        = (wrap_count - 1)
-        * (metrics->line_height * text.font_size + text.spacing * 2);
-    requirements.last_line
-        = {.height = metrics->line_height * text.font_size + text.spacing * 2,
-           .ascent = metrics->ascender * text.font_size + text.spacing,
-           .descent = -metrics->descender * text.font_size + text.spacing};
-    requirements.end_x = new_x + text.spacing * 2;
-
-    return requirements;
-}
-
 void
-assign_text_wrapped_boxes(
+assign_text_boxes(
     alia_placement_context* ctx,
     alia_main_axis_index main_axis,
     alia_layout_node* node,
-    alia_wrapping_assignment const* assignment)
+    alia_box box,
+    float baseline)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics
         = alia_msdf_get_font_metrics(text.engine, text.font_index);
 
-    size_t length = strlen(text.text);
+    // TODO: Don't repeatedly measure the text width.
+    float const width = alia_msdf_measure_text_width(
+        text.engine,
+        text.font_index,
+        text.text,
+        strlen(text.text),
+        text.font_size);
+
+    text_place_whole_string(
+        ctx, text, metrics, main_axis, box, baseline, width);
+}
+
+int
+text_count_flow_fragments(
+    alia_measurement_context* ctx, alia_layout_node* node)
+{
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
+    (void) ctx;
+    return text_count_words(text.text, strlen(text.text));
+}
+
+void
+text_emit_flow_fragments(
+    alia_measurement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_emitter* emitter)
+{
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
+    (void) ctx;
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
+    size_t const length = strlen(text.text);
+    text_for_each_word(
+        text.text, length, [&](size_t start, size_t word_length) {
+            text_emit_word_fragment(
+                text, metrics, emitter, start, word_length);
+        });
+}
+
+void
+text_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader)
+{
+    auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
+    auto const* metrics
+        = alia_msdf_get_font_metrics(text.engine, text.font_index);
 
     text_layout_placement_header* header
         = arena_alloc<text_layout_placement_header>(ctx->arena);
     header->fragment_count = 0;
 
-    // TODO: This all feels a bit hacky, but it works for now, and it feels
-    // like there is more significant restructuring to come anyway.
-
-    float x = assignment->first_line_x_offset;
-    float y = assignment->y_base + assignment->first_line.baseline_offset;
-    float next_y = assignment->y_base + assignment->first_line.line_height
-                 + metrics->ascender * text.font_size + text.spacing;
-
-    size_t index = 0;
-    while (index < length)
-    {
-        auto break_result = alia_msdf_break_text(
-            text.engine,
-            text.font_index,
-            text.text,
-            index,
-            length,
-            length,
-            text.font_size,
-            assignment->line_width - x - text.spacing * 2,
-            x == 0);
-        size_t const end_index = break_result.next;
-
-        if (end_index == length)
-        {
-            y += assignment->last_line.baseline_offset
-               - (metrics->ascender * text.font_size + text.spacing);
-        }
-
-        text_layout_placement_fragment* fragment
-            = arena_alloc<text_layout_placement_fragment>(ctx->arena);
-        fragment->position
-            = {x + assignment->x_base + text.spacing,
-               y - metrics->ascender * text.font_size};
-        fragment->size
-            = {assignment->line_width - x - text.spacing * 2,
-               metrics->line_height * text.font_size};
-        fragment->text = text.text + index;
-        fragment->length = end_index - index;
-        fragment->font_index = text.font_index;
-        ++header->fragment_count;
-
-        x = 0;
-        y = next_y;
-        next_y += metrics->line_height * text.font_size + text.spacing * 2;
-        index = end_index;
-    }
+    size_t const length = strlen(text.text);
+    text_for_each_word(
+        text.text, length, [&](size_t start, size_t word_length) {
+            auto const* spec = alia_layout_read_fragment_spec(reader);
+            auto const* placement
+                = alia_layout_read_fragment_placement(reader);
+            alia_layout_advance_fragment(reader);
+            text_write_placement_fragment(
+                ctx, text, metrics, placement, spec, start, word_length);
+            ++header->fragment_count;
+        });
 }
 
 alia_layout_node_vtable text_layout_vtable
@@ -274,9 +298,9 @@ alia_layout_node_vtable text_layout_vtable
        assign_text_widths,
        measure_text_vertical,
        assign_text_boxes,
-       measure_text_wrapped_horizontal,
-       measure_text_wrapped_vertical,
-       assign_text_wrapped_boxes};
+       text_count_flow_fragments,
+       text_emit_flow_fragments,
+       text_read_fragment_placements};
 
 // `scale` is logical font size in design pixels; `do_text` applies
 // ctx.geometry->scale once.
