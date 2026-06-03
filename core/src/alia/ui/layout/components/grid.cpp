@@ -157,9 +157,9 @@ alia_layout_node_vtable grid_vtable
        grid_assign_widths,
        grid_measure_vertical,
        grid_assign_boxes,
-       grid_measure_horizontal,
-       alia_default_measure_wrapped_vertical,
-       nullptr};
+       alia_default_count_flow_fragments,
+       alia_default_emit_flow_fragments,
+       alia_default_read_fragment_placements};
 
 alia_horizontal_requirements
 grid_row_measure_horizontal(

@@ -157,13 +157,21 @@ alia_fold_in_cross_axis_flags(
 
 // DEFAULT NODE IMPLEMENTATIONS
 
-alia_wrapping_requirements
-alia_default_measure_wrapped_vertical(
+int
+alia_default_count_flow_fragments(
+    alia_measurement_context* ctx, alia_layout_node* node);
+
+void
+alia_default_emit_flow_fragments(
     alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
     alia_layout_node* node,
-    float current_x_offset,
-    float line_width);
+    alia_flow_fragment_emitter* emitter);
+
+void
+alia_default_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader);
 
 // PROTOCOL INVOCATION UTILITIES
 
@@ -205,33 +213,57 @@ alia_assign_boxes(
     node->vtable->assign_boxes(ctx, main_axis, node, box, baseline);
 }
 
-static inline alia_horizontal_requirements
-alia_measure_wrapped_horizontal(
+static inline int
+alia_count_flow_fragments(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
-    return node->vtable->measure_wrapped_horizontal(ctx, node);
-}
-
-static inline alia_wrapping_requirements
-alia_measure_wrapped_vertical(
-    alia_measurement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float current_x_offset,
-    float line_width)
-{
-    return node->vtable->measure_wrapped_vertical(
-        ctx, main_axis, node, current_x_offset, line_width);
+    return node->vtable->count_flow_fragments(ctx, node);
 }
 
 static inline void
-alia_assign_wrapped_boxes(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
+alia_emit_flow_fragments(
+    alia_measurement_context* ctx,
     alia_layout_node* node,
-    alia_wrapping_assignment const* assignment)
+    alia_flow_fragment_emitter* emitter)
 {
-    node->vtable->assign_wrapped_boxes(ctx, main_axis, node, assignment);
+    node->vtable->emit_flow_fragments(ctx, node, emitter);
+}
+
+static inline void
+alia_layout_read_fragment_placements(
+    alia_placement_context* ctx,
+    alia_layout_node* node,
+    alia_flow_fragment_reader* reader)
+{
+    return node->vtable->read_fragment_placements(ctx, node, reader);
+}
+
+// FLOW FRAGMENT UTILITIES
+
+static inline void
+alia_layout_emit_flow_fragment(
+    alia_flow_fragment_emitter* emitter, alia_flow_fragment fragment)
+{
+    emitter->fragments[emitter->index] = fragment;
+    ++emitter->index;
+}
+
+static inline alia_flow_fragment const*
+alia_layout_read_fragment_spec(alia_flow_fragment_reader const* reader)
+{
+    return &reader->fragments[reader->index];
+}
+
+static inline alia_flow_fragment_placement const*
+alia_layout_read_fragment_placement(alia_flow_fragment_reader const* reader)
+{
+    return &reader->placements[reader->index];
+}
+
+static inline void
+alia_layout_advance_fragment(alia_flow_fragment_reader* reader)
+{
+    ++reader->index;
 }
 
 // LINE WRAPPING UTILITIES
@@ -288,6 +320,15 @@ alia_layout_line_fold_in_child(
     line.descent = alia_max(line.descent, child.descent);
 }
 
+static inline void
+alia_layout_line_fold_in_fragment(
+    alia_line_requirements& line, alia_flow_fragment const& fragment)
+{
+    line.height = alia_max(line.height, fragment.height);
+    line.ascent = alia_max(line.ascent, fragment.ascent);
+    line.descent = alia_max(line.descent, fragment.descent);
+}
+
 static inline float
 alia_layout_line_final_height(alia_line_requirements const& line)
 {
@@ -300,19 +341,15 @@ alia_layout_line_finalize_height(alia_line_requirements& line)
     line.height = alia_layout_line_final_height(line);
 }
 
-static inline bool
-alia_layout_wrapping_has_first_line_content(
-    alia_wrapping_requirements const& requirements)
+typedef struct alia_layout_line_spacing
 {
-    return alia_layout_line_has_content(requirements.first_line);
-}
+    float leading;
+    float gap;
+} alia_layout_line_spacing;
 
-static inline bool
-alia_layout_wrapping_has_wrapped_content(
-    alia_wrapping_requirements const& requirements)
-{
-    return alia_layout_line_has_content(requirements.last_line);
-}
+alia_layout_line_spacing
+alia_layout_justify_line(
+    alia_layout_flags_t flags, float extra_space, int count);
 
 ALIA_EXTERN_C_END
 

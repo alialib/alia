@@ -74,9 +74,9 @@ alia_layout_node_vtable leaf_vtable
        leaf_assign_widths,
        leaf_measure_vertical,
        leaf_assign_boxes,
-       leaf_measure_horizontal,
-       alia_default_measure_wrapped_vertical,
-       nullptr};
+       alia_default_count_flow_fragments,
+       alia_default_emit_flow_fragments,
+       alia_default_read_fragment_placements};
 
 } // namespace alia
 

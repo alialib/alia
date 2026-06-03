@@ -156,9 +156,9 @@ alia_layout_node_vtable column_vtable
        column_assign_widths,
        column_measure_vertical,
        column_assign_boxes,
-       column_measure_horizontal,
-       alia_default_measure_wrapped_vertical,
-       nullptr};
+       alia_default_count_flow_fragments,
+       alia_default_emit_flow_fragments,
+       alia_default_read_fragment_placements};
 
 } // namespace alia
 
