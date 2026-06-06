@@ -157,8 +157,8 @@ alia_fold_in_cross_axis_flags(
 
 // DEFAULT NODE IMPLEMENTATIONS
 
-int
-alia_default_count_flow_fragments(
+alia_flow_emission_counts
+alia_default_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node);
 
 void
@@ -213,11 +213,20 @@ alia_assign_boxes(
     node->vtable->assign_boxes(ctx, main_axis, node, box, baseline);
 }
 
-static inline int
-alia_count_flow_fragments(
+static inline alia_flow_emission_counts
+alia_flow_emission_counts_add(
+    alia_flow_emission_counts a, alia_flow_emission_counts b)
+{
+    return alia_flow_emission_counts{
+        .fragment_count = a.fragment_count + b.fragment_count,
+        .run_count = a.run_count + b.run_count};
+}
+
+static inline alia_flow_emission_counts
+alia_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
-    return node->vtable->count_flow_fragments(ctx, node);
+    return node->vtable->count_flow_emissions(ctx, node);
 }
 
 static inline void
@@ -240,12 +249,189 @@ alia_layout_read_fragment_placements(
 
 // FLOW FRAGMENT UTILITIES
 
+static inline bool
+alia_layout_fragment_is_spacer(alia_flow_fragment const* fragment)
+{
+    return fragment->kind == ALIA_FLOW_FRAGMENT_SPACER;
+}
+
+static inline bool
+alia_layout_fragment_is_expanding_spacer(alia_flow_fragment const* fragment)
+{
+    return fragment->kind == ALIA_FLOW_FRAGMENT_SPACER
+        && (fragment->flags & ALIA_FLOW_FRAGMENT_FIXED_WIDTH) == 0;
+}
+
+static inline bool
+alia_layout_fragment_is_break(alia_flow_fragment const* fragment)
+{
+    return fragment->kind == ALIA_FLOW_FRAGMENT_BREAK;
+}
+
+static inline alia_line_requirements
+alia_layout_line_requirements_with_run_padding(
+    alia_flow_fragment_emitter const* emitter, alia_line_requirements line)
+{
+    alia_insets const pad = emitter->runs[emitter->active_run_index].padding;
+    return alia_line_requirements{
+        .height = line.height + pad.top + pad.bottom,
+        .ascent = line.ascent + pad.top,
+        .descent = line.descent + pad.bottom};
+}
+
+static inline void
+alia_layout_emit_flow_fragment_raw(
+    alia_flow_fragment_emitter* emitter, alia_flow_fragment fragment)
+{
+    emitter->fragments[emitter->fragment_count] = fragment;
+    ++emitter->fragment_count;
+}
+
 static inline void
 alia_layout_emit_flow_fragment(
     alia_flow_fragment_emitter* emitter, alia_flow_fragment fragment)
 {
-    emitter->fragments[emitter->index] = fragment;
-    ++emitter->index;
+    alia_insets const pad = emitter->runs[fragment.run_index].padding;
+    fragment.height += pad.top + pad.bottom;
+    fragment.ascent += pad.top;
+    fragment.descent += pad.bottom;
+    alia_layout_emit_flow_fragment_raw(emitter, fragment);
+}
+
+// Registers a new run style and returns its index into the run table.
+static inline alia_flow_run_index
+alia_flow_register_run(
+    alia_flow_fragment_emitter* emitter, alia_flow_run_style style)
+{
+    int const index = emitter->run_count;
+    ALIA_ASSERT(index < emitter->run_capacity);
+    emitter->runs[index] = style;
+    ++emitter->run_count;
+    return (alia_flow_run_index) index;
+}
+
+static inline void
+alia_layout_emit_content_fragment_raw(
+    alia_flow_fragment_emitter* emitter, alia_flow_fragment geometry)
+{
+    alia_layout_emit_flow_fragment_raw(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_CONTENT,
+            .flags = 0,
+            .run_index = emitter->active_run_index,
+            .width = geometry.width,
+            .height = geometry.height,
+            .ascent = geometry.ascent,
+            .descent = geometry.descent});
+}
+
+static inline void
+alia_layout_emit_content_fragment(
+    alia_flow_fragment_emitter* emitter, alia_flow_fragment geometry)
+{
+    alia_layout_emit_flow_fragment(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_CONTENT,
+            .flags = 0,
+            .run_index = emitter->active_run_index,
+            .width = geometry.width,
+            .height = geometry.height,
+            .ascent = geometry.ascent,
+            .descent = geometry.descent});
+}
+
+static inline void
+alia_layout_emit_spacer_fragment_raw(
+    alia_flow_fragment_emitter* emitter,
+    float width,
+    alia_flow_fragment_flags flags,
+    alia_line_requirements line_metrics)
+{
+    alia_layout_emit_flow_fragment_raw(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_SPACER,
+            .flags = flags,
+            .run_index = emitter->active_run_index,
+            .width = width,
+            .height = line_metrics.height,
+            .ascent = line_metrics.ascent,
+            .descent = line_metrics.descent});
+}
+
+static inline void
+alia_layout_emit_spacer_fragment(
+    alia_flow_fragment_emitter* emitter,
+    float width,
+    alia_flow_fragment_flags flags,
+    alia_line_requirements line_metrics)
+{
+    alia_layout_emit_flow_fragment(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_SPACER,
+            .flags = flags,
+            .run_index = emitter->active_run_index,
+            .width = width,
+            .height = line_metrics.height,
+            .ascent = line_metrics.ascent,
+            .descent = line_metrics.descent});
+}
+
+static inline void
+alia_layout_emit_break_fragment_raw(
+    alia_flow_fragment_emitter* emitter, alia_line_requirements line_metrics)
+{
+    alia_layout_emit_flow_fragment_raw(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_BREAK,
+            .flags = 0,
+            .run_index = emitter->active_run_index,
+            .width = 0.f,
+            .height = line_metrics.height,
+            .ascent = line_metrics.ascent,
+            .descent = line_metrics.descent});
+}
+
+static inline void
+alia_layout_emit_break_fragment(
+    alia_flow_fragment_emitter* emitter, alia_line_requirements line_metrics)
+{
+    alia_layout_emit_flow_fragment(
+        emitter,
+        alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_BREAK,
+            .flags = 0,
+            .run_index = 0,
+            .width = 0.f,
+            .height = line_metrics.height,
+            .ascent = line_metrics.ascent,
+            .descent = line_metrics.descent});
+}
+
+static inline void
+alia_layout_emit_line_strut_fragment_raw(
+    alia_flow_fragment_emitter* emitter, alia_line_requirements line_metrics)
+{
+    alia_layout_emit_spacer_fragment_raw(
+        emitter,
+        0.f,
+        ALIA_FLOW_FRAGMENT_FIXED_WIDTH | ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE,
+        line_metrics);
+}
+
+static inline void
+alia_layout_emit_line_strut_fragment(
+    alia_flow_fragment_emitter* emitter, alia_line_requirements line_metrics)
+{
+    alia_layout_emit_spacer_fragment(
+        emitter,
+        0.f,
+        ALIA_FLOW_FRAGMENT_FIXED_WIDTH | ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE,
+        line_metrics);
 }
 
 static inline alia_flow_fragment const*
@@ -269,76 +455,76 @@ alia_layout_advance_fragment(alia_flow_fragment_reader* reader)
 // LINE WRAPPING UTILITIES
 
 static inline alia_line_requirements
-alia_layout_line_from_assignment(alia_vertical_assignment const& assignment)
+alia_layout_line_from_assignment(alia_vertical_assignment const* assignment)
 {
     return ALIA_BRACED_INIT(
         alia_line_requirements,
-        assignment.line_height,
-        assignment.baseline_offset,
-        assignment.line_height - assignment.baseline_offset);
+        assignment->line_height,
+        assignment->baseline_offset,
+        assignment->line_height - assignment->baseline_offset);
 }
 
 static inline bool
-alia_layout_line_has_content(alia_line_requirements const& line)
+alia_layout_line_has_content(alia_line_requirements const* line)
 {
-    return line.height != 0 || line.ascent != 0 || line.descent != 0;
+    return line->height != 0 || line->ascent != 0 || line->descent != 0;
 }
 
 static inline void
-alia_layout_line_reset(alia_line_requirements& line)
+alia_layout_line_reset(alia_line_requirements* line)
 {
-    line.height = 0;
-    line.ascent = 0;
-    line.descent = 0;
+    line->height = 0;
+    line->ascent = 0;
+    line->descent = 0;
 }
 
 static inline void
 alia_layout_line_fold_in_line(
-    alia_line_requirements& line, alia_line_requirements const& other)
+    alia_line_requirements* line, alia_line_requirements const* other)
 {
-    line.height = alia_max(line.height, other.height);
-    line.ascent = alia_max(line.ascent, other.ascent);
-    line.descent = alia_max(line.descent, other.descent);
+    line->height = alia_max(line->height, other->height);
+    line->ascent = alia_max(line->ascent, other->ascent);
+    line->descent = alia_max(line->descent, other->descent);
 }
 
 static inline void
 alia_layout_line_fold_in_assignment(
-    alia_line_requirements& line, alia_vertical_assignment const& assignment)
+    alia_line_requirements* line, alia_vertical_assignment const* assignment)
 {
-    line.height = alia_max(line.height, assignment.line_height);
-    line.ascent = alia_max(line.ascent, assignment.baseline_offset);
-    line.descent = alia_max(
-        line.descent, assignment.line_height - assignment.baseline_offset);
+    line->height = alia_max(line->height, assignment->line_height);
+    line->ascent = alia_max(line->ascent, assignment->baseline_offset);
+    line->descent = alia_max(
+        line->descent, assignment->line_height - assignment->baseline_offset);
 }
 
 static inline void
 alia_layout_line_fold_in_child(
-    alia_line_requirements& line, alia_vertical_requirements const& child)
+    alia_line_requirements* line, alia_vertical_requirements const* child)
 {
-    line.height = alia_max(line.height, child.min_size);
-    line.ascent = alia_max(line.ascent, child.ascent);
-    line.descent = alia_max(line.descent, child.descent);
+    line->height = alia_max(line->height, child->min_size);
+    line->ascent = alia_max(line->ascent, child->ascent);
+    line->descent = alia_max(line->descent, child->descent);
 }
 
 static inline void
 alia_layout_line_fold_in_fragment(
-    alia_line_requirements& line, alia_flow_fragment const& fragment)
+    alia_line_requirements* line, alia_flow_fragment const* fragment)
 {
-    line.height = alia_max(line.height, fragment.height);
-    line.ascent = alia_max(line.ascent, fragment.ascent);
-    line.descent = alia_max(line.descent, fragment.descent);
+    line->height = alia_max(line->height, fragment->height);
+    line->ascent = alia_max(line->ascent, fragment->ascent);
+    line->descent = alia_max(line->descent, fragment->descent);
 }
 
 static inline float
-alia_layout_line_final_height(alia_line_requirements const& line)
+alia_layout_line_final_height(alia_line_requirements const* line)
 {
-    return alia_max(line.height, line.ascent + line.descent);
+    return alia_max(line->height, line->ascent + line->descent);
 }
 
 static inline void
-alia_layout_line_finalize_height(alia_line_requirements& line)
+alia_layout_line_finalize_height(alia_line_requirements* line)
 {
-    line.height = alia_layout_line_final_height(line);
+    line->height = alia_layout_line_final_height(line);
 }
 
 typedef struct alia_layout_line_spacing
@@ -350,6 +536,16 @@ typedef struct alia_layout_line_spacing
 alia_layout_line_spacing
 alia_layout_justify_line(
     alia_layout_flags_t flags, float extra_space, int count);
+
+// Returns the justify flags for an incomplete (or intentionally broken) line.
+// Justification flags that were meant to insert space between fragments are
+// replaced by JUSTIFY_START.
+static inline alia_layout_flags_t
+alia_layout_justify_flags_for_incomplete_line(alia_layout_flags_t flags)
+{
+    alia_layout_flags_t justify = flags & ALIA_JUSTIFY_MASK;
+    return justify > ALIA_JUSTIFY_CENTER ? ALIA_JUSTIFY_START : justify;
+}
 
 ALIA_EXTERN_C_END
 

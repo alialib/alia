@@ -1,5 +1,19 @@
 #pragma once
 
+struct text_layout_placement_header
+{
+    int fragment_count;
+};
+
+struct text_layout_placement_fragment
+{
+    alia_vec2f position;
+    alia_vec2f size;
+    char const* text;
+    size_t length;
+    size_t font_index;
+};
+
 struct msdf_text_layout_node
 {
     alia_layout_node base;
@@ -10,6 +24,20 @@ struct msdf_text_layout_node
     char const* text;
     float font_size;
 };
+
+static text_layout_placement_header&
+msdf_consume_text_placement_header(context& ctx)
+{
+    return *arena_alloc<text_layout_placement_header>(
+        *alia_layout_placement_arena(&ctx));
+}
+
+static text_layout_placement_fragment&
+msdf_consume_text_placement_fragment(context& ctx)
+{
+    return *arena_alloc<text_layout_placement_fragment>(
+        *alia_layout_placement_arena(&ctx));
+}
 
 alia_horizontal_requirements
 measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
@@ -56,25 +84,18 @@ measure_text_vertical(
                      : 0.0f};
 }
 
-struct text_layout_placement_header
-{
-    int fragment_count;
-};
-
-struct text_layout_placement_fragment
-{
-    alia_vec2f position;
-    alia_vec2f size;
-    char const* text;
-    size_t length;
-    size_t font_index;
-};
-
 struct text_line_metrics
 {
     float height;
     float ascent;
     float descent;
+};
+
+enum class text_token_kind
+{
+    content,
+    spacer,
+    break_token,
 };
 
 static bool
@@ -93,45 +114,68 @@ text_fragment_metrics(
         .descent = -metrics->descender * text.font_size + text.spacing};
 }
 
+static alia_line_requirements
+text_line_requirements(
+    msdf_text_layout_node const& text, alia_msdf_font_metrics const* metrics)
+{
+    auto const line = text_fragment_metrics(text, metrics);
+    return {
+        .height = line.height, .ascent = line.ascent, .descent = line.descent};
+}
+
+static alia_line_requirements
+text_emit_line_requirements(
+    msdf_text_layout_node const& text,
+    alia_msdf_font_metrics const* metrics,
+    alia_flow_fragment_emitter const* emitter)
+{
+    return alia_layout_line_requirements_with_run_padding(
+        emitter, text_line_requirements(text, metrics));
+}
+
 template<class F>
 static void
-text_for_each_word(char const* text, size_t length, F&& f)
+text_for_each_token(char const* text, size_t length, F&& f)
 {
     size_t i = 0;
     while (i < length)
     {
-        while (i < length && text_is_space(text[i]))
-            ++i;
-        if (i >= length)
-            break;
+        if (text[i] == '\n' || text[i] == '\r')
+        {
+            f(text_token_kind::break_token, i, 0);
+            while (i < length && (text[i] == '\n' || text[i] == '\r'))
+                ++i;
+            continue;
+        }
+
+        if (text_is_space(text[i]))
+        {
+            size_t const start = i;
+            while (i < length && text_is_space(text[i]))
+                ++i;
+            f(text_token_kind::spacer, start, i - start);
+            continue;
+        }
 
         size_t const start = i;
         while (i < length && !text_is_space(text[i]) && text[i] != '\n'
                && text[i] != '\r')
             ++i;
-
-        // TODO: Figure this out.
-        if (i > start)
-            f(start, i - start);
-
-        if (text_is_space(text[i]))
-            f(i, 1);
-
-        while (i < length && (text[i] == '\n' || text[i] == '\r'))
-            ++i;
+        f(text_token_kind::content, start, i - start);
     }
 }
 
 static int
-text_count_words(char const* text, size_t length)
+text_count_tokens(char const* text, size_t length)
 {
     int count = 0;
-    text_for_each_word(text, length, [&](size_t, size_t) { ++count; });
+    text_for_each_token(
+        text, length, [&](text_token_kind, size_t, size_t) { ++count; });
     return count;
 }
 
 static float
-text_measure_word_width(
+text_measure_substring_width(
     msdf_text_layout_node const& text, size_t start, size_t length)
 {
     return alia_msdf_measure_text_width(
@@ -143,22 +187,39 @@ text_measure_word_width(
 }
 
 static void
-text_emit_word_fragment(
+text_emit_token(
     msdf_text_layout_node const& text,
     alia_msdf_font_metrics const* metrics,
     alia_flow_fragment_emitter* emitter,
+    text_token_kind kind,
     size_t start,
     size_t length)
 {
-    auto const line = text_fragment_metrics(text, metrics);
-    float const word_width = text_measure_word_width(text, start, length);
-    alia_layout_emit_flow_fragment(
-        emitter,
-        alia_flow_fragment{
-            .width = word_width,
-            .height = line.height,
-            .ascent = line.ascent,
-            .descent = line.descent});
+    auto const line = text_emit_line_requirements(text, metrics, emitter);
+    switch (kind)
+    {
+        case text_token_kind::content:
+            alia_layout_emit_content_fragment_raw(
+                emitter,
+                alia_flow_fragment{
+                    .kind = ALIA_FLOW_FRAGMENT_CONTENT,
+                    .width = text_measure_substring_width(text, start, length),
+                    .height = line.height,
+                    .ascent = line.ascent,
+                    .descent = line.descent});
+            break;
+        case text_token_kind::spacer: {
+            float const spacer_width
+                = text_measure_substring_width(text, start, length);
+            alia_layout_emit_spacer_fragment_raw(
+                emitter, spacer_width, ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE, line);
+            break;
+        }
+        case text_token_kind::break_token:
+            alia_layout_emit_line_strut_fragment_raw(emitter, line);
+            alia_layout_emit_break_fragment_raw(emitter, line);
+            break;
+    }
 }
 
 static void
@@ -169,16 +230,20 @@ text_write_placement_fragment(
     alia_flow_fragment_placement const* placement,
     alia_flow_fragment const* spec,
     size_t start,
-    size_t length)
+    size_t length,
+    text_layout_placement_fragment* fragment)
 {
-    text_layout_placement_fragment* fragment
-        = arena_alloc<text_layout_placement_fragment>(ctx->arena);
+    (void) ctx;
+    auto const base = text_line_requirements(text, metrics);
+    float const pad_top = spec->ascent - base.ascent;
+    float const pad_bottom = spec->descent - base.descent;
     fragment->position
         = {placement->position.x + text.spacing,
            placement->position.y + placement->baseline
-               - metrics->ascender * text.font_size};
+               - metrics->ascender * text.font_size + pad_top};
     fragment->size
-        = {spec->width - text.spacing * 2, spec->height - text.spacing * 2};
+        = {spec->width - text.spacing * 2,
+           spec->height - text.spacing * 2 - pad_top - pad_bottom};
     fragment->text = text.text + start;
     fragment->length = length;
     fragment->font_index = text.font_index;
@@ -187,7 +252,7 @@ text_write_placement_fragment(
 static void
 text_place_whole_string(
     alia_placement_context* ctx,
-    msdf_text_layout_node const& text,
+    msdf_text_layout_node& text,
     alia_msdf_font_metrics const* metrics,
     alia_main_axis_index main_axis,
     alia_box box,
@@ -239,13 +304,26 @@ assign_text_boxes(
         ctx, text, metrics, main_axis, box, baseline, width);
 }
 
-int
-text_count_flow_fragments(
+static int
+text_count_fragments(char const* text, size_t length)
+{
+    int count = 0;
+    text_for_each_token(
+        text, length, [&](text_token_kind kind, size_t, size_t) {
+            count += kind == text_token_kind::break_token ? 2 : 1;
+        });
+    return count;
+}
+
+alia_flow_emission_counts
+text_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     (void) ctx;
-    return text_count_words(text.text, strlen(text.text));
+    return alia_flow_emission_counts{
+        .fragment_count = text_count_fragments(text.text, strlen(text.text)),
+        .run_count = 0};
 }
 
 void
@@ -259,11 +337,20 @@ text_emit_flow_fragments(
     auto const* metrics
         = alia_msdf_get_font_metrics(text.engine, text.font_index);
     size_t const length = strlen(text.text);
-    text_for_each_word(
-        text.text, length, [&](size_t start, size_t word_length) {
-            text_emit_word_fragment(
-                text, metrics, emitter, start, word_length);
+    text_for_each_token(
+        text.text,
+        length,
+        [&](text_token_kind kind, size_t start, size_t len) {
+            text_emit_token(text, metrics, emitter, kind, start, len);
         });
+}
+
+static void
+text_advance_flow_fragment(alia_flow_fragment_reader* reader)
+{
+    (void) alia_layout_read_fragment_spec(reader);
+    (void) alia_layout_read_fragment_placement(reader);
+    alia_layout_advance_fragment(reader);
 }
 
 void
@@ -281,15 +368,40 @@ text_read_fragment_placements(
     header->fragment_count = 0;
 
     size_t const length = strlen(text.text);
-    text_for_each_word(
-        text.text, length, [&](size_t start, size_t word_length) {
-            auto const* spec = alia_layout_read_fragment_spec(reader);
-            auto const* placement
-                = alia_layout_read_fragment_placement(reader);
-            alia_layout_advance_fragment(reader);
-            text_write_placement_fragment(
-                ctx, text, metrics, placement, spec, start, word_length);
-            ++header->fragment_count;
+    text_for_each_token(
+        text.text,
+        length,
+        [&](text_token_kind kind, size_t start, size_t token_length) {
+            switch (kind)
+            {
+                case text_token_kind::content: {
+                    auto const* spec = alia_layout_read_fragment_spec(reader);
+                    auto const* placement
+                        = alia_layout_read_fragment_placement(reader);
+                    alia_layout_advance_fragment(reader);
+                    text_layout_placement_fragment* fragment
+                        = arena_alloc<text_layout_placement_fragment>(
+                            ctx->arena);
+                    text_write_placement_fragment(
+                        ctx,
+                        text,
+                        metrics,
+                        placement,
+                        spec,
+                        start,
+                        token_length,
+                        fragment);
+                    ++header->fragment_count;
+                    break;
+                }
+                case text_token_kind::spacer:
+                    text_advance_flow_fragment(reader);
+                    break;
+                case text_token_kind::break_token:
+                    text_advance_flow_fragment(reader);
+                    text_advance_flow_fragment(reader);
+                    break;
+            }
         });
 }
 
@@ -298,7 +410,7 @@ alia_layout_node_vtable text_layout_vtable
        assign_text_widths,
        measure_text_vertical,
        assign_text_boxes,
-       text_count_flow_fragments,
+       text_count_flow_emissions,
        text_emit_flow_fragments,
        text_read_fragment_placements};
 
@@ -336,12 +448,10 @@ do_text(
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
-            auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                *alia_layout_placement_arena(&ctx));
+            auto& text_placement = msdf_consume_text_placement_header(ctx);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    *alia_layout_placement_arena(&ctx));
+                auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
                 alia_element_box_region(&ctx, id, &box, ALIA_CURSOR_DEFAULT);
@@ -349,12 +459,10 @@ do_text(
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
-            auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                *alia_layout_placement_arena(&ctx));
+            auto& text_placement = msdf_consume_text_placement_header(ctx);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    *alia_layout_placement_arena(&ctx));
+                auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_msdf_draw_text(
                     the_msdf_text_engine,
                     &ctx,
@@ -370,12 +478,10 @@ do_text(
         }
         default:
         case ALIA_CATEGORY_INPUT: {
-            auto& text_placement = *arena_alloc<text_layout_placement_header>(
-                *alia_layout_placement_arena(&ctx));
+            auto& text_placement = msdf_consume_text_placement_header(ctx);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
-                auto& fragment = *arena_alloc<text_layout_placement_fragment>(
-                    *alia_layout_placement_arena(&ctx));
+                auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
                 if (alia_element_detect_click(&ctx, id, ALIA_BUTTON_LEFT))

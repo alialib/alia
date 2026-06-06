@@ -84,12 +84,16 @@ inset_assign_boxes(
         baseline - inset.insets.top);
 }
 
-int
-inset_count_flow_fragments(
+alia_flow_emission_counts
+inset_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& inset = *reinterpret_cast<inset_layout_node*>(node);
-    return alia_count_flow_fragments(ctx, inset.container.first_child);
+    auto const child_counts
+        = alia_count_flow_emissions(ctx, inset.container.first_child);
+    return alia_flow_emission_counts{
+        .fragment_count = child_counts.fragment_count,
+        .run_count = child_counts.run_count + 1};
 }
 
 void
@@ -99,7 +103,12 @@ inset_emit_flow_fragments(
     alia_flow_fragment_emitter* emitter)
 {
     auto& inset = *reinterpret_cast<inset_layout_node*>(node);
+    alia_flow_run_index const saved_run_index = emitter->active_run_index;
+    alia_flow_run_index const run_index = alia_flow_register_run(
+        emitter, alia_flow_run_style{.padding = inset.insets});
+    emitter->active_run_index = run_index;
     alia_emit_flow_fragments(ctx, inset.container.first_child, emitter);
+    emitter->active_run_index = saved_run_index;
 }
 
 void
@@ -118,7 +127,7 @@ alia_layout_node_vtable inset_vtable
        inset_assign_widths,
        inset_measure_vertical,
        inset_assign_boxes,
-       inset_count_flow_fragments,
+       inset_count_flow_emissions,
        inset_emit_flow_fragments,
        inset_read_fragment_placements};
 

@@ -86,10 +86,10 @@ block_flow_measure_line_vertical(
         auto const child_y = alia_measure_vertical(
             ctx, ALIA_MAIN_AXIS_X, child, assigned_width);
         cs.y = child_y;
-        alia_layout_line_fold_in_child(line, child_y);
+        alia_layout_line_fold_in_child(&line, &child_y);
         child = child->next_sibling;
     }
-    alia_layout_line_finalize_height(line);
+    alia_layout_line_finalize_height(&line);
     return line;
 }
 
@@ -173,6 +173,7 @@ block_flow_measure_vertical(
     return alia_vertical_requirements{
         .min_size = overall_height,
         .growth_factor = alia_resolve_growth_factor(block_flow.flags),
+        // TODO: Why not always report ascent/descent?
         .ascent = (block_flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
                     ? overall_ascent
                     : 0.0f,
@@ -193,7 +194,7 @@ block_flow_assign_line_boxes(
     alia_layout_node* line_start_child,
     block_flow_child_scratch* child_scratch)
 {
-    alia_layout_line_finalize_height(line);
+    alia_layout_line_finalize_height(&line);
     float const baseline = alia_resolve_baseline(
         block_flags, line.height, line.ascent, line.descent);
     alia_layout_node* child = line_start_child;
@@ -276,7 +277,7 @@ block_flow_assign_boxes(
 
             assignment_x_offset = 0;
             assignment_y += line.height;
-            alia_layout_line_reset(line);
+            alia_layout_line_reset(&line);
             line_start_index = child_index;
             line_start_child = child;
             wrapping_x_offset = 0;
@@ -284,7 +285,7 @@ block_flow_assign_boxes(
 
         wrapping_x_offset += cs.x.min_size;
 
-        alia_layout_line_fold_in_child(line, cs.y);
+        alia_layout_line_fold_in_child(&line, &cs.y);
         assignment_x_offset += cs.assigned_width;
         ++child_index;
     }
@@ -315,7 +316,7 @@ alia_layout_node_vtable block_flow_vtable
        block_flow_assign_widths,
        block_flow_measure_vertical,
        block_flow_assign_boxes,
-       alia_default_count_flow_fragments,
+       alia_default_count_flow_emissions,
        alia_default_emit_flow_fragments,
        alia_default_read_fragment_placements};
 

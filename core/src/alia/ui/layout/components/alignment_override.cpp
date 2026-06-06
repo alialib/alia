@@ -96,7 +96,7 @@ alia_layout_node_vtable alignment_override_vtable
        alignment_override_assign_widths,
        alignment_override_measure_vertical,
        alignment_override_assign_boxes,
-       alia_default_count_flow_fragments,
+       alia_default_count_flow_emissions,
        alia_default_emit_flow_fragments,
        alia_default_read_fragment_placements};
 

@@ -66,12 +66,12 @@ growth_override_assign_boxes(
         ctx, main_axis, override.container.first_child, box, baseline);
 }
 
-int
-growth_override_count_flow_fragments(
+alia_flow_emission_counts
+growth_override_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& override = *reinterpret_cast<growth_override_node*>(node);
-    return alia_count_flow_fragments(ctx, override.container.first_child);
+    return alia_count_flow_emissions(ctx, override.container.first_child);
 }
 
 void
@@ -100,7 +100,7 @@ alia_layout_node_vtable growth_override_vtable
        growth_override_assign_widths,
        growth_override_measure_vertical,
        growth_override_assign_boxes,
-       growth_override_count_flow_fragments,
+       growth_override_count_flow_emissions,
        growth_override_emit_flow_fragments,
        growth_override_read_fragment_placements};
 

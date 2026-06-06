@@ -189,11 +189,13 @@ alia_resolve_baseline(
     return ascent + offsets[index] * (assigned_height - ascent - descent);
 }
 
-int
-alia_default_count_flow_fragments(
+alia_flow_emission_counts
+alia_default_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
-    return 1;
+    (void) ctx;
+    (void) node;
+    return alia_flow_emission_counts{.fragment_count = 1, .run_count = 0};
 }
 
 void
@@ -207,9 +209,10 @@ alia_default_emit_flow_fragments(
     alia_arena_jump(&ctx->scratch, marker);
     auto vertical = alia_measure_vertical(
         ctx, ALIA_MAIN_AXIS_X, node, horizontal.min_size);
-    alia_layout_emit_flow_fragment(
+    alia_layout_emit_content_fragment(
         emitter,
         alia_flow_fragment{
+            .kind = ALIA_FLOW_FRAGMENT_CONTENT,
             .width = horizontal.min_size,
             .height = vertical.min_size,
             .ascent = vertical.ascent,
@@ -223,6 +226,7 @@ alia_default_read_fragment_placements(
     alia_flow_fragment_reader* reader)
 {
     auto const* fragment = alia_layout_read_fragment_spec(reader);
+    ALIA_ASSERT(fragment->kind == ALIA_FLOW_FRAGMENT_CONTENT);
     auto const* placement = alia_layout_read_fragment_placement(reader);
     alia_layout_advance_fragment(reader);
     alia_assign_boxes(

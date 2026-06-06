@@ -71,8 +71,34 @@ typedef struct alia_vertical_assignment
     float baseline_offset;
 } alia_vertical_assignment;
 
+typedef struct alia_flow_emission_counts
+{
+    int fragment_count;
+    int run_count;
+} alia_flow_emission_counts;
+
+typedef struct alia_flow_run_style
+{
+    alia_insets padding;
+} alia_flow_run_style;
+
+typedef uint16_t alia_flow_run_index;
+
+typedef uint8_t alia_flow_fragment_kind;
+#define ALIA_FLOW_FRAGMENT_CONTENT 0
+#define ALIA_FLOW_FRAGMENT_SPACER 1
+#define ALIA_FLOW_FRAGMENT_BREAK 2
+
+typedef uint16_t alia_flow_fragment_flags;
+#define ALIA_FLOW_FRAGMENT_FIXED_WIDTH (1u << 0)
+#define ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE (1u << 1)
+
 typedef struct alia_flow_fragment
 {
+    alia_flow_fragment_kind kind;
+    alia_flow_fragment_flags flags;
+    // index into the flow run table (0 is a reserved default run)
+    alia_flow_run_index run_index;
     float width;
     float height;
     float ascent;
@@ -82,7 +108,15 @@ typedef struct alia_flow_fragment
 typedef struct alia_flow_fragment_emitter
 {
     alia_flow_fragment* fragments;
-    int index;
+    // number of fragments emitted so far
+    int fragment_count;
+    alia_flow_run_style* runs;
+    // TODO: This is only used for bounds checking. It could be conditionally
+    // included for debug builds. We should also track the fragment capacity.
+    int run_capacity;
+    // number of runs registered so far
+    int run_count;
+    uint16_t active_run_index;
 } alia_flow_fragment_emitter;
 
 typedef struct alia_flow_fragment_placement
@@ -127,7 +161,7 @@ typedef struct alia_layout_node_vtable
         float baseline);
 
     // NOTE: This shouldn't move the scratch pointer.
-    int (*count_flow_fragments)(
+    alia_flow_emission_counts (*count_flow_emissions)(
         alia_measurement_context* ctx, alia_layout_node* node);
 
     void (*emit_flow_fragments)(

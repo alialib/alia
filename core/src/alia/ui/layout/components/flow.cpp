@@ -10,10 +10,128 @@ using flow_layout_node = alia_layout_container;
 struct flow_scratch
 {
     int fragment_count = 0;
+    int run_count = 0;
     float max_fragment_width = 0;
     float overall_height = 0, overall_ascent = 0;
     alia_arena_marker scratch_end = {};
 };
+
+struct flow_line_wrapper_context
+{
+    alia_flow_run_style const* runs;
+    alia_flow_fragment const* fragments;
+    int fragment_count;
+    float available_width;
+};
+
+struct flow_line_wrapper_state
+{
+    alia_flow_run_index active_run_index = 0;
+
+    float current_x = 0.f;
+
+    // "solid" fragments are content fragments and non-collapsing spacers
+    bool have_solid_fragments = false;
+    int first_solid_fragment_index = 0;
+    int last_solid_fragment_index = 0;
+    float solid_width = 0.f;
+
+    alia_line_requirements line = {0};
+};
+
+static void
+flow_reset_line(flow_line_wrapper_state& state)
+{
+    state.have_solid_fragments = false;
+    state.first_solid_fragment_index = 0;
+    state.last_solid_fragment_index = 0;
+    state.solid_width = 0.f;
+    state.active_run_index = 0;
+    state.current_x = 0.f;
+    alia_layout_line_reset(&state.line);
+}
+
+template<class OnWrap>
+void
+process_flow_fragment(
+    flow_line_wrapper_context const& ctx,
+    flow_line_wrapper_state& state,
+    alia_flow_fragment const* fragment,
+    int fragment_index,
+    OnWrap&& on_wrap)
+{
+    if (fragment->kind == ALIA_FLOW_FRAGMENT_BREAK)
+    {
+        alia_layout_line_finalize_height(&state.line);
+        on_wrap(true);
+        flow_reset_line(state);
+        return;
+    }
+
+    bool is_solid = fragment->kind == ALIA_FLOW_FRAGMENT_CONTENT
+                 || !(fragment->flags & ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE);
+
+    float fragment_width = fragment->width;
+
+    if (!state.have_solid_fragments)
+    {
+        // Reject collapsible spacers at the start of a line.
+        if (!is_solid)
+            return;
+        // Otherwise, this is the first solid fragment on this line.
+        state.have_solid_fragments = true;
+        state.first_solid_fragment_index = fragment_index;
+    }
+
+    // If this fragment is in a different run than the previous fragment, we
+    // need to add the padding to end the previous run and adjust the fragment
+    // width to include the padding that starts its run. Note that all lines
+    // start with an active run index of 0 (which has no padding), so this also
+    // takes care of adding padding at the start of the line where needed.
+    alia_flow_run_index const run_index = fragment->run_index;
+    if (run_index != state.active_run_index)
+    {
+        state.current_x += ctx.runs[state.active_run_index].padding.right;
+        fragment_width += ctx.runs[run_index].padding.left;
+    }
+
+    // Check to see if the fragment will cause the line to overflow.
+    float const end_of_run_padding = ctx.runs[run_index].padding.right;
+    // Note that we only allow wrapping to occur if we already have solid
+    // fragments. This prevents large fragments from throwing us into an
+    // infinite wrapping loop. (In theory this shouldn't happen with the
+    // current width calculation logic, so this is mostly a check for the
+    // future and/or a guard against floating point imprecision errors.)
+    if (state.have_solid_fragments
+        && state.current_x + fragment_width + end_of_run_padding
+               > ctx.available_width)
+    {
+        alia_layout_line_finalize_height(&state.line);
+        on_wrap(false);
+        flow_reset_line(state);
+        // We're at the start of a new line now, so we need to again filter out
+        // collapsible spacers.
+        if (!is_solid)
+            return;
+        // Otherwise, this is the first solid fragment on this line.
+        state.have_solid_fragments = true;
+        state.first_solid_fragment_index = fragment_index;
+        // Also adjust the fragment width to ensure that it includes the
+        // padding that starts the run/line.
+        fragment_width = fragment_width + ctx.runs[run_index].padding.left;
+    }
+
+    alia_layout_line_fold_in_fragment(&state.line, fragment);
+
+    state.current_x += fragment_width;
+
+    // Update the solid fragment tracking.
+    if (is_solid)
+    {
+        state.last_solid_fragment_index = fragment_index;
+        state.solid_width = state.current_x + end_of_run_padding;
+    }
+}
 
 alia_horizontal_requirements
 flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
@@ -21,34 +139,58 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
     auto& scratch = claim_scratch<flow_scratch>(ctx->scratch);
 
-    int fragment_count = 0;
+    // Count the total number of fragments and runs that will be emitted. Note
+    // that the layout protocol requires that these functions don't touch the
+    // scratch space.
+    alia_flow_emission_counts totals = {0, 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        fragment_count += alia_count_flow_fragments(ctx, child);
+        totals = alia_flow_emission_counts_add(
+            totals, alia_count_flow_emissions(ctx, child));
     }
-    scratch.fragment_count = fragment_count;
+    scratch.fragment_count = totals.fragment_count;
+    scratch.run_count = totals.run_count + 1;
 
-    alia_flow_fragment* fragments
-        = arena_alloc_array<alia_flow_fragment>(ctx->scratch, fragment_count);
+    // Allocate our fragment and run arrays. (Again, note that we are at the
+    // start of our scratch space.)
+    alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
+        ctx->scratch, totals.fragment_count);
+    alia_flow_run_style* runs = arena_alloc_array<alia_flow_run_style>(
+        ctx->scratch, scratch.run_count);
     // Reserve space for the fragment placements.
     arena_alloc_array<alia_flow_fragment_placement>(
-        ctx->scratch, fragment_count);
+        ctx->scratch, totals.fragment_count);
 
-    alia_flow_fragment_emitter emitter = {.fragments = fragments, .index = 0};
+    // Invoke the children to emit their fragments and runs.
+    runs[0] = alia_flow_run_style{};
+    alia_flow_fragment_emitter emitter
+        = {.fragments = fragments,
+           .fragment_count = 0,
+           .runs = runs,
+           .run_capacity = scratch.run_count,
+           .run_count = 1,
+           .active_run_index = 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         alia_emit_flow_fragments(ctx, child, &emitter);
     }
 
+    // Mark the end of the scratch space for this overall node.
     scratch.scratch_end = alia_arena_mark(&ctx->scratch);
 
+    // Compute the maximum fragment width.
+    // TODO: Add a flag that bypasses this computation and allows the flow to
+    // be smaller than its largest fragment.
     float max_fragment_width = 0;
-    for (int i = 0; i < fragment_count; ++i)
+    for (int i = 0; i < totals.fragment_count; ++i)
     {
-        max_fragment_width
-            = (std::max) (max_fragment_width, fragments[i].width);
+        auto const& fragment = fragments[i];
+        auto const& run = runs[fragment.run_index];
+        max_fragment_width = alia_max(
+            max_fragment_width,
+            fragment.width + run.padding.left + run.padding.right);
     }
     scratch.max_fragment_width = max_fragment_width;
 
@@ -64,23 +206,10 @@ flow_assign_widths(
     alia_layout_node* node,
     float assigned_width)
 {
-    // TODO
-    // auto& flow = *reinterpret_cast<FlowLayoutNode*>(node);
-    // auto& scratch = use_scratch<FlowScratch>(*scratch);
-    // HorizontalRequirements* x_requirements
-    //     = reinterpret_cast<HorizontalRequirements*>(scratch->allocate(
-    //         flow.child_count * sizeof(HorizontalRequirements),
-    //         alignof(HorizontalRequirements)));
-    // VerticalRequirements* y_requirements
-    //     = reinterpret_cast<VerticalRequirements*>(scratch->allocate(
-    //         flow.child_count * sizeof(VerticalRequirements),
-    //         alignof(VerticalRequirements)));
-    // for (LayoutNode* child = flow.first_child; child != nullptr;
-    //      child = child->next_sibling)
-    // {
-    //     auto const child_x = *x_requirements++;
-    //     alia_assign_widths(scratch, child, child_x.min_size);
-    // }
+    (void) ctx;
+    (void) main_axis;
+    (void) node;
+    (void) assigned_width;
 }
 
 alia_vertical_requirements
@@ -95,6 +224,8 @@ flow_measure_vertical(
 
     alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
         ctx->scratch, scratch.fragment_count);
+    alia_flow_run_style* runs = arena_alloc_array<alia_flow_run_style>(
+        ctx->scratch, scratch.run_count);
 
     // We don't actually invoke the children at all during this step, so we
     // need to jump over the scratch space that they would have used.
@@ -107,31 +238,32 @@ flow_measure_vertical(
         assigned_width,
         scratch.max_fragment_width);
 
-    alia_line_requirements line = {0};
-    float overall_height = 0, overall_ascent = 0;
-    float current_x_offset = 0;
+    int const fragment_count = scratch.fragment_count;
+
+    flow_line_wrapper_context wrapper_ctx
+        = {.runs = runs,
+           .fragments = fragments,
+           .fragment_count = fragment_count,
+           .available_width = assignment.size};
+
+    flow_line_wrapper_state state = {};
+
     bool wrapping_has_occurred = false;
-    for (int i = 0; i < scratch.fragment_count; ++i)
-    {
-        alia_layout_line_fold_in_fragment(line, fragments[i]);
-        if (current_x_offset + fragments[i].width > assignment.size)
+    float overall_height = 0.f, overall_ascent = 0.f;
+
+    auto on_wrap = [&](bool is_explicit_break) {
+        if (!wrapping_has_occurred)
         {
-            alia_layout_line_finalize_height(line);
-            if (!wrapping_has_occurred)
-            {
-                overall_ascent = line.ascent;
-                wrapping_has_occurred = true;
-            }
-            overall_height += line.height;
-
-            current_x_offset = 0;
+            overall_ascent = state.line.ascent;
+            wrapping_has_occurred = true;
         }
-        current_x_offset += fragments[i].width;
-    }
+        overall_height += state.line.height;
+    };
 
-    if (!wrapping_has_occurred)
-        overall_ascent = line.ascent;
-    overall_height += alia_layout_line_final_height(line);
+    for (int i = 0; i < fragment_count; ++i)
+        process_flow_fragment(wrapper_ctx, state, &fragments[i], i, on_wrap);
+    // Process the final line.
+    on_wrap(true);
 
     scratch.overall_height = overall_height;
     scratch.overall_ascent = overall_ascent;
@@ -147,24 +279,37 @@ flow_measure_vertical(
                      : 0.0f};
 }
 
-void
-flow_assign_line_boxes(
-    alia_placement_context* ctx,
-    alia_layout_flags_t flow_flags,
+static void
+flow_place_line(
+    flow_line_wrapper_context const& ctx,
+    alia_flow_fragment_placement* placements,
+    int first_fragment_index,
+    int last_fragment_index,
     alia_vec2f position,
-    float gap,
-    alia_line_requirements& line,
-    int fragment_count,
-    alia_flow_fragment* fragments,
-    alia_flow_fragment_placement* placements)
+    float baseline,
+    float spacer_padding)
 {
-    alia_layout_line_finalize_height(line);
-    float const baseline = alia_resolve_baseline(
-        flow_flags, line.height, line.ascent, line.descent);
-    for (int i = 0; i < fragment_count; ++i)
+    alia_flow_run_index active_run_index = 0;
+    for (int i = first_fragment_index; i <= last_fragment_index; ++i)
     {
+        alia_flow_fragment const& fragment = ctx.fragments[i];
+
+        alia_flow_run_index const run_index = fragment.run_index;
+        if (run_index != active_run_index)
+        {
+            position.x += ctx.runs[active_run_index].padding.right
+                        + ctx.runs[run_index].padding.left;
+            active_run_index = run_index;
+        }
+
         placements[i] = {.position = position, .baseline = baseline};
-        position.x += fragments[i].width + gap;
+
+        float const spacer_extra
+            = alia_layout_fragment_is_expanding_spacer(&fragment)
+                ? spacer_padding
+                : 0.f;
+
+        position.x += fragment.width + spacer_extra;
     }
 }
 
@@ -181,13 +326,11 @@ flow_assign_boxes(
 
     alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
         ctx->scratch, scratch.fragment_count);
+    alia_flow_run_style* runs = arena_alloc_array<alia_flow_run_style>(
+        ctx->scratch, scratch.run_count);
     alia_flow_fragment_placement* placements
         = arena_alloc_array<alia_flow_fragment_placement>(
             ctx->scratch, scratch.fragment_count);
-
-    // TODO: Is this correct/useful?
-    if (scratch.fragment_count == 0)
-        return;
 
     auto const placement = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(flow.flags, main_axis),
@@ -203,53 +346,61 @@ flow_assign_boxes(
         provided_box->size = placement.size;
     }
 
-    alia_line_requirements line = {0};
-    float x_assignment_base = box.min.x + placement.min.x;
-    float current_x = 0, current_y = box.min.y + placement.min.y;
-    int line_start_index = 0;
-    for (int i = 0; i < scratch.fragment_count; ++i)
-    {
-        alia_layout_line_fold_in_fragment(line, fragments[i]);
-        if (current_x + fragments[i].width > placement.size.x)
+    int const fragment_count = scratch.fragment_count;
+
+    flow_line_wrapper_context wrapper_ctx
+        = {.runs = runs,
+           .fragments = fragments,
+           .fragment_count = fragment_count,
+           .available_width = placement.size.x};
+
+    flow_line_wrapper_state state = {};
+
+    float const x_assignment_base = box.min.x + placement.min.x;
+    float current_y = box.min.y + placement.min.y;
+
+    auto on_wrap = [&](bool is_explicit_break) {
+        // Count the number of expandable spacers on the line.
+        int expandable_spacer_count = 0;
+        for (int i = state.first_solid_fragment_index;
+             i <= state.last_solid_fragment_index;
+             ++i)
         {
-            alia_layout_line_finalize_height(line);
-
-            auto const spacing = alia_layout_justify_line(
-                flow.flags,
-                placement.size.x - current_x,
-                i - line_start_index);
-            flow_assign_line_boxes(
-                ctx,
-                flow.flags,
-                {x_assignment_base + spacing.leading, current_y},
-                spacing.gap,
-                line,
-                i - line_start_index,
-                fragments + line_start_index,
-                placements + line_start_index);
-
-            current_y += line.height;
-
-            current_x = 0;
-            line_start_index = i;
+            if (alia_layout_fragment_is_expanding_spacer(&fragments[i]))
+                ++expandable_spacer_count;
         }
-        current_x += fragments[i].width;
-    }
 
-    alia_layout_line_finalize_height(line);
-    auto const spacing = alia_layout_justify_line(
-        flow.flags,
-        placement.size.x - current_x,
-        scratch.fragment_count - line_start_index);
-    flow_assign_line_boxes(
-        ctx,
-        flow.flags,
-        {x_assignment_base + spacing.leading, current_y},
-        spacing.gap,
-        line,
-        scratch.fragment_count - line_start_index,
-        fragments + line_start_index,
-        placements + line_start_index);
+        alia_layout_line_spacing line_spacing = alia_layout_justify_line(
+            is_explicit_break
+                ? alia_layout_justify_flags_for_incomplete_line(flow.flags)
+                : flow.flags,
+            placement.size.x - state.solid_width,
+            // +1 because this parameter represents the number of items, not
+            // the spaces between them.
+            expandable_spacer_count + 1);
+
+        float const line_baseline = alia_resolve_baseline(
+            flow.flags,
+            state.line.height,
+            state.line.ascent,
+            state.line.descent);
+
+        flow_place_line(
+            wrapper_ctx,
+            placements,
+            state.first_solid_fragment_index,
+            state.last_solid_fragment_index,
+            {x_assignment_base + line_spacing.leading, current_y},
+            line_baseline,
+            line_spacing.gap);
+
+        current_y += state.line.height;
+    };
+
+    for (int i = 0; i < fragment_count; ++i)
+        process_flow_fragment(wrapper_ctx, state, &fragments[i], i, on_wrap);
+    // Process the final line.
+    on_wrap(true);
 
     alia_flow_fragment_reader reader
         = {.fragments = fragments, .placements = placements, .index = 0};
@@ -260,18 +411,19 @@ flow_assign_boxes(
     }
 }
 
-int
-flow_count_flow_fragments(
+alia_flow_emission_counts
+flow_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& flow = *reinterpret_cast<flow_layout_node*>(node);
-    int fragment_count = 0;
+    alia_flow_emission_counts totals = {0, 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        fragment_count += alia_count_flow_fragments(ctx, child);
+        totals = alia_flow_emission_counts_add(
+            totals, alia_count_flow_emissions(ctx, child));
     }
-    return fragment_count;
+    return totals;
 }
 
 void
@@ -307,7 +459,7 @@ alia_layout_node_vtable flow_vtable = {
     flow_assign_widths,
     flow_measure_vertical,
     flow_assign_boxes,
-    flow_count_flow_fragments,
+    flow_count_flow_emissions,
     flow_emit_flow_fragments,
     flow_read_fragment_placements,
 };
