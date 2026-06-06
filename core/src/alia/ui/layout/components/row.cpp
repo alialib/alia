@@ -169,7 +169,7 @@ alia_layout_node_vtable row_vtable
        row_assign_widths,
        row_measure_vertical,
        row_assign_boxes,
-       alia_default_count_flow_fragments,
+       alia_default_count_flow_emissions,
        alia_default_emit_flow_fragments,
        alia_default_read_fragment_placements};
 

@@ -74,7 +74,7 @@ alia_layout_node_vtable leaf_vtable
        leaf_assign_widths,
        leaf_measure_vertical,
        leaf_assign_boxes,
-       alia_default_count_flow_fragments,
+       alia_default_count_flow_emissions,
        alia_default_emit_flow_fragments,
        alia_default_read_fragment_placements};
 

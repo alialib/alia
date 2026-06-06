@@ -160,7 +160,7 @@ char const* lorem_ipsum
     = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin sed "
       "dictum massa. Maecenas et euismod lorem, ut dapibus eros. Nam maximus, "
       "purus vitae mollis ornare, tortor justo posuere neque, at lacinia ante "
-      "metus eget diam. Aenean sit amet posuere metus. In hac habitasse "
+      "metus eget diam.\n\nAenean sit amet posuere metus. In hac habitasse "
       "platea dictumst. Nam sed turpis ultricies tellus auctor egestas. Ut "
       "laoreet nisi nisi, id posuere tortor tincidunt a. Pellentesque "
       "placerat vulputate massa at semper. Fusce malesuada porttitor enim "

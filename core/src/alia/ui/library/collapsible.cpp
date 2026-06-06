@@ -127,7 +127,7 @@ alia_layout_node_vtable collapsible_vtable
        collapsible_assign_widths,
        collapsible_measure_vertical,
        collapsible_assign_boxes,
-       alia_default_count_flow_fragments,
+       alia_default_count_flow_emissions,
        alia_default_emit_flow_fragments,
        alia_default_read_fragment_placements};
 
