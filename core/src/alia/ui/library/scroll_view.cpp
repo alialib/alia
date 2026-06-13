@@ -562,10 +562,10 @@ scroll_view_measure_vertical(
 {
     auto& n = *reinterpret_cast<scroll_view_layout_node*>(node);
     auto& d = *n.data;
-    float child_width = assigned_width;
+    float viewport_width = assigned_width;
     if (d.scrollbars_on[1] || (d.reserved_axes & ALIA_SCROLL_AXIS_Y))
-        child_width = (std::max) (0.f, child_width - d.style.width);
-
+        viewport_width = (std::max) (0.f, viewport_width - d.style.width);
+    float const child_width = (std::max) (viewport_width, d.content_size.x);
     alia_vertical_requirements child = {0.f, 0.f, 0.f, 0.f};
     if (n.base.first_child)
         child = alia_measure_vertical(
