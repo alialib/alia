@@ -5,7 +5,7 @@ add_executable(test_core_c
     base/test_color.c
     base/geometry/test_affine2.c
     base/geometry/test_box.c
-    base/geometry/test_insets.c
+    base/geometry/test_edge_offsets.c
     base/geometry/test_vec2.c
     kernel/test_ids.c
     kernel/test_substrate.c

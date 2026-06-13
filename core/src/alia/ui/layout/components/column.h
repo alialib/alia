@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/ui/layout/protocol.h>
-#include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/layout/utilities/emission.h>
 
 namespace alia {
 

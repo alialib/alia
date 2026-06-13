@@ -1,3 +1,5 @@
+#include <alia/abi/ui/layout/utilities/flow.h>
+#include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
@@ -30,11 +32,16 @@ struct flow_line_wrapper_state
 
     float current_x = 0.f;
 
-    // "solid" fragments are content fragments and non-collapsing spacers
-    bool have_solid_fragments = false;
-    int first_solid_fragment_index = 0;
-    int last_solid_fragment_index = 0;
-    float solid_width = 0.f;
+    // "Anchors" are fragments that are not suppressed at the ends of the line.
+    // The portion of the line that is said to be "anchored" is the part that
+    // lies between anchors. (e.g., Words in a paragraph are anchors. The
+    // spaces between words are not anchors, but spaces that happen to land
+    // between words on the same line are still part of the "anchored" part of
+    // the line.)
+    bool have_anchors = false;
+    int first_anchor_index = 0;
+    int last_anchor_index = 0;
+    float anchored_width = 0.f;
 
     alia_line_requirements line = {0};
 };
@@ -42,10 +49,10 @@ struct flow_line_wrapper_state
 static void
 flow_reset_line(flow_line_wrapper_state& state)
 {
-    state.have_solid_fragments = false;
-    state.first_solid_fragment_index = 0;
-    state.last_solid_fragment_index = 0;
-    state.solid_width = 0.f;
+    state.have_anchors = false;
+    state.first_anchor_index = 0;
+    state.last_anchor_index = 0;
+    state.anchored_width = 0.f;
     state.active_run_index = 0;
     state.current_x = 0.f;
     alia_layout_line_reset(&state.line);
@@ -60,76 +67,77 @@ process_flow_fragment(
     int fragment_index,
     OnWrap&& on_wrap)
 {
-    if (fragment->kind == ALIA_FLOW_FRAGMENT_BREAK)
-    {
-        alia_layout_line_finalize_height(&state.line);
-        on_wrap(true);
-        flow_reset_line(state);
-        return;
-    }
-
-    bool is_solid = fragment->kind == ALIA_FLOW_FRAGMENT_CONTENT
-                 || !(fragment->flags & ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE);
-
     float fragment_width = fragment->width;
 
-    if (!state.have_solid_fragments)
+    if (!state.have_anchors)
     {
-        // Reject collapsible spacers at the start of a line.
-        if (!is_solid)
+        if (fragment->flags & ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START)
             return;
-        // Otherwise, this is the first solid fragment on this line.
-        state.have_solid_fragments = true;
-        state.first_solid_fragment_index = fragment_index;
+        // Otherwise, this is the first anchor on this line.
+        state.have_anchors = true;
+        state.first_anchor_index = fragment_index;
     }
 
     // If this fragment is in a different run than the previous fragment, we
-    // need to add the padding to end the previous run and adjust the fragment
-    // width to include the padding that starts its run. Note that all lines
-    // start with an active run index of 0 (which has no padding), so this also
-    // takes care of adding padding at the start of the line where needed.
+    // need to add edge offsets to end the previous run and adjust the fragment
+    // width to include the edge offsets that start its run. Note that all
+    // lines start with an active run index of 0 (which has no edge offsets),
+    // so this also takes care of adding edge offsets at the start of the line
+    // where needed.
     alia_flow_run_index const run_index = fragment->run_index;
     if (run_index != state.active_run_index)
     {
-        state.current_x += ctx.runs[state.active_run_index].padding.right;
-        fragment_width += ctx.runs[run_index].padding.left;
+        state.current_x += alia_flow_run_transition_offset(
+            ctx.runs, state.active_run_index, run_index);
+        state.active_run_index = run_index;
     }
 
     // Check to see if the fragment will cause the line to overflow.
-    float const end_of_run_padding = ctx.runs[run_index].padding.right;
-    // Note that we only allow wrapping to occur if we already have solid
-    // fragments. This prevents large fragments from throwing us into an
-    // infinite wrapping loop. (In theory this shouldn't happen with the
-    // current width calculation logic, so this is mostly a check for the
-    // future and/or a guard against floating point imprecision errors.)
-    if (state.have_solid_fragments
-        && state.current_x + fragment_width + end_of_run_padding
+    float const end_of_run_edge_offsets
+        = alia_flow_run_total_right(ctx.runs, run_index);
+    // Note that we only allow wrapping to occur if we already have anchors.
+    // This prevents large fragments from throwing us into an infinite wrapping
+    // loop. (In theory this shouldn't happen with the current width
+    // calculation logic, so this is mostly a check for the future and/or a
+    // guard against floating point imprecision errors.)
+    if (state.have_anchors
+        && state.current_x + fragment_width + end_of_run_edge_offsets
                > ctx.available_width)
     {
         alia_layout_line_finalize_height(&state.line);
         on_wrap(false);
         flow_reset_line(state);
-        // We're at the start of a new line now, so we need to again filter out
-        // collapsible spacers.
-        if (!is_solid)
+        // We're at the start of a new line now, so we need to again apply the
+        // start-of-line suppression/anchor logic.
+        if (fragment->flags & ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START)
             return;
-        // Otherwise, this is the first solid fragment on this line.
-        state.have_solid_fragments = true;
-        state.first_solid_fragment_index = fragment_index;
-        // Also adjust the fragment width to ensure that it includes the
-        // padding that starts the run/line.
-        fragment_width = fragment_width + ctx.runs[run_index].padding.left;
+        state.have_anchors = true;
+        state.first_anchor_index = fragment_index;
+        // Also apply the start-of-line run transition logic.
+        if (run_index != state.active_run_index)
+        {
+            state.current_x += alia_flow_run_transition_offset(
+                ctx.runs, state.active_run_index, run_index);
+            state.active_run_index = run_index;
+        }
     }
 
     alia_layout_line_fold_in_fragment(&state.line, fragment);
 
     state.current_x += fragment_width;
 
-    // Update the solid fragment tracking.
-    if (is_solid)
+    // Update the anchor tracking.
+    if (!(fragment->flags & ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END))
     {
-        state.last_solid_fragment_index = fragment_index;
-        state.solid_width = state.current_x + end_of_run_padding;
+        state.last_anchor_index = fragment_index;
+        state.anchored_width = state.current_x + end_of_run_edge_offsets;
+    }
+
+    if (fragment->flags & ALIA_FLOW_FRAGMENT_BREAK_AFTER)
+    {
+        alia_layout_line_finalize_height(&state.line);
+        on_wrap(true);
+        flow_reset_line(state);
     }
 }
 
@@ -187,10 +195,10 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     for (int i = 0; i < totals.fragment_count; ++i)
     {
         auto const& fragment = fragments[i];
-        auto const& run = runs[fragment.run_index];
         max_fragment_width = alia_max(
             max_fragment_width,
-            fragment.width + run.padding.left + run.padding.right);
+            fragment.width + alia_flow_run_total_left(runs, fragment.run_index)
+                + alia_flow_run_total_right(runs, fragment.run_index));
     }
     scratch.max_fragment_width = max_fragment_width;
 
@@ -297,15 +305,16 @@ flow_place_line(
         alia_flow_run_index const run_index = fragment.run_index;
         if (run_index != active_run_index)
         {
-            position.x += ctx.runs[active_run_index].padding.right
-                        + ctx.runs[run_index].padding.left;
+            position.x += alia_flow_run_transition_offset(
+                ctx.runs, active_run_index, run_index);
             active_run_index = run_index;
         }
 
-        placements[i] = {.position = position, .baseline = baseline};
+        placements[i]
+            = {.flags = 0, .position = position, .baseline = baseline};
 
         float const spacer_extra
-            = alia_layout_fragment_is_expanding_spacer(&fragment)
+            = (fragment.flags & ALIA_FLOW_FRAGMENT_EXPANDABLE)
                 ? spacer_padding
                 : 0.f;
 
@@ -359,25 +368,36 @@ flow_assign_boxes(
     float const x_assignment_base = box.min.x + placement.min.x;
     float current_y = box.min.y + placement.min.y;
 
+    int first_suppressed_fragment_index = 0;
+
     auto on_wrap = [&](bool is_explicit_break) {
-        // Count the number of expandable spacers on the line.
-        int expandable_spacer_count = 0;
-        for (int i = state.first_solid_fragment_index;
-             i <= state.last_solid_fragment_index;
+        for (int i = first_suppressed_fragment_index;
+             i < state.first_anchor_index;
              ++i)
         {
-            if (alia_layout_fragment_is_expanding_spacer(&fragments[i]))
-                ++expandable_spacer_count;
+            placements[i]
+                = {.flags = ALIA_FLOW_FRAGMENT_PLACEMENT_SUPPRESSED,
+                   .position = {0, 0},
+                   .baseline = 0.f};
         }
 
-        alia_layout_line_spacing line_spacing = alia_layout_justify_line(
+        // Count the number of expandable fragments on the line.
+        int expandable_count = 0;
+        for (int i = state.first_anchor_index; i <= state.last_anchor_index;
+             ++i)
+        {
+            if (fragments[i].flags & ALIA_FLOW_FRAGMENT_EXPANDABLE)
+                ++expandable_count;
+        }
+
+        alia_layout_line_item_spacing line_spacing = alia_layout_justify_line(
             is_explicit_break
                 ? alia_layout_justify_flags_for_incomplete_line(flow.flags)
                 : flow.flags,
-            placement.size.x - state.solid_width,
+            placement.size.x - state.anchored_width,
             // +1 because this parameter represents the number of items, not
-            // the spaces between them.
-            expandable_spacer_count + 1);
+            // the expandable spaces between them.
+            expandable_count + 1);
 
         float const line_baseline = alia_resolve_baseline(
             flow.flags,
@@ -388,11 +408,13 @@ flow_assign_boxes(
         flow_place_line(
             wrapper_ctx,
             placements,
-            state.first_solid_fragment_index,
-            state.last_solid_fragment_index,
+            state.first_anchor_index,
+            state.last_anchor_index,
             {x_assignment_base + line_spacing.leading, current_y},
             line_baseline,
             line_spacing.gap);
+
+        first_suppressed_fragment_index = state.last_anchor_index + 1;
 
         current_y += state.line.height;
     };
@@ -402,8 +424,20 @@ flow_assign_boxes(
     // Process the final line.
     on_wrap(true);
 
+    for (int i = first_suppressed_fragment_index; i < fragment_count; ++i)
+    {
+        placements[i]
+            = {.flags = ALIA_FLOW_FRAGMENT_PLACEMENT_SUPPRESSED,
+               .position = {0, 0},
+               .baseline = 0.f};
+    }
+
     alia_flow_fragment_reader reader
-        = {.fragments = fragments, .placements = placements, .index = 0};
+        = {.fragments = fragments,
+           .placements = placements,
+           .runs = runs,
+           .run_count = scratch.run_count,
+           .index = 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {

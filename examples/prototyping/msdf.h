@@ -105,20 +105,20 @@ text_is_space(char c)
 }
 
 static text_line_metrics
-text_fragment_metrics(
+text_font_line_metrics(
     msdf_text_layout_node const& text, alia_msdf_font_metrics const* metrics)
 {
     return {
-        .height = metrics->line_height * text.font_size + text.spacing * 2,
-        .ascent = metrics->ascender * text.font_size + text.spacing,
-        .descent = -metrics->descender * text.font_size + text.spacing};
+        .height = metrics->line_height * text.font_size,
+        .ascent = metrics->ascender * text.font_size,
+        .descent = -metrics->descender * text.font_size};
 }
 
 static alia_line_requirements
 text_line_requirements(
     msdf_text_layout_node const& text, alia_msdf_font_metrics const* metrics)
 {
-    auto const line = text_fragment_metrics(text, metrics);
+    auto const line = text_font_line_metrics(text, metrics);
     return {
         .height = line.height, .ascent = line.ascent, .descent = line.descent};
 }
@@ -129,7 +129,7 @@ text_emit_line_requirements(
     alia_msdf_font_metrics const* metrics,
     alia_flow_fragment_emitter const* emitter)
 {
-    return alia_layout_line_requirements_with_run_padding(
+    return alia_layout_line_requirements_with_run_offsets(
         emitter, text_line_requirements(text, metrics));
 }
 
@@ -140,11 +140,18 @@ text_for_each_token(char const* text, size_t length, F&& f)
     size_t i = 0;
     while (i < length)
     {
-        if (text[i] == '\n' || text[i] == '\r')
+        if (text[i] == '\r')
         {
             f(text_token_kind::break_token, i, 0);
-            while (i < length && (text[i] == '\n' || text[i] == '\r'))
+            ++i;
+            if (i < length && text[i] == '\n')
                 ++i;
+            continue;
+        }
+        if (text[i] == '\n')
+        {
+            f(text_token_kind::break_token, i, 0);
+            ++i;
             continue;
         }
 
@@ -199,10 +206,11 @@ text_emit_token(
     switch (kind)
     {
         case text_token_kind::content:
-            alia_layout_emit_content_fragment_raw(
+            alia_layout_emit_flow_fragment_raw(
                 emitter,
                 alia_flow_fragment{
-                    .kind = ALIA_FLOW_FRAGMENT_CONTENT,
+                    .flags = 0,
+                    .run_index = emitter->active_run_index,
                     .width = text_measure_substring_width(text, start, length),
                     .height = line.height,
                     .ascent = line.ascent,
@@ -211,13 +219,29 @@ text_emit_token(
         case text_token_kind::spacer: {
             float const spacer_width
                 = text_measure_substring_width(text, start, length);
-            alia_layout_emit_spacer_fragment_raw(
-                emitter, spacer_width, ALIA_FLOW_FRAGMENT_COLLAPSE_EDGE, line);
+            alia_layout_emit_flow_fragment_raw(
+                emitter,
+                alia_flow_fragment{
+                    .flags = ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START
+                           | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END,
+                    .run_index = emitter->active_run_index,
+                    .width = spacer_width,
+                    .height = line.height,
+                    .ascent = line.ascent,
+                    .descent = line.descent});
             break;
         }
         case text_token_kind::break_token:
-            alia_layout_emit_line_strut_fragment_raw(emitter, line);
-            alia_layout_emit_break_fragment_raw(emitter, line);
+            alia_layout_emit_flow_fragment_raw(
+                emitter,
+                alia_flow_fragment{
+                    .flags = ALIA_FLOW_FRAGMENT_BREAK_AFTER
+                           | ALIA_FLOW_FRAGMENT_OMIT_FROM_BOUNDS,
+                    .run_index = emitter->active_run_index,
+                    .width = 0.f,
+                    .height = line.height,
+                    .ascent = line.ascent,
+                    .descent = line.descent});
             break;
     }
 }
@@ -235,15 +259,11 @@ text_write_placement_fragment(
 {
     (void) ctx;
     auto const base = text_line_requirements(text, metrics);
-    float const pad_top = spec->ascent - base.ascent;
-    float const pad_bottom = spec->descent - base.descent;
     fragment->position
-        = {placement->position.x + text.spacing,
+        = {placement->position.x,
            placement->position.y + placement->baseline
-               - metrics->ascender * text.font_size + pad_top};
-    fragment->size
-        = {spec->width - text.spacing * 2,
-           spec->height - text.spacing * 2 - pad_top - pad_bottom};
+               - metrics->ascender * text.font_size};
+    fragment->size = {spec->width, base.height};
     fragment->text = text.text + start;
     fragment->length = length;
     fragment->font_index = text.font_index;
@@ -307,12 +327,7 @@ assign_text_boxes(
 static int
 text_count_fragments(char const* text, size_t length)
 {
-    int count = 0;
-    text_for_each_token(
-        text, length, [&](text_token_kind kind, size_t, size_t) {
-            count += kind == text_token_kind::break_token ? 2 : 1;
-        });
-    return count;
+    return text_count_tokens(text, length);
 }
 
 alia_flow_emission_counts
@@ -323,7 +338,7 @@ text_count_flow_emissions(
     (void) ctx;
     return alia_flow_emission_counts{
         .fragment_count = text_count_fragments(text.text, strlen(text.text)),
-        .run_count = 0};
+        .run_count = 1};
 }
 
 void
@@ -336,6 +351,14 @@ text_emit_flow_fragments(
     (void) ctx;
     auto const* metrics
         = alia_msdf_get_font_metrics(text.engine, text.font_index);
+    alia_flow_run_index const saved_run_index = emitter->active_run_index;
+    alia_flow_run_index const text_run_index = alia_flow_register_child_run(
+        emitter,
+        alia_flow_run_style{
+            .offsets
+            = alia_edge_offsets{.left = text.spacing, .right = text.spacing},
+            .parent = 0});
+    emitter->active_run_index = text_run_index;
     size_t const length = strlen(text.text);
     text_for_each_token(
         text.text,
@@ -343,6 +366,7 @@ text_emit_flow_fragments(
         [&](text_token_kind kind, size_t start, size_t len) {
             text_emit_token(text, metrics, emitter, kind, start, len);
         });
+    emitter->active_run_index = saved_run_index;
 }
 
 static void
@@ -379,26 +403,27 @@ text_read_fragment_placements(
                     auto const* placement
                         = alia_layout_read_fragment_placement(reader);
                     alia_layout_advance_fragment(reader);
-                    text_layout_placement_fragment* fragment
-                        = arena_alloc<text_layout_placement_fragment>(
-                            ctx->arena);
-                    text_write_placement_fragment(
-                        ctx,
-                        text,
-                        metrics,
-                        placement,
-                        spec,
-                        start,
-                        token_length,
-                        fragment);
-                    ++header->fragment_count;
+                    if (!(placement->flags
+                          & ALIA_FLOW_FRAGMENT_PLACEMENT_SUPPRESSED))
+                    {
+                        text_layout_placement_fragment* fragment
+                            = arena_alloc<text_layout_placement_fragment>(
+                                ctx->arena);
+                        text_write_placement_fragment(
+                            ctx,
+                            text,
+                            metrics,
+                            placement,
+                            spec,
+                            start,
+                            token_length,
+                            fragment);
+                        ++header->fragment_count;
+                    }
                     break;
                 }
                 case text_token_kind::spacer:
-                    text_advance_flow_fragment(reader);
-                    break;
                 case text_token_kind::break_token:
-                    text_advance_flow_fragment(reader);
                     text_advance_flow_fragment(reader);
                     break;
             }

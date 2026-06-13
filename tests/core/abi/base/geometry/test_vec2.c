@@ -97,6 +97,24 @@ test_vec2f_arithmetic(void)
 }
 
 static void
+test_vec2f_min_max(void)
+{
+    alia_vec2f a = alia_vec2f_make(10.0f, 20.0f);
+    alia_vec2f b = alia_vec2f_make(-2.0f, 5.0f);
+
+    {
+        alia_vec2f mn = alia_vec2f_min(a, b);
+        TEST_CHECK(mn.x == -2.0f);
+        TEST_CHECK(mn.y == 5.0f);
+    }
+    {
+        alia_vec2f mx = alia_vec2f_max(a, b);
+        TEST_CHECK(mx.x == 10.0f);
+        TEST_CHECK(mx.y == 20.0f);
+    }
+}
+
+static void
 test_vec2i_arithmetic(void)
 {
     alia_vec2i a = alia_vec2i_make(10, 20);
@@ -130,6 +148,7 @@ vec2_tests(void)
     test_constructors_and_equality();
     test_conversions();
     test_vec2f_arithmetic();
+    test_vec2f_min_max();
     test_vec2i_arithmetic();
 }
 

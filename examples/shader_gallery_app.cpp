@@ -538,7 +538,7 @@ do_theme_controls(context& ctx)
 {
     concrete_panel(
         ctx, 0, ctx.palette->foundation.background.stronger_2, FILL, [&]() {
-            inset(
+            edge_offsets(
                 ctx,
                 {.left = 12, .right = 12, .top = 12, .bottom = 12},
                 [&]() {
@@ -682,7 +682,7 @@ shader_gallery_root(context& ctx)
                         column(ctx, GROW, [&]() {
                             alia_ui_scroll_view_begin(
                                 &ctx, ALIA_GROW, 0x2, 0, nullptr);
-                            inset(
+                            edge_offsets(
                                 ctx,
                                 {.left = 20,
                                  .right = 20,

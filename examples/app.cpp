@@ -98,6 +98,7 @@ static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
 
 #include "prototyping/allocation_probe.h"
+#include "prototyping/flow_panel.h"
 #include "prototyping/layout_mods.h"
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
@@ -596,12 +597,12 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_collapsible_demo(ctx);
         do_heading(ctx, "");
-        do_heading(ctx, "BLOCK FLOW");
-        block_flow_demo(ctx);
-        do_heading(ctx, "");
-        do_heading(ctx, "MIXED FLOW");
-        mixed_flow_demo(ctx);
-        do_heading(ctx, "");
+        // do_heading(ctx, "BLOCK FLOW");
+        // block_flow_demo(ctx);
+        // do_heading(ctx, "");
+        // do_heading(ctx, "MIXED FLOW");
+        // mixed_flow_demo(ctx);
+        // do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
             do_text(
@@ -625,6 +626,42 @@ do_content(context& ctx)
                 14.f,
                 lorem_ipsum);
         });
+        do_heading(ctx, "FLOW PANEL");
+        {
+            flow(ctx, FILL, [&]() {
+                do_flow_panel(
+                    ctx,
+                    1,
+                    alia_edge_offsets_make_uniform(20.f),
+                    ctx.palette->foundation.background.weaker_1,
+                    [&]() {
+                        do_text(
+                            ctx,
+                            2,
+                            alia_srgba8_from_srgb8(
+                                ctx.palette->foundation.text.base),
+                            14.f,
+                            lorem_ipsum);
+                        do_flow_panel(
+                            ctx,
+                            1,
+                            alia_edge_offsets_make_uniform(8.f),
+                            ctx.palette->primary.subtle,
+                            [&]() {
+                                do_text(
+                                    ctx,
+                                    2,
+                                    alia_srgba8_from_srgb8(
+                                        ctx.palette->primary.on_subtle),
+                                    14.f,
+                                    "This text sits inside a flow panel. The "
+                                    "inset reports one background box per "
+                                    "wrapped line so the panel follows the "
+                                    "text as it wraps.");
+                            });
+                    });
+            });
+        }
     });
 }
 
@@ -703,7 +740,7 @@ the_demo(context& ctx)
                     ctx.palette->foundation.background.stronger_2,
                     FILL,
                     [&]() {
-                        inset(
+                        edge_offsets(
                             ctx,
                             {.left = 40, .right = 40, .top = 40, .bottom = 40},
                             [&]() {
@@ -724,7 +761,7 @@ the_demo(context& ctx)
                                     column(ctx, GROW, [&]() {
                                         alia_ui_scroll_view_begin(
                                             &ctx, ALIA_GROW, 0x3, 0, nullptr);
-                                        inset(
+                                        edge_offsets(
                                             ctx,
                                             {.left = 40,
                                              .right = 40,

@@ -14,7 +14,7 @@ affine2_tests(void);
 void
 box_tests(void);
 void
-insets_tests(void);
+edge_offsets_tests(void);
 void
 vec2_tests(void);
 
@@ -28,7 +28,7 @@ ids_tests(void);
 TEST_LIST
     = {{"base/geometry/affine2", affine2_tests},
        {"base/geometry/box", box_tests},
-       {"base/geometry/insets", insets_tests},
+       {"base/geometry/edge_offsets", edge_offsets_tests},
        {"base/geometry/vec2", vec2_tests},
        {"base/arena", arena_tests},
        {"base/color", color_tests},

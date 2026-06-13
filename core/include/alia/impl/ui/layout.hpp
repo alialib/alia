@@ -1,7 +1,10 @@
 #pragma once
 
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/layout/utilities/defaults.h>
+#include <alia/abi/ui/layout/utilities/dispatch.h>
+#include <alia/abi/ui/layout/utilities/emission.h>
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/impl/base/arena.hpp>
 
 namespace alia {

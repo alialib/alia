@@ -143,6 +143,18 @@ alia_vec2f_length(alia_vec2f v)
     return sqrtf(alia_vec2f_length_sq(v));
 }
 
+static inline alia_vec2f
+alia_vec2f_min(alia_vec2f a, alia_vec2f b)
+{
+    return alia_vec2f_make(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y);
+}
+
+static inline alia_vec2f
+alia_vec2f_max(alia_vec2f a, alia_vec2f b)
+{
+    return alia_vec2f_make(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
+}
+
 /* BASIC ARITHMETIC - INTEGER */
 
 static inline alia_vec2i
