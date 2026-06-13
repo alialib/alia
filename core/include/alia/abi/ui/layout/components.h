@@ -30,7 +30,8 @@ void
 alia_layout_flow_end(alia_context* ctx);
 
 void
-alia_layout_block_flow_begin(alia_context* ctx, alia_layout_flags_t flags);
+alia_layout_block_flow_begin(
+    alia_context* ctx, alia_layout_flags_t flags, float gap);
 void
 alia_layout_block_flow_end(alia_context* ctx);
 

@@ -605,10 +605,24 @@ do_content(context& ctx)
             alia_do_slider_f(
                 &ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
             column(ctx, alia::gap(y_gap), [&]() {
+                block_flow(ctx, alia::gap(x_gap), [&]() {
+                    for (int i = 0; i < 60; ++i)
+                    {
+                        do_rect(
+                            ctx,
+                            0,
+                            {72, 72},
+                            alia_srgb8{
+                                uint8_t(0xff * float(i) / 10.f),
+                                uint8_t(0xff * 0.1f),
+                                uint8_t(0xff * (1.0f - float(i) / 10.f))},
+                            CENTER);
+                    }
+                });
                 for (int i = 0; i < 10; ++i)
                 {
                     row(ctx, alia::gap(x_gap), [&]() {
-                        for (int i = 0; i < 10; ++i)
+                        for (int j = 0; j < 10; ++j)
                         {
                             do_rect(
                                 ctx,

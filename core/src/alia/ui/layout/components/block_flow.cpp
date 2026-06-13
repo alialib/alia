@@ -1,3 +1,4 @@
+#include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
@@ -116,11 +117,16 @@ block_flow_measure_vertical(
     bool wrapping_has_occurred = false;
     alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
+    float current_gap = 0;
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& cs = child_scratch[child_index];
-        if (current_x_offset + cs.x.min_size > assignment.size)
+        // TODO: This index check is probably overly defensive w.r.t. floating
+        // point errors.
+        if (child_index > line_start_index
+            && current_x_offset + current_gap + cs.x.min_size
+                   > assignment.size)
         {
             int const line_child_count = child_index - line_start_index;
             auto line = block_flow_measure_line_vertical(
@@ -142,11 +148,13 @@ block_flow_measure_vertical(
             line_growth = 0;
             line_start_index = child_index;
             line_start_child = child;
+            current_gap = 0;
         }
 
-        current_x_offset += cs.x.min_size;
+        current_x_offset += current_gap + cs.x.min_size;
         line_growth += cs.x.growth_factor;
         ++child_index;
+        current_gap = block_flow.gap;
     }
 
     {
@@ -252,11 +260,15 @@ block_flow_assign_boxes(
     float wrapping_x_offset = 0;
     alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
+    float current_gap = 0;
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& cs = child_scratch[child_index];
-        if (wrapping_x_offset + cs.x.min_size > box.size.x)
+        // TODO: This index check is probably overly defensive w.r.t. floating
+        // point errors.
+        if (child_index > line_start_index
+            && wrapping_x_offset + current_gap + cs.x.min_size > box.size.x)
         {
             int const line_child_count = child_index - line_start_index;
 
@@ -269,7 +281,7 @@ block_flow_assign_boxes(
                 ctx,
                 block_flow.flags,
                 {assignment_x_base + spacing.before_items, assignment_y},
-                spacing.between_items,
+                spacing.between_items + block_flow.gap,
                 line,
                 line_child_count,
                 line_start_child,
@@ -281,12 +293,13 @@ block_flow_assign_boxes(
             line_start_index = child_index;
             line_start_child = child;
             wrapping_x_offset = 0;
+            current_gap = 0;
         }
 
-        wrapping_x_offset += cs.x.min_size;
-
+        wrapping_x_offset += current_gap + cs.x.min_size;
         alia_layout_line_fold_in_child(&line, &cs.y);
-        assignment_x_offset += cs.assigned_width;
+        assignment_x_offset += current_gap + cs.assigned_width;
+        current_gap = block_flow.gap;
         ++child_index;
     }
 
@@ -303,7 +316,7 @@ block_flow_assign_boxes(
             ctx,
             block_flow.flags,
             {assignment_x_base + spacing.before_items, assignment_y},
-            spacing.between_items,
+            spacing.between_items + block_flow.gap,
             line,
             line_child_count,
             line_start_child,
@@ -325,10 +338,11 @@ alia_layout_node_vtable block_flow_vtable
 extern "C" {
 
 void
-alia_layout_block_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_block_flow_begin(
+    alia_context* ctx, alia_layout_flags_t flags, float gap)
 {
     alia_layout_container_simple_begin(
-        ctx, &alia::block_flow_vtable, flags, 0.f);
+        ctx, &alia::block_flow_vtable, flags, gap);
 }
 
 void
