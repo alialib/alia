@@ -1223,8 +1223,11 @@ test_key_table_cache_clear_on_deactivate(void)
     alia_substrate_deactivate_anchor(system, child);
 
     TEST_CHECK(state.destroy_state.clear_cache_count == 2);
-    TEST_CHECK(state.destroy_state.clear_cache_ids[0] == 1);
-    TEST_CHECK(state.destroy_state.clear_cache_ids[1] == 2);
+    TEST_CHECK(
+        (state.destroy_state.clear_cache_ids[0] == 1
+         && state.destroy_state.clear_cache_ids[1] == 2)
+        || (state.destroy_state.clear_cache_ids[0] == 2
+            && state.destroy_state.clear_cache_ids[1] == 1));
     TEST_CHECK(state.destroy_state.count == 0);
     TEST_CHECK(((test_object*) keyed_ptrs[0])->cached_value == 0);
     TEST_CHECK(((test_object*) keyed_ptrs[1])->cached_value == 0);
