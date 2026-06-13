@@ -13,10 +13,16 @@ namespace alia {
 
 namespace impl {
 
+struct layout_gap
+{
+    float value;
+};
+
 struct layout_config
 {
     layout_flag_set flags = NO_FLAGS;
     alia_box* box = nullptr;
+    layout_gap gap = {0.f};
 
     int
     build_code() const
@@ -31,7 +37,8 @@ struct layout_config
 template<typename T>
 constexpr bool is_valid_layout_arg_v
     = std::is_same_v<std::decay_t<T>, layout_flag_set>
-   || std::is_same_v<std::decay_t<T>, alia_box*>;
+   || std::is_same_v<std::decay_t<T>, alia_box*>
+   || std::is_same_v<std::decay_t<T>, layout_gap>;
 
 // Counts how many times 'T' appears in the 'Args' pack
 template<typename T, typename... Args>
@@ -51,6 +58,10 @@ apply_layout_arg(layout_config& config, T&& arg)
     {
         config.box = arg;
     }
+    else if constexpr (std::is_same_v<ArgType, layout_gap>)
+    {
+        config.gap = arg;
+    }
 }
 
 template<typename... Args>
@@ -66,14 +77,51 @@ concept layout_args_contain_only_valid_types_and_one_content_block
     = ((0 + ... + is_valid_layout_arg_v<Args>) == sizeof...(Args) - 1);
 
 template<typename... Args>
+concept layout_args_must_have_maximum_one_gap
+    = (count_type_v<layout_gap, Args...> <= 1);
+
+template<typename... Args>
 concept ValidLayoutPack
     = sizeof...(Args) > 0
    && layout_args_contain_only_valid_types_and_one_content_block<Args...>&&
           layout_args_must_have_maximum_one_flag_set<Args...>&&
-              layout_args_must_have_maximum_one_box<Args...>;
+              layout_args_must_have_maximum_one_box<Args...>&&
+                  layout_args_must_have_maximum_one_gap<Args...>;
 
 template<class Begin, class End, class... Args>
     requires ValidLayoutPack<Args...>
+void
+gapped_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
+{
+    auto&& content = (std::forward<Args>(args), ...);
+
+    layout_config config;
+    (apply_layout_arg(config, std::forward<Args>(args)), ...);
+
+    std::forward<Begin>(begin)(&ctx, config.build_code(), config.gap.value);
+
+    if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
+    {
+        if (!is_refresh_event(ctx))
+            *config.box = alia_layout_consume_box(&ctx);
+    }
+
+    content();
+
+    std::forward<End>(end)(&ctx);
+}
+
+template<typename... Args>
+concept ValidSimpleLayoutPack
+    = sizeof...(Args) > 0
+   && layout_args_contain_only_valid_types_and_one_content_block<Args...>&&
+          layout_args_must_have_maximum_one_flag_set<Args...>&&
+              layout_args_must_have_maximum_one_box<Args...>&&
+                  layout_args_must_have_maximum_one_gap<Args...>
+   && (count_type_v<layout_gap, Args...> == 0);
+
+template<class Begin, class End, class... Args>
+    requires ValidSimpleLayoutPack<Args...>
 void
 simple_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
 {
@@ -97,12 +145,18 @@ simple_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
 
 } // namespace impl
 
+impl::layout_gap
+gap(float gap)
+{
+    return impl::layout_gap{gap};
+}
+
 template<class... ArgPack>
     requires impl::ValidLayoutPack<ArgPack...>
 void
 row(context& ctx, ArgPack&&... args)
 {
-    impl::simple_layout_container(
+    impl::gapped_layout_container(
         ctx,
         alia_layout_row_begin,
         alia_layout_row_end,
@@ -114,7 +168,7 @@ template<class... ArgPack>
 void
 column(context& ctx, ArgPack&&... args)
 {
-    impl::simple_layout_container(
+    impl::gapped_layout_container(
         ctx,
         alia_layout_column_begin,
         alia_layout_column_end,

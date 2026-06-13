@@ -35,7 +35,8 @@ void
 alia_layout_container_simple_begin(
     alia_context* ctx,
     alia_layout_node_vtable* vtable,
-    alia_layout_flags_t flags)
+    alia_layout_flags_t flags,
+    float gap)
 {
     if (alia::is_refresh_event(*ctx))
     {
@@ -46,7 +47,8 @@ alia_layout_container_simple_begin(
         *container = alia_layout_container{
             .base = {.vtable = vtable, .next_sibling = 0},
             .flags = flags,
-            .first_child = 0};
+            .first_child = 0,
+            .gap = gap};
         alia_layout_container_activate(ctx, container);
     }
 }

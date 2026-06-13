@@ -35,6 +35,7 @@ row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         scratch.total_width += child_x.min_size;
         scratch.total_growth += child_x.growth_factor;
     }
+    scratch.total_width += alia_layout_gap_total(row.gap, scratch.child_count);
     return alia_horizontal_requirements{
         .min_size = scratch.total_width,
         .growth_factor = alia_resolve_growth_factor(row.flags)};
@@ -160,7 +161,7 @@ row_assign_boxes(
             {.min = {current_x, box.min.y + placement.min.y},
              .size = {child_x.min_size + extra_space, box.size.y}},
             baseline);
-        current_x += child_x.min_size + extra_space;
+        current_x += child_x.min_size + extra_space + row.gap;
     }
 }
 
@@ -178,9 +179,9 @@ alia_layout_node_vtable row_vtable
 extern "C" {
 
 void
-alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags, float gap)
 {
-    alia_layout_container_simple_begin(ctx, &alia::row_vtable, flags);
+    alia_layout_container_simple_begin(ctx, &alia::row_vtable, flags, gap);
 }
 
 void

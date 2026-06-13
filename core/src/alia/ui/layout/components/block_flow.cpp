@@ -268,8 +268,8 @@ block_flow_assign_boxes(
             block_flow_assign_line_boxes(
                 ctx,
                 block_flow.flags,
-                {assignment_x_base + spacing.leading, assignment_y},
-                spacing.gap,
+                {assignment_x_base + spacing.before_items, assignment_y},
+                spacing.between_items,
                 line,
                 line_child_count,
                 line_start_child,
@@ -294,7 +294,7 @@ block_flow_assign_boxes(
     {
         int const line_child_count
             = static_cast<int>(scratch.child_count) - line_start_index;
-        auto spacing = alia_layout_justify_line(
+        auto const spacing = alia_layout_justify_line(
             block_flow.flags,
             placement.size.x - assignment_x_offset,
             line_child_count);
@@ -302,8 +302,8 @@ block_flow_assign_boxes(
         block_flow_assign_line_boxes(
             ctx,
             block_flow.flags,
-            {assignment_x_base + spacing.leading, assignment_y},
-            spacing.gap,
+            {assignment_x_base + spacing.before_items, assignment_y},
+            spacing.between_items,
             line,
             line_child_count,
             line_start_child,
@@ -327,7 +327,8 @@ extern "C" {
 void
 alia_layout_block_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
 {
-    alia_layout_container_simple_begin(ctx, &alia::block_flow_vtable, flags);
+    alia_layout_container_simple_begin(
+        ctx, &alia::block_flow_vtable, flags, 0.f);
 }
 
 void

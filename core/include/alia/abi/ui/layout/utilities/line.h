@@ -45,13 +45,13 @@ alia_layout_line_finalize_height(alia_line_requirements* line)
     line->height = alia_layout_line_final_height(line);
 }
 
-typedef struct alia_layout_line_item_spacing
+typedef struct alia_layout_line_justification_spacing
 {
-    float leading;
-    float gap;
-} alia_layout_line_item_spacing;
+    float before_items;
+    float between_items;
+} alia_layout_line_justification_spacing;
 
-alia_layout_line_item_spacing
+alia_layout_line_justification_spacing
 alia_layout_justify_line(
     alia_layout_flags_t flags, float extra_space, int item_count);
 

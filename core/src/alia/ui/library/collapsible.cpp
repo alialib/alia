@@ -209,7 +209,7 @@ alia_ui_collapsible_begin(
             .data = data};
         scope.node = node;
         alia_layout_container_activate(ctx, &node->base);
-        alia_layout_column_begin(ctx, column_flags);
+        alia_layout_column_begin(ctx, column_flags, 0.f);
         return expansion != 0.f;
     }
 
@@ -237,7 +237,7 @@ alia_ui_collapsible_begin(
     stack_push<bool>(ctx) = apply_geometry;
 
     // TODO: Layout could be entirely conditional based on the expansion value.
-    alia_layout_column_begin(ctx, column_flags);
+    alia_layout_column_begin(ctx, column_flags, 0.f);
 
     return expansion != 0.f;
 }

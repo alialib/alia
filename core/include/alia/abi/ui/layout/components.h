@@ -14,12 +14,13 @@ ALIA_EXTERN_C_BEGIN
 // simple
 
 void
-alia_layout_column_begin(alia_context* ctx, alia_layout_flags_t flags);
+alia_layout_column_begin(
+    alia_context* ctx, alia_layout_flags_t flags, float gap);
 void
 alia_layout_column_end(alia_context* ctx);
 
 void
-alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags);
+alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags, float gap);
 void
 alia_layout_row_end(alia_context* ctx);
 

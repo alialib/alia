@@ -32,7 +32,15 @@ struct alia_layout_container
     alia_layout_node base;
     alia_layout_flags_t flags;
     alia_layout_node* first_child;
+    // fixed spacing between adjacent children along the container main axis
+    float gap;
 };
+
+static inline float
+alia_layout_gap_total(float gap, uint32_t child_count)
+{
+    return child_count > 1 ? gap * static_cast<float>(child_count - 1) : 0.f;
+}
 
 void
 alia_layout_container_activate(
@@ -46,7 +54,8 @@ void
 alia_layout_container_simple_begin(
     alia_context* ctx,
     alia_layout_node_vtable* vtable,
-    alia_layout_flags_t flags);
+    alia_layout_flags_t flags,
+    float gap);
 
 void
 alia_layout_container_simple_end(alia_context* ctx);

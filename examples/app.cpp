@@ -597,6 +597,34 @@ do_content(context& ctx)
         do_heading(ctx, "");
         do_collapsible_demo(ctx);
         do_heading(ctx, "");
+        do_heading(ctx, "GAPS");
+        {
+            static float x_gap = 5.f, y_gap = 5.f;
+            alia_do_slider_f(
+                &ctx, &x_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            alia_do_slider_f(
+                &ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            column(ctx, alia::gap(y_gap), [&]() {
+                for (int i = 0; i < 10; ++i)
+                {
+                    row(ctx, alia::gap(x_gap), [&]() {
+                        for (int i = 0; i < 10; ++i)
+                        {
+                            do_rect(
+                                ctx,
+                                0,
+                                {72, 72},
+                                alia_srgb8{
+                                    uint8_t(0xff * float(i) / 10.f),
+                                    uint8_t(0xff * 0.1f),
+                                    uint8_t(0xff * (1.0f - float(i) / 10.f))},
+                                CENTER);
+                        }
+                    });
+                }
+            });
+        }
+        do_heading(ctx, "");
         // do_heading(ctx, "BLOCK FLOW");
         // block_flow_demo(ctx);
         // do_heading(ctx, "");

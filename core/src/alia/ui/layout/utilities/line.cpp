@@ -2,7 +2,7 @@
 
 extern "C" {
 
-alia_layout_line_item_spacing
+alia_layout_line_justification_spacing
 alia_layout_justify_line(
     alia_layout_flags_t flags, float extra_space, int item_count)
 {

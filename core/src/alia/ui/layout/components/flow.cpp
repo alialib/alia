@@ -390,14 +390,15 @@ flow_assign_boxes(
                 ++expandable_count;
         }
 
-        alia_layout_line_item_spacing line_spacing = alia_layout_justify_line(
-            is_explicit_break
-                ? alia_layout_justify_flags_for_incomplete_line(flow.flags)
-                : flow.flags,
-            placement.size.x - state.anchored_width,
-            // +1 because this parameter represents the number of items, not
-            // the expandable spaces between them.
-            expandable_count + 1);
+        alia_layout_line_justification_spacing line_spacing
+            = alia_layout_justify_line(
+                is_explicit_break
+                    ? alia_layout_justify_flags_for_incomplete_line(flow.flags)
+                    : flow.flags,
+                placement.size.x - state.anchored_width,
+                // +1 because this parameter represents the number of items,
+                // not the expandable spaces between them.
+                expandable_count + 1);
 
         float const line_baseline = alia_resolve_baseline(
             flow.flags,
@@ -410,9 +411,9 @@ flow_assign_boxes(
             placements,
             state.first_anchor_index,
             state.last_anchor_index,
-            {x_assignment_base + line_spacing.leading, current_y},
+            {x_assignment_base + line_spacing.before_items, current_y},
             line_baseline,
-            line_spacing.gap);
+            line_spacing.between_items);
 
         first_suppressed_fragment_index = state.last_anchor_index + 1;
 
@@ -505,7 +506,7 @@ extern "C" {
 void
 alia_layout_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
 {
-    alia_layout_container_simple_begin(ctx, &alia::flow_vtable, flags);
+    alia_layout_container_simple_begin(ctx, &alia::flow_vtable, flags, 0.f);
 }
 
 void

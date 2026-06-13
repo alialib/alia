@@ -91,6 +91,8 @@ column_measure_vertical(
         scratch.total_height += child_y.min_size;
         scratch.total_growth += child_y.growth_factor;
     }
+    scratch.total_height
+        += alia_layout_gap_total(column.gap, scratch.child_count);
     scratch.baseline = (scratch.child_count > 0) ? y_requirements->ascent : 0;
     return alia_vertical_requirements{
         .min_size = scratch.total_height,
@@ -147,7 +149,7 @@ column_assign_boxes(
                 assigned_height,
                 child_y.ascent,
                 child_y.descent));
-        current_y += assigned_height;
+        current_y += assigned_height + column.gap;
     }
 }
 
@@ -165,9 +167,10 @@ alia_layout_node_vtable column_vtable
 extern "C" {
 
 void
-alia_layout_column_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_column_begin(
+    alia_context* ctx, alia_layout_flags_t flags, float gap)
 {
-    alia_layout_container_simple_begin(ctx, &alia::column_vtable, flags);
+    alia_layout_container_simple_begin(ctx, &alia::column_vtable, flags, gap);
 }
 
 void

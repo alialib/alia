@@ -65,12 +65,6 @@ typedef struct alia_line_requirements
     float descent;
 } alia_line_requirements;
 
-typedef struct alia_vertical_assignment
-{
-    float line_height;
-    float baseline_offset;
-} alia_vertical_assignment;
-
 typedef struct alia_flow_emission_counts
 {
     int fragment_count;
