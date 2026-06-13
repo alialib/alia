@@ -3,7 +3,7 @@
 
 #include <alia/abi/base/geometry/affine2.h>
 #include <alia/abi/base/geometry/box.h>
-#include <alia/abi/base/geometry/insets.h>
+#include <alia/abi/base/geometry/edge_offsets.h>
 #include <alia/abi/base/geometry/types.h>
 #include <alia/abi/base/geometry/vec2.h>
 

@@ -25,10 +25,14 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/alignment_override.cpp
     src/alia/ui/layout/components/growth_override.cpp
     src/alia/ui/layout/components/min_size.cpp
-    src/alia/ui/layout/components/inset.cpp
+    src/alia/ui/layout/components/edge_offsets.cpp
     src/alia/ui/layout/components/leaf.cpp
+    src/alia/ui/layout/components/placement.cpp
     src/alia/ui/layout/system.cpp
-    src/alia/ui/layout/utilities.cpp
+    src/alia/ui/layout/utilities/defaults.cpp
+    src/alia/ui/layout/utilities/emission.cpp
+    src/alia/ui/layout/utilities/line.cpp
+    src/alia/ui/layout/utilities/placement.cpp
     src/alia/ui/library/radio.cpp
     src/alia/ui/library/checkbox.cpp
     src/alia/ui/library/slider.cpp

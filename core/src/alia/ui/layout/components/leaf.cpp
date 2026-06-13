@@ -1,4 +1,5 @@
 #include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/style.h>
 
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
@@ -97,12 +98,6 @@ alia_layout_leaf_emit(
         .flags = flags,
         .spacing = ctx->style->spacing,
         .size = size};
-}
-
-alia_box
-alia_layout_consume_box(alia_context* ctx)
-{
-    return *arena_alloc<alia_box>(*alia_layout_placement_arena(ctx));
 }
 
 } // extern "C"

@@ -197,11 +197,24 @@ alignment_override(context& ctx, layout_flag_set flags, Content&& content)
 
 template<class Content>
 void
-inset(context& ctx, alia_insets insets, Content&& content)
+edge_offsets(context& ctx, alia_edge_offsets offsets, Content&& content)
 {
-    alia_layout_inset_begin(&ctx, insets, 0);
+    alia_layout_edge_offsets_begin(&ctx, offsets, 0);
     std::forward<Content>(content)();
-    alia_layout_inset_end(&ctx);
+    alia_layout_edge_offsets_end(&ctx);
+}
+
+template<class Content>
+void
+edge_offsets(
+    context& ctx,
+    alia_edge_offsets offsets,
+    layout_flag_set flags,
+    Content&& content)
+{
+    alia_layout_edge_offsets_begin(&ctx, offsets, raw_code(flags));
+    std::forward<Content>(content)();
+    alia_layout_edge_offsets_end(&ctx);
 }
 
 template<class Content>

@@ -67,7 +67,7 @@ text_demo(context& ctx)
 {
     static bool invert = false;
 
-    inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
+    edge_offsets(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
         column(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
@@ -97,7 +97,7 @@ simple_text_demo(context& ctx)
 {
     static bool invert = false;
 
-    inset(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
+    edge_offsets(ctx, {.left = 10, .right = 10, .top = 10, .bottom = 10}, [&]() {
         column(ctx, [&]() {
             for (int i = 0; i < 12; ++i)
             {
@@ -117,7 +117,7 @@ nested_flow_demo(context& ctx)
 {
     static bool invert = false;
 
-    inset(ctx, {.left = 100, .right = 100, .top = 100, .bottom = 100}, [&]() {
+    edge_offsets(ctx, {.left = 100, .right = 100, .top = 100, .bottom = 100}, [&]() {
         flow(ctx, [&]() {
             for (int i = 0; i < 10; ++i)
             {
@@ -186,6 +186,8 @@ mixed_flow_demo(alia_context& ctx)
                     12 + i * 4,
                     lorem_ipsum,
                     BASELINE_Y);
+
+                // spacer(ctx, 0.f);
             }
         });
     });
@@ -239,7 +241,7 @@ layout_demo_flow(context& ctx)
         for (int i = 0; i < 600; ++i)
         {
             float intensity = ((i / 4) % 3) * 0.01f;
-            inset(
+            edge_offsets(
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
                 [&]() {
@@ -303,7 +305,7 @@ alignment_override_demo(context& ctx)
     float x = 0.0f;
     row(ctx, [&]() {
         concrete_panel(ctx, 0, rgba{0.03f, 0.03f, 0.04f, 1}, CENTER, [&]() {
-            inset(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
+            edge_offsets(ctx, {.left = 4, .right = 4, .top = 4, .bottom = 4}, [&]() {
                 if (do_rect(
                         ctx,
                         1,
@@ -318,7 +320,7 @@ alignment_override_demo(context& ctx)
         for (int i = 0; i < 12; ++i)
         {
             float f = fmod(x, 1.0f);
-            inset(
+            edge_offsets(
                 ctx,
                 {.left = 10, .right = 10, .top = 10, .bottom = 10},
                 [&]() {
@@ -414,10 +416,10 @@ void
 layout_demo(context& ctx)
 {
     with_spacing(ctx, 10, [&] {
-        inset(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
+        edge_offsets(ctx, {.left = 40, .right = 40, .top = 40, .bottom = 40}, [&]() {
             row(ctx, [&]() {
                 float x = 0.0f;
-                inset(
+                edge_offsets(
                     ctx,
                     {.left = 0, .right = 12, .top = 0, .bottom = 0},
                     [&]() {
@@ -604,7 +606,7 @@ the_demo(context& ctx)
                     }
                 });
                 column(ctx, GROW, [&]() {
-                    inset(
+                    edge_offsets(
                         ctx,
                         {.left = 40, .right = 40, .top = 40, .bottom = 40},
                         [&]() {

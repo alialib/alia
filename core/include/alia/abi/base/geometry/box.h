@@ -1,6 +1,7 @@
 #ifndef ALIA_ABI_BASE_GEOMETRY_BOX_H
 #define ALIA_ABI_BASE_GEOMETRY_BOX_H
 
+#include <alia/abi/base/geometry/edge_offsets.h>
 #include <alia/abi/base/geometry/types.h>
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/prelude.h>
@@ -22,39 +23,19 @@ alia_box_equal(alia_box a, alia_box b)
 ALIA_DEFINE_EQUALITY_OPERATOR(alia_box)
 
 static inline alia_box
-alia_box_expand(alia_box box, alia_vec2f v)
+alia_box_expand(alia_box box, alia_edge_offsets offsets)
 {
-    return alia_box_make(
-        alia_vec2f_sub(box.min, v),
-        alia_vec2f_add(box.size, alia_vec2f_scale(v, 2.0f)));
-}
-
-static inline alia_box
-alia_box_shrink(alia_box box, alia_vec2f v)
-{
-    return alia_box_make(
-        alia_vec2f_add(box.min, v),
-        alia_vec2f_sub(box.size, alia_vec2f_scale(v, 2.0f)));
-}
-
-static inline alia_box
-alia_box_outset(alia_box box, alia_insets i)
-{
-    alia_vec2f lt = alia_vec2f_make(i.left, i.top);
-    alia_vec2f rb = alia_vec2f_make(i.right, i.bottom);
+    alia_vec2f lt = alia_vec2f_make(offsets.left, offsets.top);
+    alia_vec2f rb = alia_vec2f_make(offsets.right, offsets.bottom);
     return alia_box_make(
         alia_vec2f_sub(box.min, lt),
         alia_vec2f_add(box.size, alia_vec2f_add(lt, rb)));
 }
 
 static inline alia_box
-alia_box_inset(alia_box box, alia_insets i)
+alia_box_shrink(alia_box box, alia_edge_offsets offsets)
 {
-    alia_vec2f lt = alia_vec2f_make(i.left, i.top);
-    alia_vec2f rb = alia_vec2f_make(i.right, i.bottom);
-    return alia_box_make(
-        alia_vec2f_add(box.min, lt),
-        alia_vec2f_sub(box.size, alia_vec2f_add(lt, rb)));
+    return alia_box_expand(box, alia_edge_offsets_invert(offsets));
 }
 
 static inline bool
@@ -68,6 +49,16 @@ static inline alia_box
 alia_box_translate(alia_box box, alia_vec2f v)
 {
     return alia_box_make(alia_vec2f_add(box.min, v), box.size);
+}
+
+static inline alia_box
+alia_box_union(alia_box a, alia_box b)
+{
+    alia_vec2f const a_max = alia_vec2f_add(a.min, a.size);
+    alia_vec2f const b_max = alia_vec2f_add(b.min, b.size);
+    alia_vec2f const min = alia_vec2f_min(a.min, b.min);
+    alia_vec2f const max = alia_vec2f_max(a_max, b_max);
+    return alia_box_make(min, alia_vec2f_sub(max, min));
 }
 
 ALIA_EXTERN_C_END

@@ -23,13 +23,13 @@ typedef struct alia_box
     alia_vec2f size;
 } alia_box;
 
-typedef struct alia_insets
+typedef struct alia_edge_offsets
 {
     float left;
     float right;
     float top;
     float bottom;
-} alia_insets;
+} alia_edge_offsets;
 
 typedef struct alia_affine2
 {

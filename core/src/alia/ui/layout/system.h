@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/base/arena.h>
 
 extern "C" {

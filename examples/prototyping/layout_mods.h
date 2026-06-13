@@ -170,7 +170,7 @@ apply_mod(Context& ctx, min_size_t m, Content&& content)
 
 struct margins_t
 {
-    alia_insets insets;
+    alia_edge_offsets offsets;
 };
 template<>
 struct is_layout_modifier<margins_t> : std::true_type
@@ -181,7 +181,7 @@ template<class Context, class Content>
 void
 apply_mod(Context& ctx, margins_t m, Content&& content)
 {
-    inset(ctx, m.insets, std::forward<Content>(content));
+    edge_offsets(ctx, m.offsets, std::forward<Content>(content));
 }
 
 constexpr align_right_t align_right;
@@ -204,7 +204,7 @@ min_size(alia_vec2f size)
     return {size};
 }
 constexpr margins_t
-margins(alia_insets insets)
+margins(alia_edge_offsets offsets)
 {
-    return {insets};
+    return {offsets};
 }
