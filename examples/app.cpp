@@ -613,13 +613,19 @@ do_content(context& ctx)
                             0,
                             {72, 72},
                             alia_srgb8{
-                                uint8_t(0xff * float(i) / 10.f),
+                                uint8_t(0xff * float(i) / 60.f),
                                 uint8_t(0xff * 0.1f),
-                                uint8_t(0xff * (1.0f - float(i) / 10.f))},
+                                uint8_t(0xff * (1.0f - float(i) / 60.f))},
                             CENTER);
                     }
                 });
-                for (int i = 0; i < 10; ++i)
+                do_rect(
+                    ctx,
+                    0,
+                    {72, 72},
+                    alia_srgb8{uint8_t(0xff), uint8_t(0xff), uint8_t(0xff)},
+                    CENTER);
+                for (int i = 0; i < 1; ++i)
                 {
                     row(ctx, alia::gap(x_gap), [&]() {
                         for (int j = 0; j < 10; ++j)
@@ -670,39 +676,59 @@ do_content(context& ctx)
         });
         do_heading(ctx, "FLOW PANEL");
         {
-            flow(ctx, FILL, [&]() {
-                do_flow_panel(
-                    ctx,
-                    1,
-                    alia_edge_offsets_make_uniform(20.f),
-                    ctx.palette->foundation.background.weaker_1,
-                    [&]() {
-                        do_text(
-                            ctx,
-                            2,
-                            alia_srgba8_from_srgb8(
-                                ctx.palette->foundation.text.base),
-                            14.f,
-                            lorem_ipsum);
-                        do_flow_panel(
-                            ctx,
-                            1,
-                            alia_edge_offsets_make_uniform(8.f),
-                            ctx.palette->primary.subtle,
-                            [&]() {
-                                do_text(
-                                    ctx,
-                                    2,
-                                    alia_srgba8_from_srgb8(
-                                        ctx.palette->primary.on_subtle),
-                                    14.f,
-                                    "This text sits inside a flow panel. The "
-                                    "inset reports one background box per "
-                                    "wrapped line so the panel follows the "
-                                    "text as it wraps.");
-                            });
-                    });
-            });
+            static float gap = 5.f, line_gap = 5.f, minimum_line_height = 5.f;
+            alia_do_slider_f(&ctx, &gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            alia_do_slider_f(
+                &ctx, &line_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            alia_do_slider_f(
+                &ctx,
+                &minimum_line_height,
+                0.f,
+                200.f,
+                0.1f,
+                0,
+                false,
+                nullptr);
+            flow(
+                ctx,
+                alia::gap(gap),
+                alia::line_gap(line_gap),
+                alia::minimum_line_height(minimum_line_height),
+                [&]() {
+                    do_flow_panel(
+                        ctx,
+                        1,
+                        alia_edge_offsets_make_uniform(20.f),
+                        ctx.palette->foundation.background.weaker_1,
+                        [&]() {
+                            do_text(
+                                ctx,
+                                2,
+                                alia_srgba8_from_srgb8(
+                                    ctx.palette->foundation.text.base),
+                                14.f,
+                                lorem_ipsum);
+                            do_flow_panel(
+                                ctx,
+                                1,
+                                alia_edge_offsets_make_uniform(8.f),
+                                ctx.palette->primary.subtle,
+                                [&]() {
+                                    do_text(
+                                        ctx,
+                                        2,
+                                        alia_srgba8_from_srgb8(
+                                            ctx.palette->primary.on_subtle),
+                                        14.f,
+                                        "This text sits inside a flow panel. "
+                                        "The "
+                                        "inset reports one background box per "
+                                        "wrapped line so the panel follows "
+                                        "the "
+                                        "text as it wraps.");
+                                });
+                        });
+                });
         }
     });
 }
