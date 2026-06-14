@@ -1,13 +1,37 @@
+#include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/style.h>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 
 using namespace alia::operators;
 
 namespace alia {
 
-using flow_layout_node = alia_layout_container;
+struct flow_layout_node
+{
+    alia_layout_node base;
+    alia_layout_flags_t flags;
+    alia_layout_node* first_child;
+    float gap;
+    float line_gap;
+    float minimum_line_height;
+};
+
+// TODO: This is sketchy.
+static alia_layout_container*
+flow_as_container(flow_layout_node* node)
+{
+    return reinterpret_cast<alia_layout_container*>(node);
+}
+
+static flow_layout_node const*
+flow_from_node(alia_layout_node* node)
+{
+    return reinterpret_cast<flow_layout_node*>(node);
+}
 
 struct flow_scratch
 {
@@ -24,7 +48,16 @@ struct flow_line_wrapper_context
     alia_flow_fragment const* fragments;
     int fragment_count;
     float available_width;
+    float minimum_line_height;
 };
+
+static void
+flow_finalize_line(
+    flow_line_wrapper_context const& ctx, alia_line_requirements* line)
+{
+    alia_layout_line_finalize_height_with_minimum(
+        line, ctx.minimum_line_height);
+}
 
 struct flow_line_wrapper_state
 {
@@ -104,7 +137,7 @@ process_flow_fragment(
         && state.current_x + fragment_width + end_of_run_edge_offsets
                > ctx.available_width)
     {
-        alia_layout_line_finalize_height(&state.line);
+        flow_finalize_line(ctx, &state.line);
         on_wrap(false);
         flow_reset_line(state);
         // We're at the start of a new line now, so we need to again apply the
@@ -135,7 +168,7 @@ process_flow_fragment(
 
     if (fragment->flags & ALIA_FLOW_FRAGMENT_BREAK_AFTER)
     {
-        alia_layout_line_finalize_height(&state.line);
+        flow_finalize_line(ctx, &state.line);
         on_wrap(true);
         flow_reset_line(state);
     }
@@ -144,7 +177,7 @@ process_flow_fragment(
 alia_horizontal_requirements
 flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     auto& scratch = claim_scratch<flow_scratch>(ctx->scratch);
 
     // Count the total number of fragments and runs that will be emitted. Note
@@ -227,7 +260,7 @@ flow_measure_vertical(
     alia_layout_node* node,
     float assigned_width)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
@@ -252,14 +285,20 @@ flow_measure_vertical(
         = {.runs = runs,
            .fragments = fragments,
            .fragment_count = fragment_count,
-           .available_width = assignment.size};
+           .available_width = assignment.size,
+           .minimum_line_height = flow.minimum_line_height};
 
     flow_line_wrapper_state state = {};
 
     bool wrapping_has_occurred = false;
     float overall_height = 0.f, overall_ascent = 0.f;
+    float current_line_gap = 0;
 
     auto on_wrap = [&](bool is_explicit_break) {
+        (void) is_explicit_break;
+        flow_finalize_line(wrapper_ctx, &state.line);
+        overall_height += current_line_gap;
+        current_line_gap = flow.line_gap;
         if (!wrapping_has_occurred)
         {
             overall_ascent = state.line.ascent;
@@ -330,7 +369,7 @@ flow_assign_boxes(
     alia_box box,
     float baseline)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     auto& scratch = use_scratch<flow_scratch>(ctx->scratch);
 
     alia_flow_fragment* fragments = arena_alloc_array<alia_flow_fragment>(
@@ -361,16 +400,22 @@ flow_assign_boxes(
         = {.runs = runs,
            .fragments = fragments,
            .fragment_count = fragment_count,
-           .available_width = placement.size.x};
+           .available_width = placement.size.x,
+           .minimum_line_height = flow.minimum_line_height};
 
     flow_line_wrapper_state state = {};
 
     float const x_assignment_base = box.min.x + placement.min.x;
     float current_y = box.min.y + placement.min.y;
+    float current_line_gap = 0;
 
     int first_suppressed_fragment_index = 0;
 
     auto on_wrap = [&](bool is_explicit_break) {
+        flow_finalize_line(wrapper_ctx, &state.line);
+        current_y += current_line_gap;
+        current_line_gap = flow.line_gap;
+
         for (int i = first_suppressed_fragment_index;
              i < state.first_anchor_index;
              ++i)
@@ -450,7 +495,7 @@ alia_flow_emission_counts
 flow_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     alia_flow_emission_counts totals = {0, 0};
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
@@ -467,7 +512,7 @@ flow_emit_flow_fragments(
     alia_layout_node* node,
     alia_flow_fragment_emitter* emitter)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -481,7 +526,7 @@ flow_read_fragment_placements(
     alia_layout_node* node,
     alia_flow_fragment_reader* reader)
 {
-    auto& flow = *reinterpret_cast<flow_layout_node*>(node);
+    auto& flow = *flow_from_node(node);
     for (alia_layout_node* child = flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -503,16 +548,45 @@ alia_layout_node_vtable flow_vtable = {
 
 extern "C" {
 
-void
-alia_layout_flow_begin(alia_context* ctx, alia_layout_flags_t flags)
+struct alia_layout_flow_scope
 {
-    alia_layout_container_simple_begin(ctx, &alia::flow_vtable, flags, 0.f);
+    alia::flow_layout_node* node;
+};
+
+void
+alia_layout_flow_begin(
+    alia_context* ctx,
+    alia_layout_flags_t flags,
+    float gap,
+    float line_gap,
+    float minimum_line_height)
+{
+    if (alia::is_refresh_event(*ctx))
+    {
+        auto& scope = alia::stack_push<alia_layout_flow_scope>(ctx);
+        auto& emission = ctx->layout->emission;
+        auto* node = alia::arena_alloc<alia::flow_layout_node>(emission.arena);
+        scope.node = node;
+        *node = alia::flow_layout_node{
+            .base = {.vtable = &alia::flow_vtable, .next_sibling = 0},
+            .flags = flags,
+            .first_child = 0,
+            .gap = gap,
+            .line_gap = line_gap,
+            .minimum_line_height = minimum_line_height};
+        alia_layout_container_activate(ctx, alia::flow_as_container(node));
+    }
 }
 
 void
 alia_layout_flow_end(alia_context* ctx)
 {
-    alia_layout_container_simple_end(ctx);
+    if (alia::is_refresh_event(*ctx))
+    {
+        auto& scope = alia::stack_pop<alia_layout_flow_scope>(ctx);
+        alia_layout_container_deactivate(
+            ctx, alia::flow_as_container(scope.node));
+    }
 }
 
 } // extern "C"

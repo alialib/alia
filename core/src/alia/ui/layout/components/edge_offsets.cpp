@@ -156,9 +156,11 @@ make_fragment_box(
     alia_flow_fragment const* fragment,
     alia_flow_fragment_placement const* placement)
 {
+    alia_vec2f const min = {
+        placement->position.x,
+        placement->position.y + placement->baseline - fragment->ascent};
     return alia_box_make(
-        placement->position,
-        alia_vec2f_make(fragment->width, fragment->height));
+        min, alia_vec2f_make(fragment->width, fragment->height));
 }
 
 static void

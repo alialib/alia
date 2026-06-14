@@ -18,11 +18,23 @@ struct layout_gap
     float value;
 };
 
+struct layout_line_gap
+{
+    float value;
+};
+
+struct layout_minimum_line_height
+{
+    float value;
+};
+
 struct layout_config
 {
     layout_flag_set flags = NO_FLAGS;
     alia_box* box = nullptr;
     layout_gap gap = {0.f};
+    layout_line_gap line_gap = {0.f};
+    layout_minimum_line_height minimum_line_height = {0.f};
 
     int
     build_code() const
@@ -39,6 +51,12 @@ constexpr bool is_valid_layout_arg_v
     = std::is_same_v<std::decay_t<T>, layout_flag_set>
    || std::is_same_v<std::decay_t<T>, alia_box*>
    || std::is_same_v<std::decay_t<T>, layout_gap>;
+
+template<typename T>
+constexpr bool is_valid_flow_layout_arg_v
+    = is_valid_layout_arg_v<T>
+   || std::is_same_v<std::decay_t<T>, layout_line_gap>
+   || std::is_same_v<std::decay_t<T>, layout_minimum_line_height>;
 
 // Counts how many times 'T' appears in the 'Args' pack
 template<typename T, typename... Args>
@@ -64,6 +82,33 @@ apply_layout_arg(layout_config& config, T&& arg)
     }
 }
 
+template<typename T>
+constexpr void
+apply_flow_layout_arg(layout_config& config, T&& arg)
+{
+    using ArgType = std::decay_t<T>;
+    if constexpr (std::is_same_v<ArgType, layout_flag_set>)
+    {
+        config.flags = arg;
+    }
+    else if constexpr (std::is_same_v<ArgType, alia_box*>)
+    {
+        config.box = arg;
+    }
+    else if constexpr (std::is_same_v<ArgType, layout_gap>)
+    {
+        config.gap = arg;
+    }
+    else if constexpr (std::is_same_v<ArgType, layout_line_gap>)
+    {
+        config.line_gap = arg;
+    }
+    else if constexpr (std::is_same_v<ArgType, layout_minimum_line_height>)
+    {
+        config.minimum_line_height = arg;
+    }
+}
+
 template<typename... Args>
 concept layout_args_must_have_maximum_one_flag_set
     = (count_type_v<layout_flag_set, Args...> <= 1);
@@ -79,6 +124,14 @@ concept layout_args_contain_only_valid_types_and_one_content_block
 template<typename... Args>
 concept layout_args_must_have_maximum_one_gap
     = (count_type_v<layout_gap, Args...> <= 1);
+
+template<typename... Args>
+concept layout_args_must_have_maximum_one_line_gap
+    = (count_type_v<layout_line_gap, Args...> <= 1);
+
+template<typename... Args>
+concept layout_args_must_have_maximum_one_minimum_line_height
+    = (count_type_v<layout_minimum_line_height, Args...> <= 1);
 
 template<typename... Args>
 concept ValidLayoutPack
@@ -99,6 +152,45 @@ gapped_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
     (apply_layout_arg(config, std::forward<Args>(args)), ...);
 
     std::forward<Begin>(begin)(&ctx, config.build_code(), config.gap.value);
+
+    if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
+    {
+        if (!is_refresh_event(ctx))
+            *config.box = alia_layout_consume_box(&ctx);
+    }
+
+    content();
+
+    std::forward<End>(end)(&ctx);
+}
+
+template<typename... Args>
+concept ValidFlowLayoutPack
+    = sizeof...(Args) > 0
+   && ((0 + ... + is_valid_flow_layout_arg_v<Args>) == sizeof...(Args) - 1)
+   && layout_args_must_have_maximum_one_flag_set<Args...>&&
+          layout_args_must_have_maximum_one_box<Args...>&&
+              layout_args_must_have_maximum_one_gap<Args...>&&
+                  layout_args_must_have_maximum_one_line_gap<Args...>&&
+                      layout_args_must_have_maximum_one_minimum_line_height<
+                          Args...>;
+
+template<class Begin, class End, class... Args>
+    requires ValidFlowLayoutPack<Args...>
+void
+flow_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
+{
+    auto&& content = (std::forward<Args>(args), ...);
+
+    layout_config config;
+    (apply_flow_layout_arg(config, std::forward<Args>(args)), ...);
+
+    std::forward<Begin>(begin)(
+        &ctx,
+        config.build_code(),
+        config.gap.value,
+        config.line_gap.value,
+        config.minimum_line_height.value);
 
     if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
     {
@@ -151,6 +243,18 @@ gap(float gap)
     return impl::layout_gap{gap};
 }
 
+impl::layout_line_gap
+line_gap(float line_gap)
+{
+    return impl::layout_line_gap{line_gap};
+}
+
+impl::layout_minimum_line_height
+minimum_line_height(float minimum_line_height)
+{
+    return impl::layout_minimum_line_height{minimum_line_height};
+}
+
 template<class... ArgPack>
     requires impl::ValidLayoutPack<ArgPack...>
 void
@@ -176,10 +280,11 @@ column(context& ctx, ArgPack&&... args)
 }
 
 template<class... ArgPack>
+    requires impl::ValidFlowLayoutPack<ArgPack...>
 void
 flow(context& ctx, ArgPack&&... args)
 {
-    impl::simple_layout_container(
+    impl::flow_layout_container(
         ctx,
         alia_layout_flow_begin,
         alia_layout_flow_end,

@@ -45,6 +45,14 @@ alia_layout_line_finalize_height(alia_line_requirements* line)
     line->height = alia_layout_line_final_height(line);
 }
 
+static inline void
+alia_layout_line_finalize_height_with_minimum(
+    alia_line_requirements* line, float minimum_line_height)
+{
+    alia_layout_line_finalize_height(line);
+    line->height = alia_max(line->height, minimum_line_height);
+}
+
 typedef struct alia_layout_line_justification_spacing
 {
     float before_items;
