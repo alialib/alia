@@ -695,39 +695,46 @@ do_content(context& ctx)
                 alia::line_gap(line_gap),
                 alia::minimum_line_height(minimum_line_height),
                 [&]() {
+                    // do_flow_panel(
+                    //     ctx,
+                    //     1,
+                    //     alia_edge_offsets_make_uniform(20.f),
+                    //     ctx.palette->foundation.background.weaker_1,
+                    //     [&]() {
+                    do_text(
+                        ctx,
+                        2,
+                        alia_srgba8_from_srgb8(
+                            ctx.palette->foundation.text.base),
+                        14.f,
+                        lorem_ipsum);
+                    do_text(
+                        ctx,
+                        2,
+                        alia_srgba8_from_srgb8(
+                            ctx.palette->foundation.text.base),
+                        14.f,
+                        lorem_ipsum);
                     do_flow_panel(
                         ctx,
                         1,
-                        alia_edge_offsets_make_uniform(20.f),
-                        ctx.palette->foundation.background.weaker_1,
+                        alia_edge_offsets_make_uniform(8.f),
+                        ctx.palette->primary.subtle,
                         [&]() {
                             do_text(
                                 ctx,
                                 2,
                                 alia_srgba8_from_srgb8(
-                                    ctx.palette->foundation.text.base),
+                                    ctx.palette->primary.on_subtle),
                                 14.f,
-                                lorem_ipsum);
-                            do_flow_panel(
-                                ctx,
-                                1,
-                                alia_edge_offsets_make_uniform(8.f),
-                                ctx.palette->primary.subtle,
-                                [&]() {
-                                    do_text(
-                                        ctx,
-                                        2,
-                                        alia_srgba8_from_srgb8(
-                                            ctx.palette->primary.on_subtle),
-                                        14.f,
-                                        "This text sits inside a flow panel. "
-                                        "The "
-                                        "inset reports one background box per "
-                                        "wrapped line so the panel follows "
-                                        "the "
-                                        "text as it wraps.");
-                                });
+                                "This text sits inside a flow panel. "
+                                "The "
+                                "inset reports one background box per "
+                                "wrapped line so the panel follows "
+                                "the "
+                                "text as it wraps.");
                         });
+                    //});
                 });
         }
     });

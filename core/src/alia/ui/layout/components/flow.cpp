@@ -48,6 +48,7 @@ struct flow_line_wrapper_context
     alia_flow_fragment const* fragments;
     int fragment_count;
     float available_width;
+    float gap;
     float minimum_line_height;
 };
 
@@ -91,6 +92,22 @@ flow_reset_line(flow_line_wrapper_state& state)
     alia_layout_line_reset(&state.line);
 }
 
+static void
+flow_emit_child_fragments(
+    alia_measurement_context* ctx,
+    alia_layout_node* child,
+    alia_flow_fragment_emitter* emitter,
+    bool gap_before)
+{
+    int const start = emitter->fragment_count;
+    alia_emit_flow_fragments(ctx, child, emitter);
+    if (gap_before && start < emitter->fragment_count)
+    {
+        emitter->fragments[start].flags
+            |= ALIA_FLOW_FRAGMENT_GAP_BEFORE;
+    }
+}
+
 template<class OnWrap>
 void
 process_flow_fragment(
@@ -111,21 +128,24 @@ process_flow_fragment(
         state.first_anchor_index = fragment_index;
     }
 
-    // If this fragment is in a different run than the previous fragment, we
-    // need to add edge offsets to end the previous run and adjust the fragment
-    // width to include the edge offsets that start its run. Note that all
-    // lines start with an active run index of 0 (which has no edge offsets),
-    // so this also takes care of adding edge offsets at the start of the line
-    // where needed.
     alia_flow_run_index const run_index = fragment->run_index;
-    if (run_index != state.active_run_index)
-    {
-        state.current_x += alia_flow_run_transition_offset(
-            ctx.runs, state.active_run_index, run_index);
-        state.active_run_index = run_index;
-    }
 
-    // Check to see if the fragment will cause the line to overflow.
+    auto compute_fragment_x = [&]() {
+        if (run_index != state.active_run_index)
+        {
+            state.current_x += alia_flow_run_transition_offset(
+                ctx.runs, state.active_run_index, run_index);
+            state.active_run_index = run_index;
+        }
+        float const gap_before
+            = (fragment->flags & ALIA_FLOW_FRAGMENT_GAP_BEFORE)
+           && state.first_anchor_index != fragment_index
+                ? ctx.gap
+                : 0.f;
+        return state.current_x + gap_before;
+    };
+
+    float x_at_fragment = compute_fragment_x();
     float const end_of_run_edge_offsets
         = alia_flow_run_total_right(ctx.runs, run_index);
     // Note that we only allow wrapping to occur if we already have anchors.
@@ -134,7 +154,7 @@ process_flow_fragment(
     // calculation logic, so this is mostly a check for the future and/or a
     // guard against floating point imprecision errors.)
     if (state.have_anchors
-        && state.current_x + fragment_width + end_of_run_edge_offsets
+        && x_at_fragment + fragment_width + end_of_run_edge_offsets
                > ctx.available_width)
     {
         flow_finalize_line(ctx, &state.line);
@@ -146,18 +166,12 @@ process_flow_fragment(
             return;
         state.have_anchors = true;
         state.first_anchor_index = fragment_index;
-        // Also apply the start-of-line run transition logic.
-        if (run_index != state.active_run_index)
-        {
-            state.current_x += alia_flow_run_transition_offset(
-                ctx.runs, state.active_run_index, run_index);
-            state.active_run_index = run_index;
-        }
+        x_at_fragment = compute_fragment_x();
     }
 
     alia_layout_line_fold_in_fragment(&state.line, fragment);
 
-    state.current_x += fragment_width;
+    state.current_x = x_at_fragment + fragment_width;
 
     // Update the anchor tracking.
     if (!(fragment->flags & ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END))
@@ -212,10 +226,11 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
            .run_capacity = scratch.run_count,
            .run_count = 1,
            .active_run_index = 0};
+    bool first_child = true;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
-         child = child->next_sibling)
+         child = child->next_sibling, first_child = false)
     {
-        alia_emit_flow_fragments(ctx, child, &emitter);
+        flow_emit_child_fragments(ctx, child, &emitter, !first_child);
     }
 
     // Mark the end of the scratch space for this overall node.
@@ -286,6 +301,7 @@ flow_measure_vertical(
            .fragments = fragments,
            .fragment_count = fragment_count,
            .available_width = assignment.size,
+           .gap = flow.gap,
            .minimum_line_height = flow.minimum_line_height};
 
     flow_line_wrapper_state state = {};
@@ -349,13 +365,19 @@ flow_place_line(
             active_run_index = run_index;
         }
 
-        placements[i]
-            = {.flags = 0, .position = position, .baseline = baseline};
-
         float const spacer_extra
             = (fragment.flags & ALIA_FLOW_FRAGMENT_EXPANDABLE)
                 ? spacer_padding
                 : 0.f;
+
+        if ((fragment.flags & ALIA_FLOW_FRAGMENT_GAP_BEFORE)
+            && i != first_fragment_index)
+        {
+            position.x += ctx.gap;
+        }
+
+        placements[i]
+            = {.flags = 0, .position = position, .baseline = baseline};
 
         position.x += fragment.width + spacer_extra;
     }
@@ -401,6 +423,7 @@ flow_assign_boxes(
            .fragments = fragments,
            .fragment_count = fragment_count,
            .available_width = placement.size.x,
+           .gap = flow.gap,
            .minimum_line_height = flow.minimum_line_height};
 
     flow_line_wrapper_state state = {};
@@ -513,10 +536,11 @@ flow_emit_flow_fragments(
     alia_flow_fragment_emitter* emitter)
 {
     auto& flow = *flow_from_node(node);
+    bool first_child = true;
     for (alia_layout_node* child = flow.first_child; child != nullptr;
-         child = child->next_sibling)
+         child = child->next_sibling, first_child = false)
     {
-        alia_emit_flow_fragments(ctx, child, emitter);
+        flow_emit_child_fragments(ctx, child, emitter, !first_child);
     }
 }
 

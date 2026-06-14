@@ -89,7 +89,8 @@ typedef uint16_t alia_flow_fragment_flags;
     X((1u << 1), EXPANDABLE)                                                  \
     X((1u << 2), SUPPRESS_AT_LINE_START)                                      \
     X((1u << 3), SUPPRESS_AT_LINE_END)                                        \
-    X((1u << 4), BREAK_AFTER)
+    X((1u << 4), BREAK_AFTER)                                                 \
+    X((1u << 5), GAP_BEFORE)
 
 // clang-format off
 enum
