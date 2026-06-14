@@ -657,11 +657,6 @@ scroll_view_assign_boxes(
     placement->scrollbar_area[1]
         = {.min = {viewport.min.x + viewport.size.x, viewport.min.y},
            .size = {d.style.width, viewport.size.y}};
-    if (horizontal_on && vertical_on)
-    {
-        placement->scrollbar_area[0].size.x += d.style.width;
-        placement->scrollbar_area[1].size.y += d.style.width;
-    }
 
     if (n.base.first_child)
     {
