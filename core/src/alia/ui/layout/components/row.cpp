@@ -1,3 +1,4 @@
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
@@ -110,11 +111,14 @@ row_measure_vertical(
     }
     scratch.height = height;
     scratch.ascent = ascent;
-    return alia_vertical_requirements{
-        .min_size = (std::max) (height, ascent + descent),
-        .growth_factor = alia_resolve_growth_factor(row.flags),
-        .ascent = ascent,
-        .descent = descent};
+    return alia_mask_reported_vertical_requirements(
+        row.flags,
+        main_axis,
+        alia_vertical_requirements{
+            .min_size = (std::max) (height, ascent + descent),
+            .growth_factor = alia_resolve_growth_factor(row.flags),
+            .ascent = ascent,
+            .descent = descent});
 }
 
 void

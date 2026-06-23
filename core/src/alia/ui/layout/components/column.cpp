@@ -1,5 +1,6 @@
 #include <alia/ui/layout/components/column.h>
 
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
@@ -94,11 +95,14 @@ column_measure_vertical(
     scratch.total_height
         += alia_layout_gap_total(column.gap, scratch.child_count);
     scratch.baseline = (scratch.child_count > 0) ? y_requirements->ascent : 0;
-    return alia_vertical_requirements{
-        .min_size = scratch.total_height,
-        .growth_factor = alia_resolve_growth_factor(column.flags),
-        .ascent = scratch.baseline,
-        .descent = scratch.total_height - scratch.baseline};
+    return alia_mask_reported_vertical_requirements(
+        column.flags,
+        main_axis,
+        alia_vertical_requirements{
+            .min_size = scratch.total_height,
+            .growth_factor = alia_resolve_growth_factor(column.flags),
+            .ascent = scratch.baseline,
+            .descent = scratch.total_height - scratch.baseline});
 }
 
 void

@@ -1,6 +1,7 @@
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/line.h>
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/abi/ui/style.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
@@ -495,15 +496,14 @@ flow_measure_vertical(
     scratch.overall_height = overall_height;
     scratch.overall_ascent = overall_ascent;
 
-    return alia_vertical_requirements{
-        .min_size = overall_height,
-        .growth_factor = alia_resolve_growth_factor(flow.flags),
-        .ascent = (flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
-                    ? overall_ascent
-                    : 0.0f,
-        .descent = (flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
-                     ? overall_height - overall_ascent
-                     : 0.0f};
+    return alia_mask_reported_vertical_requirements(
+        flow.flags,
+        main_axis,
+        alia_vertical_requirements{
+            .min_size = overall_height,
+            .growth_factor = alia_resolve_growth_factor(flow.flags),
+            .ascent = overall_ascent,
+            .descent = overall_height - overall_ascent});
 }
 
 static void

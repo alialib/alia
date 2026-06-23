@@ -1,4 +1,5 @@
 #include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/context.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
@@ -228,11 +229,15 @@ grid_row_measure_vertical(
     scratch.height = height;
     scratch.ascent = ascent;
     alia_arena_jump(&ctx->scratch, marker);
-    return alia_vertical_requirements{
-        .min_size = (std::max) (height, ascent + descent),
-        .growth_factor = alia_resolve_growth_factor(grid_row.container.flags),
-        .ascent = ascent,
-        .descent = descent};
+    return alia_mask_reported_vertical_requirements(
+        grid_row.container.flags,
+        main_axis,
+        alia_vertical_requirements{
+            .min_size = (std::max) (height, ascent + descent),
+            .growth_factor
+            = alia_resolve_growth_factor(grid_row.container.flags),
+            .ascent = ascent,
+            .descent = descent});
 }
 
 void

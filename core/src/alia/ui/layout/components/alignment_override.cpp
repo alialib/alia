@@ -1,4 +1,5 @@
 #include <alia/abi/ui/layout/flags.h>
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.h>
 #include <alia/impl/base/stack.hpp>
@@ -64,7 +65,8 @@ alignment_override_measure_vertical(
         scratch.horizontal.min_size);
     scratch.vertical = alia_measure_vertical(
         ctx, main_axis, override.container.first_child, assignment.size);
-    return scratch.vertical;
+    return alia_mask_reported_vertical_requirements(
+        override.flags, main_axis, scratch.vertical);
 }
 
 void

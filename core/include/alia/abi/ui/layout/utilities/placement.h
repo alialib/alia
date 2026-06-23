@@ -89,6 +89,34 @@ alia_fold_in_cross_axis_flags(
     return flags | ((flags & ALIA_CROSS_ALIGNMENT_MASK) >> main_axis);
 }
 
+// Returns true when a node participates in baseline alignment with its parent
+// along the axis measured by measure_vertical.
+static inline bool
+alia_participates_in_parent_baseline_alignment(
+    alia_layout_flags_t flags, alia_main_axis_index main_axis)
+{
+    return (alia_fold_in_cross_axis_flags(flags, main_axis)
+            & ALIA_Y_ALIGNMENT_MASK)
+        == ALIA_BASELINE_Y;
+}
+
+// `ascent` and `descent` should be 0 for children that don't participate in
+// baseline alignment. This function is used to mask those values (when
+// appropriate) when reporting vertical requirements to a parent.
+static inline alia_vertical_requirements
+alia_mask_reported_vertical_requirements(
+    alia_layout_flags_t flags,
+    alia_main_axis_index main_axis,
+    alia_vertical_requirements requirements)
+{
+    if (!alia_participates_in_parent_baseline_alignment(flags, main_axis))
+    {
+        requirements.ascent = 0.f;
+        requirements.descent = 0.f;
+    }
+    return requirements;
+}
+
 ALIA_EXTERN_C_END
 
 #endif // ALIA_ABI_UI_LAYOUT_UTILITIES_PLACEMENT_H
