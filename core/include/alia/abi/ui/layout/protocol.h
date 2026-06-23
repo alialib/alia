@@ -68,29 +68,49 @@ typedef struct alia_line_requirements
 typedef struct alia_flow_emission_counts
 {
     int fragment_count;
-    int run_count;
 } alia_flow_emission_counts;
-
-typedef uint16_t alia_flow_run_index;
-
-typedef struct alia_flow_run_style
-{
-    alia_edge_offsets offsets;
-    // parent run in the nesting hierarchy - Run 0 is the implicit root.
-    alia_flow_run_index parent;
-} alia_flow_run_style;
 
 typedef uint16_t alia_flow_fragment_flags;
 
-// fragment flags
+typedef uint8_t alia_flow_fragment_kind;
+
+// Resolution within a flow layout container uses a different protocol
+// involving a single stream of fragments. (Nested flows inject their fragments
+// into the same stream. Non-flow containers are emitted as single fragments.)
+
+// flow fragment kinds:
+// `X(value, name)`
+#define ALIA_FLOW_FRAGMENT_KINDS(X)                                           \
+    /* CONTENT: a measurable/placable item (text token, leaf box, etc.) */    \
+    X(0, CONTENT)                                                             \
+    /* GAP: horizontal space between flow children */                         \
+    X(1, GAP)                                                                 \
+    /* CONTEXT_PUSH / CONTEXT_POP: push/pop - Nested flows emit these to */   \
+    /* mark their scope within the stack of `line_gap` and */                 \
+    /* `minimum_line_height` properties. */                                   \
+    X(2, CONTEXT_PUSH)                                                        \
+    X(3, CONTEXT_POP)                                                         \
+    /* RUN_PUSH / RUN_POP: run scoping (to track edge offsets) */             \
+    X(4, RUN_PUSH)                                                            \
+    X(5, RUN_POP)
+
+// clang-format off
+enum
+{
+    #define X(value, name) ALIA_FLOW_FRAGMENT_KIND_##name = value,
+    ALIA_FLOW_FRAGMENT_KINDS(X)
+    #undef X
+};
+// clang-format on
+
+// content fragment flags
 // `X(value, name)`
 #define ALIA_FLOW_FRAGMENT_FLAGS(X)                                           \
     X((1u << 0), OMIT_FROM_BOUNDS)                                            \
     X((1u << 1), EXPANDABLE)                                                  \
     X((1u << 2), SUPPRESS_AT_LINE_START)                                      \
     X((1u << 3), SUPPRESS_AT_LINE_END)                                        \
-    X((1u << 4), BREAK_AFTER)                                                 \
-    X((1u << 5), GAP_BEFORE)
+    X((1u << 4), BREAK_AFTER)
 
 // clang-format off
 enum
@@ -105,29 +125,70 @@ enum
 };
 // clang-format on
 
-typedef struct alia_flow_fragment
+// Non-content "control" fragments carry these flags in addition to their kind.
+// Layout treats them as non-anchors and omits them from bounds scans.
+#define ALIA_FLOW_FRAGMENT_CONTROL_BASE_FLAGS                                 \
+    (ALIA_FLOW_FRAGMENT_OMIT_FROM_BOUNDS                                      \
+     | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START                              \
+     | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END)
+
+typedef struct alia_flow_fragment_content_payload
 {
-    alia_flow_fragment_flags flags;
-    // index into the flow run table (0 is a reserved default run)
-    alia_flow_run_index run_index;
     float width;
     float height;
     float ascent;
     float descent;
+} alia_flow_fragment_content_payload;
+
+typedef struct alia_flow_fragment_gap_payload
+{
+    float gap;
+} alia_flow_fragment_gap_payload;
+
+typedef struct alia_flow_fragment_context_payload
+{
+    float line_gap;
+    float minimum_line_height;
+} alia_flow_fragment_context_payload;
+
+typedef struct alia_flow_fragment_run_payload
+{
+    alia_edge_offsets offsets;
+} alia_flow_fragment_run_payload;
+
+typedef struct alia_flow_fragment
+{
+    alia_flow_fragment_flags flags;
+    alia_flow_fragment_kind kind;
+    union
+    {
+        alia_flow_fragment_content_payload content;
+        alia_flow_fragment_gap_payload gap;
+        alia_flow_fragment_context_payload context;
+        alia_flow_fragment_run_payload run;
+    };
 } alia_flow_fragment;
+
+#define ALIA_FLOW_EMITTER_RUN_STACK_CAPACITY 16
+
+typedef struct alia_flow_emitter_run_frame
+{
+    alia_edge_offsets offsets;
+    float cumulative_top;
+    float cumulative_bottom;
+} alia_flow_emitter_run_frame;
 
 typedef struct alia_flow_fragment_emitter
 {
     alia_flow_fragment* fragments;
     // number of fragments emitted so far
     int fragment_count;
-    alia_flow_run_style* runs;
-    // TODO: This is only used for bounds checking. It could be conditionally
-    // included for debug builds. We should also track the fragment capacity.
-    int run_capacity;
-    // number of runs registered so far
-    int run_count;
-    uint16_t active_run_index;
+    alia_flow_emitter_run_frame
+        run_stack[ALIA_FLOW_EMITTER_RUN_STACK_CAPACITY];
+    int run_stack_depth;
+    // child gap from the enclosing flow; used when emitting siblings inside
+    // pass-through wrappers such as edge_offsets.
+    float child_gap;
 } alia_flow_fragment_emitter;
 
 typedef uint32_t alia_flow_fragment_placement_flags;
@@ -153,9 +214,7 @@ typedef struct alia_flow_fragment_reader
 {
     alia_flow_fragment const* fragments;
     alia_flow_fragment_placement const* placements;
-    alia_flow_run_style const* runs;
-    // TODO: This only needs to be here for bounds checking.
-    int run_count;
+    int fragment_count;
     int index;
 } alia_flow_fragment_reader;
 

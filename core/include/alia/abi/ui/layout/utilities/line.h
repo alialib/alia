@@ -28,9 +28,9 @@ static inline void
 alia_layout_line_fold_in_fragment(
     alia_line_requirements* line, alia_flow_fragment const* fragment)
 {
-    line->height = alia_max(line->height, fragment->height);
-    line->ascent = alia_max(line->ascent, fragment->ascent);
-    line->descent = alia_max(line->descent, fragment->descent);
+    line->height = alia_max(line->height, fragment->content.height);
+    line->ascent = alia_max(line->ascent, fragment->content.ascent);
+    line->descent = alia_max(line->descent, fragment->content.descent);
 }
 
 static inline float

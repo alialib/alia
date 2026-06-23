@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/abi/ui/layout/utilities/flow.h>
+
 struct text_layout_placement_header
 {
     int fragment_count;
@@ -210,11 +212,13 @@ text_emit_token(
                 emitter,
                 alia_flow_fragment{
                     .flags = 0,
-                    .run_index = emitter->active_run_index,
-                    .width = text_measure_substring_width(text, start, length),
-                    .height = line.height,
-                    .ascent = line.ascent,
-                    .descent = line.descent});
+                    .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
+                    .content
+                    = {.width
+                       = text_measure_substring_width(text, start, length),
+                       .height = line.height,
+                       .ascent = line.ascent,
+                       .descent = line.descent}});
             break;
         case text_token_kind::spacer: {
             float const spacer_width
@@ -224,11 +228,12 @@ text_emit_token(
                 alia_flow_fragment{
                     .flags = ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START
                            | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END,
-                    .run_index = emitter->active_run_index,
-                    .width = spacer_width,
-                    .height = line.height,
-                    .ascent = line.ascent,
-                    .descent = line.descent});
+                    .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
+                    .content
+                    = {.width = spacer_width,
+                       .height = line.height,
+                       .ascent = line.ascent,
+                       .descent = line.descent}});
             break;
         }
         case text_token_kind::break_token:
@@ -237,11 +242,12 @@ text_emit_token(
                 alia_flow_fragment{
                     .flags = ALIA_FLOW_FRAGMENT_BREAK_AFTER
                            | ALIA_FLOW_FRAGMENT_OMIT_FROM_BOUNDS,
-                    .run_index = emitter->active_run_index,
-                    .width = 0.f,
-                    .height = line.height,
-                    .ascent = line.ascent,
-                    .descent = line.descent});
+                    .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
+                    .content
+                    = {.width = 0.f,
+                       .height = line.height,
+                       .ascent = line.ascent,
+                       .descent = line.descent}});
             break;
     }
 }
@@ -263,7 +269,7 @@ text_write_placement_fragment(
         = {placement->position.x,
            placement->position.y + placement->baseline
                - metrics->ascender * text.font_size};
-    fragment->size = {spec->width, base.height};
+    fragment->size = {alia_flow_fragment_content(spec)->width, base.height};
     fragment->text = text.text + start;
     fragment->length = length;
     fragment->font_index = text.font_index;
@@ -336,9 +342,8 @@ text_count_flow_emissions(
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     (void) ctx;
-    return alia_flow_emission_counts{
-        .fragment_count = text_count_fragments(text.text, strlen(text.text)),
-        .run_count = 1};
+    return alia_flow_emission_counts_with_run_scope({
+        .fragment_count = text_count_fragments(text.text, strlen(text.text))});
 }
 
 void
@@ -351,14 +356,9 @@ text_emit_flow_fragments(
     (void) ctx;
     auto const* metrics
         = alia_msdf_get_font_metrics(text.engine, text.font_index);
-    alia_flow_run_index const saved_run_index = emitter->active_run_index;
-    alia_flow_run_index const text_run_index = alia_flow_register_child_run(
+    alia_flow_emit_run_push_control(
         emitter,
-        alia_flow_run_style{
-            .offsets
-            = alia_edge_offsets{.left = text.spacing, .right = text.spacing},
-            .parent = 0});
-    emitter->active_run_index = text_run_index;
+        alia_edge_offsets{.left = text.spacing, .right = text.spacing});
     size_t const length = strlen(text.text);
     text_for_each_token(
         text.text,
@@ -366,7 +366,7 @@ text_emit_flow_fragments(
         [&](text_token_kind kind, size_t start, size_t len) {
             text_emit_token(text, metrics, emitter, kind, start, len);
         });
-    emitter->active_run_index = saved_run_index;
+    alia_flow_emit_run_pop_control(emitter);
 }
 
 static void
@@ -386,6 +386,8 @@ text_read_fragment_placements(
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     auto const* metrics
         = alia_msdf_get_font_metrics(text.engine, text.font_index);
+
+    alia_layout_skip_flow_run_push_fragment(reader);
 
     text_layout_placement_header* header
         = arena_alloc<text_layout_placement_header>(ctx->arena);
@@ -428,6 +430,8 @@ text_read_fragment_placements(
                     break;
             }
         });
+
+    alia_layout_skip_flow_run_pop_fragment(reader);
 }
 
 alia_layout_node_vtable text_layout_vtable

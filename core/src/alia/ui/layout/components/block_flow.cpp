@@ -1,13 +1,29 @@
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/style.h>
+#include <alia/impl/base/stack.hpp>
+#include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 
 using namespace alia::operators;
 
 namespace alia {
 
-using block_flow_layout_node = alia_layout_container;
+struct block_flow_layout_node
+{
+    alia_layout_node base;
+    alia_layout_flags_t flags;
+    alia_layout_node* first_child;
+    float gap;
+    float line_gap;
+    float minimum_line_height;
+};
+
+static alia_layout_container*
+block_flow_as_container(block_flow_layout_node* node)
+{
+    return reinterpret_cast<alia_layout_container*>(node);
+}
 
 struct block_flow_child_scratch
 {
@@ -62,7 +78,10 @@ block_flow_assign_widths(
     alia_layout_node* node,
     float assigned_width)
 {
-    // TODO
+    (void) ctx;
+    (void) main_axis;
+    (void) node;
+    (void) assigned_width;
 }
 
 static alia_line_requirements
@@ -72,7 +91,8 @@ block_flow_measure_line_vertical(
     alia_layout_node* line_start_child,
     block_flow_child_scratch* child_scratch,
     float extra_space,
-    float line_growth)
+    float line_growth,
+    float minimum_line_height)
 {
     alia_line_requirements line = {0};
     alia_layout_node* child = line_start_child;
@@ -90,7 +110,7 @@ block_flow_measure_line_vertical(
         alia_layout_line_fold_in_child(&line, &child_y);
         child = child->next_sibling;
     }
-    alia_layout_line_finalize_height(&line);
+    alia_layout_line_finalize_height_with_minimum(&line, minimum_line_height);
     return line;
 }
 
@@ -118,12 +138,11 @@ block_flow_measure_vertical(
     alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
     float current_gap = 0;
+    float current_line_gap = 0;
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const& cs = child_scratch[child_index];
-        // TODO: This index check is probably overly defensive w.r.t. floating
-        // point errors.
         if (child_index > line_start_index
             && current_x_offset + current_gap + cs.x.min_size
                    > assignment.size)
@@ -135,8 +154,11 @@ block_flow_measure_vertical(
                 line_start_child,
                 child_scratch + line_start_index,
                 assignment.size - current_x_offset,
-                line_growth);
+                line_growth,
+                block_flow.minimum_line_height);
 
+            overall_height += current_line_gap;
+            current_line_gap = block_flow.line_gap;
             if (!wrapping_has_occurred)
             {
                 overall_ascent = line.ascent;
@@ -165,8 +187,10 @@ block_flow_measure_vertical(
             line_start_child,
             child_scratch + line_start_index,
             assignment.size - current_x_offset,
-            line_growth);
+            line_growth,
+            block_flow.minimum_line_height);
 
+        overall_height += current_line_gap;
         if (!wrapping_has_occurred)
         {
             overall_ascent = line.ascent;
@@ -181,7 +205,6 @@ block_flow_measure_vertical(
     return alia_vertical_requirements{
         .min_size = overall_height,
         .growth_factor = alia_resolve_growth_factor(block_flow.flags),
-        // TODO: Why not always report ascent/descent?
         .ascent = (block_flow.flags & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y
                     ? overall_ascent
                     : 0.0f,
@@ -261,6 +284,7 @@ block_flow_assign_boxes(
     alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
     float current_gap = 0;
+    float current_line_gap = 0;
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -277,6 +301,9 @@ block_flow_assign_boxes(
                 placement.size.x - assignment_x_offset,
                 line_child_count);
 
+            alia_layout_line_finalize_height_with_minimum(
+                &line, block_flow.minimum_line_height);
+
             block_flow_assign_line_boxes(
                 ctx,
                 block_flow.flags,
@@ -288,12 +315,13 @@ block_flow_assign_boxes(
                 child_scratch + line_start_index);
 
             assignment_x_offset = 0;
-            assignment_y += line.height;
+            assignment_y += current_line_gap + line.height;
             alia_layout_line_reset(&line);
             line_start_index = child_index;
             line_start_child = child;
             wrapping_x_offset = 0;
             current_gap = 0;
+            current_line_gap = block_flow.line_gap;
         }
 
         wrapping_x_offset += current_gap + cs.x.min_size;
@@ -311,6 +339,9 @@ block_flow_assign_boxes(
             block_flow.flags,
             placement.size.x - assignment_x_offset,
             line_child_count);
+
+        alia_layout_line_finalize_height_with_minimum(
+            &line, block_flow.minimum_line_height);
 
         block_flow_assign_line_boxes(
             ctx,
@@ -337,18 +368,47 @@ alia_layout_node_vtable block_flow_vtable
 
 extern "C" {
 
+struct alia_layout_block_flow_scope
+{
+    alia::block_flow_layout_node* node;
+};
+
 void
 alia_layout_block_flow_begin(
-    alia_context* ctx, alia_layout_flags_t flags, float gap)
+    alia_context* ctx,
+    alia_layout_flags_t flags,
+    float gap,
+    float line_gap,
+    float minimum_line_height)
 {
-    alia_layout_container_simple_begin(
-        ctx, &alia::block_flow_vtable, flags, gap);
+    if (alia::is_refresh_event(*ctx))
+    {
+        auto& scope = alia::stack_push<alia_layout_block_flow_scope>(ctx);
+        auto& emission = ctx->layout->emission;
+        auto* node
+            = alia::arena_alloc<alia::block_flow_layout_node>(emission.arena);
+        scope.node = node;
+        *node = alia::block_flow_layout_node{
+            .base = {.vtable = &alia::block_flow_vtable, .next_sibling = 0},
+            .flags = flags,
+            .first_child = 0,
+            .gap = gap,
+            .line_gap = line_gap,
+            .minimum_line_height = minimum_line_height};
+        alia_layout_container_activate(
+            ctx, alia::block_flow_as_container(node));
+    }
 }
 
 void
 alia_layout_block_flow_end(alia_context* ctx)
 {
-    alia_layout_container_simple_end(ctx);
+    if (alia::is_refresh_event(*ctx))
+    {
+        auto& scope = alia::stack_pop<alia_layout_block_flow_scope>(ctx);
+        alia_layout_container_deactivate(
+            ctx, alia::block_flow_as_container(scope.node));
+    }
 }
 
 } // extern "C"

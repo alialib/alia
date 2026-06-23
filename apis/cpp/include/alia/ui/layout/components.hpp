@@ -292,11 +292,11 @@ flow(context& ctx, ArgPack&&... args)
 }
 
 template<class... ArgPack>
-    requires impl::ValidLayoutPack<ArgPack...>
+    requires impl::ValidFlowLayoutPack<ArgPack...>
 void
 block_flow(context& ctx, ArgPack&&... args)
 {
-    impl::gapped_layout_container(
+    impl::flow_layout_container(
         ctx,
         alia_layout_block_flow_begin,
         alia_layout_block_flow_end,

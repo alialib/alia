@@ -16,7 +16,6 @@ struct edge_offsets_layout_node
 {
     alia_layout_container container;
     alia_edge_offsets offsets;
-    alia_flow_run_index run_index = 0;
 };
 
 alia_horizontal_requirements
@@ -104,28 +103,31 @@ edge_offsets_assign_boxes(
         baseline - edge_offsets.offsets.top);
 }
 
+typedef struct edge_offsets_flow_scratch
+{
+    int child_fragment_count = 0;
+} edge_offsets_flow_scratch;
+
 alia_flow_emission_counts
 edge_offsets_count_flow_emissions(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
-    alia_flow_emission_counts totals = {0, 0};
+    alia_flow_emission_counts totals = {0};
+    int child_count = 0;
     for (alia_layout_node* child = edge_offsets.container.first_child;
          child != nullptr;
          child = child->next_sibling)
     {
+        ++child_count;
         totals = alia_flow_emission_counts_add(
             totals, alia_count_flow_emissions(ctx, child));
     }
-    return alia_flow_emission_counts{
-        .fragment_count = totals.fragment_count,
-        .run_count = totals.run_count + 1};
+    return alia_flow_emission_counts_add_control_fragments(
+        totals,
+        alia_flow_inter_child_gap_count(child_count)
+            + alia_flow_run_scope_control_count());
 }
-
-typedef struct edge_offsets_flow_scratch
-{
-    int child_fragment_count = 0;
-} edge_offsets_flow_scratch;
 
 void
 edge_offsets_emit_flow_fragments(
@@ -135,20 +137,19 @@ edge_offsets_emit_flow_fragments(
 {
     auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
     auto& scratch = claim_scratch<edge_offsets_flow_scratch>(ctx->scratch);
-    alia_flow_run_index const saved_run_index = emitter->active_run_index;
     int const start_fragment = emitter->fragment_count;
-    alia_flow_run_index const run_index = alia_flow_register_child_run(
-        emitter, alia_flow_run_style{.offsets = edge_offsets.offsets});
-    edge_offsets.run_index = run_index;
-    emitter->active_run_index = run_index;
+    alia_flow_emit_run_push_control(emitter, edge_offsets.offsets);
+    bool first_child = true;
     for (alia_layout_node* child = edge_offsets.container.first_child;
          child != nullptr;
-         child = child->next_sibling)
+         child = child->next_sibling, first_child = false)
     {
+        if (!first_child)
+            alia_flow_emit_gap_control(emitter, emitter->child_gap);
         alia_emit_flow_fragments(ctx, child, emitter);
     }
+    alia_flow_emit_run_pop_control(emitter);
     scratch.child_fragment_count = emitter->fragment_count - start_fragment;
-    emitter->active_run_index = saved_run_index;
 }
 
 static alia_box
@@ -156,18 +157,18 @@ make_fragment_box(
     alia_flow_fragment const* fragment,
     alia_flow_fragment_placement const* placement)
 {
-    alia_vec2f const min = {
-        placement->position.x,
-        placement->position.y + placement->baseline - fragment->ascent};
+    alia_flow_fragment_content_payload const* content
+        = alia_flow_fragment_content(fragment);
+    alia_vec2f const min
+        = {placement->position.x,
+           placement->position.y + placement->baseline - content->ascent};
     return alia_box_make(
-        min, alia_vec2f_make(fragment->width, fragment->height));
+        min, alia_vec2f_make(content->width, content->height));
 }
 
 static void
 provide_flow_line_boxes(
     alia_placement_context* ctx,
-    edge_offsets_layout_node& node,
-    alia_flow_run_style const* runs,
     alia_flow_fragment const* fragments,
     alia_flow_fragment_placement const* placements,
     int start,
@@ -189,37 +190,43 @@ provide_flow_line_boxes(
         have_line = false;
     };
 
-    alia_flow_run_index active_run_index = 0;
-    alia_edge_offsets active_offsets = {0};
+    struct run_stack_state
+    {
+        alia_flow_layout_run_frame stack[ALIA_FLOW_LAYOUT_RUN_STACK_CAPACITY];
+        int depth = 0;
+    } run_state;
+    alia_flow_layout_run_stack_seed_root(run_state.stack, run_state.depth);
 
     for (int i = start; i < end; ++i)
     {
         alia_flow_fragment const& fragment = fragments[i];
         alia_flow_fragment_placement const& placement = placements[i];
 
+        switch (fragment.kind)
+        {
+            case ALIA_FLOW_FRAGMENT_KIND_RUN_PUSH:
+                alia_flow_layout_run_push_frame(
+                    run_state.stack, run_state.depth, fragment.run.offsets);
+                continue;
+            case ALIA_FLOW_FRAGMENT_KIND_RUN_POP:
+                alia_flow_layout_run_pop_frame(
+                    run_state.stack, run_state.depth);
+                continue;
+            default:
+                break;
+        }
+
         if (!(fragment.flags & ALIA_FLOW_FRAGMENT_OMIT_FROM_BOUNDS)
+            && !alia_flow_fragment_is_control(&fragment)
             && !(placement.flags & ALIA_FLOW_FRAGMENT_PLACEMENT_SUPPRESSED))
         {
-            if (fragment.run_index != active_run_index)
-            {
-                alia_flow_run_index const parent_run
-                    = runs[node.run_index].parent;
-                active_offsets.left
-                    = alia_flow_run_total_left(runs, fragment.run_index)
-                    - alia_flow_run_total_left(runs, parent_run);
-                active_offsets.right
-                    = alia_flow_run_total_right(runs, fragment.run_index)
-                    - alia_flow_run_total_right(runs, parent_run);
-                active_offsets.top = alia_flow_run_total_top(runs, parent_run);
-                active_offsets.bottom
-                    = alia_flow_run_total_bottom(runs, parent_run);
-                active_run_index = fragment.run_index;
-            }
+            float const active_left
+                = run_state.stack[run_state.depth - 1].total_left;
+            float const active_right
+                = run_state.stack[run_state.depth - 1].total_right;
             alia_box fragment_box = make_fragment_box(&fragment, &placement);
-            fragment_box.min.x -= active_offsets.left;
-            fragment_box.size.x += active_offsets.left + active_offsets.right;
-            fragment_box.min.y += active_offsets.top;
-            fragment_box.size.y -= active_offsets.top + active_offsets.bottom;
+            fragment_box.min.x -= active_left;
+            fragment_box.size.x += active_left + active_right;
             if (have_line && placement.position.y != line_y)
                 flush_line();
 
@@ -253,21 +260,22 @@ edge_offsets_read_fragment_placements(
     if ((edge_offsets.container.flags & ALIA_PROVIDE_BOX) != 0)
     {
         provide_flow_line_boxes(
-            ctx,
-            edge_offsets,
-            reader->runs,
-            reader->fragments,
-            reader->placements,
-            start,
-            end);
+            ctx, reader->fragments, reader->placements, start, end);
     }
 
+    alia_layout_skip_flow_run_push_fragment(reader);
+
+    bool first_child = true;
     for (alia_layout_node* child = edge_offsets.container.first_child;
          child != nullptr;
-         child = child->next_sibling)
+         child = child->next_sibling, first_child = false)
     {
+        if (!first_child)
+            alia_layout_skip_flow_gap_fragment(reader);
         alia_layout_read_fragment_placements(ctx, child, reader);
     }
+
+    alia_layout_skip_flow_run_pop_fragment(reader);
 }
 
 alia_layout_node_vtable edge_offsets_vtable

@@ -12,7 +12,7 @@ alia_default_count_flow_emissions(
 {
     (void) ctx;
     (void) node;
-    return alia_flow_emission_counts{.fragment_count = 1, .run_count = 0};
+    return alia_flow_emission_counts{.fragment_count = 1};
 }
 
 void
@@ -30,10 +30,11 @@ alia_default_emit_flow_fragments(
         emitter,
         alia_flow_fragment{
             .flags = 0,
-            .width = horizontal.min_size,
-            .height = vertical.min_size,
-            .ascent = vertical.ascent,
-            .descent = vertical.descent});
+            .content
+            = {.width = horizontal.min_size,
+               .height = vertical.min_size,
+               .ascent = vertical.ascent,
+               .descent = vertical.descent}});
 }
 
 void
@@ -43,14 +44,14 @@ alia_default_read_fragment_placements(
     alia_flow_fragment_reader* reader)
 {
     auto const* fragment = alia_layout_read_fragment_spec(reader);
-    ALIA_ASSERT(!(fragment->flags & ALIA_FLOW_FRAGMENT_PLACEMENT_SUPPRESSED));
     auto const* placement = alia_layout_read_fragment_placement(reader);
     alia_layout_advance_fragment(reader);
+    auto const* content = alia_flow_fragment_content(fragment);
     alia_assign_boxes(
         ctx,
         ALIA_MAIN_AXIS_X,
         node,
-        alia_box{placement->position, {fragment->width, fragment->height}},
+        alia_box{placement->position, {content->width, content->height}},
         placement->baseline);
 }
 

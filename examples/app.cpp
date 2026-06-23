@@ -715,6 +715,22 @@ do_content(context& ctx)
                             ctx.palette->foundation.text.base),
                         14.f,
                         lorem_ipsum);
+                    flow(
+                        ctx,
+                        alia::line_gap(40.f),
+                        alia::minimum_line_height(40.f),
+                        [&]() {
+                            do_text(
+                                ctx,
+                                2,
+                                alia_srgba8_from_srgb8(
+                                    ctx.palette->foundation.text.weaker_1),
+                                14.f,
+                                "Nested flow (40px line gap and minimum line "
+                                "height). "
+                                "These lines should be more spaced than the "
+                                "outer flow when the outer sliders are low.");
+                        });
                     do_flow_panel(
                         ctx,
                         1,
@@ -727,12 +743,14 @@ do_content(context& ctx)
                                 alia_srgba8_from_srgb8(
                                     ctx.palette->primary.on_subtle),
                                 14.f,
-                                "This text sits inside a flow panel. "
-                                "The "
-                                "inset reports one background box per "
-                                "wrapped line so the panel follows "
-                                "the "
-                                "text as it wraps.");
+                                "Panel text A.");
+                            do_text(
+                                ctx,
+                                2,
+                                alia_srgba8_from_srgb8(
+                                    ctx.palette->primary.on_subtle),
+                                14.f,
+                                "Panel text B (gap from outer flow slider).");
                         });
                     //});
                 });
