@@ -106,22 +106,6 @@ grid_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         ctx, upcast<alia_layout_node>(&grid.column));
 }
 
-void
-grid_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& grid = *reinterpret_cast<grid_layout_node*>(node);
-    alia_arena_jump(&ctx->scratch, grid.scratch_marker);
-    column_assign_widths(
-        ctx,
-        main_axis,
-        upcast<alia_layout_node>(&grid.column),
-        assigned_width);
-}
-
 alia_vertical_requirements
 grid_measure_vertical(
     alia_measurement_context* ctx,
@@ -154,7 +138,6 @@ grid_assign_boxes(
 
 alia_layout_node_vtable grid_vtable
     = {grid_measure_horizontal,
-       grid_assign_widths,
        grid_measure_vertical,
        grid_assign_boxes,
        alia_default_count_flow_emissions,
@@ -173,21 +156,6 @@ grid_row_measure_horizontal(
     return alia_horizontal_requirements{
         .min_size = grid_row.grid->scratch->total_width,
         .growth_factor = alia_resolve_growth_factor(grid_row.container.flags)};
-}
-
-void
-grid_row_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
-    auto const marker = alia_arena_mark(&ctx->scratch);
-    alia_arena_jump(&ctx->scratch, grid_row.scratch_marker);
-    auto& scratch = use_scratch<grid_row_scratch>(ctx->scratch);
-    // TODO: Implement.
-    alia_arena_jump(&ctx->scratch, marker);
 }
 
 alia_vertical_requirements
@@ -286,7 +254,6 @@ grid_row_assign_boxes(
 
 alia_layout_node_vtable grid_row_vtable = {
     grid_row_measure_horizontal,
-    grid_row_assign_widths,
     grid_row_measure_vertical,
     grid_row_assign_boxes,
 };

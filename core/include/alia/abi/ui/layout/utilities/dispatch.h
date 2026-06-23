@@ -12,16 +12,6 @@ alia_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     return node->vtable->measure_horizontal(ctx, node);
 }
 
-static inline void
-alia_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    node->vtable->assign_widths(ctx, main_axis, node, assigned_width);
-}
-
 static inline alia_vertical_requirements
 alia_measure_vertical(
     alia_measurement_context* ctx,

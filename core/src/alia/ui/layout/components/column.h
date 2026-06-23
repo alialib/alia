@@ -13,13 +13,6 @@ alia_horizontal_requirements
 column_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node);
 
-void
-column_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width);
-
 alia_vertical_requirements
 column_measure_vertical(
     alia_measurement_context* ctx,

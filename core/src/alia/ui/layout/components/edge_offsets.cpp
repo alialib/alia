@@ -31,22 +31,6 @@ edge_offsets_measure_horizontal(
         .growth_factor = child_x.growth_factor};
 }
 
-void
-edge_offsets_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
-    alia_assign_widths(
-        ctx,
-        main_axis,
-        edge_offsets.container.first_child,
-        assigned_width - edge_offsets.offsets.left
-            - edge_offsets.offsets.right);
-}
-
 alia_vertical_requirements
 edge_offsets_measure_vertical(
     alia_measurement_context* ctx,
@@ -280,7 +264,6 @@ edge_offsets_read_fragment_placements(
 
 alia_layout_node_vtable edge_offsets_vtable
     = {edge_offsets_measure_horizontal,
-       edge_offsets_assign_widths,
        edge_offsets_measure_vertical,
        edge_offsets_assign_boxes,
        edge_offsets_count_flow_emissions,

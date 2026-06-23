@@ -42,38 +42,6 @@ row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         .growth_factor = alia_resolve_growth_factor(row.flags)};
 }
 
-void
-row_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& row = *reinterpret_cast<row_layout_node*>(node);
-    auto& scratch = use_scratch<row_scratch>(ctx->scratch);
-    alia_horizontal_requirements* x_requirements
-        = arena_alloc_array<alia_horizontal_requirements>(
-            ctx->scratch, scratch.child_count);
-    auto const placement = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(row.flags, main_axis),
-        assigned_width,
-        scratch.total_width);
-    float const total_extra_space
-        = (std::max) (0.f, placement.size - scratch.total_width);
-    // TODO: Figure out how to handle 0 total growth.
-    float const one_over_total_growth
-        = 1.0f / (std::max) (0.00001f, scratch.total_growth);
-    for (alia_layout_node* child = row.first_child; child != nullptr;
-         child = child->next_sibling)
-    {
-        auto const child_x = *x_requirements++;
-        float const extra_space = total_extra_space * child_x.growth_factor
-                                * one_over_total_growth;
-        alia_assign_widths(
-            ctx, ALIA_MAIN_AXIS_X, child, child_x.min_size + extra_space);
-    }
-}
-
 alia_vertical_requirements
 row_measure_vertical(
     alia_measurement_context* ctx,
@@ -171,7 +139,6 @@ row_assign_boxes(
 
 alia_layout_node_vtable row_vtable
     = {row_measure_horizontal,
-       row_assign_widths,
        row_measure_vertical,
        row_assign_boxes,
        alia_default_count_flow_emissions,

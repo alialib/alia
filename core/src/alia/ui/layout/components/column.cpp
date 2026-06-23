@@ -43,29 +43,6 @@ column_measure_horizontal(
         .growth_factor = alia_resolve_growth_factor(column.flags)};
 }
 
-void
-column_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& column = *reinterpret_cast<column_layout_node*>(node);
-    auto& scratch = use_scratch<column_scratch>(ctx->scratch);
-    alia_vertical_requirements* y_requirements
-        = arena_alloc_array<alia_vertical_requirements>(
-            ctx->scratch, scratch.child_count);
-    auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(column.flags, main_axis),
-        assigned_width,
-        scratch.max_width);
-    for (alia_layout_node* child = column.first_child; child != nullptr;
-         child = child->next_sibling)
-    {
-        alia_assign_widths(ctx, ALIA_MAIN_AXIS_Y, child, assignment.size);
-    }
-}
-
 alia_vertical_requirements
 column_measure_vertical(
     alia_measurement_context* ctx,
@@ -159,7 +136,6 @@ column_assign_boxes(
 
 alia_layout_node_vtable column_vtable
     = {column_measure_horizontal,
-       column_assign_widths,
        column_measure_vertical,
        column_assign_boxes,
        alia_default_count_flow_emissions,

@@ -24,18 +24,6 @@ min_size_measure_horizontal(
         .growth_factor = child_x.growth_factor};
 }
 
-void
-min_size_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* base_node,
-    float assigned_width)
-{
-    auto& node = *reinterpret_cast<min_size_node*>(base_node);
-    alia_assign_widths(
-        ctx, main_axis, node.container.first_child, assigned_width);
-}
-
 alia_vertical_requirements
 min_size_measure_vertical(
     alia_measurement_context* ctx,
@@ -68,7 +56,6 @@ min_size_assign_boxes(
 
 alia_layout_node_vtable min_size_vtable
     = {min_size_measure_horizontal,
-       min_size_assign_widths,
        min_size_measure_vertical,
        min_size_assign_boxes,
        alia_default_count_flow_emissions,

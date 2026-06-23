@@ -63,17 +63,6 @@ collapsible_measure_horizontal(
     return alia_measure_horizontal(ctx, n.base.first_child);
 }
 
-void
-collapsible_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& n = *collapsible_node_from(node);
-    alia_assign_widths(ctx, main_axis, n.base.first_child, assigned_width);
-}
-
 alia_vertical_requirements
 collapsible_measure_vertical(
     alia_measurement_context* ctx,
@@ -124,7 +113,6 @@ collapsible_assign_boxes(
 
 alia_layout_node_vtable collapsible_vtable
     = {collapsible_measure_horizontal,
-       collapsible_assign_widths,
        collapsible_measure_vertical,
        collapsible_assign_boxes,
        alia_default_count_flow_emissions,

@@ -25,15 +25,6 @@ leaf_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         .growth_factor = alia_resolve_growth_factor(leaf.flags)};
 }
 
-void
-leaf_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-}
-
 alia_vertical_requirements
 leaf_measure_vertical(
     alia_measurement_context* ctx,
@@ -72,7 +63,6 @@ leaf_assign_boxes(
 
 alia_layout_node_vtable leaf_vtable
     = {leaf_measure_horizontal,
-       leaf_assign_widths,
        leaf_measure_vertical,
        leaf_assign_boxes,
        alia_default_count_flow_emissions,

@@ -537,22 +537,6 @@ scroll_view_measure_horizontal(
         .growth_factor = alia_resolve_growth_factor(n.base.flags)};
 }
 
-void
-scroll_view_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& n = *reinterpret_cast<scroll_view_layout_node*>(node);
-    auto& d = *n.data;
-    float child_width = assigned_width;
-    if (d.scrollbars_on[1] || (d.reserved_axes & ALIA_SCROLL_AXIS_Y))
-        child_width = (std::max) (0.f, child_width - d.style.width);
-    if (n.base.first_child)
-        alia_assign_widths(ctx, main_axis, n.base.first_child, child_width);
-}
-
 alia_vertical_requirements
 scroll_view_measure_vertical(
     alia_measurement_context* ctx,
@@ -671,7 +655,6 @@ scroll_view_assign_boxes(
 
 alia_layout_node_vtable scroll_view_vtable
     = {scroll_view_measure_horizontal,
-       scroll_view_assign_widths,
        scroll_view_measure_vertical,
        scroll_view_assign_boxes,
        alia_default_count_flow_emissions,

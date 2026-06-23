@@ -4,16 +4,10 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/geometry.h>
 
-// Layout resolution consists of four phases:
+// Layout resolution consists of three phases:
 // 1. Measure horizontal requirements.
-// 2. Assign widths.
-// 3. Measure vertical requirements based on the assigned widths.
-// 4. Assign boxes.
-//
-// Note that #2 and #3 are typically combined into a single pass, but a
-// separate interface is provided for specifically assigning widths in case it
-// is useful for responsive layouts. (It isn't currently used or even fully
-// implemented.)
+// 2. Assign widths and measure vertical requirements based on those.
+// 3. Assign boxes.
 //
 // All passes start at the root node and recurse through descendants. The
 // scratch space is used to store intermediate results. Each pass starts with
@@ -226,12 +220,6 @@ typedef struct alia_layout_node_vtable
 {
     alia_horizontal_requirements (*measure_horizontal)(
         alia_measurement_context* ctx, alia_layout_node* node);
-
-    void (*assign_widths)(
-        alia_placement_context* ctx,
-        alia_main_axis_index main_axis,
-        alia_layout_node* node,
-        float assigned_width);
 
     alia_vertical_requirements (*measure_vertical)(
         alia_measurement_context* ctx,

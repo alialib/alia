@@ -72,19 +72,6 @@ block_flow_measure_horizontal(
         .growth_factor = alia_resolve_growth_factor(block_flow.flags)};
 }
 
-void
-block_flow_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    (void) ctx;
-    (void) main_axis;
-    (void) node;
-    (void) assigned_width;
-}
-
 static alia_line_requirements
 block_flow_measure_line_vertical(
     alia_measurement_context* ctx,
@@ -356,7 +343,6 @@ block_flow_assign_boxes(
 
 alia_layout_node_vtable block_flow_vtable
     = {block_flow_measure_horizontal,
-       block_flow_assign_widths,
        block_flow_measure_vertical,
        block_flow_assign_boxes,
        alia_default_count_flow_emissions,

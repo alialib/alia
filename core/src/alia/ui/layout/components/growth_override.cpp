@@ -24,18 +24,6 @@ growth_override_measure_horizontal(
         .min_size = child_x.min_size, .growth_factor = override.growth};
 }
 
-void
-growth_override_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& override = *reinterpret_cast<growth_override_node*>(node);
-    alia_assign_widths(
-        ctx, main_axis, override.container.first_child, assigned_width);
-}
-
 alia_vertical_requirements
 growth_override_measure_vertical(
     alia_measurement_context* ctx,
@@ -97,7 +85,6 @@ growth_override_read_fragment_placements(
 
 alia_layout_node_vtable growth_override_vtable
     = {growth_override_measure_horizontal,
-       growth_override_assign_widths,
        growth_override_measure_vertical,
        growth_override_assign_boxes,
        growth_override_count_flow_emissions,

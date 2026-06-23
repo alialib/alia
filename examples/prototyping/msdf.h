@@ -55,16 +55,6 @@ measure_text_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         .min_size = width + text.spacing * 2, .growth_factor = 0};
 }
 
-void
-assign_text_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    // TODO: Implement
-}
-
 alia_vertical_requirements
 measure_text_vertical(
     alia_measurement_context* ctx,
@@ -436,7 +426,6 @@ text_read_fragment_placements(
 
 alia_layout_node_vtable text_layout_vtable
     = {measure_text_horizontal,
-       assign_text_widths,
        measure_text_vertical,
        assign_text_boxes,
        text_count_flow_emissions,

@@ -33,23 +33,6 @@ alignment_override_measure_horizontal(
     return scratch.horizontal;
 }
 
-void
-alignment_override_assign_widths(
-    alia_placement_context* ctx,
-    alia_main_axis_index main_axis,
-    alia_layout_node* node,
-    float assigned_width)
-{
-    auto& override = *reinterpret_cast<alignment_override_node*>(node);
-    auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
-    auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(override.flags, main_axis),
-        assigned_width,
-        scratch.horizontal.min_size);
-    alia_assign_widths(
-        ctx, main_axis, override.container.first_child, assignment.size);
-}
-
 alia_vertical_requirements
 alignment_override_measure_vertical(
     alia_measurement_context* ctx,
@@ -95,7 +78,6 @@ alignment_override_assign_boxes(
 
 alia_layout_node_vtable alignment_override_vtable
     = {alignment_override_measure_horizontal,
-       alignment_override_assign_widths,
        alignment_override_measure_vertical,
        alignment_override_assign_boxes,
        alia_default_count_flow_emissions,
