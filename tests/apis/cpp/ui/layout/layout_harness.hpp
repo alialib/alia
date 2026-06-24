@@ -99,18 +99,18 @@ test_spacer(alia_context& ctx, alia_vec2f size)
     test_leaf(ctx, size, NO_FLAGS);
 }
 
-template<class Content, class Check>
+template<class Fn>
 void
-run_layout_case(alia_vec2f assigned, Content&& content, Check&& check)
+run_layout_case(alia_vec2f assigned, Fn&& fn)
 {
     layout_test_fixture* fixture = layout_test_fixture_create();
     assert(fixture != nullptr);
 
     layout_test_fixture_run_refresh(
-        fixture, [&](alia_context* ctx) { content(*ctx); });
+        fixture, [&](alia_context* ctx) { fn(*ctx); });
     layout_test_fixture_resolve(fixture, assigned);
     layout_test_fixture_run_spatial(
-        fixture, [&](alia_context* ctx) { check(*ctx); });
+        fixture, [&](alia_context* ctx) { fn(*ctx); });
 
     layout_test_fixture_destroy(fixture);
 }
