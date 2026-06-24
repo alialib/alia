@@ -24,7 +24,7 @@ typedef struct alia_layout_node_vtable alia_layout_node_vtable;
 typedef struct alia_layout_node
 {
     alia_layout_node_vtable* vtable;
-    alia_layout_node* next_sibling;
+    struct alia_layout_node* next_sibling;
 } alia_layout_node;
 
 typedef struct alia_horizontal_requirements

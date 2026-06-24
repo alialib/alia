@@ -46,8 +46,7 @@ alia_layout_block_flow_end(alia_context* ctx);
 
 // grid
 
-struct alia_layout_grid_scope;
-typedef alia_layout_grid_scope* alia_layout_grid_handle;
+typedef struct alia_layout_grid_scope* alia_layout_grid_handle;
 
 alia_layout_grid_handle
 alia_layout_grid_begin(alia_context* ctx, alia_layout_flags_t flags);

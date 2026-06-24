@@ -237,19 +237,19 @@ simple_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
 
 } // namespace impl
 
-impl::layout_gap
+inline impl::layout_gap
 gap(float gap)
 {
     return impl::layout_gap{gap};
 }
 
-impl::layout_line_gap
+inline impl::layout_line_gap
 line_gap(float line_gap)
 {
     return impl::layout_line_gap{line_gap};
 }
 
-impl::layout_minimum_line_height
+inline impl::layout_minimum_line_height
 minimum_line_height(float minimum_line_height)
 {
     return impl::layout_minimum_line_height{minimum_line_height};

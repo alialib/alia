@@ -1,32 +1,14 @@
 #pragma once
 
 #include <alia/abi/base/geometry/box.h>
-#include <alia/abi/context.h>
+#include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/ui/layout/components.h>
 #include <alia/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/layout/flags.hpp>
 
-struct layout_test_fixture;
-
-layout_test_fixture*
-layout_test_fixture_create();
-
-void
-layout_test_fixture_destroy(layout_test_fixture* fixture);
-
-alia_context*
-layout_test_fixture_context(layout_test_fixture* fixture);
-
-#pragma once
-
-#include <alia/abi/base/geometry/box.h>
-#include <alia/abi/context.h>
-#include <alia/abi/ui/layout/components.h>
-#include <alia/context.hpp>
-#include <alia/impl/events.hpp>
-#include <alia/ui/layout/flags.hpp>
-
+#include <cassert>
+#include <cmath>
 #include <utility>
 
 struct layout_test_fixture;
@@ -39,6 +21,9 @@ layout_test_fixture_destroy(layout_test_fixture* fixture);
 
 alia_context*
 layout_test_fixture_context(layout_test_fixture* fixture);
+
+void
+layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing);
 
 void
 layout_test_fixture_run_refresh_impl(
@@ -83,6 +68,14 @@ check_box_eq(alia_box box, alia_vec2f min, alia_vec2f size)
     return alia_box_equal(box, alia_box_make(min, size));
 }
 
+inline bool
+check_box_near(
+    alia_box box, alia_vec2f min, alia_vec2f size, float eps = 1e-4f)
+{
+    return alia_vec2f_near(box.min, min, eps)
+        && alia_vec2f_near(box.size, size, eps);
+}
+
 inline void
 test_leaf(
     alia_context& ctx,
@@ -104,6 +97,22 @@ inline void
 test_spacer(alia_context& ctx, alia_vec2f size)
 {
     test_leaf(ctx, size, NO_FLAGS);
+}
+
+template<class Content, class Check>
+void
+run_layout_case(alia_vec2f assigned, Content&& content, Check&& check)
+{
+    layout_test_fixture* fixture = layout_test_fixture_create();
+    assert(fixture != nullptr);
+
+    layout_test_fixture_run_refresh(
+        fixture, [&](alia_context* ctx) { content(*ctx); });
+    layout_test_fixture_resolve(fixture, assigned);
+    layout_test_fixture_run_spatial(
+        fixture, [&](alia_context* ctx) { check(*ctx); });
+
+    layout_test_fixture_destroy(fixture);
 }
 
 } // namespace alia::layout_test

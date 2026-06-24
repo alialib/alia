@@ -25,6 +25,13 @@ substrate_tests(void);
 void
 ids_tests(void);
 
+void
+layout_abi_headers_tests(void);
+void
+placement_tests(void);
+void
+line_tests(void);
+
 TEST_LIST
     = {{"base/geometry/affine2", affine2_tests},
        {"base/geometry/box", box_tests},
@@ -35,4 +42,7 @@ TEST_LIST
        {"base/stack", stack_tests},
        {"kernel/ids", ids_tests},
        {"kernel/substrate", substrate_tests},
+       {"ui/layout/abi_headers", layout_abi_headers_tests},
+       {"ui/layout/placement", placement_tests},
+       {"ui/layout/line", line_tests},
        {NULL, NULL}};

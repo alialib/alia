@@ -39,7 +39,7 @@ struct alia_layout_container
 static inline float
 alia_layout_gap_total(float gap, uint32_t child_count)
 {
-    return child_count > 1 ? gap * static_cast<float>(child_count - 1) : 0.f;
+    return child_count > 1 ? gap * (float) (child_count - 1u) : 0.f;
 }
 
 void

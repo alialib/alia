@@ -150,6 +150,13 @@ layout_test_fixture_context(layout_test_fixture* fixture)
 }
 
 void
+layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing)
+{
+    if (fixture)
+        fixture->style.spacing = spacing;
+}
+
+void
 layout_test_fixture_run_refresh_impl(
     layout_test_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
 {

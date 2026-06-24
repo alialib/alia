@@ -5,8 +5,9 @@ add_executable(test_core_impl
     base/test_bit_packing.cpp
     kernel/test_timer.cpp
     ui/layout/layout_harness.cpp
-    ui/layout/test_placement.cpp
-    ui/layout/test_layout_components.cpp)
+    ui/layout/test_layout_components.cpp
+    ui/layout/test_layout_wrappers.cpp
+    ui/layout/test_layout_flow.cpp)
 target_link_libraries(test_core_impl PRIVATE alia_core alia_cpp)
 target_include_directories(test_core_impl PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support

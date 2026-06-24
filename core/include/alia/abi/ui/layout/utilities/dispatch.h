@@ -38,8 +38,9 @@ static inline alia_flow_emission_counts
 alia_flow_emission_counts_add(
     alia_flow_emission_counts a, alia_flow_emission_counts b)
 {
-    return alia_flow_emission_counts{
-        .fragment_count = a.fragment_count + b.fragment_count};
+    alia_flow_emission_counts result;
+    result.fragment_count = a.fragment_count + b.fragment_count;
+    return result;
 }
 
 static inline alia_flow_emission_counts
