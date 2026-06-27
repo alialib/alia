@@ -1,8 +1,7 @@
 // Smoke test: layout ABI headers must compile as C.
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/layout/protocol.h>
-#include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 
 #define TEST_NO_MAIN

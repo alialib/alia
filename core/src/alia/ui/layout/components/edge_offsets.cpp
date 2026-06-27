@@ -1,5 +1,5 @@
 #include <alia/abi/base/geometry/box.h>
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/style.h>
 #include <alia/context.h>
@@ -147,7 +147,7 @@ make_fragment_box(
         = {placement->position.x,
            placement->position.y + placement->baseline - content->ascent};
     return alia_box_make(
-        min, alia_vec2f_make(content->width, content->height));
+        min, content->size);
 }
 
 static void

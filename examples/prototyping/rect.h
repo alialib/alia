@@ -13,7 +13,10 @@ do_rect(
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            alia_layout_leaf_emit(&ctx, size, raw_code(flags));
+            alia_layout_leaf_emit(
+                &ctx,
+                alia_layout_content_metrics_make(size),
+                raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
@@ -63,7 +66,10 @@ do_rect_with_offset(
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            alia_layout_leaf_emit(&ctx, size, raw_code(flags));
+            alia_layout_leaf_emit(
+                &ctx,
+                alia_layout_content_metrics_make(size),
+                raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {

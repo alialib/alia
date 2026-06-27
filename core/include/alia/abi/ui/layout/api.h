@@ -1,13 +1,26 @@
-#ifndef ALIA_UI_LAYOUT_COMPONENTS_H
-#define ALIA_UI_LAYOUT_COMPONENTS_H
+#ifndef ALIA_ABI_UI_LAYOUT_API_H
+#define ALIA_ABI_UI_LAYOUT_API_H
 
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/layout/flags.h>
-#include <alia/abi/ui/layout/protocol.h>
 
 ALIA_EXTERN_C_BEGIN
+
+typedef struct alia_context alia_context;
+
+typedef struct alia_layout_content_metrics
+{
+    alia_vec2f size;
+    float ascent;
+    float descent;
+} alia_layout_content_metrics;
+
+static inline alia_layout_content_metrics
+alia_layout_content_metrics_make(alia_vec2f size)
+{
+    return ALIA_BRACED_INIT(alia_layout_content_metrics, size, 0.f, 0.f);
+}
 
 // COMPOSITION CONTAINERS
 
@@ -91,7 +104,15 @@ alia_layout_min_size_end(alia_context* ctx);
 // This must be called on refresh passes (and ONLY on refresh passes).
 void
 alia_layout_leaf_emit(
-    alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags);
+    alia_context* ctx,
+    alia_layout_content_metrics content,
+    alia_layout_flags_t flags);
+
+// Emit a zero-height flow spring that absorbs extra horizontal space during
+// line justification. This must be called on refresh passes (and ONLY on
+// refresh passes).
+void
+alia_layout_flow_spring_emit(alia_context* ctx, float min_width);
 
 // BOX CONSUMPTION
 
@@ -106,8 +127,8 @@ typedef struct alia_layout_box_array
     alia_box* boxes;
 } alia_layout_box_array;
 
-// Some nodes may occupy a region that can't be described by a single box.
-// For example, an edge_offsets node inside a flow panel may wrap with its content.
+// Some nodes may occupy a region that can't be described by a single box. For
+// example, an edge_offsets node inside a flow panel may wrap with its content.
 // If asked to provide its box back to the component code, it will emit an
 // array of boxes.
 alia_layout_box_array
@@ -115,4 +136,6 @@ alia_layout_consume_box_array(alia_context* ctx);
 
 ALIA_EXTERN_C_END
 
-#endif // ALIA_UI_LAYOUT_COMPONENTS_H
+#include <alia/abi/ui/layout/system.h>
+
+#endif // ALIA_ABI_UI_LAYOUT_API_H

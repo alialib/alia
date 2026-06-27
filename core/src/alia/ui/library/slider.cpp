@@ -6,7 +6,7 @@
 #include <alia/abi/ui/drawing.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/impl/events.hpp>
 
@@ -279,8 +279,9 @@ do_slider_impl(
     {
         alia_layout_leaf_emit(
             ctx,
-            {alia_px(ctx, effective_style->layout_width),
-             alia_px(ctx, effective_style->layout_height)},
+            alia_layout_content_metrics_make(
+                {alia_px(ctx, effective_style->layout_width),
+                 alia_px(ctx, effective_style->layout_height)}),
             layout_flags);
         return base_id;
     }

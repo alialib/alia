@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/context.h>
 #include <alia/ui/layout/flags.hpp>
 
@@ -393,6 +393,15 @@ growth_override(context& ctx, float growth, Content&& content)
     alia_layout_growth_override_begin(&ctx, growth);
     std::forward<Content>(content)();
     alia_layout_growth_override_end(&ctx);
+}
+
+inline void
+flow_spring(context& ctx, float min_width = 0.f)
+{
+    if (is_refresh_event(ctx))
+        alia_layout_flow_spring_emit(&ctx, min_width);
+    else
+        (void) alia_layout_consume_box(&ctx);
 }
 
 } // namespace alia

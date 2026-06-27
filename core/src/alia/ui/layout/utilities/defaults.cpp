@@ -30,11 +30,11 @@ alia_default_emit_flow_fragments(
         emitter,
         alia_flow_fragment{
             .flags = 0,
-            .content
-            = {.width = horizontal.min_size,
-               .height = vertical.min_size,
-               .ascent = vertical.ascent,
-               .descent = vertical.descent}});
+            .content = alia_layout_content_metrics{
+                .size = alia_vec2f_make(
+                    horizontal.min_size, vertical.min_size),
+                .ascent = vertical.ascent,
+                .descent = vertical.descent}});
 }
 
 void
@@ -51,7 +51,7 @@ alia_default_read_fragment_placements(
         ctx,
         ALIA_MAIN_AXIS_X,
         node,
-        alia_box{placement->position, {content->width, content->height}},
+        alia_box{placement->position, content->size},
         placement->baseline);
 }
 

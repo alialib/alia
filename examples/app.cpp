@@ -41,8 +41,7 @@
 #include <alia/platforms/glfw/borderless_fullscreen.h>
 #include <alia/platforms/glfw/input_glue.h>
 #include <alia/ui/drawing.h>
-#include <alia/ui/layout/components.hpp>
-#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>

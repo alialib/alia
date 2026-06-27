@@ -6,7 +6,7 @@
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
@@ -212,9 +212,9 @@ alia_do_radio(
     {
         alia_layout_leaf_emit(
             ctx,
-            alia_vec2f{
+            alia_layout_content_metrics_make(alia_vec2f{
                 alia_px(ctx, effective_style->layout_width),
-                alia_px(ctx, effective_style->layout_height)},
+                alia_px(ctx, effective_style->layout_height)}),
             layout_flags);
         return id;
     }

@@ -34,8 +34,7 @@
 #include <alia/platforms/glfw/input_glue.h>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing.h>
-#include <alia/ui/layout/components.hpp>
-#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
@@ -484,7 +483,9 @@ section_spacer(context& ctx)
     {
         case ALIA_CATEGORY_REFRESH:
             alia_layout_leaf_emit(
-                &ctx, {1.f, 28.f}, raw_code(ALIGN_TOP | ALIGN_LEFT));
+                &ctx,
+                alia_layout_content_metrics_make({1.f, 28.f}),
+                raw_code(ALIGN_TOP | ALIGN_LEFT));
             break;
         default:
             (void) alia_layout_consume_box(&ctx);
@@ -634,7 +635,9 @@ notargs_view(context& ctx)
         {
             case ALIA_CATEGORY_REFRESH:
                 alia_layout_leaf_emit(
-                    &ctx, {40.f, 40.f}, raw_code(GROW | FILL));
+                    &ctx,
+                    alia_layout_content_metrics_make({40.f, 40.f}),
+                    raw_code(GROW | FILL));
                 break;
             case ALIA_CATEGORY_DRAWING: {
                 alia_box const box = alia_layout_consume_box(&ctx);

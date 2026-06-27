@@ -3,6 +3,7 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/layout/api.h>
 
 // Layout resolution consists of three phases:
 // 1. Measure horizontal requirements.
@@ -126,13 +127,7 @@ enum
      | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_START                              \
      | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END)
 
-typedef struct alia_flow_fragment_content_payload
-{
-    float width;
-    float height;
-    float ascent;
-    float descent;
-} alia_flow_fragment_content_payload;
+typedef alia_layout_content_metrics alia_flow_fragment_content_payload;
 
 typedef struct alia_flow_fragment_gap_payload
 {

@@ -293,7 +293,7 @@ process_flow_fragment(
         return;
     }
 
-    float fragment_width = fragment->content.width;
+    float fragment_width = fragment->content.size.x;
 
     if (!state.have_anchors)
     {
@@ -411,7 +411,7 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
                 max_fragment_width = alia_max(
                     max_fragment_width,
                     alia_flow_layout_content_horizontal_extent(
-                        fragment.content.width, run_stack, run_depth));
+                        fragment.content.size.x, run_stack, run_depth));
                 break;
             default:
                 break;
@@ -536,7 +536,7 @@ flow_place_line(
         placements[i]
             = {.flags = 0, .position = position, .baseline = baseline};
 
-        position.x += fragment.content.width + spacer_extra;
+        position.x += fragment.content.size.x + spacer_extra;
     }
 }
 

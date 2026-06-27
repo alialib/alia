@@ -27,6 +27,7 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/min_size.cpp
     src/alia/ui/layout/components/edge_offsets.cpp
     src/alia/ui/layout/components/leaf.cpp
+    src/alia/ui/layout/components/flow_spring.cpp
     src/alia/ui/layout/components/placement.cpp
     src/alia/ui/layout/system.cpp
     src/alia/ui/layout/utilities/defaults.cpp

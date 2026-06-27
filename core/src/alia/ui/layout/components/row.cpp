@@ -12,7 +12,7 @@ struct row_scratch
 {
     std::uint32_t child_count = 0;
     float total_width = 0, total_growth = 0;
-    float height = 0, ascent = 0;
+    float height = 0, ascent = 0, descent = 0;
 };
 
 alia_horizontal_requirements
@@ -79,6 +79,7 @@ row_measure_vertical(
     }
     scratch.height = height;
     scratch.ascent = ascent;
+    scratch.descent = descent;
     return alia_mask_reported_vertical_requirements(
         row.flags,
         main_axis,
@@ -120,6 +121,8 @@ row_assign_boxes(
     float const one_over_total_growth
         = 1.0f / (std::max) (0.00001f, scratch.total_growth);
     float current_x = box.min.x + placement.min.x;
+    float const baseline_in_row = alia_resolve_baseline(
+        row.flags, placement.size.y, scratch.ascent, scratch.descent);
     for (alia_layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
@@ -132,7 +135,7 @@ row_assign_boxes(
             child,
             {.min = {current_x, box.min.y + placement.min.y},
              .size = {child_x.min_size + extra_space, box.size.y}},
-            baseline);
+            baseline_in_row);
         current_x += child_x.min_size + extra_space + row.gap;
     }
 }

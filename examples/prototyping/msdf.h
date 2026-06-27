@@ -204,9 +204,10 @@ text_emit_token(
                     .flags = 0,
                     .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
                     .content
-                    = {.width
-                       = text_measure_substring_width(text, start, length),
-                       .height = line.height,
+                    = {.size = alia_vec2f_make(
+                           text_measure_substring_width(
+                               text, start, length),
+                           line.height),
                        .ascent = line.ascent,
                        .descent = line.descent}});
             break;
@@ -220,8 +221,7 @@ text_emit_token(
                            | ALIA_FLOW_FRAGMENT_SUPPRESS_AT_LINE_END,
                     .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
                     .content
-                    = {.width = spacer_width,
-                       .height = line.height,
+                    = {.size = alia_vec2f_make(spacer_width, line.height),
                        .ascent = line.ascent,
                        .descent = line.descent}});
             break;
@@ -234,8 +234,7 @@ text_emit_token(
                            | ALIA_FLOW_FRAGMENT_OMIT_FROM_BOUNDS,
                     .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
                     .content
-                    = {.width = 0.f,
-                       .height = line.height,
+                    = {.size = alia_vec2f_make(0.f, line.height),
                        .ascent = line.ascent,
                        .descent = line.descent}});
             break;
@@ -259,7 +258,7 @@ text_write_placement_fragment(
         = {placement->position.x,
            placement->position.y + placement->baseline
                - metrics->ascender * text.font_size};
-    fragment->size = {alia_flow_fragment_content(spec)->width, base.height};
+    fragment->size = {alia_flow_fragment_content(spec)->size.x, base.height};
     fragment->text = text.text + start;
     fragment->length = length;
     fragment->font_index = text.font_index;

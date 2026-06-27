@@ -2,7 +2,7 @@
 
 #include <alia/abi/base/geometry/edge_offsets.h>
 #include <alia/abi/base/geometry/vec2.h>
-#include <alia/ui/layout/components.hpp>
+#include <alia/ui/layout/api.hpp>
 
 #include <doctest/doctest.h>
 
@@ -66,4 +66,32 @@ TEST_CASE("layout growth override")
         leaf1, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(100.f, 100.f)));
     CHECK(check_box_eq(
         leaf2, alia_vec2f_make(100.f, 0.f), alia_vec2f_make(200.f, 100.f)));
+}
+
+TEST_CASE("layout edge offsets with flags")
+{
+    alia_box box;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        edge_offsets(
+            ctx,
+            alia_edge_offsets_make_trbl(10.f, 10.f, 10.f, 10.f),
+            ALIGN_LEFT,
+            [&]() { test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &box); });
+    });
+    CHECK(check_box_eq(
+        box, alia_vec2f_make(10.f, 10.f), alia_vec2f_make(80.f, 80.f)));
+}
+
+TEST_CASE("layout min size inside row")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(200.f, 50.f), [&](alia_context& ctx) {
+        row(ctx, [&]() {
+            min_size_constraint(ctx, alia_vec2f_make(150.f, 50.f), [&]() {
+                test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &leaf);
+            });
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(150.f, 50.f)));
 }

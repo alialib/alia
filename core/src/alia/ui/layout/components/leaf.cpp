@@ -1,4 +1,4 @@
-#include <alia/abi/ui/layout/components.h>
+#include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/style.h>
 
 #include <alia/impl/events.hpp>
@@ -13,15 +13,22 @@ struct layout_leaf_node
     alia_layout_node base;
     alia_layout_flags_t flags;
     float spacing;
-    alia_vec2f size;
+    alia_layout_content_metrics content;
 };
+
+static float
+leaf_effective_spacing(layout_leaf_node const& leaf)
+{
+    return (leaf.flags & ALIA_FLUSH) != 0 ? 0.f : leaf.spacing;
+}
 
 alia_horizontal_requirements
 leaf_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
+    float const spacing = leaf_effective_spacing(leaf);
     return alia_horizontal_requirements{
-        .min_size = leaf.size.x + leaf.spacing * 2,
+        .min_size = leaf.content.size.x + spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags)};
 }
 
@@ -33,11 +40,12 @@ leaf_measure_vertical(
     float assigned_width)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
+    float const spacing = leaf_effective_spacing(leaf);
     return alia_vertical_requirements{
-        .min_size = leaf.size.y + leaf.spacing * 2,
+        .min_size = leaf.content.size.y + spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags),
-        .ascent = 0,
-        .descent = 0};
+        .ascent = leaf.content.ascent,
+        .descent = leaf.content.descent};
 }
 
 void
@@ -49,14 +57,15 @@ leaf_assign_boxes(
     float baseline)
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
+    float const spacing = leaf_effective_spacing(leaf);
     alia_box* placement = arena_alloc<alia_box>(ctx->arena);
     auto const padded_placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(leaf.flags, main_axis),
         box.size,
         baseline,
-        leaf.size,
-        0,
-        {leaf.spacing, leaf.spacing});
+        leaf.content.size,
+        leaf.content.ascent,
+        {spacing, spacing});
     placement->min = box.min + padded_placement.min;
     placement->size = padded_placement.size;
 }
@@ -77,7 +86,9 @@ extern "C" {
 
 void
 alia_layout_leaf_emit(
-    alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags)
+    alia_context* ctx,
+    alia_layout_content_metrics content,
+    alia_layout_flags_t flags)
 {
     auto& emission = ctx->layout->emission;
     layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(emission.arena);
@@ -87,7 +98,7 @@ alia_layout_leaf_emit(
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
         .spacing = ctx->style->spacing,
-        .size = size};
+        .content = content};
 }
 
 } // extern "C"
