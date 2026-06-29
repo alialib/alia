@@ -146,8 +146,7 @@ make_fragment_box(
     alia_vec2f const min
         = {placement->position.x,
            placement->position.y + placement->baseline - content->ascent};
-    return alia_box_make(
-        min, content->size);
+    return alia_box_make(min, content->size);
 }
 
 static void

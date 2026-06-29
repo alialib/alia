@@ -13,8 +13,7 @@ struct window_interface
     }
 
     virtual void
-    set_cursor(cursor cursor)
-        = 0;
+    set_cursor(cursor cursor) = 0;
 };
 
 } // namespace alia

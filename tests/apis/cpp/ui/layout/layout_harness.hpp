@@ -28,14 +28,19 @@ layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing);
 
 void
 layout_test_fixture_run_refresh_impl(
-    layout_test_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    layout_test_fixture* fixture,
+    void (*fn)(alia_context*, void*),
+    void* user);
 
 void
-layout_test_fixture_resolve(layout_test_fixture* fixture, alia_vec2f available);
+layout_test_fixture_resolve(
+    layout_test_fixture* fixture, alia_vec2f available);
 
 void
 layout_test_fixture_run_spatial_impl(
-    layout_test_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    layout_test_fixture* fixture,
+    void (*fn)(alia_context*, void*),
+    void* user);
 
 template<class Fn>
 void
@@ -107,9 +112,7 @@ test_leaf(
         alia_layout_leaf_emit(
             &ctx,
             alia_layout_content_metrics{
-                .size = size,
-                .ascent = ascent,
-                .descent = descent},
+                .size = size, .ascent = ascent, .descent = descent},
             raw_code(flags));
     else
     {
@@ -152,8 +155,7 @@ run_layout_case(alia_vec2f assigned, Fn&& fn)
 
 template<class Fn>
 void
-run_layout_case_with_spacing(
-    float spacing, alia_vec2f assigned, Fn&& fn)
+run_layout_case_with_spacing(float spacing, alia_vec2f assigned, Fn&& fn)
 {
     layout_test_fixture* fixture = layout_test_fixture_create();
     assert(fixture != nullptr);

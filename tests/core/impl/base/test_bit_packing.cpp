@@ -149,4 +149,3 @@ TEST_CASE("bitpack subpacks")
     // Verify the overall bitpack again
     REQUIRE(pack.bits == 0b1101'0111);
 }
-

@@ -36,10 +36,7 @@ flow_spring_measure_vertical(
     (void) node;
     (void) assigned_width;
     return alia_vertical_requirements{
-        .min_size = 0.f,
-        .growth_factor = 0.f,
-        .ascent = 0.f,
-        .descent = 0.f};
+        .min_size = 0.f, .growth_factor = 0.f, .ascent = 0.f, .descent = 0.f};
 }
 
 void
@@ -75,8 +72,8 @@ flow_spring_emit_flow_fragments(
 {
     auto& spring = *reinterpret_cast<layout_flow_spring_node*>(node);
     auto const marker = alia_arena_mark(&ctx->scratch);
-    auto vertical = alia_measure_vertical(
-        ctx, ALIA_MAIN_AXIS_X, node, spring.min_width);
+    auto vertical
+        = alia_measure_vertical(ctx, ALIA_MAIN_AXIS_X, node, spring.min_width);
     alia_arena_jump(&ctx->scratch, marker);
     alia_layout_emit_flow_fragment(
         emitter,

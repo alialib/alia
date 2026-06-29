@@ -215,8 +215,7 @@ alia_test_substrate_fixture_cleanup_root_block(
 }
 
 void
-alia_test_substrate_fixture_advance_frame(
-    alia_test_substrate_fixture* fixture)
+alia_test_substrate_fixture_advance_frame(alia_test_substrate_fixture* fixture)
 {
     if (!fixture)
         return;

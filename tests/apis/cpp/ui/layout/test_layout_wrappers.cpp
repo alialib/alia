@@ -30,9 +30,9 @@ TEST_CASE("layout edge offsets")
     alia_box box;
     run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
         edge_offsets(
-            ctx,
-            alia_edge_offsets_make_trbl(10.f, 10.f, 10.f, 10.f),
-            [&]() { test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &box); });
+            ctx, alia_edge_offsets_make_trbl(10.f, 10.f, 10.f, 10.f), [&]() {
+                test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &box);
+            });
     });
     CHECK(check_box_eq(
         box, alia_vec2f_make(10.f, 10.f), alia_vec2f_make(80.f, 80.f)));
@@ -76,7 +76,9 @@ TEST_CASE("layout edge offsets with flags")
             ctx,
             alia_edge_offsets_make_trbl(10.f, 10.f, 10.f, 10.f),
             ALIGN_LEFT,
-            [&]() { test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &box); });
+            [&]() {
+                test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &box);
+            });
     });
     CHECK(check_box_eq(
         box, alia_vec2f_make(10.f, 10.f), alia_vec2f_make(80.f, 80.f)));

@@ -12,8 +12,7 @@ struct os_interface
     }
 
     virtual void
-    set_clipboard_text(std::string text)
-        = 0;
+    set_clipboard_text(std::string text) = 0;
 
     virtual std::optional<std::string>
     get_clipboard_text() = 0;

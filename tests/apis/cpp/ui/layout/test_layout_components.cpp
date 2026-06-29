@@ -194,11 +194,7 @@ TEST_CASE("layout leaf fill x align top")
 {
     alia_box box;
     run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
-        test_leaf(
-            ctx,
-            alia_vec2f_make(10.f, 10.f),
-            FILL_X | ALIGN_TOP,
-            &box);
+        test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FILL_X | ALIGN_TOP, &box);
     });
     CHECK(check_box_eq(
         box, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(100.f, 10.f)));
@@ -209,10 +205,7 @@ TEST_CASE("layout leaf fill y align right")
     alia_box box;
     run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
         test_leaf(
-            ctx,
-            alia_vec2f_make(10.f, 10.f),
-            FILL_Y | ALIGN_RIGHT,
-            &box);
+            ctx, alia_vec2f_make(10.f, 10.f), FILL_Y | ALIGN_RIGHT, &box);
     });
     CHECK(check_box_eq(
         box, alia_vec2f_make(90.f, 0.f), alia_vec2f_make(10.f, 100.f)));
@@ -223,10 +216,7 @@ TEST_CASE("layout leaf top left alignment")
     alia_box box;
     run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
         test_leaf(
-            ctx,
-            alia_vec2f_make(10.f, 10.f),
-            ALIGN_TOP | ALIGN_LEFT,
-            &box);
+            ctx, alia_vec2f_make(10.f, 10.f), ALIGN_TOP | ALIGN_LEFT, &box);
     });
     CHECK(check_box_eq(
         box, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(10.f, 10.f)));
@@ -261,10 +251,8 @@ TEST_CASE("layout row leaf flush sizing")
     run_layout_case_with_spacing(
         8.f, alia_vec2f_make(60.f, 50.f), [&](alia_context& ctx) {
             row(ctx, [&]() {
-                test_leaf(
-                    ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &spaced);
-                test_leaf(
-                    ctx, alia_vec2f_make(20.f, 10.f), FLUSH, &flush);
+                test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &spaced);
+                test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FLUSH, &flush);
             });
         });
     CHECK(check_box_eq(

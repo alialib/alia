@@ -67,7 +67,8 @@ wire_context(layout_test_fixture& fixture, bool refresh)
     }
     else
     {
-        fixture.draw_event = alia_make_draw_event(alia_draw{.context = nullptr});
+        fixture.draw_event
+            = alia_make_draw_event(alia_draw{.context = nullptr});
         fixture.event_traversal.event = &fixture.draw_event;
     }
     fixture.event_traversal.aborted = false;

@@ -31,8 +31,8 @@ alia_default_emit_flow_fragments(
         alia_flow_fragment{
             .flags = 0,
             .content = alia_layout_content_metrics{
-                .size = alia_vec2f_make(
-                    horizontal.min_size, vertical.min_size),
+                .size
+                = alia_vec2f_make(horizontal.min_size, vertical.min_size),
                 .ascent = vertical.ascent,
                 .descent = vertical.descent}});
 }

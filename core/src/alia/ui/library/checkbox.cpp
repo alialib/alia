@@ -255,9 +255,10 @@ alia_do_checkbox(
     {
         alia_layout_leaf_emit(
             ctx,
-            alia_layout_content_metrics_make(alia_vec2f{
-                alia_px(ctx, effective_style->layout_width),
-                alia_px(ctx, effective_style->layout_height)}),
+            alia_layout_content_metrics_make(
+                alia_vec2f{
+                    alia_px(ctx, effective_style->layout_width),
+                    alia_px(ctx, effective_style->layout_height)}),
             layout_flags);
         return id;
     }

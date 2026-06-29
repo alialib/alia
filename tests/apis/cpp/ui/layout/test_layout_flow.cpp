@@ -42,7 +42,8 @@ TEST_CASE("layout flow inside column")
                 test_spacer(ctx, alia_vec2f_make(30.f, 20.f));
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FILL);
             });
-            test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &column_leaf);
+            test_leaf(
+                ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &column_leaf);
         });
     });
     CHECK(check_box_eq(
@@ -147,13 +148,9 @@ TEST_CASE("layout flow justify space around full line")
     CHECK(check_box_near(
         leaf1, alia_vec2f_make(1.6666667f, 0.f), alia_vec2f_make(20.f, 10.f)));
     CHECK(check_box_near(
-        leaf2,
-        alia_vec2f_make(25.f, 0.f),
-        alia_vec2f_make(20.f, 10.f)));
+        leaf2, alia_vec2f_make(25.f, 0.f), alia_vec2f_make(20.f, 10.f)));
     CHECK(check_box_near(
-        leaf3,
-        alia_vec2f_make(48.333332f, 0.f),
-        alia_vec2f_make(20.f, 10.f)));
+        leaf3, alia_vec2f_make(48.333332f, 0.f), alia_vec2f_make(20.f, 10.f)));
     CHECK(check_box_eq(
         leaf4, alia_vec2f_make(0.f, 10.f), alia_vec2f_make(20.f, 10.f)));
 }
@@ -300,7 +297,8 @@ TEST_CASE("layout flow growth override passthrough")
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &wrapped_a);
             growth_override(ctx, 2.f, [&]() {
-                test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &wrapped_b);
+                test_leaf(
+                    ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &wrapped_b);
             });
             test_leaf(ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &wrapped_c);
         });
@@ -317,10 +315,9 @@ TEST_CASE("layout flow edge offsets single leaf")
     run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
         flow(ctx, [&]() {
             edge_offsets(
-                ctx,
-                alia_edge_offsets_make_trbl(2.f, 5.f, 2.f, 5.f),
-                [&]() {
-                    test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
+                ctx, alia_edge_offsets_make_trbl(2.f, 5.f, 2.f, 5.f), [&]() {
+                    test_leaf(
+                        ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
                 });
         });
     });
@@ -337,10 +334,9 @@ TEST_CASE("layout flow edge offsets between plain leaves")
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf_a);
             edge_offsets(
-                ctx,
-                alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f),
-                [&]() {
-                    test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf_b);
+                ctx, alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f), [&]() {
+                    test_leaf(
+                        ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf_b);
                 });
             test_leaf(ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &leaf_c);
         });
@@ -361,10 +357,9 @@ TEST_CASE("layout flow edge offsets line wrap")
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf_a);
             edge_offsets(
-                ctx,
-                alia_edge_offsets_make_trbl(0.f, 8.f, 0.f, 8.f),
-                [&]() {
-                    test_leaf(ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &leaf_b);
+                ctx, alia_edge_offsets_make_trbl(0.f, 8.f, 0.f, 8.f), [&]() {
+                    test_leaf(
+                        ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &leaf_b);
                 });
         });
     });
@@ -381,11 +376,11 @@ TEST_CASE("layout flow edge offsets groups multiple children")
     run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_context& ctx) {
         flow(ctx, [&]() {
             edge_offsets(
-                ctx,
-                alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f),
-                [&]() {
-                    test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf1);
-                    test_leaf(ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &leaf2);
+                ctx, alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f), [&]() {
+                    test_leaf(
+                        ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf1);
+                    test_leaf(
+                        ctx, alia_vec2f_make(15.f, 10.f), NO_FLAGS, &leaf2);
                 });
         });
     });

@@ -88,4 +88,3 @@ TEST_CASE("simple flares")
     check_flares(milliseconds(1200), {});
     REQUIRE(!ctx.animation_in_progress);
 }
-

@@ -329,9 +329,17 @@ alia_msdf_draw_text(
 
         uint32_t unicode = static_cast<uint32_t>(c);
         alia_msdf_glyph const& glyph = require_glyph(font, unicode);
-        auto const& cached_glyph = font.glyph_cache.at(static_cast<int>(unicode));
+        auto const& cached_glyph
+            = font.glyph_cache.at(static_cast<int>(unicode));
         emit_glyph_draw_command(
-            ctx, z_index, glyph, cached_glyph, sdf_scale, cursor, scale, color);
+            ctx,
+            z_index,
+            glyph,
+            cached_glyph,
+            sdf_scale,
+            cursor,
+            scale,
+            color);
 
         cursor.x += glyph.advance * scale;
         if (i + 1 < length)
@@ -353,7 +361,8 @@ alia_msdf_draw_codepoint(
     msdf_font_data& font = fonts->fonts[font_index];
     alia_msdf_atlas_description const& atlas = fonts->atlas;
     alia_msdf_glyph const& glyph = require_glyph(font, codepoint);
-    auto const& cached_glyph = font.glyph_cache.at(static_cast<int>(codepoint));
+    auto const& cached_glyph
+        = font.glyph_cache.at(static_cast<int>(codepoint));
 
     alia_vec2f cursor = alia_vec2f_add(
         alia_vec2f_add(position, ctx->geometry->offset),

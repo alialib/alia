@@ -116,8 +116,7 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
     // Fire with wrong target.
     {
         alia_timer payload{
-            .target = make_test_element_id(0xdeadbeefu),
-            .fire_time = 100};
+            .target = make_test_element_id(0xdeadbeefu), .fire_time = 100};
         alia_event event = alia_make_timer_event(payload);
         traversal.event = &event;
 
