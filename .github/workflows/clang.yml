@@ -43,11 +43,15 @@ jobs:
           if [ "${{ matrix.config }}" = "Debug" ]; then
             COVERAGE_FLAGS="-DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
           fi
+          BENCHMARK_FLAGS="-DALIA_ENABLE_BENCHMARKS=OFF"
+          if [ "${{ matrix.config }}" = "Release" ]; then
+            BENCHMARK_FLAGS="-DALIA_ENABLE_BENCHMARKS=ON"
+          fi
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE="${{ matrix.config }}" \
             -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
             -DALIA_ENABLE_TESTING=ON \
             -DALIA_ENABLE_EXAMPLES=OFF \
-            -DALIA_ENABLE_BENCHMARKS=OFF \
+            ${BENCHMARK_FLAGS} \
             -DALIA_ENABLE_OPENGL=OFF \
             -DALIA_ENABLE_GLFW=OFF \
             -DALIA_ENABLE_ASSET_PIPELINE=OFF \
@@ -60,6 +64,13 @@ jobs:
       - name: Test
         working-directory: build
         run: ctest --output-on-failure
+
+      - name: Benchmark smoke
+        if: matrix.config == 'Release'
+        working-directory: build
+        env:
+          ALIA_BENCHMARK_SMOKE: 1
+        run: ./alia_benchmarks
 
       - name: Generate coverage report
         if: matrix.config == 'Debug'

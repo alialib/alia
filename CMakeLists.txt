@@ -160,6 +160,10 @@ if(ALIA_ENABLE_EXAMPLES)
     endif()
 endif()
 
+if(ALIA_ENABLE_TESTING OR ALIA_ENABLE_BENCHMARKS)
+    add_subdirectory(tests/support)
+endif()
+
 if(ALIA_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(tests/core)
@@ -170,11 +174,20 @@ if(ALIA_ENABLE_TESTING)
 endif()
 
 if(ALIA_ENABLE_BENCHMARKS)
-    add_executable(alia_benchmarks ${PROJECT_SOURCE_DIR}/benchmarks/layout.cpp)
-    target_link_libraries(alia_benchmarks PRIVATE
-        alia_core)
+    add_executable(alia_benchmarks
+        ${PROJECT_SOURCE_DIR}/benchmarks/layout.cpp)
+    target_link_libraries(alia_benchmarks PRIVATE alia_layout_fixture)
+    target_include_directories(alia_benchmarks PRIVATE
+        ${PROJECT_SOURCE_DIR}/benchmarks)
     if (MSVC)
         target_link_options(alia_benchmarks PRIVATE
             $<$<CONFIG:RelWithDebInfo>:/PROFILE>)
+    endif()
+    if(ALIA_ENABLE_TESTING)
+        add_test(
+            NAME alia_benchmarks_smoke
+            COMMAND alia_benchmarks)
+        set_tests_properties(alia_benchmarks_smoke PROPERTIES
+            ENVIRONMENT ALIA_BENCHMARK_SMOKE=1)
     endif()
 endif()

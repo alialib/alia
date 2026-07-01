@@ -1,10 +1,11 @@
-#include "layout_harness.hpp"
+#include <alia/test/layout/layout_fixture.hpp>
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/ui/events.h>
-#include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/style.h>
 #include <alia/base/stack.h>
+#include <alia/impl/events.hpp>
 #include <alia/ui/layout/system.h>
 
 #include <cstdlib>
@@ -38,9 +39,17 @@ aligned_free_portable(void* p)
 #endif
 }
 
+void
+reset_node_arena(alia_layout_system& layout)
+{
+    alia_bump_allocator node_alloc;
+    alia_bump_allocator_init(&node_alloc, &layout.node_arena);
+    alia_arena_reset(&node_alloc);
+}
+
 } // namespace
 
-struct layout_test_fixture
+struct layout_fixture
 {
     alia_layout_system layout = {};
     alia_stack stack = {};
@@ -57,7 +66,7 @@ struct layout_test_fixture
 };
 
 static void
-wire_context(layout_test_fixture& fixture, bool refresh)
+wire_context(layout_fixture& fixture, bool refresh)
 {
     if (refresh)
     {
@@ -99,15 +108,15 @@ wire_context(layout_test_fixture& fixture, bool refresh)
     };
 }
 
-layout_test_fixture*
-layout_test_fixture_create()
+layout_fixture*
+layout_fixture_create()
 {
-    auto* fixture = static_cast<layout_test_fixture*>(
-        std::malloc(sizeof(layout_test_fixture)));
+    auto* fixture
+        = static_cast<layout_fixture*>(std::malloc(sizeof(layout_fixture)));
     if (!fixture)
         return nullptr;
 
-    new (fixture) layout_test_fixture{};
+    new (fixture) layout_fixture{};
 
     alia_layout_system_init(&fixture->layout);
 
@@ -115,7 +124,7 @@ layout_test_fixture_create()
         = aligned_alloc_portable(ALIA_MAX_ALIGN, stack_buffer_size);
     if (!fixture->stack_buffer)
     {
-        layout_test_fixture_destroy(fixture);
+        layout_fixture_destroy(fixture);
         return nullptr;
     }
 
@@ -125,7 +134,7 @@ layout_test_fixture_create()
 }
 
 void
-layout_test_fixture_destroy(layout_test_fixture* fixture)
+layout_fixture_destroy(layout_fixture* fixture)
 {
     if (!fixture)
         return;
@@ -145,25 +154,52 @@ layout_test_fixture_destroy(layout_test_fixture* fixture)
 }
 
 alia_context*
-layout_test_fixture_context(layout_test_fixture* fixture)
+layout_fixture_context(layout_fixture* fixture)
 {
     return fixture ? &fixture->context : nullptr;
 }
 
+alia_layout_system*
+layout_fixture_layout_system(layout_fixture* fixture)
+{
+    return fixture ? &fixture->layout : nullptr;
+}
+
+alia_layout_node*
+layout_fixture_root_child(layout_fixture* fixture)
+{
+    return fixture ? fixture->layout.root.first_child : nullptr;
+}
+
+alia_arena_stats
+layout_fixture_node_arena_stats(layout_fixture* fixture)
+{
+    if (!fixture)
+        return alia_arena_stats{};
+    return alia_arena_get_stats(&fixture->layout.node_arena);
+}
+
+void*
+layout_fixture_placement_arena_identity(layout_fixture* fixture)
+{
+    return fixture ? static_cast<void*>(&fixture->layout.placement_arena) : nullptr;
+}
+
 void
-layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing)
+layout_fixture_set_spacing(layout_fixture* fixture, float spacing)
 {
     if (fixture)
         fixture->style.spacing = spacing;
 }
 
 void
-layout_test_fixture_run_refresh_impl(
-    layout_test_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
+layout_fixture_run_refresh_impl(
+    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
 {
     if (!fixture || !fn)
         return;
 
+    reset_node_arena(fixture->layout);
     fixture->layout.root.first_child = nullptr;
     wire_context(*fixture, true);
     fn(&fixture->context, user);
@@ -171,7 +207,7 @@ layout_test_fixture_run_refresh_impl(
 }
 
 void
-layout_test_fixture_resolve(layout_test_fixture* fixture, alia_vec2f available)
+layout_fixture_resolve(layout_fixture* fixture, alia_vec2f available)
 {
     if (!fixture)
         return;
@@ -179,12 +215,18 @@ layout_test_fixture_resolve(layout_test_fixture* fixture, alia_vec2f available)
 }
 
 void
-layout_test_fixture_run_spatial_impl(
-    layout_test_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
+layout_fixture_run_spatial_impl(
+    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
 {
     if (!fixture || !fn)
         return;
 
     wire_context(*fixture, false);
     fn(&fixture->context, user);
+}
+
+bool
+alia_layout_context_is_refresh(alia_context* ctx)
+{
+    return ctx != nullptr && alia::is_refresh_event(*ctx);
 }

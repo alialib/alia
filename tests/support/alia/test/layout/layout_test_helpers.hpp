@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/test/layout/layout_fixture.hpp>
+
 #include <alia/abi/base/geometry/box.h>
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/ui/layout/api.h>
@@ -11,60 +13,6 @@
 #include <cmath>
 #include <initializer_list>
 #include <utility>
-
-struct layout_test_fixture;
-
-layout_test_fixture*
-layout_test_fixture_create();
-
-void
-layout_test_fixture_destroy(layout_test_fixture* fixture);
-
-alia_context*
-layout_test_fixture_context(layout_test_fixture* fixture);
-
-void
-layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing);
-
-void
-layout_test_fixture_run_refresh_impl(
-    layout_test_fixture* fixture,
-    void (*fn)(alia_context*, void*),
-    void* user);
-
-void
-layout_test_fixture_resolve(
-    layout_test_fixture* fixture, alia_vec2f available);
-
-void
-layout_test_fixture_run_spatial_impl(
-    layout_test_fixture* fixture,
-    void (*fn)(alia_context*, void*),
-    void* user);
-
-template<class Fn>
-void
-layout_test_fixture_run_refresh(layout_test_fixture* fixture, Fn&& fn)
-{
-    layout_test_fixture_run_refresh_impl(
-        fixture,
-        [](alia_context* ctx, void* user) {
-            (*static_cast<std::decay_t<Fn>*>(user))(ctx);
-        },
-        &fn);
-}
-
-template<class Fn>
-void
-layout_test_fixture_run_spatial(layout_test_fixture* fixture, Fn&& fn)
-{
-    layout_test_fixture_run_spatial_impl(
-        fixture,
-        [](alia_context* ctx, void* user) {
-            (*static_cast<std::decay_t<Fn>*>(user))(ctx);
-        },
-        &fn);
-}
 
 namespace alia::layout_test {
 

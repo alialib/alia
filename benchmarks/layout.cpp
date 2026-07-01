@@ -1,109 +1,43 @@
-
 #define ANKERL_NANOBENCH_IMPLEMENT
-#include "nanobench.h"
+#include "layout_bench_phases.hpp"
 
-#include <vector>
-
-#include <alia/arenas.hpp>
-#include <alia/context.h>
-#include <alia/system/object.h>
-
-using namespace alia;
-
-template<class Content>
-void
-add_content(System& system, Content&& content)
-{
-    Style style = {.spacing = 0};
-
-    system.layout.node_arena.reset();
-    Context refresh_ctx = {
-        Pass{
-            PassType::Refresh,
-            {.refresh
-             = {.layout_emission
-                = {&system.layout.node_arena,
-                   &system.layout.root,
-                   &system.layout.root.first_child}}}},
-        &style,
-        &system};
-
-    content(refresh_ctx);
-
-    *refresh_ctx.pass.refresh.layout_emission.next_ptr = 0;
-}
-
-void
-do_leaf(Context& ctx, Vec2 size, LayoutFlagSet flags = NO_FLAGS)
-{
-    if (ctx.pass.type == PassType::Refresh)
-    {
-        auto& layout = ctx.pass.refresh.layout_emission;
-        LayoutLeafNode* new_node = arena_alloc<LayoutLeafNode>(
-            ctx.pass.refresh.layout_emission.arena);
-        *layout.next_ptr = &new_node->base;
-        layout.next_ptr = &new_node->base.next_sibling;
-        *new_node = LayoutLeafNode{
-            .base = {.vtable = &leaf_vtable, .next_sibling = 0},
-            .flags = flags,
-            .spacing = ctx.style->spacing,
-            .size = size};
-    }
-}
+#include <fstream>
+#include <iostream>
 
 int
 main()
 {
-    System system;
-    initialize(system, Vec2{10'000, 10'000}, Vec2{1.0f, 1.0f});
+    layout_fixture* fixture = layout_fixture_create();
+    if (!fixture)
+        return 1;
 
-    add_content(system, [&](auto& ctx) {
-        row(ctx, [&] {
-            for (uint32_t i = 0; i < 10; ++i)
-            {
-                column(ctx, [&] {
-                    for (uint32_t i = 0; i < 10; ++i)
-                    {
-                        row(ctx, [&] {
-                            for (uint32_t i = 0; i < 10; ++i)
-                            {
-                                do_leaf(ctx, Vec2(100, 100));
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    });
+    layout_bench_scenario const scenarios[] = {
+        {"nested_grid_10x10x10",
+         alia_layout_scenario_nested_grid_10,
+         alia_vec2f_make(10'000.f, 10'000.f),
+         alia_layout_scenario_nested_grid_10_leaf_count},
+        {"column_of_rows_100",
+         alia_layout_scenario_column_of_rows_100,
+         alia_vec2f_make(10'000.f, 10'000.f),
+         alia_layout_scenario_column_of_rows_100_leaf_count},
+        {"growth_rows_100",
+         alia_layout_scenario_growth_rows_100,
+         alia_vec2f_make(10'000.f, 10'000.f),
+         alia_layout_scenario_growth_rows_100_leaf_count},
+    };
 
-    ankerl::nanobench::Bench().minEpochIterations(1000).run(
-        "add_content", [&] {
-            add_content(system, [&](auto& ctx) {
-                row(ctx, [&] {
-                    for (uint32_t i = 0; i < 10; ++i)
-                    {
-                        column(ctx, [&] {
-                            for (uint32_t i = 0; i < 10; ++i)
-                            {
-                                row(ctx, [&] {
-                                    for (uint32_t i = 0; i < 10; ++i)
-                                    {
-                                        do_leaf(ctx, Vec2(100, 100));
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-            ankerl::nanobench::doNotOptimizeAway(
-                system.layout.root.first_child);
-        });
+    ankerl::nanobench::Bench suite = make_bench();
+    for (auto const& scenario : scenarios)
+        bench_layout_phases(suite, fixture, scenario);
 
-    ankerl::nanobench::Bench().minEpochIterations(1000).run(
-        "resolve_layout", [&] {
-            resolve_layout(system.layout, Vec2{10'000, 10'000});
-            ankerl::nanobench::doNotOptimizeAway(
-                system.layout.placement_arena.peek());
-        });
+    ankerl::nanobench::render(
+        ankerl::nanobench::templates::csv(), suite, std::cout);
+    if (!benchmark_smoke_mode())
+    {
+        std::ofstream json_out("layout_benchmark_results.json");
+        suite.render(ankerl::nanobench::templates::json(), json_out);
+    }
+
+    layout_fixture_destroy(fixture);
+    return 0;
 }
