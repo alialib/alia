@@ -13,11 +13,9 @@ alia_timing_tick_count(alia_context* ctx)
     return ctx->tick_count;
 }
 
-static inline void
-alia_timing_request_animation_refresh(alia_context* ctx)
-{
-    // TODO: Implement this.
-}
+// Request another UI frame for animation purposes.
+void
+alia_timing_request_animation_refresh(alia_context* ctx);
 
 typedef struct alia_timer_state
 {

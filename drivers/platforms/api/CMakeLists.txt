@@ -1,0 +1,2 @@
+add_library(alia_platform_api INTERFACE)
+target_include_directories(alia_platform_api INTERFACE include)

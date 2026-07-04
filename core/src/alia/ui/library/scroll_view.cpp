@@ -97,7 +97,7 @@ static alia_scrollbar_style const default_scrollbar_style = {
     .minimum_thumb_length = 20.f,
     .thumb_corner_radius = 0.f,
     .line_size = 72.f,
-    .scroll_input_scale = 120.f,
+    .scroll_sensitivity = 1.f,
 };
 
 static inline float
@@ -424,13 +424,27 @@ do_scrollbar_pass(
             alia_box page0 = page_area(data, p, axis, false);
             alia_box page1 = page_area(data, p, axis, true);
             alia_element_box_region(
-                ctx, thumb_id, &thumb, ALIA_CURSOR_DEFAULT);
-            alia_element_box_region(ctx, btn0_id, &btn0, ALIA_CURSOR_DEFAULT);
-            alia_element_box_region(ctx, btn1_id, &btn1, ALIA_CURSOR_DEFAULT);
+                ctx,
+                thumb_id,
+                &thumb,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
             alia_element_box_region(
-                ctx, page0_id, &page0, ALIA_CURSOR_DEFAULT);
+                ctx, btn0_id, &btn0, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
             alia_element_box_region(
-                ctx, page1_id, &page1, ALIA_CURSOR_DEFAULT);
+                ctx, btn1_id, &btn1, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+            alia_element_box_region(
+                ctx,
+                page0_id,
+                &page0,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE);
+            alia_element_box_region(
+                ctx,
+                page1_id,
+                &page1,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE);
             break;
         }
 
@@ -730,12 +744,12 @@ alia_ui_scroll_view_begin(
 
     if (get_event_category(*ctx) == ALIA_CATEGORY_SPATIAL)
     {
-        alia_element_hit_test_box_region(
+        alia_element_box_region(
             ctx,
             scope.id,
             &scope.placement.viewport_box,
-            ALIA_HIT_TEST_SCROLL_INPUT,
-            ALIA_CURSOR_DEFAULT);
+            ALIA_CURSOR_DEFAULT,
+            ALIA_HIT_TEST_SCROLL_INPUT);
     }
 
     if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)
@@ -750,8 +764,8 @@ alia_ui_scroll_view_begin(
                     scope.placement,
                     0,
                     data->bar[0].logical
-                        - scroll_input_delta.x
-                              * data->style.scroll_input_scale);
+                        + scroll_input_delta.x
+                              * data->style.scroll_sensitivity);
             }
             if (scope.placement.scrollbar_on[1])
             {
@@ -760,8 +774,8 @@ alia_ui_scroll_view_begin(
                     scope.placement,
                     1,
                     data->bar[1].logical
-                        - scroll_input_delta.y
-                              * data->style.scroll_input_scale);
+                        + scroll_input_delta.y
+                              * data->style.scroll_sensitivity);
             }
         }
 

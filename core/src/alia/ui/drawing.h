@@ -3,6 +3,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/ui/drawing.h>
 
+#include <alia/base/arena.h>
+
 #include <unordered_map>
 #include <vector>
 
@@ -18,6 +20,8 @@ struct alia_draw_system
 {
     alia_draw_material_id next_material_id;
     std::vector<alia_draw_material> materials;
+    // Per-frame bump storage for draw commands emitted during the draw pass.
+    alia_arena command_arena;
 };
 
 struct alia_draw_bucket_table

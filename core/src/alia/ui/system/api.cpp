@@ -4,8 +4,6 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/work_internal.h>
 
-#include <chrono>
-
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/impl/base/arena.hpp>
@@ -13,6 +11,7 @@
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
 
+#include <chrono>
 #include <cstdlib>
 
 using namespace alia::operators;
@@ -35,6 +34,12 @@ ui_system_block_free(void* user, void* ptr, size_t size, size_t alignment)
 }
 
 namespace alia {
+
+bool
+ui_has_active_animations(ui_system const& ui)
+{
+    return !ui.animation.transitions.empty() || !ui.animation.flares.empty();
+}
 
 // TODO: Sort this out.
 void*
@@ -81,17 +86,15 @@ alia_ui_system_object_spec(void)
 alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
-    alia_ui_controller_fn controller,
-    void* controller_user_data,
+    alia_ui_controller controller,
     alia_vec2i surface_size)
 {
-    ALIA_ASSERT(controller != nullptr);
+    ALIA_ASSERT(controller.fn != nullptr);
     ALIA_ASSERT(object_storage != nullptr);
 
     alia_ui_system* ui = new (object_storage) alia_ui_system;
 
-    ui->controller_fn = controller;
-    ui->controller_user_data = controller_user_data;
+    ui->controller = controller;
 
     // TODO: Sort this out.
     void* block = alia::allocate_virtual_block(1024 * 1024);
@@ -111,6 +114,7 @@ alia_ui_system_init(
 
     // TODO: Sort this out.
     alia::initialize_lazy_commit_arena(&ui->scratch, 1024 * 1024);
+    alia::initialize_lazy_commit_arena(&ui->draw.command_arena);
 
     ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
@@ -125,8 +129,7 @@ alia_ui_system_init(
 void
 alia_ui_system_update(alia_ui_system* ui)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
 
     alia_ui_system_begin_update(ui);
     while (alia_ui_work_step(ui) != ALIA_UI_WORK_STEP_IDLE)
@@ -137,8 +140,7 @@ alia_ui_system_update(alia_ui_system* ui)
 void
 alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
 
     if (ui->surface_size.x != new_size.x || ui->surface_size.y != new_size.y)
         ui->ui_dirty = true;
@@ -148,16 +150,14 @@ alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size)
 alia_vec2i
 alia_ui_surface_get_size(alia_ui_system* ui)
 {
-    if (!ui)
-        return {0, 0};
+    ALIA_ASSERT(ui);
     return ui->surface_size;
 }
 
 void
 alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     if (ui->dpi != dpi)
         ui->ui_dirty = true;
     ui->dpi = dpi;
@@ -166,8 +166,7 @@ alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi)
 float
 alia_ui_surface_get_dpi(alia_ui_system* ui)
 {
-    if (!ui)
-        return 0.f;
+    ALIA_ASSERT(ui);
     return ui->dpi;
 }
 
@@ -175,8 +174,7 @@ void
 alia_ui_system_set_host_window_ops(
     alia_ui_system* ui, alia_host_window_ops const* ops)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     if (!ops)
     {
         ui->host_window = {};

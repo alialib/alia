@@ -33,8 +33,9 @@ alia_ui_work_step(alia_ui_system* ui);
 void
 alia_ui_system_end_update(alia_ui_system* ui);
 
-// True if pending input, a due timer at the current tick_count, or ui is
-// conservatively dirty (refresh may be needed before draw policies).
+// Does the UI need to issue a frame immediately? This is true if there is any
+// pending input, an event timer is due to be processed, the UI has been
+// marked as dirty, or any animations are active.
 bool
 alia_ui_needs_tick(alia_ui_system* ui);
 

@@ -206,7 +206,11 @@ alia_ui_collapsible_begin(
     scope.placement = *placement;
 
     alia_element_box_region(
-        ctx, scope.id, &scope.placement.window, ALIA_CURSOR_DEFAULT);
+        ctx,
+        scope.id,
+        &scope.placement.window,
+        ALIA_CURSOR_DEFAULT,
+        ALIA_HIT_TEST_MOUSE);
 
     bool const apply_geometry = expansion != 0.f && expansion != 1.f;
     if (apply_geometry)

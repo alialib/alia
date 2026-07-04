@@ -1,6 +1,7 @@
 #include <alia/abi/ui/system/input_processing.h>
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/prelude.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/object.h>
@@ -12,6 +13,7 @@ extern "C" {
 void
 alia_ui_enqueue_mouse_motion(alia_ui_system* ui, alia_vec2f position)
 {
+    ALIA_ASSERT(ui);
     if (!ui->input.mouse_inside_window
         || !alia_vec2f_equal(ui->input.mouse_position, position))
     {
@@ -24,6 +26,7 @@ alia_ui_enqueue_mouse_motion(alia_ui_system* ui, alia_vec2f position)
 void
 alia_ui_enqueue_mouse_loss(alia_ui_system* ui)
 {
+    ALIA_ASSERT(ui);
     // TODO: Enqueue a mouse loss event.
     ui->input.mouse_inside_window = false;
 }
@@ -35,6 +38,7 @@ alia_ui_enqueue_mouse_press(
     alia_button_t button,
     alia_kmods_t mods)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_mouse_press_event(
         {.button = button, .mods = mods, .x = position.x, .y = position.y});
     alia_ui_enqueue_event(ui, &event);
@@ -47,6 +51,7 @@ alia_ui_enqueue_mouse_release(
     alia_button_t button,
     alia_kmods_t mods)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_mouse_release_event(
         {.button = button, .mods = mods, .x = position.x, .y = position.y});
     alia_ui_enqueue_event(ui, &event);
@@ -59,6 +64,7 @@ alia_ui_enqueue_double_click(
     alia_button_t button,
     alia_kmods_t mods)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_double_click_event(
         {.button = button, .mods = mods, .x = position.x, .y = position.y});
     alia_ui_enqueue_event(ui, &event);
@@ -67,6 +73,7 @@ alia_ui_enqueue_double_click(
 void
 alia_ui_enqueue_scroll(alia_ui_system* ui, alia_vec2f delta)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_scroll_input_event({.delta = delta});
     alia_ui_enqueue_event(ui, &event);
 }
@@ -74,6 +81,7 @@ alia_ui_enqueue_scroll(alia_ui_system* ui, alia_vec2f delta)
 void
 alia_ui_set_focus(alia_ui_system* ui, alia_element_id widget)
 {
+    ALIA_ASSERT(ui);
     // TODO: Implement this logic once there is an internal event queue.
 
     // bool different = sys.input.widget_with_focus.id != widget.id;
@@ -117,7 +125,6 @@ alia_ui_set_focus(alia_ui_system* ui, alia_element_id widget)
     //     focus_notification_event event{{{}, ui_event_type::FOCUS_GAIN}};
     //     deliver_input_event(sys, element.widget, event);
     // }
-    (void) ui;
     (void) widget;
 }
 
@@ -133,6 +140,7 @@ make_key_input(alia_key_info key)
 bool
 alia_ui_enqueue_focused_key_press(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
@@ -141,6 +149,7 @@ alia_ui_enqueue_focused_key_press(alia_ui_system* ui, alia_key_info key)
 bool
 alia_ui_enqueue_global_key_press(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_global_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
@@ -149,6 +158,7 @@ alia_ui_enqueue_global_key_press(alia_ui_system* ui, alia_key_info key)
 bool
 alia_ui_enqueue_focused_key_release(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_key_release_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
@@ -157,6 +167,7 @@ alia_ui_enqueue_focused_key_release(alia_ui_system* ui, alia_key_info key)
 bool
 alia_ui_enqueue_global_key_release(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     alia_event event = alia_make_global_key_release_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
     return false;
@@ -165,6 +176,7 @@ alia_ui_enqueue_global_key_release(alia_ui_system* ui, alia_key_info key)
 bool
 alia_ui_enqueue_key_press(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     ui->input.keyboard_interaction = true;
     alia_event event = alia_make_key_press_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
@@ -174,6 +186,7 @@ alia_ui_enqueue_key_press(alia_ui_system* ui, alia_key_info key)
 bool
 alia_ui_enqueue_key_release(alia_ui_system* ui, alia_key_info key)
 {
+    ALIA_ASSERT(ui);
     ui->input.keyboard_interaction = true;
     alia_event event = alia_make_key_release_event(make_key_input(key));
     alia_ui_enqueue_event(ui, &event);
@@ -183,13 +196,13 @@ alia_ui_enqueue_key_release(alia_ui_system* ui, alia_key_info key)
 void
 alia_ui_enqueue_focus_loss(alia_ui_system* ui)
 {
-    (void) ui;
+    ALIA_ASSERT(ui);
 }
 
 void
 alia_ui_enqueue_focus_gain(alia_ui_system* ui)
 {
-    (void) ui;
+    ALIA_ASSERT(ui);
 }
 
 } // extern "C"

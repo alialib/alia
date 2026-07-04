@@ -9,22 +9,25 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_ui_system alia_ui_system;
 
-// Invoked by the UI system during update/dispatch with a fully prepared
-// context.
 typedef void (*alia_ui_controller_fn)(void* user_data, alia_context* ctx);
 
-// Size and alignment for placement-new / malloc storage of `alia_ui_system`.
+typedef struct alia_ui_controller
+{
+    alia_ui_controller_fn fn;
+    void* user_data;
+} alia_ui_controller;
+
+// size and alignment for placement-new / malloc storage of `alia_ui_system`
 alia_struct_spec
 alia_ui_system_object_spec(void);
 
-// `controller` must be non-null. `controller_user_data` may be null.
+// `controller.fn` must be non-null. `controller.user_data` may be null.
 // `object_storage` must point to at least `alia_ui_system_object_spec().size`
 // bytes aligned to `alia_ui_system_object_spec().align`.
 alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
-    alia_ui_controller_fn controller,
-    void* controller_user_data,
+    alia_ui_controller controller,
     alia_vec2i surface_size);
 
 // Detects changes in UI contents, updates layout, and processes input routing.

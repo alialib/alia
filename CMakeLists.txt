@@ -39,7 +39,7 @@ option(
     ALIA_ENABLE_OPENGL
     "Enable the OpenGL renderer"
     ON)
-if(ALIA_ENABLE_OPENGL)
+if(ALIA_ENABLE_OPENGL AND NOT ALIA_IS_EMSCRIPTEN)
   list(APPEND VCPKG_MANIFEST_FEATURES "opengl")
 endif()
 
@@ -49,7 +49,7 @@ option(
     ALIA_ENABLE_GLFW
     "Enable the GLFW backend for the UI library"
     ON)
-if(ALIA_ENABLE_GLFW)
+if(ALIA_ENABLE_GLFW AND NOT ALIA_IS_EMSCRIPTEN)
   list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
 endif()
 
@@ -75,8 +75,19 @@ if(ALIA_ENABLE_OPENGL)
     add_subdirectory(drivers/renderers/gl)
 endif()
 
-if(ALIA_ENABLE_GLFW)
+add_subdirectory(drivers/platforms/api)
+
+if(ALIA_ENABLE_GLFW AND NOT EMSCRIPTEN)
     add_subdirectory(drivers/platforms/glfw)
+endif()
+
+if(EMSCRIPTEN)
+    add_subdirectory(drivers/platforms/web)
+endif()
+
+if(ALIA_ENABLE_OPENGL)
+    alia_add_host_library()
+    add_subdirectory(shell/gl)
 endif()
 
 add_subdirectory(apis/cpp)
@@ -86,10 +97,9 @@ set(ALIA_GEN_DIR "${CMAKE_BINARY_DIR}/gen"
 
 set(ALIA_FONTS_H "${ALIA_GEN_DIR}/alia_fonts.h")
 set(ALIA_FONTS_CPP "${ALIA_GEN_DIR}/alia_fonts.cpp")
+set(ALIA_FONT_MANIFEST "${CMAKE_SOURCE_DIR}/assets/fonts.yaml")
 
 if(ALIA_ENABLE_ASSET_PIPELINE)
-    set(ALIA_FONT_MANIFEST "${CMAKE_SOURCE_DIR}/assets/fonts.yaml")
-
     add_subdirectory(tools)
     file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
     add_custom_command(
@@ -101,6 +111,28 @@ if(ALIA_ENABLE_ASSET_PIPELINE)
         COMMENT "Generating Alia font assets"
     )
     set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
+elseif(EMSCRIPTEN AND ALIA_ENABLE_EXAMPLES)
+    # Cross-compile: run the native asset builder from a desktop build tree.
+    set(ALIA_HOST_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/Release"
+        CACHE PATH "Native build directory containing tools/alia_asset_builder")
+    set(ALIA_HOST_ASSET_BUILDER
+        "${ALIA_HOST_BUILD_DIR}/tools/alia_asset_builder.exe")
+    if(NOT EXISTS "${ALIA_HOST_ASSET_BUILDER}")
+        message(FATAL_ERROR
+            "Native alia_asset_builder not found at:\n"
+            "  ${ALIA_HOST_ASSET_BUILDER}\n"
+            "Build the desktop Release tree first (scripts/build.bat alia_app).")
+    endif()
+    file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
+    add_custom_command(
+        OUTPUT "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
+        COMMAND "${ALIA_HOST_ASSET_BUILDER}"
+            "${ALIA_FONT_MANIFEST}" "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
+            --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
+        DEPENDS "${ALIA_HOST_ASSET_BUILDER}" "${ALIA_FONT_MANIFEST}"
+        COMMENT "Generating Alia font assets (host tool)"
+    )
+    set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
 endif()
 
 # TODO: Use a different option test for this.
@@ -110,22 +142,19 @@ if(ALIA_ENABLE_EXAMPLES)
         "${ALIA_GEN_DIR}"
         ${CMAKE_SOURCE_DIR}/core/include)
     target_link_libraries(alia_font_assets PUBLIC alia_core)
+    if(ALIA_ENABLE_OPENGL)
+        target_link_libraries(alia_gl_shell PUBLIC alia_font_assets)
+    endif()
 endif()
 
 if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_app
         ${PROJECT_SOURCE_DIR}/examples/app.cpp)
-    target_link_libraries(alia_app PRIVATE
-        alia_cpp alia_core alia_gl_renderer alia_glfw_platform
-        alia_font_assets)
-    target_include_directories(alia_app PRIVATE "${ALIA_GEN_DIR}")
+    target_link_libraries(alia_app PRIVATE alia_cpp alia_gl_shell)
 
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
-    target_link_libraries(alia_shader_gallery PRIVATE
-        alia_cpp alia_core alia_gl_renderer alia_glfw_platform
-        alia_font_assets)
-    target_include_directories(alia_shader_gallery PRIVATE "${ALIA_GEN_DIR}")
+    target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
 
     if(EMSCRIPTEN)
         target_compile_options(alia_app PRIVATE
@@ -136,24 +165,22 @@ if(ALIA_ENABLE_EXAMPLES)
         # --preload-file maps source assets to virtual filesystem
 
         target_link_options(alia_app PRIVATE
-            "-sUSE_GLFW=3"
             "-sUSE_WEBGL2=1"
             "-sFULL_ES3=1"
             "-sWASM=1"
             "-fwasm-exceptions"
             "-sALLOW_MEMORY_GROWTH=1"
             "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
-            "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
+            "--shell-file" "${ALIA_EMSCRIPTEN_SHELL_FILE}"
         )
         target_link_options(alia_shader_gallery PRIVATE
-            "-sUSE_GLFW=3"
             "-sUSE_WEBGL2=1"
             "-sFULL_ES3=1"
             "-sWASM=1"
             "-fwasm-exceptions"
             "-sALLOW_MEMORY_GROWTH=1"
             "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
-            "--shell-file" "${CMAKE_SOURCE_DIR}/shell_minimal.html"
+            "--shell-file" "${ALIA_EMSCRIPTEN_SHELL_FILE}"
         )
         set_target_properties(alia_app PROPERTIES SUFFIX ".html")
         set_target_properties(alia_shader_gallery PROPERTIES SUFFIX ".html")

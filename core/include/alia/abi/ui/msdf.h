@@ -8,6 +8,7 @@
 
 ALIA_EXTERN_C_BEGIN
 
+typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_msdf_text_engine alia_msdf_text_engine;
 
 typedef struct alia_msdf_font_metrics
@@ -64,6 +65,26 @@ typedef struct alia_msdf_break_result
     float width;
 } alia_msdf_break_result;
 
+typedef struct alia_msdf_atlas_rle
+{
+    uint8_t const* rle_r;
+    size_t rle_r_size;
+    uint8_t const* rle_g;
+    size_t rle_g_size;
+    uint8_t const* rle_b;
+    size_t rle_b_size;
+    int width;
+    int height;
+    size_t decompressed_size;
+} alia_msdf_atlas_rle;
+
+typedef struct alia_msdf_atlas_image
+{
+    uint8_t const* rgb;
+    int width;
+    int height;
+} alia_msdf_atlas_image;
+
 void
 alia_msdf_atlas_rle_decompress(
     uint8_t const* rle_r,
@@ -74,6 +95,19 @@ alia_msdf_atlas_rle_decompress(
     size_t rle_b_size,
     uint8_t* out_rgb,
     size_t out_size);
+
+void
+alia_msdf_decompress_atlas_rle(
+    alia_msdf_atlas_rle const* atlas_rle,
+    uint8_t* out_rgb,
+    size_t out_size);
+
+void
+alia_ui_bind_msdf_text_engine(
+    alia_ui_system* ui, alia_msdf_text_engine* engine);
+
+void
+alia_ui_unbind_msdf_text_engine(alia_ui_system* ui);
 
 alia_msdf_text_engine*
 alia_msdf_create_text_engine(

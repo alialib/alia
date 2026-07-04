@@ -106,7 +106,8 @@ static alia_checkbox_style const default_checkbox_style = {
 
 // TODO: Don't hardcode this.
 static constexpr size_t checkmark_font_index = 2;
-static constexpr uint32_t checkmark_codepoint = 0xe5ca;
+// Material Symbols Outlined "check" (see alia_font_material_symbols_outlined_icon_check).
+static constexpr uint32_t checkmark_codepoint = 58826u;
 
 static inline alia_vec2f
 checkbox_center(alia_box placement)
@@ -275,7 +276,8 @@ alia_do_checkbox(
     switch (category)
     {
         case ALIA_CATEGORY_SPATIAL: {
-            alia_element_box_region(ctx, id, &box, ALIA_CURSOR_DEFAULT);
+            alia_element_box_region(
+                ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
             break;
         }
 

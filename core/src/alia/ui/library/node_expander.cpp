@@ -200,7 +200,8 @@ alia_do_node_expander(
     switch (category)
     {
         case ALIA_CATEGORY_SPATIAL: {
-            alia_element_box_region(ctx, id, &box, ALIA_CURSOR_DEFAULT);
+            alia_element_box_region(
+                ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
             break;
         }
 

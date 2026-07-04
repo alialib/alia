@@ -9,10 +9,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "alia_fonts.h"
 
-#include <alia/renderers/gl/renderer.hpp>
-#include <vector>
+#include <alia/shell/gl/app.h>
+#include <alia/shell/gl/fonts.h>
+#include <alia/shell/gl/shell.h>
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
@@ -38,23 +38,11 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/platforms/glfw/borderless_fullscreen.h>
-#include <alia/platforms/glfw/input_glue.h>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/html5.h>
-#endif
-
-#include <GLFW/glfw3.h>
-#ifndef __EMSCRIPTEN__
-#include <glad/glad.h>
-#endif
 
 using namespace alia;
 using namespace alia::operators;
@@ -69,17 +57,10 @@ static alia_srgb8 const primary_colors[] = {
 static int primary_index = 0;
 
 alia_ui_system* the_system;
-GLFWwindow* the_window;
-gl_renderer the_renderer;
-alia_arena the_display_list_arena;
+alia_gl_shell* the_shell;
 alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
-
-alia_glfw_borderless_fullscreen_state the_window_impl;
-
-static alia_glfw_fullscreen_host_binding the_fullscreen_host_binding{};
-static alia_glfw_ui_binding the_glfw_ui_binding{};
 
 // Local palette and styles for the content pane (driven by controls).
 static alia_palette local_palette;
@@ -228,7 +209,8 @@ do_radio_with_text(
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -253,7 +235,8 @@ do_checkbox_with_text(
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -277,7 +260,8 @@ do_switch_with_text(
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -302,7 +286,8 @@ do_node_expander_with_text(
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -889,52 +874,7 @@ update()
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     AllocProbeResult result = probe_allocations([&]() {
-        alia_ui_system_update(the_system);
-
-        // glfwMakeContextCurrent(the_window);
-
-        alia_rgb c = alia_rgb_from_srgb8(
-            the_system->palette.foundation.background.base);
-        glClearColor(c.r, c.g, c.b, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR)
-            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-        alia_draw_bucket_table bucket_table = {
-            .buckets = {},
-            .keys = {},
-        };
-        alia_draw_context draw_context = {
-            .buckets = &bucket_table,
-            .arena = {},
-        };
-        alia_bump_allocator_init(&draw_context.arena, &the_display_list_arena);
-
-        auto draw_event = alia_make_draw_event({.context = &draw_context});
-        dispatch_event(*the_system, draw_event);
-
-        while ((err = glGetError()) != GL_NO_ERROR)
-            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-        std::sort(bucket_table.keys.begin(), bucket_table.keys.end());
-        for (auto const key : bucket_table.keys)
-        {
-            alia_clip_id clip_id = (key >> 16) & 0xffff;
-            alia_draw_material_id material_id = key & 0xffff;
-            alia_z_index z_index = key >> 32;
-            alia_draw_bucket* bucket = &bucket_table.buckets[key];
-            alia_draw_material* material
-                = &the_system->draw.materials[material_id];
-            material->vtable.draw_bucket(material->user, bucket);
-        }
-
-        while ((err = glGetError()) != GL_NO_ERROR)
-            printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        alia_gl_shell_frame(the_system);
     });
 
     auto const end_time = std::chrono::high_resolution_clock::now();
@@ -967,94 +907,42 @@ update()
     // std::cout << "allocation count: " << result.count << std::endl;
 
     last_frame_time = start_time;
-
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glfwSwapBuffers(the_window);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 }
 
-void
-check_and_update_resolution()
+static void
+app_frame(void* /*user_data*/)
 {
-#ifdef __EMSCRIPTEN__
-    // 1. Get the current size of the HTML element (in CSS pixels)
-    //    This is the size the "window" takes up on the webpage.
-    double css_w, css_h;
-    emscripten_get_element_css_size("#canvas", &css_w, &css_h);
-
-    // 2. Get the Device Pixel Ratio (e.g., 2.0 for Retina/High-DPI)
-    double dpr = emscripten_get_device_pixel_ratio();
-
-    // 3. Calculate the required Buffer Size (Physical Pixels)
-    int target_w = (int) (css_w * dpr);
-    int target_h = (int) (css_h * dpr);
-
-    // 4. Check what GLFW thinks the size is
-    int current_w, current_h;
-    glfwGetWindowSize(the_window, &current_w, &current_h);
-
-    // 5. If they mismatch, Resize!
-    if (current_w != target_w || current_h != target_h)
-    {
-        // This resizes the WebGL Backbuffer
-        glfwSetWindowSize(the_window, target_w, target_h);
-
-        // Update your Alia System / Renderer Viewport
-        // (Assuming you do this in your render code, but if you cache it,
-        // update it here)
-        the_system->surface_size = {target_w, target_h};
-
-        // Helpful log to prove it's working
-        std::cout << "Resized to: " << target_w << "x" << target_h
-                  << " (DPR: " << dpr << ")\n";
-    }
-#endif
-}
-
-void
-main_loop_step()
-{
-    // Check if we need to close (mostly for desktop)
-    if (glfwWindowShouldClose(the_window))
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_cancel_main_loop(); // Stop the loop
-#endif
-        return;
-    }
-
-    glfwPollEvents();
-
-    check_and_update_resolution();
-
     update();
-
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
 }
 
 int
 main()
 {
-    static bool light_theme = false;
+    alia_gl_app app;
+    alia_gl_app_config const config = {
+        .inner = {the_demo_controller, nullptr},
+        .shell = {
+            .draw_foundation_underlay = true,
+            .surface_padding = {},
+        },
+        .frame = {app_frame, nullptr},
+        .continuous = false,
+        .title = "Alia Renderer",
+        .window_state = alia_window_state_make(1200, 1200),
+        .canvas_selector = "#canvas",
+    };
+    if (alia_gl_app_init(&config, &app) != 0)
+        return 1;
 
-    // TODO: Guarantee alignment.
-    void* ui_system_storage = malloc(alia_ui_system_object_spec().size);
-    the_system = alia_ui_system_init(
-        ui_system_storage, the_demo_controller, nullptr, {0, 0});
+    static bool light_theme = false;
+    the_system = app.ui;
+    the_shell = app.shell;
 
     static bool theme_initialized = false;
     if (!theme_initialized)
     {
         alia_palette_seeds pseeds = alia_seeds_from_elevation(
             primary_colors[primary_index], 0, !light_theme);
-        // pseeds.bg_base = alia_srgb8{0x32, 0x33, 0x39};
         alia_theme_params params = {
             .foundation_step_l = 0.075f,
             .is_dark_mode = !light_theme,
@@ -1063,123 +951,10 @@ main()
         theme_initialized = true;
     }
 
-    if (!glfwInit())
-    {
-        std::cerr << "Failed to initialize GLFW\n";
-        return -1;
-    }
+    alia_gl_shell_setup_stock_text(app.shell, app.ui, app.renderer);
+    the_msdf_text_engine = alia_gl_shell_text_engine(app.shell);
 
-#ifndef __EMSCRIPTEN__
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#else
-    // Emscripten handles this via linker flags (-s USE_WEBGL2=1)
-    // But explicitly asking for ES 3.0 doesn't hurt:
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-#endif
-
-    the_window
-        = glfwCreateWindow(1200, 1200, "Alia Renderer", nullptr, nullptr);
-    if (!the_window)
-    {
-        std::cerr << "Failed to create GLFW window\n";
-        glfwTerminate();
-        return -1;
-    }
-
-    the_fullscreen_host_binding.window = the_window;
-    the_fullscreen_host_binding.state = &the_window_impl;
-    {
-        alia_host_window_ops const fullscreen_ops
-            = alia_glfw_make_fullscreen_host_ops(&the_fullscreen_host_binding);
-        alia_ui_system_set_host_window_ops(the_system, &fullscreen_ops);
-    }
-
-    the_glfw_ui_binding.ui = the_system;
-    alia_glfw_install_surface_callbacks(the_window, &the_glfw_ui_binding);
-    alia_glfw_install_default_input_callbacks(
-        the_window, &the_glfw_ui_binding);
-
-    float xscale, yscale;
-    glfwGetWindowContentScale(the_window, &xscale, &yscale);
-    // TODO: Support 2D DPI?
-    alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
-
-#ifndef __EMSCRIPTEN__
-    glfwMakeContextCurrent(the_window);
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
-    {
-        std::cerr << "Failed to initialize GLAD\n";
-        return -1;
-    }
-#endif
-
-    {
-        int x, y;
-        glfwGetFramebufferSize(the_window, &x, &y);
-        alia_ui_surface_set_size(the_system, {x, y});
-    }
-
-#ifndef __EMSCRIPTEN__
-    glEnable(GL_FRAMEBUFFER_SRGB);
-#endif
-
-    init_gl_renderer(the_system, &the_renderer);
-    alia_material_register(
-        the_system,
-        ALIA_PRIMITIVE_MATERIAL_ID,
-        alia_material_vtable{
-            .draw_bucket = render_primitive_command_list,
-        },
-        &the_renderer);
-
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    std::vector<std::uint8_t> atlas_rgb(
-        static_cast<std::size_t>(alia_atlas_decompressed_size));
-    alia_msdf_atlas_rle_decompress(
-        alia_atlas_rle_r,
-        alia_atlas_rle_r_size,
-        alia_atlas_rle_g,
-        alia_atlas_rle_g_size,
-        alia_atlas_rle_b,
-        alia_atlas_rle_b_size,
-        atlas_rgb.data(),
-        atlas_rgb.size());
-    gl_renderer_upload_msdf_atlas(
-        &the_renderer, atlas_rgb.data(), alia_atlas_width, alia_atlas_height);
-    the_msdf_text_engine = alia_msdf_create_text_engine(
-        alia_font_descriptions, alia_font_count);
-    the_system->msdf_text_engine = the_msdf_text_engine;
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    initialize_lazy_commit_arena(&the_display_list_arena);
-
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-    refresh_system(*the_system);
-
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(main_loop_step, 0, 1);
-#else
-    while (!glfwWindowShouldClose(the_window))
-        main_loop_step();
-#endif
-
-    glfwTerminate();
+    alia_gl_app_run_loop(&config, &app);
+    alia_gl_app_destroy(&app);
     return 0;
 }

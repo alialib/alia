@@ -471,7 +471,8 @@ do_text(
                 auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
-                alia_element_box_region(&ctx, id, &box, ALIA_CURSOR_DEFAULT);
+                alia_element_box_region(
+                    &ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
             }
             break;
         }

@@ -1110,6 +1110,22 @@ inline int const alia_atlas_height = )"
 inline std::size_t const alia_atlas_decompressed_size = )"
           << raw_size << R"(;
 
+inline alia_msdf_atlas_rle
+alia_stock_msdf_atlas_rle()
+{
+    return alia_msdf_atlas_rle{
+        .rle_r = alia_atlas_rle_r,
+        .rle_r_size = alia_atlas_rle_r_size,
+        .rle_g = alia_atlas_rle_g,
+        .rle_g_size = alia_atlas_rle_g_size,
+        .rle_b = alia_atlas_rle_b,
+        .rle_b_size = alia_atlas_rle_b_size,
+        .width = alia_atlas_width,
+        .height = alia_atlas_height,
+        .decompressed_size = alia_atlas_decompressed_size,
+    };
+}
+
 )";
 
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)

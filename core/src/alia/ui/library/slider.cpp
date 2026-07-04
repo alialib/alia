@@ -291,12 +291,21 @@ do_slider_impl(
     switch (category)
     {
         case ALIA_CATEGORY_SPATIAL: {
-            alia_element_box_region(ctx, track_id, &box, ALIA_CURSOR_DEFAULT);
+            alia_element_box_region(
+                ctx,
+                track_id,
+                &box,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
             double const current = read_value();
             alia_box const thumb_box = get_thumb_region(
                 box, axis, ctx, effective_style, minimum, maximum, current);
             alia_element_box_region(
-                ctx, thumb_id, &thumb_box, ALIA_CURSOR_DEFAULT);
+                ctx,
+                thumb_id,
+                &thumb_box,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
             break;
         }
 

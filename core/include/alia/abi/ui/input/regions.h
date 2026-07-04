@@ -9,19 +9,12 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// Handle all region-related events for a rectangular region.
-void
-alia_element_box_region(
-    alia_context* ctx,
-    alia_element_id id,
-    alia_box const* region,
-    alia_cursor_t cursor);
-
 typedef uint8_t alia_hit_test_flags_t;
 
 #define ALIA_HIT_TEST_FLAGS(X)                                                \
     X(0x1, MOUSE)                                                             \
-    X(0x2, SCROLL_INPUT)
+    X(0x2, SCROLL_INPUT)                                                      \
+    X(0x4, TOUCH_DRAG)
 
 #define ALIA_DEFINE_HIT_TEST_FLAG(code, name) ALIA_HIT_TEST_##name = (code),
 enum
@@ -30,19 +23,20 @@ enum
 };
 #undef ALIA_DEFINE_HIT_TEST_FLAG
 
-// Hit test a rectangular region.
+// Handle all region-related events for a rectangular region.
 void
-alia_element_hit_test_box_region(
+alia_element_box_region(
     alia_context* ctx,
     alia_element_id id,
-    alia_box const* box,
-    alia_hit_test_flags_t flags,
-    alia_cursor_t cursor);
+    alia_box const* region,
+    alia_cursor_t cursor,
+    alia_hit_test_flags_t flags);
 
-// Manually report a mouse hit. This is used by components that want to define
-// custom shapes and manually handle hit test events.
+// Report a hit after custom geometry testing. `bounding_box` is in layout
+// coordinates. It will be transformed into surface coordinates and stored in
+// as part of the hit test result.
 void
-alia_element_report_mouse_hit(
+alia_element_report_hit(
     alia_context* ctx,
     alia_element_id id,
     alia_box const* bounding_box,

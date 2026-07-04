@@ -1,19 +1,23 @@
-#include <alia/renderers/gl/renderer.hpp>
+#include <alia/renderers/gl/renderer.h>
+#include <alia/renderers/gl/shaders.h>
+
+#include "renderer_object.h"
 
 #include <alia/abi/base/arena.h>
-#include <alia/abi/base/color.h>
+#include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/impl/base/arena.hpp>
 
 // TODO: Remove these.
 #include <alia/ui/drawing.h>
 #include <cstring>
-#include <iostream>
+#include <new>
 
-namespace alia {
+namespace {
 
-const char* primitive_vertex_shader_source = R"(
+char const* primitive_vertex_shader_source = R"(
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 i_pos;
 layout (location = 2) in vec2 i_size;
@@ -85,7 +89,7 @@ void main() {
 }
 )";
 
-const char* primitive_fragment_shader_source = R"(
+char const* primitive_fragment_shader_source = R"(
 in vec4 v_color;
 in vec2 v_pos;
 flat in vec2 v_rect_center;
@@ -255,66 +259,31 @@ struct primitive_instance
     alia_vec2f size;
     alia_srgba8 color;
     int primitive_type;
-    // Per-primitive-type layouts; see fragment shader `sample_pixel`.
     float data_a[4];
     float data_b[4];
 };
 
-GLuint
-compile_shader(GLenum type, const char* source)
+void
+check_gl_errors()
 {
-// 1. Define the header based on the platform
-// Note: WebGL fragment shaders require explicit precision.
-// It's safe to put this in vertex shaders too (it's the default there).
-#ifdef __EMSCRIPTEN__
-    const char* header
-        = "#version 300 es\nprecision highp float;\n#define EMSCRIPTEN 1\n";
-#else
-    const char* header = "#version 330 core\n";
-#endif
-    const char* sources[] = {header, source};
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 2, sources, nullptr);
-    glCompileShader(shader);
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        char info_log[512];
-        glGetShaderInfoLog(shader, 512, nullptr, info_log);
-        std::cerr << "Shader compilation error: " << info_log << std::endl;
-    }
-    return shader;
-}
-
-GLuint
-create_shader_program(
-    const char* vertex_shader_source, const char* fragment_shader_source)
-{
-    GLuint vertex_shader
-        = compile_shader(GL_VERTEX_SHADER, vertex_shader_source);
-    GLuint fragment_shader
-        = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_source);
-    GLuint shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
-    return shader_program;
 }
 
 void
-init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
+renderer_setup_blend()
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void
+renderer_init_gpu(alia_ui_system* system, alia_gl_renderer* renderer)
 {
     float quad_vertices[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 
-    GLuint primitive_shader_program = create_shader_program(
+    GLuint primitive_shader_program = alia_gl_create_shader_program(
         primitive_vertex_shader_source, primitive_fragment_shader_source);
 
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     GLint primitive_matrix_location
         = glGetUniformLocation(primitive_shader_program, "u_projection");
@@ -322,8 +291,7 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     GLint msdf_sampler_location
         = glGetUniformLocation(primitive_shader_program, "u_msdf");
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     GLuint vao, vbo;
     glGenVertexArrays(1, &vao);
@@ -338,8 +306,7 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
         0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     GLuint instance_vbo;
     glGenBuffers(1, &instance_vbo);
@@ -347,10 +314,8 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
-    // position (location = 1)
     glVertexAttribPointer(
         1,
         2,
@@ -361,7 +326,6 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(1);
     glVertexAttribDivisor(1, 1);
 
-    // size (location = 2)
     glVertexAttribPointer(
         2,
         2,
@@ -372,7 +336,6 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
 
-    // color (location = 3)
     glVertexAttribPointer(
         3,
         4,
@@ -383,7 +346,6 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    // primitive type (location = 4)
     glVertexAttribIPointer(
         4,
         1,
@@ -393,7 +355,6 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
-    // data_a (location = 5)
     glVertexAttribPointer(
         5,
         4,
@@ -404,7 +365,6 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(5);
     glVertexAttribDivisor(5, 1);
 
-    // data_b (location = 6)
     glVertexAttribPointer(
         6,
         4,
@@ -415,74 +375,27 @@ init_gl_renderer(alia_ui_system* system, gl_renderer* renderer)
     glEnableVertexAttribArray(6);
     glVertexAttribDivisor(6, 1);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
-    *renderer = {
-        .system = system,
-        .primitive_shader_program = primitive_shader_program,
-        .vao = vao,
-        .vbo = vbo,
-        .instance_vbo = instance_vbo,
-        .primitive_matrix_location = primitive_matrix_location,
-        .msdf_sampler_location = msdf_sampler_location,
-        .msdf_atlas_texture = 0,
-    };
+    renderer->system = system;
+    renderer->primitive_shader_program = primitive_shader_program;
+    renderer->vao = vao;
+    renderer->vbo = vbo;
+    renderer->instance_vbo = instance_vbo;
+    renderer->primitive_matrix_location = primitive_matrix_location;
+    renderer->msdf_sampler_location = msdf_sampler_location;
+    renderer->msdf_atlas_texture = 0;
 
-    initialize_lazy_commit_arena(&renderer->rect_instance_arena);
+    alia::initialize_lazy_commit_arena(&renderer->rect_instance_arena);
 }
-
-void
-gl_renderer_upload_msdf_atlas(
-    gl_renderer* renderer,
-    unsigned char const* atlas_rgb,
-    int width,
-    int height)
-{
-    if (renderer->msdf_atlas_texture != 0)
-    {
-        glDeleteTextures(1, &renderer->msdf_atlas_texture);
-        renderer->msdf_atlas_texture = 0;
-    }
-
-    glGenTextures(1, &renderer->msdf_atlas_texture);
-    glBindTexture(GL_TEXTURE_2D, renderer->msdf_atlas_texture);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB8,
-        width,
-        height,
-        0,
-        GL_RGB,
-        GL_UNSIGNED_BYTE,
-        atlas_rgb);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-void
-destroy_gl_renderer(gl_renderer* renderer)
-{
-    if (renderer->msdf_atlas_texture != 0)
-    {
-        glDeleteTextures(1, &renderer->msdf_atlas_texture);
-        renderer->msdf_atlas_texture = 0;
-    }
-    glDeleteProgram(renderer->primitive_shader_program);
-    glDeleteBuffers(1, &renderer->vbo);
-    glDeleteBuffers(1, &renderer->instance_vbo);
-}
-
-struct Vertex
-{
-    float x, y, u, v;
-};
 
 void
 render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
 {
-    gl_renderer* renderer = static_cast<gl_renderer*>(user);
+    alia_gl_renderer* renderer = static_cast<alia_gl_renderer*>(user);
+    if (bucket->count == 0)
+        return;
+
     alia_draw_bucket const& boxes = *bucket;
 
     alia_box const* clip_rect = bucket->clip_rect;
@@ -490,9 +403,7 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     alia_vec2f const surface_size
         = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
 
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     glViewport(
         clip_rect->min.x,
@@ -500,15 +411,14 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         clip_rect->size.x,
         clip_rect->size.y);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
-    float l = clip_rect->min.x; // left
-    float r = clip_rect->min.x + clip_rect->size.x; // right
-    float t = (float) clip_rect->min.y; // top
-    float b = clip_rect->min.y + clip_rect->size.y; // bottom
-    float n = -1.f; // near
-    float f = 1.f; // far
+    float l = clip_rect->min.x;
+    float r = clip_rect->min.x + clip_rect->size.x;
+    float t = (float) clip_rect->min.y;
+    float b = clip_rect->min.y + clip_rect->size.y;
+    float n = -1.f;
+    float f = 1.f;
 
     float ortho[16] = {
         2.f / (r - l),
@@ -530,22 +440,19 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
 
     glUseProgram(renderer->primitive_shader_program);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     glUniformMatrix4fv(
         renderer->primitive_matrix_location, 1, GL_FALSE, ortho);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     alia_bump_allocator rect_alloc;
     alia_bump_allocator_init(&rect_alloc, &renderer->rect_instance_arena);
     primitive_instance* primitive_instances
-        = arena_alloc_array<primitive_instance>(rect_alloc, boxes.count);
+        = alia::arena_alloc_array<primitive_instance>(rect_alloc, boxes.count);
 
     auto pack_border_color = [](alia_srgba8 c) -> float {
-        // Pack raw bytes into a u32 and reinterpret the u32 bits as float.
         uint32_t packed = uint32_t(c.r) | (uint32_t(c.g) << 8u)
                         | (uint32_t(c.b) << 16u) | (uint32_t(c.a) << 24u);
         float f;
@@ -558,7 +465,7 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         for (auto const* cmd = boxes.head; cmd; cmd = cmd->next)
         {
             auto const* primitive_cmd
-                = downcast<alia_draw_primitive_command>(cmd);
+                = alia::downcast<alia_draw_primitive_command>(cmd);
             instance->min = primitive_cmd->box.min;
             instance->size = primitive_cmd->box.size;
             instance->color = primitive_cmd->color;
@@ -631,11 +538,119 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         primitive_instances,
         GL_STREAM_DRAW);
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-        printf("GL ERROR: %x @ %s:%d\n", err, __FILE__, __LINE__);
+    check_gl_errors();
 
     glBindVertexArray(renderer->vao);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, boxes.count);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
-} // namespace alia
+} // namespace
+
+extern "C" {
+
+alia_struct_spec
+alia_gl_renderer_object_spec(void)
+{
+    return alia_struct_spec{
+        .size = sizeof(alia_gl_renderer), .align = alignof(alia_gl_renderer)};
+}
+
+alia_gl_renderer*
+alia_gl_renderer_init(void* object_storage)
+{
+    ALIA_ASSERT(object_storage);
+    return new (object_storage) alia_gl_renderer{};
+}
+
+void
+alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(renderer);
+
+    renderer_init_gpu(ui, renderer);
+    alia_material_register(
+        ui,
+        ALIA_PRIMITIVE_MATERIAL_ID,
+        alia_material_vtable{
+            .draw_bucket = render_primitive_command_list,
+        },
+        renderer);
+    renderer_setup_blend();
+}
+
+void
+alia_gl_renderer_upload_msdf_atlas(
+    alia_gl_renderer* renderer, alia_msdf_atlas_image const* image)
+{
+    ALIA_ASSERT(renderer);
+    ALIA_ASSERT(image);
+    ALIA_ASSERT(image->rgb);
+
+    int const width = image->width;
+    int const height = image->height;
+    unsigned char const* const atlas_rgb = image->rgb;
+
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glDeleteTextures(1, &renderer->msdf_atlas_texture);
+        renderer->msdf_atlas_texture = 0;
+    }
+
+    glGenTextures(1, &renderer->msdf_atlas_texture);
+    glBindTexture(GL_TEXTURE_2D, renderer->msdf_atlas_texture);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGB8,
+        width,
+        height,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        atlas_rgb);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void
+alia_gl_renderer_destroy(alia_gl_renderer* renderer)
+{
+    ALIA_ASSERT(renderer);
+
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glDeleteTextures(1, &renderer->msdf_atlas_texture);
+        renderer->msdf_atlas_texture = 0;
+    }
+    if (renderer->primitive_shader_program != 0)
+    {
+        glDeleteProgram(renderer->primitive_shader_program);
+        renderer->primitive_shader_program = 0;
+    }
+    if (renderer->vbo != 0)
+    {
+        glDeleteBuffers(1, &renderer->vbo);
+        renderer->vbo = 0;
+    }
+    if (renderer->instance_vbo != 0)
+    {
+        glDeleteBuffers(1, &renderer->instance_vbo);
+        renderer->instance_vbo = 0;
+    }
+    if (renderer->vao != 0)
+    {
+        glDeleteVertexArrays(1, &renderer->vao);
+        renderer->vao = 0;
+    }
+}
+
+} // extern "C"

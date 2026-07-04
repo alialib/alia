@@ -1,6 +1,7 @@
 #include <alia/platforms/glfw/input_glue.h>
 
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/input/scroll.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 
@@ -183,8 +184,8 @@ void
 alia_glfw_enqueue_mouse_button(
     alia_ui_system* ui, GLFWwindow* window, int button, int action, int mods)
 {
-    if (!ui || !window)
-        return;
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(window);
 
     double x = 0;
     double y = 0;
@@ -209,8 +210,8 @@ void
 alia_glfw_enqueue_cursor_pos(
     alia_ui_system* ui, GLFWwindow* window, double x, double y)
 {
-    if (!ui || !window)
-        return;
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(window);
     alia_vec2f const p = alia_glfw_cursor_window_to_framebuffer(window, x, y);
     alia_ui_enqueue_mouse_motion(ui, p);
 }
@@ -218,18 +219,21 @@ alia_glfw_enqueue_cursor_pos(
 void
 alia_glfw_enqueue_scroll(alia_ui_system* ui, double x, double y)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
+    // GLFW reports wheel clicks as small floats (typically +/-1 per notch)
+    // with inverted vertical sign on Windows. Convert to canonical logical
+    // pixels.
     alia_vec2f const delta = ALIA_BRACED_INIT(
-        alia_vec2f, static_cast<float>(x), static_cast<float>(y));
+        alia_vec2f,
+        static_cast<float>(-x * ALIA_SCROLL_PIXELS_PER_WHEEL_NOTCH),
+        static_cast<float>(-y * ALIA_SCROLL_PIXELS_PER_WHEEL_NOTCH));
     alia_ui_enqueue_scroll(ui, delta);
 }
 
 void
 alia_glfw_enqueue_key(alia_ui_system* ui, int key, int action, int mods)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     alia_kmods_t const km = alia_glfw_mods_to_kmods(mods);
     alia_hid_key_t const hid = glfw_key_to_hid(key);
     alia_key_info mk{};
@@ -257,8 +261,8 @@ mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     alia_glfw_enqueue_mouse_button(binding->ui, window, button, action, mods);
 }
 
@@ -267,8 +271,8 @@ cursor_position_callback(GLFWwindow* window, double x, double y)
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     alia_glfw_enqueue_cursor_pos(binding->ui, window, x, y);
 }
 
@@ -277,8 +281,8 @@ scroll_callback(GLFWwindow* window, double x, double y)
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     alia_glfw_enqueue_scroll(binding->ui, x, y);
 }
 
@@ -288,8 +292,8 @@ key_callback(
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     alia_glfw_enqueue_key(binding->ui, key, action, mods);
 }
 
@@ -298,8 +302,8 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     alia_vec2i const size = ALIA_BRACED_INIT(alia_vec2i, width, height);
     alia_ui_surface_set_size(binding->ui, size);
 }
@@ -309,8 +313,8 @@ content_scale_callback(GLFWwindow* window, float xscale, float yscale)
 {
     auto* binding
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
-    if (!binding || !binding->ui)
-        return;
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     (void) window;
     alia_ui_surface_set_dpi(binding->ui, ((xscale + yscale) / 2.0f) * 96.f);
 }
@@ -319,8 +323,9 @@ void
 alia_glfw_install_default_input_callbacks(
     GLFWwindow* window, alia_glfw_ui_binding* binding)
 {
-    if (!window || !binding || !binding->ui)
-        return;
+    ALIA_ASSERT(window);
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     glfwSetWindowUserPointer(window, binding);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
@@ -332,8 +337,9 @@ void
 alia_glfw_install_surface_callbacks(
     GLFWwindow* window, alia_glfw_ui_binding* binding)
 {
-    if (!window || !binding || !binding->ui)
-        return;
+    ALIA_ASSERT(window);
+    ALIA_ASSERT(binding);
+    ALIA_ASSERT(binding->ui);
     glfwSetWindowUserPointer(window, binding);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetWindowContentScaleCallback(window, content_scale_callback);

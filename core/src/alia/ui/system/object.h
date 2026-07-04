@@ -55,8 +55,7 @@ struct alia_ui_system
 
     alia_draw_system draw;
 
-    alia_ui_controller_fn controller_fn = nullptr;
-    void* controller_user_data = nullptr;
+    alia_ui_controller controller{};
 
     alia_host_window_ops host_window{};
 

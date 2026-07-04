@@ -138,20 +138,20 @@ typedef struct alia_node_expander_style
     alia_palette_color disabled_triangle;
     alia_palette_color highlight;
 
-    // Layout (logical px). The control does not stretch the glyph beyond this
-    // allocated leaf (glyph is centered in the leaf).
+    // layout size (logical px) - The control does not stretch the glyph beyond
+    // this allocated leaf (glyph is centered in the leaf)
     float layout_width;
     float layout_height;
 
-    // Glyph sizing (logical px).
+    // glyph sizing (logical px)
     float triangle_side;
 
-    // Degrees (clockwise in screen space), animated from collapsed to
-    // expanded.
+    // degrees (clockwise in screen space), animated from collapsed to
+    // expanded
     float collapsed_rotation_degrees;
     float expanded_rotation_degrees;
 
-    // Hover/active + click flare parameters (logical px).
+    // hover/active + click flare parameters (logical px)
     float highlight_radius;
     float flare_radius;
 } alia_node_expander_style;
@@ -169,7 +169,8 @@ typedef struct alia_scrollbar_style
     float minimum_thumb_length;
     float thumb_corner_radius;
     float line_size;
-    float scroll_input_scale;
+    // multiplier applied to canonical scroll deltas (default 1)
+    float scroll_sensitivity;
 } alia_scrollbar_style;
 
 alia_element_id

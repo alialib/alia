@@ -6,9 +6,18 @@
 #include <iostream>
 #include <vector>
 
-#include "alia_fonts.h"
 
-#include <alia/renderers/gl/renderer.hpp>
+#include <alia/shell/gl/app.h>
+#include <alia/shell/gl/fonts.h>
+#include <alia/shell/gl/shell.h>
+
+#include <alia/renderers/gl/shaders.h>
+
+#if defined(__EMSCRIPTEN__)
+#include <GLES3/gl3.h>
+#else
+#include <glad/glad.h>
+#endif
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
@@ -31,7 +40,6 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/platforms/glfw/input_glue.h>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing.h>
 #include <alia/ui/layout/api.hpp>
@@ -39,20 +47,11 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
-#include <GLFW/glfw3.h>
-
-#ifndef __EMSCRIPTEN__
-#include <glad/glad.h>
-#endif
-
 using namespace alia;
 using namespace alia::operators;
 
 alia_msdf_text_engine* the_msdf_text_engine = nullptr;
+alia_gl_shell* the_shell = nullptr;
 
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
@@ -201,10 +200,6 @@ alia_srgb8 const the_seed_primaries[] = {
 };
 
 alia_ui_system* the_system = nullptr;
-GLFWwindow* the_window = nullptr;
-static alia_glfw_ui_binding the_glfw_ui_binding{};
-gl_renderer the_renderer{};
-alia_arena the_display_list_arena{};
 alia_style the_style = {.spacing = 10.0f};
 std::chrono::high_resolution_clock::time_point the_last_anim_time
     = std::chrono::high_resolution_clock::now();
@@ -216,7 +211,7 @@ void
 notargs_gl_init(GalleryNotargsGl* gpu, alia_ui_system* system)
 {
     gpu->system = system;
-    gpu->program = create_shader_program(notargs_vert_src, notargs_frag_src);
+    gpu->program = alia_gl_create_shader_program(notargs_vert_src, notargs_frag_src);
     if (gpu->program == 0)
     {
         std::cerr << "notargs: shader program creation failed\n";
@@ -451,7 +446,8 @@ do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -472,7 +468,8 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
             14.f,
             text,
             CENTER_Y);
-        alia_element_box_region(&ctx, id, &row_box, ALIA_CURSOR_DEFAULT);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
     });
 }
 
@@ -724,25 +721,6 @@ shader_gallery_root_controller(void* user_data, alia_context* ctx)
 }
 
 void
-check_and_update_resolution()
-{
-#ifdef __EMSCRIPTEN__
-    double css_w, css_h;
-    emscripten_get_element_css_size("#canvas", &css_w, &css_h);
-    double dpr = emscripten_get_device_pixel_ratio();
-    int target_w = (int) (css_w * dpr);
-    int target_h = (int) (css_h * dpr);
-    int current_w, current_h;
-    glfwGetWindowSize(the_window, &current_w, &current_h);
-    if (current_w != target_w || current_h != target_h)
-    {
-        glfwSetWindowSize(the_window, target_w, target_h);
-        the_system->surface_size = {target_w, target_h};
-    }
-#endif
-}
-
-void
 update()
 {
     auto const now = std::chrono::high_resolution_clock::now();
@@ -760,166 +738,52 @@ update()
              * std::exp(static_cast<double>(the_controls.speed)) * 0.1;
     }
 
-    alia_rgb c
-        = alia_rgb_from_srgb8(the_system->palette.foundation.background.base);
-    glClearColor(c.r, c.g, c.b, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    alia_draw_bucket_table bucket_table = {
-        .buckets = {},
-        .keys = {},
-    };
-    alia_draw_context draw_context = {
-        .buckets = &bucket_table,
-        .arena = {},
-    };
-    alia_bump_allocator_init(&draw_context.arena, &the_display_list_arena);
-
-    auto draw_event = alia_make_draw_event({.context = &draw_context});
-    dispatch_event(*the_system, draw_event);
-
-    std::sort(bucket_table.keys.begin(), bucket_table.keys.end());
-    for (auto const key : bucket_table.keys)
-    {
-        alia_draw_bucket* bucket = &bucket_table.buckets[key];
-        alia_draw_material_id material_id = key & 0xffff;
-        alia_draw_material* material
-            = &the_system->draw.materials[material_id];
-        material->vtable.draw_bucket(material->user, bucket);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    glfwSwapBuffers(the_window);
+    alia_gl_shell_draw(the_system);
 }
 
-void
-main_loop_step()
+static void
+shader_gallery_frame(void* /*user_data*/)
 {
-    if (glfwWindowShouldClose(the_window))
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_cancel_main_loop();
-#endif
-        return;
-    }
-
-    glfwPollEvents();
-    check_and_update_resolution();
     update();
 }
 
 int
 main()
 {
-    void* ui_system_storage = malloc(alia_ui_system_object_spec().size);
-    the_system = alia_ui_system_init(
-        ui_system_storage, shader_gallery_root_controller, nullptr, {0, 0});
+    alia_gl_app app;
+    alia_gl_app_config const config = {
+        .inner = {shader_gallery_root_controller, nullptr},
+        .shell = {
+            .draw_foundation_underlay = false,
+            .surface_padding = {},
+        },
+        .frame = {shader_gallery_frame, nullptr},
+        .continuous = true,
+        .title = "Alia Shader Gallery",
+        .window_state = alia_window_state_make(1200, 800),
+        .canvas_selector = "#canvas",
+    };
+    if (alia_gl_app_init(&config, &app) != 0)
+        return 1;
 
+    the_system = app.ui;
+    the_shell = app.shell;
     the_theme_dirty_flag = true;
 
-    if (!glfwInit())
-    {
-        std::cerr << "Failed to initialize GLFW\n";
-        return -1;
-    }
-
-#ifndef __EMSCRIPTEN__
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#else
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-#endif
-
-    the_window
-        = glfwCreateWindow(1200, 800, "Alia Shader Gallery", nullptr, nullptr);
-    if (!the_window)
-    {
-        std::cerr << "Failed to create GLFW window\n";
-        glfwTerminate();
-        return -1;
-    }
-
-    the_glfw_ui_binding.ui = the_system;
-    alia_glfw_install_surface_callbacks(the_window, &the_glfw_ui_binding);
-    alia_glfw_install_default_input_callbacks(
-        the_window, &the_glfw_ui_binding);
-
-    float xscale, yscale;
-    glfwGetWindowContentScale(the_window, &xscale, &yscale);
-    alia_ui_surface_set_dpi(the_system, ((xscale + yscale) / 2.0f) * 96.f);
-
-#ifndef __EMSCRIPTEN__
-    glfwMakeContextCurrent(the_window);
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
-    {
-        std::cerr << "Failed to initialize GLAD\n";
-        glfwTerminate();
-        return -1;
-    }
-#endif
-
-    {
-        int x, y;
-        glfwGetFramebufferSize(the_window, &x, &y);
-        alia_ui_surface_set_size(the_system, {x, y});
-    }
-
-#ifndef __EMSCRIPTEN__
-    glEnable(GL_FRAMEBUFFER_SRGB);
-#endif
-
-    init_gl_renderer(the_system, &the_renderer);
+    the_notargs_material_id = alia_material_alloc_ids(app.ui, 1);
+    notargs_gl_init(&the_gallery_gl, app.ui);
     alia_material_register(
-        the_system,
-        ALIA_PRIMITIVE_MATERIAL_ID,
-        alia_material_vtable{.draw_bucket = render_primitive_command_list},
-        &the_renderer);
-
-    the_notargs_material_id = alia_material_alloc_ids(the_system, 1);
-    notargs_gl_init(&the_gallery_gl, the_system);
-    alia_material_register(
-        the_system,
+        app.ui,
         the_notargs_material_id,
         alia_material_vtable{.draw_bucket = render_notargs_bucket},
         &the_gallery_gl);
 
-    std::vector<std::uint8_t> atlas_rgb(
-        static_cast<std::size_t>(alia_atlas_decompressed_size));
-    alia_msdf_atlas_rle_decompress(
-        alia_atlas_rle_r,
-        alia_atlas_rle_r_size,
-        alia_atlas_rle_g,
-        alia_atlas_rle_g_size,
-        alia_atlas_rle_b,
-        alia_atlas_rle_b_size,
-        atlas_rgb.data(),
-        atlas_rgb.size());
-    gl_renderer_upload_msdf_atlas(
-        &the_renderer, atlas_rgb.data(), alia_atlas_width, alia_atlas_height);
-    the_msdf_text_engine = alia_msdf_create_text_engine(
-        alia_font_descriptions, alia_font_count);
-    the_system->msdf_text_engine = the_msdf_text_engine;
+    alia_gl_shell_setup_stock_text(app.shell, app.ui, app.renderer);
+    the_msdf_text_engine = alia_gl_shell_text_engine(app.shell);
 
-    initialize_lazy_commit_arena(&the_display_list_arena);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-    refresh_system(*the_system);
-
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(main_loop_step, 0, 1);
-#else
-    while (!glfwWindowShouldClose(the_window))
-        main_loop_step();
-#endif
+    alia_gl_app_run_loop(&config, &app);
 
     notargs_gl_destroy(&the_gallery_gl);
-    glfwTerminate();
+    alia_gl_app_destroy(&app);
     return 0;
 }

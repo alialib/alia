@@ -1,11 +1,16 @@
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing.h>
 
+#include <alia/abi/ui/events.h>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
+#include <alia/impl/events.hpp>
+#include <alia/kernel/flow/dispatch.h>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing.h>
 #include <alia/ui/system/object.h>
+
+#include <algorithm>
 
 extern "C" {
 
@@ -29,6 +34,37 @@ alia_material_register(
     if (id >= system->draw.materials.size())
         system->draw.materials.resize(size_t(id) + 1);
     system->draw.materials[id] = {.vtable = vtable, .user = user};
+}
+
+void
+alia_ui_execute_draw_pass(alia_ui_system* system)
+{
+    ALIA_ASSERT(system);
+
+    alia_draw_bucket_table bucket_table = {
+        .buckets = {},
+        .keys = {},
+    };
+
+    alia_draw_context draw_context = {
+        .buckets = &bucket_table,
+        .arena = {},
+    };
+    alia_bump_allocator_init(&draw_context.arena, &system->draw.command_arena);
+
+    auto draw_event = alia_make_draw_event({.context = &draw_context});
+    alia::dispatch_event(*system, draw_event);
+
+    alia_bump_allocator_commit_peak(&draw_context.arena);
+
+    std::sort(bucket_table.keys.begin(), bucket_table.keys.end());
+    for (auto const key : bucket_table.keys)
+    {
+        alia_draw_bucket* bucket = &bucket_table.buckets[key];
+        alia_draw_material_id const material_id = key & 0xffff;
+        alia_draw_material* material = &system->draw.materials[material_id];
+        material->vtable.draw_bucket(material->user, bucket);
+    }
 }
 
 inline uint64_t

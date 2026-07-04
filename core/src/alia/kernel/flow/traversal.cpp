@@ -20,7 +20,11 @@ void
 mark_dirty_component(ephemeral_context& ctx)
 {
     event_traversal& traversal = *ctx.events;
-    mark_dirty_component(*traversal.active_container);
+    // TODO: There should always be an active component container, but the
+    // component container tree doesn't really exist yet. Once it does, this
+    // could be removed or replaced with an assert.
+    if (traversal.active_container != nullptr)
+        mark_dirty_component(*traversal.active_container);
 }
 
 void
@@ -38,7 +42,11 @@ void
 mark_animating_component(ephemeral_context& ctx)
 {
     event_traversal& traversal = *ctx.events;
-    mark_animating_component(*traversal.active_container);
+    // TODO: There should always be an active component container, but the
+    // component container tree doesn't really exist yet. Once it does, this
+    // could be removed or replaced with an assert.
+    if (traversal.active_container != nullptr)
+        mark_animating_component(*traversal.active_container);
 }
 
 // void

@@ -51,8 +51,12 @@ enum
       SCROLL_INPUT_HIT_TEST,                                                  \
       scroll_input_hit_test,                                                  \
       alia_scroll_input_hit_test)                                             \
-    /* X(0x83, SPATIAL, TARGETED, RESOLVE_LOCATION, resolve_location,         \
-        alia_resolve_location) */                                             \
+    X(0x43,                                                                   \
+      SPATIAL,                                                                \
+      NONE,                                                                   \
+      TOUCH_GESTURE_HIT_TEST,                                                 \
+      touch_gesture_hit_test,                                                 \
+      alia_touch_gesture_hit_test)                                            \
     /* keyboard */                                                            \
     X(0x50, INPUT, TARGETED, TEXT_INPUT, text_input, alia_text_input)         \
     X(0x51,                                                                   \
@@ -135,6 +139,8 @@ typedef struct alia_mouse_hit_test_result
 {
     alia_element_id id;
     alia_cursor_t cursor;
+    // element bounds in surface coordinates (for tooltips, overlays, etc.)
+    alia_box region;
 } alia_mouse_hit_test_result;
 
 typedef struct alia_mouse_hit_test
@@ -150,6 +156,25 @@ typedef struct alia_scroll_input_hit_test
     float y;
     alia_element_id result;
 } alia_scroll_input_hit_test;
+
+typedef struct alia_touch_gesture_hit_test_result
+{
+    // frontmost element under the point that accepts pointer interaction
+    alia_element_id pointer_target;
+    // frontmost scroll-view (or similar) that can consume touch pan scrolling
+    alia_element_id scroll_target;
+    // frontmost touch drag handle under the point (e.g. slider track,
+    // scrollbar thumb) - When set, touch pan scrolling should not preempt
+    // manipulation.
+    alia_element_id touch_drag_target;
+} alia_touch_gesture_hit_test_result;
+
+typedef struct alia_touch_gesture_hit_test
+{
+    float x;
+    float y;
+    alia_touch_gesture_hit_test_result result;
+} alia_touch_gesture_hit_test;
 
 typedef struct alia_cursor_query
 {
@@ -211,6 +236,8 @@ typedef struct alia_mouse_motion
 
 typedef struct alia_scroll_input
 {
+    // logical-pixel scroll motion in surface space - See
+    // `alia/abi/ui/input/scroll.h`.
     alia_vec2f delta;
 } alia_scroll_input;
 

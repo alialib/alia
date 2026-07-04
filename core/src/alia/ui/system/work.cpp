@@ -105,8 +105,11 @@ update_hot_from_pointer(ui_system& ui)
         alia_event event = alia_make_mouse_hit_test_event(
             {.x = ui.input.mouse_position.x,
              .y = ui.input.mouse_position.y,
-             .result
-             = {.id = alia_element_id{}, .cursor = ALIA_CURSOR_DEFAULT}});
+             .result = {
+                 .id = alia_element_id{},
+                 .cursor = ALIA_CURSOR_DEFAULT,
+                 .region = {{0.f, 0.f}, {0.f, 0.f}},
+             }});
         dispatch_event(ui, event);
         if (alia_element_id_is_valid(as_mouse_hit_test_event(event).result.id))
         {
@@ -268,31 +271,29 @@ extern "C" {
 void
 alia_ui_system_poll_clock(alia_ui_system* ui)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     ui->tick_count = alia::steady_clock_now_ns();
 }
 
 void
 alia_ui_system_begin_update(alia_ui_system* ui)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
 
     alia_ui_system_poll_clock(ui);
 
     ++ui->timer_event_cycle;
     ui->update_timer_cycle = ui->timer_event_cycle;
 
+    // TODO: This really doesn't belong here.
     if (ui->event_queue.empty())
-        refresh_system(*ui);
+        alia::apply_refresh_hook_policy(*ui, ui->refresh_policy.before_draw);
 }
 
 alia_ui_work_step_kind
 alia_ui_work_step(alia_ui_system* ui)
 {
-    if (!ui)
-        return ALIA_UI_WORK_STEP_IDLE;
+    ALIA_ASSERT(ui);
 
     if (alia::drain_one_queued_event(*ui))
         return ALIA_UI_WORK_STEP_INPUT;
@@ -309,16 +310,14 @@ alia_ui_work_step(alia_ui_system* ui)
 void
 alia_ui_system_end_update(alia_ui_system* ui)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     alia::finalize_update(*ui);
 }
 
 bool
 alia_ui_needs_tick(alia_ui_system* ui)
 {
-    if (!ui)
-        return false;
+    ALIA_ASSERT(ui);
     if (!ui->event_queue.empty())
         return true;
     if (alia::timer_is_due(*ui))
@@ -331,8 +330,8 @@ alia_ui_needs_tick(alia_ui_system* ui)
 bool
 alia_ui_next_wake_ns(alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
 {
-    if (!ui || !out_wake_ns)
-        return false;
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(out_wake_ns);
 
     if (!ui->event_queue.empty())
     {
@@ -352,16 +351,15 @@ alia_ui_next_wake_ns(alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
 void
 alia_ui_enqueue_event(alia_ui_system* ui, alia_event const* event)
 {
-    if (!ui || !event)
-        return;
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(event);
     ui->event_queue.push_back(*event);
 }
 
 void
 alia_ui_mark_dirty(alia_ui_system* ui)
 {
-    if (!ui)
-        return;
+    ALIA_ASSERT(ui);
     ui->ui_dirty = true;
 }
 
@@ -369,8 +367,8 @@ void
 alia_ui_set_refresh_policy(
     alia_ui_system* ui, alia_ui_refresh_policy const* policy)
 {
-    if (!ui || !policy)
-        return;
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(policy);
     ui->refresh_policy = *policy;
 }
 

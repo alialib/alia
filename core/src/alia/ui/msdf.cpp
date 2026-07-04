@@ -2,6 +2,7 @@
 
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/prelude.h>
+#include <alia/ui/system/object.h>
 
 #include <cassert>
 #include <cstring>
@@ -150,6 +151,38 @@ alia_msdf_atlas_rle_decompress(
     decode_channel(rle_r, rle_r_size, out_rgb + 0, plane_size, 3);
     decode_channel(rle_g, rle_g_size, out_rgb + 1, plane_size, 3);
     decode_channel(rle_b, rle_b_size, out_rgb + 2, plane_size, 3);
+}
+
+extern "C" void
+alia_msdf_decompress_atlas_rle(
+    alia_msdf_atlas_rle const* atlas_rle, uint8_t* out_rgb, size_t out_size)
+{
+    ALIA_ASSERT(atlas_rle);
+    ALIA_ASSERT(out_rgb);
+    alia_msdf_atlas_rle_decompress(
+        atlas_rle->rle_r,
+        atlas_rle->rle_r_size,
+        atlas_rle->rle_g,
+        atlas_rle->rle_g_size,
+        atlas_rle->rle_b,
+        atlas_rle->rle_b_size,
+        out_rgb,
+        out_size);
+}
+
+extern "C" void
+alia_ui_bind_msdf_text_engine(
+    alia_ui_system* ui, alia_msdf_text_engine* engine)
+{
+    ALIA_ASSERT(ui);
+    ui->msdf_text_engine = engine;
+}
+
+extern "C" void
+alia_ui_unbind_msdf_text_engine(alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    ui->msdf_text_engine = nullptr;
 }
 
 extern "C" alia_msdf_text_engine*

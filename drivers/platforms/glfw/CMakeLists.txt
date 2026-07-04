@@ -6,15 +6,14 @@ else()
 endif()
 
 add_library(alia_glfw_platform STATIC
-    src/window.cpp
     src/input_glue.cpp
-    src/borderless_fullscreen.cpp)
+    src/host.cpp)
 target_include_directories(alia_glfw_platform PUBLIC
     include)
 if (EMSCRIPTEN)
     target_link_libraries(alia_glfw_platform PUBLIC
-        glfw alia_core)
+        glfw alia_core alia_platform_api)
 else()
     target_link_libraries(alia_glfw_platform PUBLIC
-        glfw glad::glad alia_core)
+        glfw glad::glad alia_core alia_platform_api)
 endif()

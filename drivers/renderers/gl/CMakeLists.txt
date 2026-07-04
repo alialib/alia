@@ -6,13 +6,11 @@ else()
 endif()
 
 add_library(alia_gl_renderer STATIC
-    src/renderer.cpp)
+    src/renderer.cpp
+    src/shaders.cpp)
 target_include_directories(alia_gl_renderer PUBLIC
     include)
-if (EMSCRIPTEN)
-    target_link_libraries(alia_gl_renderer PUBLIC
-        glfw alia_core)
-else()
-    target_link_libraries(alia_gl_renderer PUBLIC
-        glfw glad::glad alia_core)
+target_link_libraries(alia_gl_renderer PUBLIC alia_core)
+if(NOT EMSCRIPTEN)
+    target_link_libraries(alia_gl_renderer PUBLIC glad::glad glfw)
 endif()

@@ -2,14 +2,17 @@
 
 #include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/substrate.h>
+#include <alia/abi/prelude.h>
+#include <alia/abi/ui/system/work.h>
 #include <alia/impl/events.hpp>
+#include <alia/kernel/flow/traversal.h>
 #include <alia/ui/system/object.h>
 
 #include <cstring>
 
 namespace {
 
-inline uint64_t
+uint64_t
 get_current_timer_cycle(alia_ui_system* sys)
 {
     // Component code uses this as a "do not dispatch in the same cycle"
@@ -17,14 +20,13 @@ get_current_timer_cycle(alia_ui_system* sys)
     return sys ? sys->timer_event_cycle : 0u;
 }
 
-inline void
+void
 enqueue_timer(
     alia_ui_system* sys,
     alia_element_id target,
     alia_nanosecond_count fire_time)
 {
-    if (!sys)
-        return;
+    ALIA_ASSERT(sys);
 
     sys->timer_requests.push(
         alia_ui_timer_request{
@@ -37,16 +39,26 @@ enqueue_timer(
 
 extern "C" {
 
+void
+alia_timing_request_animation_refresh(alia_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    ALIA_ASSERT(ctx->system);
+
+    alia_ui_mark_dirty(ctx->system);
+    if (ctx->events)
+        alia::mark_animating_component(*ctx);
+}
+
 alia_timer_state*
 alia_timer_use(alia_context* ctx)
 {
-    if (!ctx || !ctx->substrate)
-        return nullptr;
+    ALIA_ASSERT(ctx);
+    ALIA_ASSERT(ctx->substrate);
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(alia_timer_state), alignof(alia_timer_state));
-    if (!result.ptr)
-        return nullptr;
+    ALIA_ASSERT(result.ptr);
 
     auto* state = static_cast<alia_timer_state*>(result.ptr);
 
@@ -69,8 +81,9 @@ void
 alia_timer_start(
     alia_context* ctx, alia_timer_state* state, alia_nanosecond_count duration)
 {
-    if (!ctx || !state || !ctx->system)
-        return;
+    ALIA_ASSERT(ctx);
+    ALIA_ASSERT(state);
+    ALIA_ASSERT(ctx->system);
 
     // TODO: If duration wraps, we still want wrap-safe comparisons in the
     // system dispatcher.
@@ -85,8 +98,7 @@ void
 alia_timer_stop(alia_context* ctx, alia_timer_state* state)
 {
     (void) ctx;
-    if (!state)
-        return;
+    ALIA_ASSERT(state);
 
     state->active = false;
 }
@@ -94,8 +106,10 @@ alia_timer_stop(alia_context* ctx, alia_timer_state* state)
 bool
 alia_timer_handle_event(alia_context* ctx, alia_timer_state* state)
 {
-    if (!ctx || !state || !ctx->events || !ctx->events->event)
-        return false;
+    ALIA_ASSERT(ctx);
+    ALIA_ASSERT(state);
+    ALIA_ASSERT(ctx->events);
+    ALIA_ASSERT(ctx->events->event);
 
     auto* ev = ctx->events->event;
     if (ev->type != ALIA_EVENT_TIMER)

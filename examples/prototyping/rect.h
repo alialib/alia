@@ -21,7 +21,8 @@ do_rect(
         }
         case ALIA_CATEGORY_SPATIAL: {
             alia_box box = alia_layout_consume_box(&ctx);
-            alia_element_box_region(&ctx, id, &box, ALIA_CURSOR_DEFAULT);
+            alia_element_box_region(
+                &ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {

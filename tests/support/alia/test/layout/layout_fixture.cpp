@@ -182,7 +182,8 @@ layout_fixture_node_arena_stats(layout_fixture* fixture)
 void*
 layout_fixture_placement_arena_identity(layout_fixture* fixture)
 {
-    return fixture ? static_cast<void*>(&fixture->layout.placement_arena) : nullptr;
+    return fixture ? static_cast<void*>(&fixture->layout.placement_arena)
+                   : nullptr;
 }
 
 void

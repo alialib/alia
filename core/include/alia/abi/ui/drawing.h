@@ -50,6 +50,11 @@ alia_material_register(
     alia_material_vtable vtable,
     void* user);
 
+// Record draw commands via a draw event traversal, then execute material
+// buckets in z-order.
+void
+alia_ui_execute_draw_pass(alia_ui_system* system);
+
 // GENERIC DRAW COMMANDS
 
 typedef struct alia_draw_bucket

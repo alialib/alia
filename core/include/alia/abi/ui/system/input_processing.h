@@ -3,6 +3,7 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/input/constants.h>
+#include <alia/abi/ui/input/scroll.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -40,7 +41,8 @@ alia_ui_enqueue_mouse_release(
     alia_button_t button,
     alia_kmods_t mods);
 
-// Enqueue scroll inputs (e.g., the mouse wheel).
+// Enqueue scroll input. `delta` is in logical/surface pixels; see
+// `alia/abi/ui/input/scroll.h`.
 void
 alia_ui_enqueue_scroll(alia_ui_system* ui, alia_vec2f delta);
 

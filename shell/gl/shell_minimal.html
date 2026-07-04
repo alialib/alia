@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-us">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alia Demo</title>
+    <style>
+        /* 1. Reset everything to maximize screen space */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            /* or your preferred background */
+            overflow: hidden;
+            /* Prevent scrolling */
+        }
+
+        /* 2. Make the canvas fill the window */
+        canvas.emscripten {
+            border: 0px none;
+            background-color: black;
+            width: 100%;
+            height: 100%;
+            display: block;
+
+            /* 3. THE LAG FIXES */
+            /* Disable browser handling of gestures (pan/zoom) so touches are instant */
+            touch-action: none;
+            /* Remove the flash of blue when tapping on mobile */
+            -webkit-tap-highlight-color: transparent;
+            /* Allow canvas to receive focus (keyboard input) */
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+
+    <script type='text/javascript'>
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function () {
+                return function (text) {
+                    console.log(text); // Redirect stdout to Browser Console
+                };
+            })(),
+            printErr: function (text) {
+                console.error(text); // Redirect stderr to Browser Console
+            },
+            canvas: (function () {
+                var canvas = document.getElementById('canvas');
+
+                // Fix for some high-DPI behavior if needed later
+                // canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+                return canvas;
+            })(),
+            setStatus: function (text) {
+                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+                if (text === Module.setStatus.last.text) return;
+                console.log("Status: " + text);
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function (left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            }
+        };
+    </script>
+
+    {{{ SCRIPT }}}
+</body>
+
+</html>
