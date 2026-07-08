@@ -82,6 +82,7 @@ alia_host_open(alia_host* host, alia_host_open_config const* config)
     {
         glfw_options.resizable = config->window_options->resizable;
         glfw_options.vsync = config->window_options->vsync;
+        glfw_options.vulkan_present = config->window_options->vulkan_present;
         options = &glfw_options;
     }
 

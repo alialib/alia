@@ -15,7 +15,12 @@ typedef struct alia_host alia_host;
 typedef struct alia_host_window_options
 {
     bool resizable;
+    // When false, the continuous run loop paces frames to the monitor refresh
+    // rate instead of using vsync.
     bool vsync;
+    // Windows prototype: present via Vulkan swapchain after GL renders to an
+    // off-screen framebuffer.
+    bool vulkan_present;
 } alia_host_window_options;
 
 typedef struct alia_host_open_config

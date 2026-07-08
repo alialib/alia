@@ -1,5 +1,9 @@
 #include <alia/platforms/glfw/host.h>
 
+#ifdef _WIN32
+#include <alia/platforms/glfw/vk_present.h>
+#endif
+
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/system/host_window.h>
@@ -15,11 +19,17 @@
 #define WIN32_LEAN_AND_MEAN
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+#include <mmsystem.h>
 #include <windows.h>
 #endif
 
 #include <chrono>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
 #include <new>
+#include <vector>
 
 struct alia_glfw_host
 {
@@ -32,9 +42,28 @@ struct alia_glfw_host
     // true while entering or leaving fullscreen - Used to suppress window rect
     // callbacks that would overwrite the saved windowed rect.
     bool mode_transition = false;
+    bool vsync = true;
+    // When true, the continuous run loop sleeps to match the monitor refresh.
+    bool pace_to_monitor = false;
+    alia_nanosecond_count pacing_interval_ns = 16'666'667;
+    bool vulkan_present = false;
+#ifdef _WIN32
+    alia_glfw_vk_present* vk_present = nullptr;
+    alia_glfw_vk_gl_target vk_gl_target{};
+    struct host_wgl_context
+    {
+        GLFWwindow* gl_window = nullptr;
+    } wgl{};
+    bool owns_wgl_context = false;
+#endif
     // Nesting depth of host-driven frame callbacks (run/present) - Used to
     // suppress frame callbacks when a frame is already in progress.
     int frame_depth = 0;
+#ifdef _WIN32
+    WNDPROC win32_original_wndproc = nullptr;
+    bool win32_in_modal_interaction = false;
+    alia_nanosecond_count win32_last_modal_present_ns = 0;
+#endif
 };
 
 namespace {
@@ -131,7 +160,386 @@ glfw_monitor_covering_most_of_window(GLFWwindow* window)
     return best;
 }
 
+void
+host_update_pacing_interval(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    if (!host->window)
+        return;
+
+    int hz = 60;
+    GLFWmonitor* const monitor
+        = glfw_monitor_covering_most_of_window(host->window);
+    if (monitor)
+    {
+        GLFWvidmode const* const mode = glfwGetVideoMode(monitor);
+        if (mode && mode->refreshRate > 0)
+            hz = mode->refreshRate;
+    }
+    host->pacing_interval_ns = 1'000'000'000LL / hz;
+}
+
 #ifdef _WIN32
+static int host_high_res_timer_refcount = 0;
+
+static void
+host_acquire_high_res_timer()
+{
+    if (host_high_res_timer_refcount++ == 0)
+        timeBeginPeriod(1);
+}
+
+static void
+host_release_high_res_timer()
+{
+    if (host_high_res_timer_refcount > 0 && --host_high_res_timer_refcount == 0)
+        timeEndPeriod(1);
+}
+#else
+static void
+host_acquire_high_res_timer()
+{
+}
+
+static void
+host_release_high_res_timer()
+{
+}
+#endif
+
+static alia_nanosecond_count const host_pace_spin_threshold_ns = 2'000'000;
+
+static void
+host_make_context_current_if_needed(alia_glfw_host* host)
+{
+    if (!host || !host->window)
+        return;
+#ifdef _WIN32
+    if (host->owns_wgl_context)
+    {
+        if (glfwGetCurrentContext() != host->wgl.gl_window)
+            glfwMakeContextCurrent(host->wgl.gl_window);
+        return;
+    }
+#endif
+    if (glfwGetCurrentContext() != host->window)
+        glfwMakeContextCurrent(host->window);
+}
+
+#ifdef _WIN32
+static bool
+host_wgl_context_create(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    host->wgl = {};
+
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    host->wgl.gl_window = glfwCreateWindow(1, 1, "", nullptr, nullptr);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    if (!host->wgl.gl_window)
+        return false;
+
+    glfwMakeContextCurrent(host->wgl.gl_window);
+    host->owns_wgl_context = true;
+    return true;
+}
+
+static void
+host_wgl_context_destroy(alia_glfw_host* host)
+{
+    if (!host || !host->owns_wgl_context)
+        return;
+
+    if (host->wgl.gl_window)
+    {
+        if (glfwGetCurrentContext() == host->wgl.gl_window)
+            glfwMakeContextCurrent(nullptr);
+        glfwDestroyWindow(host->wgl.gl_window);
+    }
+
+    host->wgl = {};
+    host->owns_wgl_context = false;
+}
+#endif
+
+#ifdef _WIN32
+static bool
+host_vk_sync_surfaces(alia_glfw_host* host)
+{
+    if (!host || !host->vulkan_present || !host->vk_present || !host->window)
+        return true;
+
+    int width = 0;
+    int height = 0;
+    glfwGetFramebufferSize(host->window, &width, &height);
+    return alia_glfw_vk_present_get_gl_target(
+        host->vk_present, width, height, &host->vk_gl_target);
+}
+
+static void
+host_swap_or_present(alia_glfw_host* host)
+{
+    if (!host->vulkan_present || !host->vk_present)
+    {
+        glfwSwapBuffers(host->window);
+        return;
+    }
+
+    if (!alia_glfw_vk_present_from_gl_target(host->vk_present))
+    {
+        std::fprintf(
+            stderr, "[alia host] Vulkan present failed; using GL swap\n");
+        glfwSwapBuffers(host->window);
+    }
+}
+
+static void
+host_begin_gl_frame_target(alia_glfw_host* host)
+{
+    if (!host->vulkan_present)
+        return;
+    if (!host_vk_sync_surfaces(host))
+        return;
+    glBindFramebuffer(GL_FRAMEBUFFER, host->vk_gl_target.framebuffer);
+    glViewport(0, 0, host->vk_gl_target.width, host->vk_gl_target.height);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+static void
+host_end_gl_frame_target(alia_glfw_host* host)
+{
+    if (!host->vulkan_present)
+        return;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+#else
+static void
+host_begin_gl_frame_target(alia_glfw_host* /*host*/)
+{
+}
+
+static void
+host_end_gl_frame_target(alia_glfw_host* /*host*/)
+{
+}
+
+static void
+host_swap_or_present(alia_glfw_host* host)
+{
+    glfwSwapBuffers(host->window);
+}
+#endif
+
+static void
+host_wait_until_ns(alia_nanosecond_count target_ns)
+{
+    for (;;)
+    {
+        alia_nanosecond_count const now = steady_clock_now_ns();
+        if (now >= target_ns)
+            return;
+
+        alia_nanosecond_count const remaining = target_ns - now;
+        if (remaining > host_pace_spin_threshold_ns)
+        {
+            double const wait_s
+                = static_cast<double>(remaining - host_pace_spin_threshold_ns)
+                / 1e9;
+            glfwWaitEventsTimeout(wait_s);
+        }
+        else
+        {
+            while (steady_clock_now_ns() < target_ns)
+                glfwPollEvents();
+        }
+    }
+}
+
+void
+host_pace_frame(alia_glfw_host* host, alia_nanosecond_count frame_start_ns)
+{
+    if (!host->pace_to_monitor || !host->config.continuous)
+        return;
+
+    if (host->pacing_interval_ns == 0)
+        return;
+
+    alia_nanosecond_count const target_ns
+        = frame_start_ns + host->pacing_interval_ns;
+    if (steady_clock_now_ns() >= target_ns)
+        return;
+
+    host_wait_until_ns(target_ns);
+}
+
+#ifdef _WIN32
+static UINT_PTR const win32_modal_timer_id = 1;
+static UINT const win32_modal_timer_ms = 8;
+static alia_nanosecond_count const modal_present_interval_ns = 16'666'667;
+
+static void
+host_present_frame(alia_glfw_host* host);
+
+static void
+host_defer_redraw(alia_glfw_host* host);
+
+static void
+host_win32_after_modal_swap(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    ALIA_ASSERT(host->window);
+    HWND const hwnd = glfwGetWin32Window(host->window);
+    if (hwnd)
+        InvalidateRect(hwnd, nullptr, FALSE);
+    DwmFlush();
+}
+
+static void
+host_begin_modal_interaction(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    host->win32_in_modal_interaction = true;
+    host->win32_last_modal_present_ns = 0;
+    host_acquire_high_res_timer();
+    if (host->vulkan_present && host->vk_present)
+        alia_glfw_vk_present_set_modal_interaction(host->vk_present, true);
+    else if (host->vsync)
+        glfwSwapInterval(0);
+}
+
+static void
+host_end_modal_interaction(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    host->win32_in_modal_interaction = false;
+    if (host->vulkan_present && host->vk_present)
+        alia_glfw_vk_present_set_modal_interaction(host->vk_present, false);
+    else if (host->vsync)
+        glfwSwapInterval(1);
+    host_release_high_res_timer();
+}
+
+static void
+host_present_continuous(alia_glfw_host* host, bool throttle)
+{
+    if (!host || !host->config.frame.fn || !host->config.continuous)
+        return;
+
+    if (host->frame_depth > 0)
+    {
+        host_defer_redraw(host);
+        return;
+    }
+
+    if (host->win32_in_modal_interaction && throttle)
+    {
+        alia_nanosecond_count const now = steady_clock_now_ns();
+        if (host->win32_last_modal_present_ns != 0
+            && now - host->win32_last_modal_present_ns
+                   < modal_present_interval_ns)
+            return;
+        host->win32_last_modal_present_ns = now;
+    }
+
+    host_present_frame(host);
+}
+
+static void
+host_mark_modal_surface_dirty(alia_glfw_host* host)
+{
+    if (!host || !host->config.ui)
+        return;
+    alia_glfw_host_sync_surface(host, host->config.ui);
+    alia_ui_mark_dirty(host->config.ui);
+}
+
+static LRESULT CALLBACK
+host_win32_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    alia_glfw_host* host
+        = reinterpret_cast<alia_glfw_host*>(GetPropW(hwnd, L"AliaGlfwHost"));
+
+    if (host && host->config.continuous)
+    {
+        switch (msg)
+        {
+            case WM_ENTERSIZEMOVE:
+                host_begin_modal_interaction(host);
+                SetTimer(
+                    hwnd, win32_modal_timer_id, win32_modal_timer_ms, nullptr);
+                host_present_continuous(host, false);
+                break;
+            case WM_EXITSIZEMOVE:
+                KillTimer(hwnd, win32_modal_timer_id);
+                host_present_continuous(host, false);
+                host_end_modal_interaction(host);
+                break;
+            case WM_MOVING:
+                host_present_continuous(host, true);
+                break;
+            case WM_TIMER:
+                if (wParam == win32_modal_timer_id)
+                {
+                    host_present_continuous(host, true);
+                    return 0;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    WNDPROC const original = host ? host->win32_original_wndproc : nullptr;
+    if (!original)
+        return DefWindowProcW(hwnd, msg, wParam, lParam);
+    return CallWindowProcW(original, hwnd, msg, wParam, lParam);
+}
+
+static void
+host_install_win32_modal_present(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    ALIA_ASSERT(host->window);
+    if (!host->config.continuous || host->win32_original_wndproc)
+        return;
+
+    HWND const hwnd = glfwGetWin32Window(host->window);
+    if (!hwnd)
+        return;
+
+    SetPropW(hwnd, L"AliaGlfwHost", host);
+    host->win32_original_wndproc = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(
+        hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(host_win32_wndproc)));
+}
+
+static void
+host_uninstall_win32_modal_present(alia_glfw_host* host)
+{
+    if (!host || !host->window || !host->win32_original_wndproc)
+        return;
+
+    HWND const hwnd = glfwGetWin32Window(host->window);
+    if (hwnd)
+    {
+        KillTimer(hwnd, win32_modal_timer_id);
+        if (host->win32_in_modal_interaction)
+            host_end_modal_interaction(host);
+        SetWindowLongPtrW(
+            hwnd,
+            GWLP_WNDPROC,
+            reinterpret_cast<LONG_PTR>(host->win32_original_wndproc));
+        RemovePropW(hwnd, L"AliaGlfwHost");
+    }
+    host->win32_original_wndproc = nullptr;
+}
+
 static void
 glfw_request_win32_frame_refresh(GLFWwindow* window)
 {
@@ -210,6 +618,7 @@ host_set_fullscreen(alia_glfw_host* host, bool fullscreen)
     host_notify_window_state(host);
 
     host->mode_transition = false;
+    host_update_pacing_interval(host);
 }
 
 void
@@ -240,6 +649,7 @@ window_pos_callback(GLFWwindow* window, int x, int y)
     host->window_state.y = y;
     host->window_state.has_position = true;
     host_notify_window_state(host);
+    host_update_pacing_interval(host);
 }
 
 void
@@ -287,10 +697,15 @@ host_present_frame(alia_glfw_host* host)
     ++host->frame_depth;
     alia_glfw_host_sync_surface(host, host->config.ui);
     alia_ui_mark_dirty(host->config.ui);
-
-    glfwMakeContextCurrent(host->window);
+    host_make_context_current_if_needed(host);
+    host_begin_gl_frame_target(host);
     host->config.frame.fn(host->config.frame.user_data);
-    glfwSwapBuffers(host->window);
+    host_end_gl_frame_target(host);
+    host_swap_or_present(host);
+#ifdef _WIN32
+    if (host->win32_in_modal_interaction)
+        host_win32_after_modal_swap(host);
+#endif
     --host->frame_depth;
 }
 
@@ -315,6 +730,14 @@ window_refresh_callback(GLFWwindow* window)
         host_defer_redraw(host);
         return;
     }
+
+#ifdef _WIN32
+    if (host->win32_in_modal_interaction && host->config.continuous)
+    {
+        host_present_continuous(host, true);
+        return;
+    }
+#endif
 
     host_present_frame(host);
 }
@@ -384,17 +807,18 @@ void
 host_run_frame(alia_glfw_host* host)
 {
     ALIA_ASSERT(host);
-    bool const should_tick = host_should_tick(host);
-    if (!should_tick)
+    if (!host_should_tick(host))
         return;
 
     ALIA_ASSERT(host->config.frame.fn);
     ALIA_ASSERT(host->window);
 
     ++host->frame_depth;
-    glfwMakeContextCurrent(host->window);
+    host_make_context_current_if_needed(host);
+    host_begin_gl_frame_target(host);
     host->config.frame.fn(host->config.frame.user_data);
-    glfwSwapBuffers(host->window);
+    host_end_gl_frame_target(host);
+    host_swap_or_present(host);
     --host->frame_depth;
 }
 
@@ -425,6 +849,19 @@ host_init_window_state_if_needed(alia_glfw_host* host)
 }
 
 } // namespace
+
+void
+alia_glfw_host_on_framebuffer_resized(GLFWwindow* window)
+{
+    alia_glfw_host* host = host_from_window(window);
+    if (!host || !host->config.continuous)
+        return;
+
+#ifdef _WIN32
+    if (host->win32_in_modal_interaction)
+        host_mark_modal_surface_dirty(host);
+#endif
+}
 
 extern "C" {
 
@@ -463,6 +900,12 @@ void
 alia_glfw_host_destroy(alia_glfw_host* host)
 {
     ALIA_ASSERT(host);
+#ifdef _WIN32
+    host_uninstall_win32_modal_present(host);
+    host_wgl_context_destroy(host);
+    alia_glfw_vk_present_destroy(host->vk_present);
+    host->vk_present = nullptr;
+#endif
     delete host;
 }
 
@@ -478,25 +921,71 @@ alia_glfw_host_open(
     alia_glfw_window_options resolved_options{};
     resolved_options.resizable = true;
     resolved_options.vsync = true;
+    resolved_options.vulkan_present = false;
     if (options)
         resolved_options = *options;
 
     glfwWindowHint(
         GLFW_RESIZABLE, resolved_options.resizable ? GLFW_TRUE : GLFW_FALSE);
+#ifdef _WIN32
+    if (resolved_options.vulkan_present)
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#endif
 
     GLFWwindow* window
         = glfwCreateWindow(state.width, state.height, title, nullptr, nullptr);
+#ifdef _WIN32
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+#endif
     if (!window)
         return false;
 
     if (state.has_position)
         glfwSetWindowPos(window, state.x, state.y);
 
-    glfwMakeContextCurrent(window);
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+#ifdef _WIN32
+    alia_glfw_vk_present* vk_present = nullptr;
+    if (resolved_options.vulkan_present)
     {
-        glfwDestroyWindow(window);
-        return false;
+        if (!alia_glfw_vk_present_begin(
+                &vk_present, window, resolved_options.vsync))
+        {
+            std::fprintf(
+                stderr,
+                "[alia host] Vulkan present init failed; using glfwSwapBuffers\n");
+        }
+    }
+#endif
+
+#ifdef _WIN32
+    if (resolved_options.vulkan_present)
+    {
+        if (!host_wgl_context_create(host))
+        {
+            alia_glfw_vk_present_destroy(vk_present);
+            glfwDestroyWindow(window);
+            return false;
+        }
+        if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+        {
+            host_wgl_context_destroy(host);
+            alia_glfw_vk_present_destroy(vk_present);
+            glfwDestroyWindow(window);
+            return false;
+        }
+    }
+    else
+#endif
+    {
+        glfwMakeContextCurrent(window);
+        if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+        {
+#ifdef _WIN32
+            alia_glfw_vk_present_destroy(vk_present);
+#endif
+            glfwDestroyWindow(window);
+            return false;
+        }
     }
 
     glEnable(GL_FRAMEBUFFER_SRGB);
@@ -505,6 +994,27 @@ alia_glfw_host_open(
     host->window = window;
     host->window_state = state;
     host->window_state_seeded = true;
+    host->vsync = resolved_options.vsync;
+    host->pace_to_monitor = !resolved_options.vsync;
+    host_update_pacing_interval(host);
+
+#ifdef _WIN32
+    if (vk_present)
+    {
+        if (!alia_glfw_vk_present_complete(vk_present))
+        {
+            std::fprintf(
+                stderr,
+                "[alia host] Vulkan present init failed; using glfwSwapBuffers\n");
+            alia_glfw_vk_present_destroy(vk_present);
+        }
+        else
+        {
+            host->vulkan_present = true;
+            host->vk_present = vk_present;
+        }
+    }
+#endif
 
     bool const restore_fullscreen = state.fullscreen;
     host->window_state.fullscreen = false;
@@ -544,6 +1054,9 @@ alia_glfw_host_sync_surface(alia_glfw_host* host, alia_ui_system* ui)
     int height = 0;
     glfwGetFramebufferSize(window, &width, &height);
     alia_ui_surface_set_size(ui, {width, height});
+#ifdef _WIN32
+    host_vk_sync_surfaces(host);
+#endif
 }
 
 void
@@ -568,6 +1081,9 @@ alia_glfw_host_install(
     alia_glfw_install_default_input_callbacks(host->window, &host->binding);
     host_install_window_state_callbacks(host->window);
     host_wire_window_ops(host);
+#ifdef _WIN32
+    host_install_win32_modal_present(host);
+#endif
     host->installed = true;
 }
 
@@ -582,14 +1098,33 @@ alia_glfw_host_run(alia_glfw_host* host, alia_glfw_host_config const* config)
 
     alia_glfw_host_install(host, config);
 
+    bool const use_pace_timer
+        = host->pace_to_monitor && host->config.continuous;
+    if (use_pace_timer)
+        host_acquire_high_res_timer();
+
     GLFWwindow* const window = host->window;
     while (!glfwWindowShouldClose(window))
     {
+        alia_nanosecond_count const frame_start = steady_clock_now_ns();
+
         host_wait_for_events(host);
         if (glfwWindowShouldClose(window))
             break;
+
         host_run_frame(host);
+        host_pace_frame(host, frame_start);
     }
+
+    if (use_pace_timer)
+        host_release_high_res_timer();
+}
+
+void
+alia_glfw_host_toggle_fullscreen(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    host_toggle_fullscreen(host);
 }
 
 } // extern "C"

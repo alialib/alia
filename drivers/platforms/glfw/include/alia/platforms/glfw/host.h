@@ -16,7 +16,12 @@ typedef struct GLFWwindow GLFWwindow;
 typedef struct alia_glfw_window_options
 {
     bool resizable;
+    // When false, the continuous run loop paces frames to the monitor refresh
+    // rate instead of using glfwSwapInterval.
     bool vsync;
+    // Windows prototype: present via Vulkan swapchain after GL renders to an
+    // off-screen framebuffer.
+    bool vulkan_present;
 } alia_glfw_window_options;
 
 // Opaque host object — the app owns instances (stack, heap, or file-scope).
@@ -75,6 +80,9 @@ alia_glfw_host_install(
 // Install callbacks (if not already) and run until the window is closed.
 void
 alia_glfw_host_run(alia_glfw_host* host, alia_glfw_host_config const* config);
+
+void
+alia_glfw_host_toggle_fullscreen(alia_glfw_host* host);
 
 ALIA_EXTERN_C_END
 

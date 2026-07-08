@@ -4,8 +4,12 @@
 #include <alia/abi/ui/input/scroll.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
+#include <alia/platforms/glfw/host.h>
 
 #include <GLFW/glfw3.h>
+
+void
+alia_glfw_host_on_framebuffer_resized(GLFWwindow* window);
 
 static alia_hid_key_t
 glfw_key_to_hid(int key)
@@ -294,6 +298,14 @@ key_callback(
         = static_cast<alia_glfw_ui_binding*>(glfwGetWindowUserPointer(window));
     ALIA_ASSERT(binding);
     ALIA_ASSERT(binding->ui);
+
+    if (key == GLFW_KEY_F11 && action == GLFW_PRESS && mods == 0
+        && binding->host)
+    {
+        alia_glfw_host_toggle_fullscreen(binding->host);
+        return;
+    }
+
     alia_glfw_enqueue_key(binding->ui, key, action, mods);
 }
 
@@ -306,6 +318,7 @@ framebuffer_size_callback(GLFWwindow* window, int width, int height)
     ALIA_ASSERT(binding->ui);
     alia_vec2i const size = ALIA_BRACED_INIT(alia_vec2i, width, height);
     alia_ui_surface_set_size(binding->ui, size);
+    alia_glfw_host_on_framebuffer_resized(window);
 }
 
 static void

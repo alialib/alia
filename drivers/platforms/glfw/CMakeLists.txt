@@ -16,4 +16,12 @@ if (EMSCRIPTEN)
 else()
     target_link_libraries(alia_glfw_platform PUBLIC
         glfw glad::glad alia_core alia_platform_api)
+    if(WIN32)
+        find_package(Vulkan REQUIRED)
+        target_sources(alia_glfw_platform PRIVATE
+            src/vk_present.cpp
+            src/vk_gl_ext_win32.cpp)
+        target_link_libraries(alia_glfw_platform PUBLIC Vulkan::Vulkan)
+        target_link_libraries(alia_glfw_platform PUBLIC winmm dwmapi opengl32)
+    endif()
 endif()
