@@ -19,7 +19,8 @@
         "glfw": {
             "description": "GLFW backend",
             "dependencies": [
-                "glfw3"
+                "glfw3",
+                "vulkan"
             ]
         },
         "tests": {
