@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/context.h>
 #include <alia/ui/layout/flags.hpp>
@@ -400,6 +401,23 @@ flow_spring(context& ctx, float min_width = 0.f)
 {
     if (is_refresh_event(ctx))
         alia_layout_flow_spring_emit(&ctx, min_width);
+    else
+        (void) alia_layout_consume_box(&ctx);
+}
+
+// Emit an empty leaf that reserves `size` (logical px, theme-scaled).
+// FLUSH is always applied so style spacing does not inflate the reserved size.
+inline void
+spacer(context& ctx, alia_vec2f size, layout_flag_set flags = NO_FLAGS)
+{
+    if (is_refresh_event(ctx))
+    {
+        alia_layout_leaf_emit(
+            &ctx,
+            alia_layout_content_metrics_make(alia_vec2f{
+                alia_px(&ctx, size.x), alia_px(&ctx, size.y)}),
+            raw_code(flags | FLUSH));
+    }
     else
         (void) alia_layout_consume_box(&ctx);
 }

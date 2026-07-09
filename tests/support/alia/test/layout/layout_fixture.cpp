@@ -3,6 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/style.h>
 #include <alia/base/stack.h>
 #include <alia/impl/events.hpp>
@@ -56,6 +57,7 @@ struct layout_fixture
     void* stack_buffer = nullptr;
 
     alia_style style = {.spacing = 0.f};
+    alia_geometry_context geometry = {.scale = 1.f};
 
     alia_event_traversal event_traversal = {};
     alia_event refresh_event = {};
@@ -100,7 +102,7 @@ wire_context(layout_fixture& fixture, bool refresh)
         .tick_count = 0,
         .system = nullptr,
         .style = &fixture.style,
-        .geometry = nullptr,
+        .geometry = &fixture.geometry,
         .input = nullptr,
         .layout = &fixture.layout_context,
         .draw = nullptr,
@@ -191,6 +193,13 @@ layout_fixture_set_spacing(layout_fixture* fixture, float spacing)
 {
     if (fixture)
         fixture->style.spacing = spacing;
+}
+
+void
+layout_fixture_set_scale(layout_fixture* fixture, float scale)
+{
+    if (fixture)
+        fixture->geometry.scale = scale;
 }
 
 void

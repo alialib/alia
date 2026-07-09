@@ -97,3 +97,31 @@ TEST_CASE("layout min size inside row")
     CHECK(check_box_eq(
         leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(150.f, 50.f)));
 }
+
+TEST_CASE("layout spacer applies theme scale")
+{
+    alia_box leaf;
+    run_layout_case_with_scale(
+        2.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+            column(ctx, [&]() {
+                spacer(ctx, alia_vec2f_make(10.f, 20.f));
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf);
+            });
+        });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 40.f), alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout spacer is flush against style spacing")
+{
+    alia_box leaf;
+    run_layout_case_with_spacing(
+        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+            column(ctx, [&]() {
+                spacer(ctx, alia_vec2f_make(10.f, 20.f));
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &leaf);
+            });
+        });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 20.f), alia_vec2f_make(10.f, 10.f)));
+}

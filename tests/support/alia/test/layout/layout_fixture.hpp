@@ -43,6 +43,9 @@ void
 layout_fixture_set_spacing(layout_fixture* fixture, float spacing);
 
 void
+layout_fixture_set_scale(layout_fixture* fixture, float scale);
+
+void
 layout_fixture_run_refresh_impl(
     layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
 
@@ -108,6 +111,12 @@ inline void
 layout_test_fixture_set_spacing(layout_test_fixture* fixture, float spacing)
 {
     layout_fixture_set_spacing(fixture, spacing);
+}
+
+inline void
+layout_test_fixture_set_scale(layout_test_fixture* fixture, float scale)
+{
+    layout_fixture_set_scale(fixture, scale);
 }
 
 inline void

@@ -118,4 +118,21 @@ run_layout_case_with_spacing(float spacing, alia_vec2f assigned, Fn&& fn)
     layout_test_fixture_destroy(fixture);
 }
 
+template<class Fn>
+void
+run_layout_case_with_scale(float scale, alia_vec2f assigned, Fn&& fn)
+{
+    layout_test_fixture* fixture = layout_test_fixture_create();
+    assert(fixture != nullptr);
+    layout_test_fixture_set_scale(fixture, scale);
+
+    layout_test_fixture_run_refresh(
+        fixture, [&](alia_context* ctx) { fn(*ctx); });
+    layout_test_fixture_resolve(fixture, assigned);
+    layout_test_fixture_run_spatial(
+        fixture, [&](alia_context* ctx) { fn(*ctx); });
+
+    layout_test_fixture_destroy(fixture);
+}
+
 } // namespace alia::layout_test
