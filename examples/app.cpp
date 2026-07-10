@@ -62,17 +62,13 @@ alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
 
-// Local palette and styles for the content pane (driven by controls).
-static alia_palette local_palette;
+// Local widget style overrides for the content pane.
 static alia_switch_style local_switch_style;
 static alia_slider_style local_slider_style;
 static alia_radio_style local_radio_style;
 static alia_checkbox_style local_checkbox_style;
 static alia_node_expander_style local_node_expander_style;
 static bool local_styles_initialized = false;
-static float demo_hue = 1.0f;
-static bool demo_is_dark = false;
-static float demo_foundation_step_l = 0.075f;
 static float demo_spacing = 6.f;
 static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
@@ -294,28 +290,6 @@ do_node_expander_with_text(
 void
 do_controls(context& ctx)
 {
-    do_heading(ctx, "PALETTE");
-
-    {
-        alia_bool_signal switch_signal{
-            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-            .value = demo_is_dark,
-        };
-        do_switch_with_text(ctx, &switch_signal, "Dark Mode", nullptr);
-        if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            demo_is_dark = switch_signal.value;
-            abort_pass(ctx);
-        }
-    }
-
-    do_subheading(ctx, "Foundation Lightness Step");
-    alia_do_slider_f(
-        &ctx, &demo_foundation_step_l, 0.01f, 0.2f, 0.001f, 0, false, nullptr);
-
-    do_subheading(ctx, "Hue");
-    alia_do_slider_f(&ctx, &demo_hue, 0.f, 1.f, 0.01f, 0, false, nullptr);
-
     do_heading(ctx, "GEOMETRY");
 
     do_subheading(ctx, "Spacing");
@@ -782,33 +756,6 @@ the_demo(context& ctx)
             local_styles_initialized = true;
         }
 
-        // Refresh local palette from control state (hue, light/dark).
-        static bool current_demo_is_dark = false;
-        static float current_demo_foundation_step_l = 0;
-        static float current_demo_hue = 0;
-        if (current_demo_is_dark != demo_is_dark
-            || current_demo_foundation_step_l != demo_foundation_step_l
-            || current_demo_hue != demo_hue)
-        {
-            alia_oklch lch = {
-                .l = 0.55f,
-                .c = 0.2f,
-                .h = demo_hue * 2.f * 3.14159f,
-            };
-            alia_srgb8 primary = alia_srgb8_from_unclamped_oklch(lch);
-            alia_palette_seeds pseeds
-                = alia_seeds_from_elevation(primary, 0, demo_is_dark);
-            alia_theme_params params = {
-                .foundation_step_l = demo_foundation_step_l,
-                .is_dark_mode = demo_is_dark,
-            };
-            alia_palette_expand(&local_palette, &pseeds, &params);
-
-            current_demo_is_dark = demo_is_dark;
-            current_demo_foundation_step_l = demo_foundation_step_l;
-            current_demo_hue = demo_hue;
-        }
-
         with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
@@ -826,29 +773,27 @@ the_demo(context& ctx)
                                 });
                             });
                     });
-                with_palette(ctx, &local_palette, [&] {
-                    with_ui_scale(ctx, demo_scale, [&] {
-                        with_spacing(ctx, demo_spacing, [&] {
-                            concrete_panel(
-                                ctx,
-                                0,
-                                ctx.palette->foundation.background.base,
-                                GROW,
-                                [&]() {
-                                    column(ctx, GROW, [&]() {
-                                        alia_ui_scroll_view_begin(
-                                            &ctx, ALIA_GROW, 0x3, 0, nullptr);
-                                        edge_offsets(
-                                            ctx,
-                                            {.left = 40,
-                                             .right = 40,
-                                             .top = 40,
-                                             .bottom = 40},
-                                            [&]() { do_content(ctx); });
-                                        alia_ui_scroll_view_end(&ctx);
-                                    });
+                with_ui_scale(ctx, demo_scale, [&] {
+                    with_spacing(ctx, demo_spacing, [&] {
+                        concrete_panel(
+                            ctx,
+                            0,
+                            ctx.palette->foundation.background.base,
+                            GROW,
+                            [&]() {
+                                column(ctx, GROW, [&]() {
+                                    alia_ui_scroll_view_begin(
+                                        &ctx, ALIA_GROW, 0x3, 0, nullptr);
+                                    edge_offsets(
+                                        ctx,
+                                        {.left = 40,
+                                         .right = 40,
+                                         .top = 40,
+                                         .bottom = 40},
+                                        [&]() { do_content(ctx); });
+                                    alia_ui_scroll_view_end(&ctx);
                                 });
-                        });
+                            });
                     });
                 });
             });
@@ -941,13 +886,16 @@ main()
     static bool theme_initialized = false;
     if (!theme_initialized)
     {
-        alia_palette_seeds pseeds = alia_seeds_from_elevation(
-            primary_colors[primary_index], 0, !light_theme);
-        alia_theme_params params = {
-            .foundation_step_l = 0.075f,
-            .is_dark_mode = !light_theme,
-        };
-        alia_palette_expand(&the_system->palette, &pseeds, &params);
+        alia_theme_accent accent;
+        alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
+        alia_theme_context theme_ctx = alia_theme_context_default(!light_theme);
+        alia_palette_from_accent(
+            &the_system->palette,
+            &accent,
+            &theme_ctx,
+            nullptr,
+            nullptr,
+            ALIA_LITERAL_FIXED_SPECTRUM);
         theme_initialized = true;
     }
 

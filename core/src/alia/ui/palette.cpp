@@ -1,4 +1,5 @@
 #include <alia/abi/ui/palette.h>
+#include <cmath>
 #include <numbers>
 
 // Compile-time check that flat index math matches struct layout (no padding
@@ -60,59 +61,174 @@ alia_deg_to_rad(float degrees)
     return degrees * std::numbers::pi_v<float> / 180.0f;
 }
 
+static inline bool
+alia_is_dark_mode(alia_theme_context const* ctx)
+{
+    return ctx->surface.is_dark_mode;
+}
+
 extern "C" {
 
-static void
-fill_one(alia_srgb8* out, alia_oklch base)
+alia_theme_context
+alia_theme_context_default(bool is_dark_mode)
 {
-    *out = alia_srgb8_from_unclamped_oklch(base);
+    return alia_theme_context{
+        .surface = {
+            .is_dark_mode = is_dark_mode,
+            .elevation = 0,
+        },
+        .contrast_target = 0.f,
+    };
+}
+
+alia_seed_params
+alia_seed_params_default(void)
+{
+    return alia_seed_params{
+        .primary_l_default = 0.55f,
+        .primary_c_default = 0.20f,
+
+        .elevation_bg_l_base_dark = 0.12f,
+        .elevation_bg_l_per_step_dark = 0.03f,
+        .elevation_bg_l_base_light = 0.90f,
+        .elevation_bg_l_per_step_light = -0.02f,
+        .elevation_bg_c = 0.015f,
+        .elevation_text_l_dark = 0.95f,
+        .elevation_text_l_light = 0.15f,
+        .elevation_text_c = 0.02f,
+
+        .secondary_l_offset = 0.35f,
+        .secondary_c_offset = 0.02f,
+
+        .alert_l_dark = 0.65f,
+        .alert_l_light = 0.55f,
+        .alert_c = 0.16f,
+        .alert_hue_danger_deg = 25.0f,
+        .alert_hue_warning_deg = 75.0f,
+        .alert_hue_success_deg = 145.0f,
+        .alert_hue_info_deg = 250.0f,
+        .alert_warning_l_offset = 0.15f,
+    };
+}
+
+alia_palette_params
+alia_palette_params_default(void)
+{
+    return alia_palette_params{
+        .foundation_step_l = 0.075f,
+        .structural_l_offset = 0.6f,
+        .structural_c_offset = 0.005f,
+
+        .swatch_subtle_l_dark = 0.25f,
+        .swatch_subtle_l_light = 0.90f,
+        .swatch_text_l_dark = 0.85f,
+        .swatch_text_l_light = 0.40f,
+        .swatch_on_solid_l_dark = 0.15f,
+        .swatch_on_solid_l_light = 0.95f,
+        .swatch_outline_c_scale = 0.8f,
+        .swatch_text_c_scale = 0.6f,
+        .swatch_subtle_c = 0.04f,
+
+        .literal_l_dark = 0.65f,
+        .literal_l_light = 0.55f,
+        .literal_c = 0.16f,
+    };
+}
+
+void
+alia_theme_accent_from_hue(
+    alia_theme_accent* out, float hue, alia_seed_params const* params)
+{
+    alia_seed_params p = params ? *params : alia_seed_params_default();
+    out->primary = {p.primary_l_default, p.primary_c_default, hue};
+}
+
+void
+alia_theme_accent_from_color(alia_theme_accent* out, alia_srgb8 color)
+{
+    out->primary = alia_oklch_from_srgb8(color);
+}
+
+static void
+fill_one(alia_srgb8* out, alia_oklch color)
+{
+    *out = alia_srgb8_from_unclamped_oklch(color);
+}
+
+static float
+on_solid_l_for_contrast(
+    alia_oklch const& base,
+    alia_palette_params const& params,
+    alia_theme_context const& ctx)
+{
+    float const target = ctx.contrast_target > 0.f ? ctx.contrast_target : 4.5f;
+    float const fallback = base.l > 0.65f ? params.swatch_on_solid_l_dark
+                                          : params.swatch_on_solid_l_light;
+
+    alia_srgb8 const solid = alia_srgb8_from_unclamped_oklch(base);
+    float const solid_lum = alia_relative_luminance_srgb8(solid);
+
+    float best_l = fallback;
+    float best_ratio = 0.f;
+    for (int i = 0; i <= 16; ++i)
+    {
+        float candidate_l = i / 16.0f;
+        alia_srgb8 candidate_srgb = alia_srgb8_from_unclamped_oklch(
+            {candidate_l, 0.02f, base.h});
+        float ratio = alia_relative_luminance_ratio(
+            solid_lum, alia_relative_luminance_srgb8(candidate_srgb));
+        if (ratio >= target)
+            return candidate_l;
+        if (ratio > best_ratio)
+        {
+            best_ratio = ratio;
+            best_l = candidate_l;
+        }
+    }
+    return best_l;
 }
 
 static void
 generate_swatch_from_oklch(
-    alia_swatch* swatch, alia_oklch base, const alia_theme_params* p)
+    alia_swatch* swatch,
+    alia_oklch base,
+    alia_theme_context const* ctx,
+    alia_palette_params const* params)
 {
-    (void) p;
-    // 1. Solid Background
+    bool const dark = alia_is_dark_mode(ctx);
+
     fill_one(&swatch->solid, base);
 
-    // 2. On-Solid (High Contrast Flip)
-    float on_solid_l = (base.l > 0.65f) ? 0.15f : 0.95f;
-    alia_oklch on_solid_oklch = {on_solid_l, 0.02f, base.h};
-    fill_one(&swatch->on_solid, on_solid_oklch);
+    float on_solid_l
+        = on_solid_l_for_contrast(base, *params, *ctx);
+    fill_one(&swatch->on_solid, {on_solid_l, 0.02f, base.h});
 
-    // 3. Subtle Background
-    float subtle_l = p->is_dark_mode ? 0.25f : 0.90f;
-    alia_oklch subtle_oklch = {subtle_l, 0.04f, base.h};
-    fill_one(&swatch->subtle, subtle_oklch);
+    float subtle_l
+        = dark ? params->swatch_subtle_l_dark : params->swatch_subtle_l_light;
+    fill_one(
+        &swatch->subtle,
+        {subtle_l, params->swatch_subtle_c, base.h});
 
-    // 4. Outline
-    alia_oklch outline_oklch = {base.l, base.c * 0.8f, base.h};
-    fill_one(&swatch->outline, outline_oklch);
+    fill_one(
+        &swatch->outline,
+        {base.l, base.c * params->swatch_outline_c_scale, base.h});
 
-    // 5. Text and On-Subtle
-    float text_l = p->is_dark_mode ? 0.85f : 0.40f;
-    alia_oklch text_oklch = {text_l, base.c * 0.6f, base.h};
-
+    float text_l = dark ? params->swatch_text_l_dark : params->swatch_text_l_light;
+    alia_oklch text_oklch
+        = {text_l, base.c * params->swatch_text_c_scale, base.h};
     fill_one(&swatch->text, text_oklch);
     fill_one(&swatch->on_subtle, text_oklch);
 }
 
 static void
-generate_swatch_from_srgb8(
-    alia_swatch* swatch, alia_srgb8 seed, const alia_theme_params* p)
-{
-    alia_oklch base = alia_oklch_from_srgb8(seed);
-    generate_swatch_from_oklch(swatch, base, p);
-}
-
-static void
 generate_ramp(
-    alia_foundation_ramp* ramp, alia_srgb8 seed, const alia_theme_params* p)
+    alia_foundation_ramp* ramp,
+    alia_oklch base,
+    alia_theme_context const* ctx,
+    alia_palette_params const* params)
 {
-    alia_oklch base = alia_oklch_from_srgb8(seed);
-    float step = p->foundation_step_l;
-    float dir = p->is_dark_mode ? 1.0f : -1.0f;
+    float step = params->foundation_step_l;
+    float dir = alia_is_dark_mode(ctx) ? 1.0f : -1.0f;
 
     fill_one(&ramp->weaker_4, {base.l - (step * 4 * dir), base.c, base.h});
     fill_one(&ramp->weaker_3, {base.l - (step * 3 * dir), base.c, base.h});
@@ -125,158 +241,139 @@ generate_ramp(
     fill_one(&ramp->stronger_4, {base.l + (step * 4 * dir), base.c, base.h});
 }
 
-// --- Public API ---
-
-alia_palette_seeds
-alia_seeds_from_core(
-    alia_srgb8 primary, alia_srgb8 bg, alia_srgb8 text, bool is_dark)
+void
+alia_palette_seeds_from_accent(
+    alia_palette_seeds* out,
+    alia_theme_accent const* accent,
+    alia_theme_context const* ctx,
+    alia_seed_params const* params)
 {
-    alia_palette_seeds seeds;
+    alia_seed_params sp = params ? *params : alia_seed_params_default();
+    bool const dark = alia_is_dark_mode(ctx);
+    int const elevation = ctx->surface.elevation;
+    float const primary_h = accent->primary.h;
 
-    seeds.bg_base = bg;
-    seeds.text_base = text;
-    seeds.primary = primary;
+    float bg_l = dark ? sp.elevation_bg_l_base_dark
+                          + (elevation * sp.elevation_bg_l_per_step_dark)
+                      : sp.elevation_bg_l_base_light
+                          + (elevation * sp.elevation_bg_l_per_step_light);
+    out->bg = {bg_l, sp.elevation_bg_c, primary_h};
 
-    alia_oklch bg_oklch = alia_oklch_from_srgb8(bg);
+    float text_l = dark ? sp.elevation_text_l_dark : sp.elevation_text_l_light;
+    out->text = {text_l, sp.elevation_text_c, primary_h};
 
-    float sec_l = is_dark ? bg_oklch.l + 0.35f : bg_oklch.l - 0.35f;
-    seeds.secondary = alia_srgb8_from_unclamped_oklch(
-        {sec_l, bg_oklch.c + 0.02f, bg_oklch.h});
+    out->primary = accent->primary;
 
-    float alert_l = is_dark ? 0.65f : 0.55f;
-    float alert_c = 0.16f;
+    float sec_l = dark ? out->bg.l + sp.secondary_l_offset
+                       : out->bg.l - sp.secondary_l_offset;
+    out->secondary = {sec_l, out->bg.c + sp.secondary_c_offset, out->bg.h};
 
-    seeds.danger = alia_srgb8_from_unclamped_oklch(
-        {alert_l, alert_c, alia_deg_to_rad(25.0f)});
+    float alert_l = dark ? sp.alert_l_dark : sp.alert_l_light;
 
-    seeds.success = alia_srgb8_from_unclamped_oklch(
-        {alert_l, alert_c, alia_deg_to_rad(145.0f)});
-
-    seeds.info = alia_srgb8_from_unclamped_oklch(
-        {alert_l, alert_c, alia_deg_to_rad(250.0f)});
-
-    seeds.warning = alia_srgb8_from_unclamped_oklch(
-        {alert_l + 0.15f, alert_c, alia_deg_to_rad(75.0f)});
-
-    return seeds;
+    out->danger = {
+        alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_danger_deg)};
+    out->success = {
+        alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_success_deg)};
+    out->info = {alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_info_deg)};
+    out->warning = {
+        alert_l + sp.alert_warning_l_offset,
+        sp.alert_c,
+        alia_deg_to_rad(sp.alert_hue_warning_deg)};
 }
 
-alia_palette_seeds
-alia_seeds_from_elevation(alia_srgb8 primary, int elevation, bool is_dark)
+static void
+generate_literals(
+    alia_literal_palette* colors,
+    alia_palette_seeds const* seeds,
+    alia_theme_context const* ctx,
+    alia_palette_params const* params,
+    enum alia_literal_policy policy)
 {
-    alia_oklch primary_oklch = alia_oklch_from_srgb8(primary);
-    float primary_h = primary_oklch.h;
+    bool const dark = alia_is_dark_mode(ctx);
+    float literal_l = dark ? params->literal_l_dark : params->literal_l_light;
+    float literal_c = params->literal_c;
 
-    float bg_l
-        = is_dark ? 0.12f + (elevation * 0.03f) : 0.98f - (elevation * 0.01f);
+    float hue_offset_rad = 0.f;
+    if (policy == ALIA_LITERAL_HARMONIZE_TO_PRIMARY)
+        hue_offset_rad = seeds->primary.h;
 
-    alia_oklch bg_oklch = {bg_l, 0.015f, primary_h};
-    alia_srgb8 bg = alia_srgb8_from_unclamped_oklch(bg_oklch);
+    struct literal_entry
+    {
+        alia_swatch* swatch;
+        float hue_degrees;
+        float l_offset;
+    };
 
-    float text_l = is_dark ? 0.95f : 0.15f;
-    alia_oklch text_oklch = {text_l, 0.02f, primary_h};
-    alia_srgb8 text = alia_srgb8_from_unclamped_oklch(text_oklch);
+    literal_entry entries[] = {
+        {&colors->red, 15.0f, 0.0f},
+        {&colors->orange, 35.0f, 0.0f},
+        {&colors->amber, 55.0f, 0.02f},
+        {&colors->yellow, 80.0f, 0.08f},
+        {&colors->lime, 110.0f, 0.04f},
+        {&colors->green, 140.0f, 0.0f},
+        {&colors->teal, 165.0f, 0.0f},
+        {&colors->cyan, 190.0f, 0.0f},
+        {&colors->blue, 220.0f, 0.0f},
+        {&colors->indigo, 250.0f, 0.0f},
+        {&colors->purple, 285.0f, 0.0f},
+        {&colors->pink, 320.0f, 0.0f},
+    };
 
-    return alia_seeds_from_core(primary, bg, text, is_dark);
+    for (literal_entry const& entry : entries)
+    {
+        float h = alia_deg_to_rad(entry.hue_degrees) + hue_offset_rad;
+        alia_oklch seed = {literal_l + entry.l_offset, literal_c, h};
+        generate_swatch_from_oklch(entry.swatch, seed, ctx, params);
+    }
 }
 
 void
-alia_palette_expand(
-    alia_palette* out_palette,
-    const alia_palette_seeds* seeds,
-    const alia_theme_params* params)
+alia_palette_from_seeds(
+    alia_palette* out,
+    alia_palette_seeds const* seeds,
+    alia_theme_context const* ctx,
+    alia_palette_params const* params,
+    enum alia_literal_policy literals)
 {
-    alia_theme_params p
-        = params ? *params
-                 : alia_theme_params{
-                       .foundation_step_l = 0.075f,
-                       .is_dark_mode = true,
-                   };
+    alia_palette_params pp = params ? *params : alia_palette_params_default();
 
-    generate_ramp(&out_palette->foundation.background, seeds->bg_base, &p);
+    generate_ramp(&out->foundation.background, seeds->bg, ctx, &pp);
 
-    float struct_l_shift = p.is_dark_mode ? 0.6f : -0.6f;
-    float struct_c_shift = 0.005f;
-
-    alia_oklch bg_oklch = alia_oklch_from_srgb8(seeds->bg_base);
+    float struct_l_shift = alia_is_dark_mode(ctx) ? pp.structural_l_offset
+                                                  : -pp.structural_l_offset;
     alia_oklch struct_oklch = {
-        bg_oklch.l + struct_l_shift, bg_oklch.c + struct_c_shift, bg_oklch.h};
+        seeds->bg.l + struct_l_shift,
+        seeds->bg.c + pp.structural_c_offset,
+        seeds->bg.h,
+    };
+    generate_ramp(&out->foundation.structural, struct_oklch, ctx, &pp);
 
-    alia_srgb8 structural_seed = alia_srgb8_from_unclamped_oklch(struct_oklch);
+    generate_ramp(&out->foundation.text, seeds->text, ctx, &pp);
 
-    generate_ramp(&out_palette->foundation.structural, structural_seed, &p);
+    generate_swatch_from_oklch(&out->focus, seeds->primary, ctx, &pp);
+    generate_swatch_from_oklch(&out->selection, seeds->secondary, ctx, &pp);
+    generate_swatch_from_oklch(&out->primary, seeds->primary, ctx, &pp);
+    generate_swatch_from_oklch(&out->secondary, seeds->secondary, ctx, &pp);
+    generate_swatch_from_oklch(&out->success, seeds->success, ctx, &pp);
+    generate_swatch_from_oklch(&out->warning, seeds->warning, ctx, &pp);
+    generate_swatch_from_oklch(&out->danger, seeds->danger, ctx, &pp);
+    generate_swatch_from_oklch(&out->info, seeds->info, ctx, &pp);
 
-    generate_ramp(&out_palette->foundation.text, seeds->text_base, &p);
+    generate_literals(&out->colors, seeds, ctx, &pp, literals);
+}
 
-    generate_swatch_from_srgb8(&out_palette->focus, seeds->primary, &p);
-    generate_swatch_from_srgb8(&out_palette->selection, seeds->secondary, &p);
-
-    generate_swatch_from_srgb8(&out_palette->primary, seeds->primary, &p);
-    generate_swatch_from_srgb8(&out_palette->secondary, seeds->secondary, &p);
-    generate_swatch_from_srgb8(&out_palette->success, seeds->success, &p);
-    generate_swatch_from_srgb8(&out_palette->warning, seeds->warning, &p);
-    generate_swatch_from_srgb8(&out_palette->danger, seeds->danger, &p);
-    generate_swatch_from_srgb8(&out_palette->info, seeds->info, &p);
-
-    float literal_l = p.is_dark_mode ? 0.65f : 0.55f;
-    float literal_c = 0.16f;
-
-    auto make_literal_seed
-        = [&](const char* /*name*/, float hue_degrees, float l_offset) {
-              float h = alia_deg_to_rad(hue_degrees);
-              float l = literal_l + l_offset;
-              alia_oklch seed = {l, literal_c, h};
-              return seed;
-          };
-
-    generate_swatch_from_oklch(
-        &out_palette->colors.red, make_literal_seed("red", 15.0f, 0.0f), &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.orange,
-        make_literal_seed("orange", 35.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.amber,
-        make_literal_seed("amber", 55.0f, 0.02f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.yellow,
-        make_literal_seed("yellow", 80.0f, 0.08f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.lime,
-        make_literal_seed("lime", 110.0f, 0.04f),
-        &p);
-
-    generate_swatch_from_oklch(
-        &out_palette->colors.green,
-        make_literal_seed("green", 140.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.teal,
-        make_literal_seed("teal", 165.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.cyan,
-        make_literal_seed("cyan", 190.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.blue,
-        make_literal_seed("blue", 220.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.indigo,
-        make_literal_seed("indigo", 250.0f, 0.0f),
-        &p);
-
-    generate_swatch_from_oklch(
-        &out_palette->colors.purple,
-        make_literal_seed("purple", 285.0f, 0.0f),
-        &p);
-    generate_swatch_from_oklch(
-        &out_palette->colors.pink,
-        make_literal_seed("pink", 320.0f, 0.0f),
-        &p);
+void
+alia_palette_from_accent(
+    alia_palette* out,
+    alia_theme_accent const* accent,
+    alia_theme_context const* ctx,
+    alia_seed_params const* seed_params,
+    alia_palette_params const* palette_params,
+    enum alia_literal_policy literals)
+{
+    alia_palette_seeds seeds;
+    alia_palette_seeds_from_accent(&seeds, accent, ctx, seed_params);
+    alia_palette_from_seeds(out, &seeds, ctx, palette_params, literals);
 }
 
 } // extern "C"

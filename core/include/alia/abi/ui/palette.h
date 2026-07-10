@@ -234,37 +234,133 @@ alia_palette_color_resolve(alia_palette const* p, alia_palette_color c)
 }
 
 // GENERATION
+//
+// Pipeline: accent (+ surface context) -> seeds (OKLCH) -> palette (sRGB).
+// Apps can hold and edit values at any stage before calling the next expand.
+
+typedef struct alia_theme_accent
+{
+    alia_oklch primary;
+} alia_theme_accent;
+
+typedef struct alia_surface_env
+{
+    bool is_dark_mode;
+    int elevation;
+} alia_surface_env;
+
+typedef struct alia_theme_context
+{
+    alia_surface_env surface;
+    // Minimum contrast ratio for on-solid pairs; 0 uses generator defaults.
+    float contrast_target;
+} alia_theme_context;
 
 typedef struct alia_palette_seeds
 {
-    alia_srgb8 bg_base;
-    alia_srgb8 text_base;
-    alia_srgb8 primary;
-    alia_srgb8 secondary;
-    alia_srgb8 success;
-    alia_srgb8 warning;
-    alia_srgb8 danger;
-    alia_srgb8 info;
+    alia_oklch bg;
+    alia_oklch text;
+    alia_oklch primary;
+    alia_oklch secondary;
+    alia_oklch success;
+    alia_oklch warning;
+    alia_oklch danger;
+    alia_oklch info;
 } alia_palette_seeds;
 
-typedef struct alia_theme_params
+typedef struct alia_seed_params
+{
+    float primary_l_default;
+    float primary_c_default;
+
+    float elevation_bg_l_base_dark;
+    float elevation_bg_l_per_step_dark;
+    float elevation_bg_l_base_light;
+    float elevation_bg_l_per_step_light;
+    float elevation_bg_c;
+    float elevation_text_l_dark;
+    float elevation_text_l_light;
+    float elevation_text_c;
+
+    float secondary_l_offset;
+    float secondary_c_offset;
+
+    float alert_l_dark;
+    float alert_l_light;
+    float alert_c;
+    float alert_hue_danger_deg;
+    float alert_hue_warning_deg;
+    float alert_hue_success_deg;
+    float alert_hue_info_deg;
+    float alert_warning_l_offset;
+} alia_seed_params;
+
+typedef struct alia_palette_params
 {
     float foundation_step_l;
-    bool is_dark_mode;
-} alia_theme_params;
+    float structural_l_offset;
+    float structural_c_offset;
 
-alia_palette_seeds
-alia_seeds_from_elevation(alia_srgb8 primary, int elevation, bool is_dark);
+    float swatch_subtle_l_dark;
+    float swatch_subtle_l_light;
+    float swatch_text_l_dark;
+    float swatch_text_l_light;
+    float swatch_on_solid_l_dark;
+    float swatch_on_solid_l_light;
+    float swatch_outline_c_scale;
+    float swatch_text_c_scale;
+    float swatch_subtle_c;
 
-alia_palette_seeds
-alia_seeds_from_core(
-    alia_srgb8 primary, alia_srgb8 bg, alia_srgb8 text, bool is_dark);
+    float literal_l_dark;
+    float literal_l_light;
+    float literal_c;
+} alia_palette_params;
+
+enum alia_literal_policy
+{
+    ALIA_LITERAL_FIXED_SPECTRUM = 0,
+    ALIA_LITERAL_HARMONIZE_TO_PRIMARY,
+};
+
+alia_theme_context
+alia_theme_context_default(bool is_dark_mode);
+
+alia_seed_params
+alia_seed_params_default(void);
+
+alia_palette_params
+alia_palette_params_default(void);
 
 void
-alia_palette_expand(
-    alia_palette* out_palette,
-    const alia_palette_seeds* seeds,
-    const alia_theme_params* params);
+alia_theme_accent_from_hue(
+    alia_theme_accent* out, float hue, alia_seed_params const* params);
+
+void
+alia_theme_accent_from_color(alia_theme_accent* out, alia_srgb8 color);
+
+void
+alia_palette_seeds_from_accent(
+    alia_palette_seeds* out,
+    alia_theme_accent const* accent,
+    alia_theme_context const* ctx,
+    alia_seed_params const* params);
+
+void
+alia_palette_from_seeds(
+    alia_palette* out,
+    alia_palette_seeds const* seeds,
+    alia_theme_context const* ctx,
+    alia_palette_params const* params,
+    enum alia_literal_policy literals);
+
+void
+alia_palette_from_accent(
+    alia_palette* out,
+    alia_theme_accent const* accent,
+    alia_theme_context const* ctx,
+    alia_seed_params const* seed_params,
+    alia_palette_params const* palette_params,
+    enum alia_literal_policy literals);
 
 ALIA_EXTERN_C_END
 
