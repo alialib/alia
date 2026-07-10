@@ -1441,10 +1441,10 @@ alia_glfw_vk_present_set_modal_interaction(alia_glfw_vk_present* p, bool modal)
 
     p->modal_interaction = modal;
     vkDeviceWaitIdle(p->device);
-    if (!vk_check(
-            vkResetFences(p->device, 1, &p->in_flight_fence),
-            "vkResetFences modal"))
-        return false;
+    // Do not reset in_flight_fence here. vkDeviceWaitIdle already ensures the
+    // last submission finished (fence signaled). Resetting would leave the
+    // fence unsignaled with no pending submit, so the next vkWaitForFences in
+    // vk_present_begin_frame would block forever.
 
     int width = p->width;
     int height = p->height;
