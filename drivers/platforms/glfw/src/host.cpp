@@ -59,10 +59,11 @@ struct alia_glfw_host
     // Nesting depth of host-driven frame callbacks (run/present) - Used to
     // suppress frame callbacks when a frame is already in progress.
     int frame_depth = 0;
+    // Main window is created hidden and shown after the first present.
+    bool window_shown = false;
 #ifdef _WIN32
     WNDPROC win32_original_wndproc = nullptr;
     bool win32_in_modal_interaction = false;
-    alia_nanosecond_count win32_last_modal_present_ns = 0;
 #endif
 };
 
@@ -268,6 +269,16 @@ host_wgl_context_destroy(alia_glfw_host* host)
 }
 #endif
 
+static void
+host_show_window_if_needed(alia_glfw_host* host)
+{
+    ALIA_ASSERT(host);
+    if (host->window_shown || !host->window)
+        return;
+    glfwShowWindow(host->window);
+    host->window_shown = true;
+}
+
 #ifdef _WIN32
 static bool
 host_vk_sync_surfaces(alia_glfw_host* host)
@@ -288,6 +299,7 @@ host_swap_or_present(alia_glfw_host* host)
     if (!host->vulkan_present || !host->vk_present)
     {
         glfwSwapBuffers(host->window);
+        host_show_window_if_needed(host);
         return;
     }
 
@@ -297,6 +309,7 @@ host_swap_or_present(alia_glfw_host* host)
             stderr, "[alia host] Vulkan present failed; using GL swap\n");
         glfwSwapBuffers(host->window);
     }
+    host_show_window_if_needed(host);
 }
 
 static void
@@ -334,6 +347,7 @@ static void
 host_swap_or_present(alia_glfw_host* host)
 {
     glfwSwapBuffers(host->window);
+    host_show_window_if_needed(host);
 }
 #endif
 
@@ -381,8 +395,8 @@ host_pace_frame(alia_glfw_host* host, alia_nanosecond_count frame_start_ns)
 
 #ifdef _WIN32
 static UINT_PTR const win32_modal_timer_id = 1;
-static UINT const win32_modal_timer_ms = 8;
-static alia_nanosecond_count const modal_present_interval_ns = 16'666'667;
+// Wake promptly after a modal frame finishes; render cost is the real limiter.
+static UINT const win32_modal_timer_ms = 1;
 
 static void
 host_present_frame(alia_glfw_host* host);
@@ -406,7 +420,6 @@ host_begin_modal_interaction(alia_glfw_host* host)
 {
     ALIA_ASSERT(host);
     host->win32_in_modal_interaction = true;
-    host->win32_last_modal_present_ns = 0;
     host_acquire_high_res_timer();
     if (host->vulkan_present && host->vk_present)
         alia_glfw_vk_present_set_modal_interaction(host->vk_present, true);
@@ -427,7 +440,7 @@ host_end_modal_interaction(alia_glfw_host* host)
 }
 
 static void
-host_present_continuous(alia_glfw_host* host, bool throttle)
+host_present_continuous(alia_glfw_host* host)
 {
     if (!host || !host->config.frame.fn || !host->config.continuous)
         return;
@@ -436,16 +449,6 @@ host_present_continuous(alia_glfw_host* host, bool throttle)
     {
         host_defer_redraw(host);
         return;
-    }
-
-    if (host->win32_in_modal_interaction && throttle)
-    {
-        alia_nanosecond_count const now = steady_clock_now_ns();
-        if (host->win32_last_modal_present_ns != 0
-            && now - host->win32_last_modal_present_ns
-                   < modal_present_interval_ns)
-            return;
-        host->win32_last_modal_present_ns = now;
     }
 
     host_present_frame(host);
@@ -474,20 +477,20 @@ host_win32_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 host_begin_modal_interaction(host);
                 SetTimer(
                     hwnd, win32_modal_timer_id, win32_modal_timer_ms, nullptr);
-                host_present_continuous(host, false);
+                host_present_continuous(host);
                 break;
             case WM_EXITSIZEMOVE:
                 KillTimer(hwnd, win32_modal_timer_id);
-                host_present_continuous(host, false);
+                host_present_continuous(host);
                 host_end_modal_interaction(host);
                 break;
             case WM_MOVING:
-                host_present_continuous(host, true);
+                host_present_continuous(host);
                 break;
             case WM_TIMER:
                 if (wParam == win32_modal_timer_id)
                 {
-                    host_present_continuous(host, true);
+                    host_present_continuous(host);
                     return 0;
                 }
                 break;
@@ -734,7 +737,7 @@ window_refresh_callback(GLFWwindow* window)
 #ifdef _WIN32
     if (host->win32_in_modal_interaction && host->config.continuous)
     {
-        host_present_continuous(host, true);
+        host_present_continuous(host);
         return;
     }
 #endif
@@ -927,6 +930,7 @@ alia_glfw_host_open(
 
     glfwWindowHint(
         GLFW_RESIZABLE, resolved_options.resizable ? GLFW_TRUE : GLFW_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 #ifdef _WIN32
     if (resolved_options.vulkan_present)
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -934,6 +938,7 @@ alia_glfw_host_open(
 
     GLFWwindow* window
         = glfwCreateWindow(state.width, state.height, title, nullptr, nullptr);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 #ifdef _WIN32
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 #endif
