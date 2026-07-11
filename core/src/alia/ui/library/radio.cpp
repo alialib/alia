@@ -56,9 +56,9 @@ static alia_radio_style const default_radio_style = {
     .layout_height = 40.f,
     .ring_radius = 12.f,
     .dot_radius = 6.f,
-    .highlight_radius = 21.f,
+    .highlight_radius = 18.f,
     .border_width = 3.f,
-    .flare_radius = 21.f,
+    .flare_radius = 18.f,
 };
 
 static inline alia_vec2f

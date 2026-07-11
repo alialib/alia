@@ -73,15 +73,15 @@ static alia_switch_style const default_switch_style = {
         0x33),
     .layout_width = 55.f,
     .layout_height = 30.f,
-    .track_width = 27.5f,
+    .track_width = 26.f,
     .track_height = 12.f,
     .track_corner_radius_fraction = 0.5f,
-    .dot_center_x_off = 13.75f,
-    .dot_center_x_on = 41.25f,
-    .dot_radius_off = 11.f,
-    .dot_radius_on = 13.f,
-    .highlight_radius = 20.f,
-    .flare_radius = 20.f,
+    .dot_center_x_off = 16.f,
+    .dot_center_x_on = 39.f,
+    .dot_radius_off = 10.f,
+    .dot_radius_on = 11.f,
+    .highlight_radius = 17.f,
+    .flare_radius = 17.f,
 };
 
 static inline alia_vec2f

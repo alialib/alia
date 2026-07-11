@@ -1,11 +1,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <vector>
-
 
 #include <alia/shell/gl/app.h>
 #include <alia/shell/gl/fonts.h>
@@ -24,7 +22,6 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/drawing.h>
 #include <alia/abi/ui/events.h>
-#include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/system.h>
@@ -33,6 +30,7 @@
 #include <alia/abi/ui/style.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
+#include <alia/abi/ui/viewport.h>
 #include <alia/base/color.hpp>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
@@ -55,9 +53,6 @@ alia_gl_shell* the_shell = nullptr;
 
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
-
-void
-update();
 
 char const* const notargs_vert_src = R"(
 layout(location = 0) in vec2 position;
@@ -154,12 +149,6 @@ struct notargs_controls
     double depth_scale = 1.0;
 };
 
-struct notargs_draw_command
-{
-    alia_draw_command cmd;
-    alia_box region;
-};
-
 struct GalleryNotargsGl
 {
     alia_ui_system* system = nullptr;
@@ -192,12 +181,8 @@ int the_seed_index = 0;
 bool the_light_theme_flag = true;
 bool the_theme_dirty_flag = true;
 
-alia_srgb8 const the_seed_primaries[] = {
-    hex_color("#154DCF"),
-    hex_color("#6f42c1"),
-    hex_color("#a52e45"),
-    hex_color("#b0edef"),
-};
+alia_srgb8 const the_seed_primaries[]
+    = {hex_color("#154DCF"), hex_color("#6f42c1"), hex_color("#a52e45")};
 
 alia_ui_system* the_system = nullptr;
 alia_style the_style = {.spacing = 10.0f};
@@ -211,7 +196,8 @@ void
 notargs_gl_init(GalleryNotargsGl* gpu, alia_ui_system* system)
 {
     gpu->system = system;
-    gpu->program = alia_gl_create_shader_program(notargs_vert_src, notargs_frag_src);
+    gpu->program
+        = alia_gl_create_shader_program(notargs_vert_src, notargs_frag_src);
     if (gpu->program == 0)
     {
         std::cerr << "notargs: shader program creation failed\n";
@@ -313,7 +299,6 @@ render_notargs_bucket(void* user, alia_draw_bucket const* bucket)
     alia_vec2f const surface_size
         = alia_vec2i_to_vec2f(alia_ui_surface_get_size(gpu->system));
 
-    GLboolean const blend_was_enabled = glIsEnabled(GL_BLEND);
     glDisable(GL_BLEND);
     glUseProgram(gpu->program);
 
@@ -330,7 +315,7 @@ render_notargs_bucket(void* user, alia_draw_bucket const* bucket)
     int const iter
         = (int) std::lround(std::clamp(the_controls.iterations, 0.0, 120.0));
     glUniform1i(gpu->loc_iterations, iter);
-    glUniform1i(gpu->loc_invert, the_light_theme_flag ? 1 : 0);
+    glUniform1i(gpu->loc_invert, the_light_theme_flag ? 0 : 1);
 
     float rgb[3];
     shader_color_for_seed(the_seed_index, rgb);
@@ -344,22 +329,17 @@ render_notargs_bucket(void* user, alia_draw_bucket const* bucket)
     for (alia_draw_command* walk = bucket->head; walk != nullptr;
          walk = walk->next)
     {
-        auto* nd = reinterpret_cast<notargs_draw_command*>(walk);
-        alia_box const& r = nd->region;
+        auto* vp = reinterpret_cast<alia_viewport_draw_command*>(walk);
+        alia_box const& r = vp->region;
+
+        alia_gl_viewport const viewport
+            = alia_viewport_region_to_gl_viewport(r, surface_size);
+        glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
         float const corner_x = r.min.x;
         float const corner_y = surface_size.y - (r.min.y + r.size.y);
-        float const size_x = r.size.x;
-        float const size_y = r.size.y;
-
-        glViewport(
-            GLint(corner_x + 0.5f),
-            GLint(corner_y + 0.5f),
-            GLsizei(size_x + 0.5f),
-            GLsizei(size_y + 0.5f));
-
         float const corner_uv[2] = {corner_x, corner_y};
-        float const size_uv[2] = {size_x, size_y};
+        float const size_uv[2] = {r.size.x, r.size.y};
         glUniform2fv(gpu->loc_corner, 1, corner_uv);
         glUniform2fv(gpu->loc_size, 1, size_uv);
 
@@ -368,8 +348,8 @@ render_notargs_bucket(void* user, alia_draw_bucket const* bucket)
 
     glBindVertexArray(0);
 
-    if (blend_was_enabled)
-        glEnable(GL_BLEND);
+    // TODO: Develop/document a better state management system.
+    glEnable(GL_BLEND);
 }
 
 struct pass_aborted
@@ -474,20 +454,25 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
 }
 
 void
-section_spacer(context& ctx)
+do_checkbox_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
-    switch (get_event_category(ctx))
-    {
-        case ALIA_CATEGORY_REFRESH:
-            alia_layout_leaf_emit(
-                &ctx,
-                alia_layout_content_metrics_make({1.f, 28.f}),
-                raw_code(ALIGN_TOP | ALIGN_LEFT));
-            break;
-        default:
-            (void) alia_layout_consume_box(&ctx);
-            break;
-    }
+    alia_box row_box;
+    row(ctx, ALIGN_LEFT, &row_box, [&]() {
+        alia_element_id id
+            = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, nullptr);
+        do_text(
+            ctx,
+            2,
+            alia_srgba8_from_srgb8(
+                value->flags & ALIA_SIGNAL_WRITABLE
+                    ? ctx.palette->foundation.text.base
+                    : ctx.palette->foundation.text.weaker_2),
+            14.f,
+            text,
+            CENTER_Y);
+        alia_element_box_region(
+            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+    });
 }
 
 void
@@ -515,7 +500,7 @@ control_slider_d(
 }
 
 void
-control_switch_d(context& ctx, char const* label, bool* value)
+control_switch_b(context& ctx, char const* label, bool* value)
 {
     row(ctx, [&]() {
         alia_bool_signal sig{
@@ -532,16 +517,32 @@ control_switch_d(context& ctx, char const* label, bool* value)
 }
 
 void
+control_checkbox_b(context& ctx, char const* label, bool* value)
+{
+    row(ctx, [&]() {
+        alia_bool_signal sig{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = *value,
+        };
+        do_checkbox_with_text(ctx, &sig, label);
+        if (sig.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            *value = sig.value;
+            abort_pass(ctx);
+        }
+    });
+}
+void
 do_theme_controls(context& ctx)
 {
     concrete_panel(
-        ctx, 0, ctx.palette->foundation.background.stronger_2, FILL, [&]() {
+        ctx, 0, ctx.palette->foundation.background.stronger_1, FILL, [&]() {
             edge_offsets(
                 ctx,
                 {.left = 12, .right = 12, .top = 12, .bottom = 12},
                 [&]() {
                     row(ctx, [&]() {
-                        {
+                        with_spacing(ctx, 6, [&] {
                             alia_bool_signal sig{
                                 .flags
                                 = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
@@ -554,7 +555,7 @@ do_theme_controls(context& ctx)
                                 the_theme_dirty_flag = true;
                                 abort_pass(ctx);
                             }
-                        }
+                        });
                         do_text(
                             ctx,
                             2,
@@ -563,23 +564,27 @@ do_theme_controls(context& ctx)
                             14.f,
                             " ",
                             CENTER_Y);
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            alia_bool_signal radio{
-                                .flags
-                                = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-                                .value = (the_seed_index == i),
-                            };
-                            char const* labels[]
-                                = {"Blue", "Violet", "Red", "Ice"};
-                            do_radio_with_text(ctx, &radio, labels[i]);
-                            if (radio.flags & ALIA_SIGNAL_WRITTEN)
+                        spacer(ctx, {0, 0}, GROW);
+                        with_spacing(ctx, 0, [&] {
+                            for (int i = 0; i < 3; ++i)
                             {
-                                the_seed_index = i;
-                                the_theme_dirty_flag = true;
-                                abort_pass(ctx);
+                                alia_bool_signal radio{
+                                    .flags = ALIA_SIGNAL_READABLE
+                                           | ALIA_SIGNAL_WRITABLE,
+                                    .value = (the_seed_index == i),
+                                };
+                                char const* labels[]
+                                    = {"Blue", "Violet", "Red"};
+                                do_radio_with_text(ctx, &radio, labels[i]);
+                                if (radio.flags & ALIA_SIGNAL_WRITTEN)
+                                {
+                                    the_seed_index = i;
+                                    the_theme_dirty_flag = true;
+                                    abort_pass(ctx);
+                                }
+                                spacer(ctx, {15, 0}, NO_FLAGS);
                             }
-                        }
+                        });
                     });
                 });
         });
@@ -588,34 +593,34 @@ do_theme_controls(context& ctx)
 void
 do_notargs_controls(context& ctx)
 {
-    do_heading(ctx, "View");
+    do_heading(ctx, "VIEW");
     control_slider_d(ctx, "Zoom", &the_controls.zoom, -3.0, 5.0, 0.01);
-    control_switch_d(ctx, "Animate", &the_controls.animate);
+    control_switch_b(ctx, "Animate", &the_controls.animate);
     control_slider_d(ctx, "Speed", &the_controls.speed, -2.0, 7.0, 0.1);
 
-    section_spacer(ctx);
+    spacer(ctx, alia_vec2f_make(1.f, 28.f));
 
-    do_heading(ctx, "Ray Marching");
-    control_switch_d(ctx, "Normalize Rays", &the_controls.normalize_rays);
+    do_heading(ctx, "RAY MARCHING");
+    control_switch_b(ctx, "Normalize Rays", &the_controls.normalize_rays);
     control_slider_d(
         ctx, "Step Scaling", &the_controls.step_scaling, 0.0, 1.0, 0.001);
     control_slider_d(
         ctx, "Iterations", &the_controls.iterations, 0.0, 120.0, 1.0);
 
-    section_spacer(ctx);
+    spacer(ctx, alia_vec2f_make(1.f, 28.f));
 
-    do_heading(ctx, "Shape");
+    do_heading(ctx, "SHAPE");
     control_slider_d(ctx, "Curl", &the_controls.curl, 0.0, 1.0, 0.001);
     control_slider_d(
         ctx, "Thickness", &the_controls.thickness, 0.0, 2.0, 0.001);
-    control_switch_d(ctx, "Include CosX", &the_controls.include_cosx);
-    control_switch_d(ctx, "Include CosY", &the_controls.include_cosy);
-    control_switch_d(ctx, "Include SinY", &the_controls.include_siny);
-    control_switch_d(ctx, "Include SinZ", &the_controls.include_sinz);
+    control_checkbox_b(ctx, "Include CosX", &the_controls.include_cosx);
+    control_checkbox_b(ctx, "Include CosY", &the_controls.include_cosy);
+    control_checkbox_b(ctx, "Include SinY", &the_controls.include_siny);
+    control_checkbox_b(ctx, "Include SinZ", &the_controls.include_sinz);
 
-    section_spacer(ctx);
+    spacer(ctx, alia_vec2f_make(1.f, 28.f));
 
-    do_heading(ctx, "Coloring");
+    do_heading(ctx, "COLORING");
     control_slider_d(
         ctx, "Color Factor", &the_controls.color_factor, 0.0, 2.0, 0.001);
     control_slider_d(
@@ -625,49 +630,29 @@ do_notargs_controls(context& ctx)
 }
 
 void
-notargs_view(context& ctx)
-{
-    column(ctx, GROW, [&]() {
-        switch (get_event_category(ctx))
-        {
-            case ALIA_CATEGORY_REFRESH:
-                alia_layout_leaf_emit(
-                    &ctx,
-                    alia_layout_content_metrics_make({40.f, 40.f}),
-                    raw_code(GROW | FILL));
-                break;
-            case ALIA_CATEGORY_DRAWING: {
-                alia_box const box = alia_layout_consume_box(&ctx);
-                notargs_draw_command* cmd
-                    = (notargs_draw_command*) alia_draw_command_alloc(
-                        &ctx,
-                        0,
-                        the_notargs_material_id,
-                        sizeof(notargs_draw_command));
-                cmd->region = box;
-                break;
-            }
-            default:
-                (void) alia_layout_consume_box(&ctx);
-                break;
-        }
-    });
-}
-
-void
 shader_gallery_root(context& ctx)
 {
     try
     {
         if (the_theme_dirty_flag)
         {
-            alia_palette_seeds pseeds = alia_seeds_from_elevation(
-                the_seed_primaries[the_seed_index], 0, !the_light_theme_flag);
-            alia_theme_params params = {
-                .foundation_step_l = 0.075f,
-                .is_dark_mode = !the_light_theme_flag,
-            };
-            alia_palette_expand(&the_system->palette, &pseeds, &params);
+            alia_theme_accent accent;
+            alia_theme_accent_from_color(
+                &accent, the_seed_primaries[the_seed_index]);
+
+            alia_theme_context theme_ctx
+                = alia_theme_context_default(!the_light_theme_flag);
+
+            alia_palette_params palette_params = alia_palette_params_default();
+            palette_params.foundation_step_l = 0.06f;
+
+            alia_palette_from_accent(
+                &ctx.system->palette,
+                &accent,
+                &theme_ctx,
+                nullptr,
+                &palette_params,
+                ALIA_LITERAL_HARMONIZE_TO_PRIMARY);
             the_theme_dirty_flag = false;
         }
 
@@ -676,7 +661,7 @@ shader_gallery_root(context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    ctx.palette->foundation.background.stronger_2,
+                    ctx.palette->foundation.background.base,
                     FILL,
                     [&]() {
                         column(ctx, GROW, [&]() {
@@ -689,7 +674,7 @@ shader_gallery_root(context& ctx)
                                  .top = 20,
                                  .bottom = 20},
                                 [&]() {
-                                    with_spacing(ctx, 8, [&] {
+                                    with_spacing(ctx, 6, [&] {
                                         column(ctx, [&]() {
                                             do_notargs_controls(ctx);
                                         });
@@ -704,7 +689,14 @@ shader_gallery_root(context& ctx)
                     0,
                     ctx.palette->foundation.background.base,
                     GROW,
-                    [&]() { notargs_view(ctx); });
+                    [&]() {
+                        alia_do_viewport(
+                            &ctx,
+                            0,
+                            the_notargs_material_id,
+                            ALIA_GROW | ALIA_FILL,
+                            nullptr);
+                    });
             });
         });
     }
@@ -750,6 +742,14 @@ shader_gallery_frame(void* /*user_data*/)
 int
 main()
 {
+    static alia_host_window_options const window_options = {
+        .resizable = true,
+        .vsync = true,
+#ifdef _WIN32
+        .vulkan_present = true,
+#endif
+    };
+
     alia_gl_app app;
     alia_gl_app_config const config = {
         .inner = {shader_gallery_root_controller, nullptr},
@@ -761,6 +761,7 @@ main()
         .continuous = true,
         .title = "Alia Shader Gallery",
         .window_state = alia_window_state_make(1200, 800),
+        .window_options = &window_options,
         .canvas_selector = "#canvas",
     };
     if (alia_gl_app_init(&config, &app) != 0)

@@ -39,8 +39,8 @@ static alia_slider_style const default_slider_style = {
     .layout_width = 320.f,
     .layout_height = 32.f,
     .track_thickness = 6.f,
-    .thumb_radius = 12.f,
-    .highlight_radius = 18.f,
+    .thumb_radius = 10.f,
+    .highlight_radius = 16.f,
 };
 
 static inline float
