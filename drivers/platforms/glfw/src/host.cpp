@@ -1068,7 +1068,7 @@ alia_glfw_host_sync_surface(alia_glfw_host* host, alia_ui_system* ui)
     int height = 0;
     glfwGetFramebufferSize(window, &width, &height);
     alia_ui_surface_set_size(ui, {width, height});
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     host_vk_sync_surfaces(host);
 #endif
 }
