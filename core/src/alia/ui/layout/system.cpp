@@ -26,6 +26,9 @@ alia_layout_system_resolve(
     alia_layout_system* system, alia_vec2f available_space)
 {
     alia_layout_node* root_node = system->root.first_child;
+    if (!root_node)
+        return;
+
     alia_vertical_requirements vertical;
     {
         alia_measurement_context ctx;
