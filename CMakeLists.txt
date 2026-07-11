@@ -91,6 +91,10 @@ if(ALIA_ENABLE_GLFW AND NOT EMSCRIPTEN)
     add_subdirectory(drivers/platforms/glfw)
 endif()
 
+if(WIN32 AND NOT EMSCRIPTEN)
+    add_subdirectory(drivers/platforms/win32)
+endif()
+
 if(EMSCRIPTEN)
     add_subdirectory(drivers/platforms/web)
 endif()
@@ -165,6 +169,12 @@ if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
     target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
+
+    if(WIN32 AND TARGET alia_win32_platform)
+        add_executable(alia_dxgi_present_probe
+            ${PROJECT_SOURCE_DIR}/examples/dxgi_present_probe.cpp)
+        target_link_libraries(alia_dxgi_present_probe PRIVATE alia_win32_platform)
+    endif()
 
     if(EMSCRIPTEN)
         target_compile_options(alia_app PRIVATE
