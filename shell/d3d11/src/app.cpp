@@ -1,17 +1,19 @@
-#include <alia/shell/gl/app.h>
+#include <alia/shell/d3d11/app.h>
 
 #include <alia/abi/base/object.h>
 #include <alia/abi/prelude.h>
 #include <alia/host/host.h>
-#include <alia/renderers/gl/renderer.h>
-#include <alia/shell/gl/shell.h>
+#include <alia/platforms/win32/host.h>
+#include <alia/renderers/d3d11/renderer.h>
+#include <alia/shell/d3d11/shell.h>
 
 #include <cstring>
 
 namespace {
 
 bool
-alia_gl_app_bootstrap_host(alia_gl_app_config const& config, alia_gl_app* app)
+alia_d3d11_app_bootstrap_host(
+    alia_d3d11_app_config const& config, alia_d3d11_app* app)
 {
     ALIA_ASSERT(app);
     ALIA_ASSERT(app->ui);
@@ -24,9 +26,8 @@ alia_gl_app_bootstrap_host(alia_gl_app_config const& config, alia_gl_app* app)
         .title = config.title,
         .window_state = config.window_state,
         .window_options = config.window_options,
-        // GL shells always use GLFW (Win32 AUTO would select DXGI/D3D11).
-        .backend = ALIA_HOST_BACKEND_GLFW,
-        .canvas_selector = config.canvas_selector,
+        .backend = ALIA_HOST_BACKEND_WIN32,
+        .canvas_selector = nullptr,
     };
     if (!alia_host_open(app->host, &open_config))
     {
@@ -44,7 +45,7 @@ alia_gl_app_bootstrap_host(alia_gl_app_config const& config, alia_gl_app* app)
 extern "C" {
 
 int
-alia_gl_app_init(alia_gl_app_config const* config, alia_gl_app* app)
+alia_d3d11_app_init(alia_d3d11_app_config const* config, alia_d3d11_app* app)
 {
     ALIA_ASSERT(config);
     ALIA_ASSERT(app);
@@ -52,52 +53,63 @@ alia_gl_app_init(alia_gl_app_config const* config, alia_gl_app* app)
 
     std::memset(app, 0, sizeof(*app));
 
-    app->shell = alia_gl_shell_create();
+    app->shell = alia_d3d11_shell_create();
     if (!app->shell)
         return 1;
 
-    alia_gl_shell_set_controller(app->shell, config->inner, config->shell);
+    alia_d3d11_shell_set_controller(app->shell, config->inner, config->shell);
 
     alia_struct_spec const ui_spec = alia_ui_system_object_spec();
     app->ui_storage = alia_object_alloc(ui_spec);
     if (!app->ui_storage)
     {
-        alia_gl_app_destroy(app);
+        alia_d3d11_app_destroy(app);
         return 1;
     }
 
     app->ui = alia_ui_system_init(
-        app->ui_storage, alia_gl_shell_ui_controller(app->shell), {0, 0});
+        app->ui_storage, alia_d3d11_shell_ui_controller(app->shell), {0, 0});
     if (!app->ui)
     {
-        alia_gl_app_destroy(app);
+        alia_d3d11_app_destroy(app);
         return 1;
     }
 
-    if (!alia_gl_app_bootstrap_host(*config, app))
+    if (!alia_d3d11_app_bootstrap_host(*config, app))
     {
-        alia_gl_app_destroy(app);
+        alia_d3d11_app_destroy(app);
         return 1;
     }
 
-    alia_struct_spec const renderer_spec = alia_gl_renderer_object_spec();
+    alia_win32_host* win32 = alia_host_as_win32(app->host);
+    if (!win32)
+    {
+        alia_d3d11_app_destroy(app);
+        return 1;
+    }
+
+    alia_struct_spec const renderer_spec = alia_d3d11_renderer_object_spec();
     app->renderer_storage = alia_object_alloc(renderer_spec);
     if (!app->renderer_storage)
     {
-        alia_gl_app_destroy(app);
+        alia_d3d11_app_destroy(app);
         return 1;
     }
 
-    app->renderer = alia_gl_renderer_init(app->renderer_storage);
-    alia_gl_renderer_attach(app->renderer, app->ui);
+    app->renderer = alia_d3d11_renderer_init(app->renderer_storage);
+    alia_d3d11_renderer_attach(
+        app->renderer,
+        app->ui,
+        alia_win32_host_device(win32),
+        alia_win32_host_context(win32));
 
-    alia_gl_shell_initial_refresh(app->ui);
-
+    alia_d3d11_shell_initial_refresh(app->ui);
     return 0;
 }
 
 void
-alia_gl_app_run_loop(alia_gl_app_config const* config, alia_gl_app* app)
+alia_d3d11_app_run_loop(
+    alia_d3d11_app_config const* config, alia_d3d11_app* app)
 {
     ALIA_ASSERT(config);
     ALIA_ASSERT(app);
@@ -115,25 +127,24 @@ alia_gl_app_run_loop(alia_gl_app_config const* config, alia_gl_app* app)
 }
 
 int
-alia_gl_app_run(alia_gl_app_config const* config, alia_gl_app* app)
+alia_d3d11_app_run(alia_d3d11_app_config const* config, alia_d3d11_app* app)
 {
-    if (alia_gl_app_init(config, app) != 0)
+    if (alia_d3d11_app_init(config, app) != 0)
         return 1;
 
-    alia_gl_app_run_loop(config, app);
-
-    alia_gl_app_destroy(app);
+    alia_d3d11_app_run_loop(config, app);
+    alia_d3d11_app_destroy(app);
     return 0;
 }
 
 void
-alia_gl_app_destroy(alia_gl_app* app)
+alia_d3d11_app_destroy(alia_d3d11_app* app)
 {
     if (!app)
         return;
 
     if (app->renderer)
-        alia_gl_renderer_destroy(app->renderer);
+        alia_d3d11_renderer_destroy(app->renderer);
 
     if (app->renderer_storage)
     {
@@ -143,11 +154,11 @@ alia_gl_app_destroy(alia_gl_app* app)
     app->renderer = nullptr;
 
     if (app->shell && app->ui)
-        alia_gl_shell_teardown_text(app->shell, app->ui);
+        alia_d3d11_shell_teardown_text(app->shell, app->ui);
 
     if (app->shell)
     {
-        alia_gl_shell_destroy(app->shell);
+        alia_d3d11_shell_destroy(app->shell);
         app->shell = nullptr;
     }
 

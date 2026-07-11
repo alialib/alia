@@ -105,6 +105,11 @@ if(ALIA_ENABLE_OPENGL)
     add_subdirectory(shell/gl)
 endif()
 
+if(WIN32 AND NOT EMSCRIPTEN AND TARGET alia_win32_platform)
+    alia_add_host_library()
+    add_subdirectory(shell/d3d11)
+endif()
+
 add_subdirectory(apis/cpp)
 
 set(ALIA_GEN_DIR "${CMAKE_BINARY_DIR}/gen"
@@ -160,12 +165,20 @@ if(ALIA_ENABLE_EXAMPLES)
     if(ALIA_ENABLE_OPENGL)
         target_link_libraries(alia_gl_shell PUBLIC alia_font_assets)
     endif()
+    if(TARGET alia_d3d11_shell)
+        target_link_libraries(alia_d3d11_shell PUBLIC alia_font_assets)
+    endif()
 endif()
 
 if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_app
         ${PROJECT_SOURCE_DIR}/examples/app.cpp)
-    target_link_libraries(alia_app PRIVATE alia_cpp alia_gl_shell)
+    if(WIN32 AND TARGET alia_d3d11_shell)
+        target_link_libraries(alia_app PRIVATE alia_cpp alia_d3d11_shell)
+        target_compile_definitions(alia_app PRIVATE ALIA_APP_USE_D3D11=1)
+    else()
+        target_link_libraries(alia_app PRIVATE alia_cpp alia_gl_shell)
+    endif()
 
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)

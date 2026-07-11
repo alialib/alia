@@ -9,10 +9,15 @@
 #include <unordered_map>
 #include <utility>
 
-
+#if defined(ALIA_APP_USE_D3D11)
+#include <alia/shell/d3d11/app.h>
+#include <alia/shell/d3d11/fonts.h>
+#include <alia/shell/d3d11/shell.h>
+#else
 #include <alia/shell/gl/app.h>
 #include <alia/shell/gl/fonts.h>
 #include <alia/shell/gl/shell.h>
+#endif
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
@@ -57,7 +62,11 @@ static alia_srgb8 const primary_colors[] = {
 static int primary_index = 0;
 
 alia_ui_system* the_system;
+#if defined(ALIA_APP_USE_D3D11)
+alia_d3d11_shell* the_shell;
+#else
 alia_gl_shell* the_shell;
+#endif
 alia_msdf_text_engine* the_msdf_text_engine;
 alia_style the_style = {.spacing = 10.0f};
 float the_time = 0.0f;
@@ -819,7 +828,11 @@ update()
     auto const start_time = std::chrono::high_resolution_clock::now();
 
     AllocProbeResult result = probe_allocations([&]() {
+#if defined(ALIA_APP_USE_D3D11)
+        alia_d3d11_shell_frame(the_system);
+#else
         alia_gl_shell_frame(the_system);
+#endif
     });
 
     auto const end_time = std::chrono::high_resolution_clock::now();
@@ -863,6 +876,48 @@ app_frame(void* /*user_data*/)
 int
 main()
 {
+#if defined(ALIA_APP_USE_D3D11)
+    alia_d3d11_app app;
+    alia_d3d11_app_config const config = {
+        .inner = {the_demo_controller, nullptr},
+        .shell = {
+            .draw_foundation_underlay = true,
+            .surface_padding = {},
+        },
+        .frame = {app_frame, nullptr},
+        .continuous = false,
+        .title = "Alia Renderer",
+        .window_state = alia_window_state_make(1200, 1200),
+    };
+    if (alia_d3d11_app_init(&config, &app) != 0)
+        return 1;
+
+    static bool light_theme = false;
+    the_system = app.ui;
+    the_shell = app.shell;
+
+    static bool theme_initialized = false;
+    if (!theme_initialized)
+    {
+        alia_theme_accent accent;
+        alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
+        alia_theme_context theme_ctx = alia_theme_context_default(!light_theme);
+        alia_palette_from_accent(
+            &the_system->palette,
+            &accent,
+            &theme_ctx,
+            nullptr,
+            nullptr,
+            ALIA_LITERAL_FIXED_SPECTRUM);
+        theme_initialized = true;
+    }
+
+    alia_d3d11_shell_setup_stock_text(app.shell, app.ui, app.renderer);
+    the_msdf_text_engine = alia_d3d11_shell_text_engine(app.shell);
+
+    alia_d3d11_app_run_loop(&config, &app);
+    alia_d3d11_app_destroy(&app);
+#else
     alia_gl_app app;
     alia_gl_app_config const config = {
         .inner = {the_demo_controller, nullptr},
@@ -904,5 +959,6 @@ main()
 
     alia_gl_app_run_loop(&config, &app);
     alia_gl_app_destroy(&app);
+#endif
     return 0;
 }
