@@ -19,8 +19,7 @@ typedef struct alia_glfw_window_options
     // When false, the continuous run loop paces frames to the monitor refresh
     // rate instead of using glfwSwapInterval.
     bool vsync;
-    // Windows prototype: present via Vulkan swapchain after GL renders to an
-    // off-screen framebuffer.
+    // Windows only, requires ALIA_ENABLE_VK_PRESENT at build time.
     bool vulkan_present;
 } alia_glfw_window_options;
 

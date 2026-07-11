@@ -45,6 +45,16 @@ endif()
 
 include(CMakeDependentOption)
 
+cmake_dependent_option(
+    ALIA_ENABLE_VK_PRESENT
+    "Enable the Vulkan present compositor on Windows"
+    OFF
+    "WIN32"
+    OFF)
+if(ALIA_ENABLE_VK_PRESENT)
+  list(APPEND VCPKG_MANIFEST_FEATURES "vk-present")
+endif()
+
 option(
     ALIA_ENABLE_GLFW
     "Enable the GLFW backend for the UI library"

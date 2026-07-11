@@ -1,6 +1,6 @@
 #include <alia/platforms/glfw/host.h>
 
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
 #include <alia/platforms/glfw/vk_present.h>
 #endif
 
@@ -47,7 +47,7 @@ struct alia_glfw_host
     bool pace_to_monitor = false;
     alia_nanosecond_count pacing_interval_ns = 16'666'667;
     bool vulkan_present = false;
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     alia_glfw_vk_present* vk_present = nullptr;
     alia_glfw_vk_gl_target vk_gl_target{};
     struct host_wgl_context
@@ -215,7 +215,7 @@ host_make_context_current_if_needed(alia_glfw_host* host)
 {
     if (!host || !host->window)
         return;
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     if (host->owns_wgl_context)
     {
         if (glfwGetCurrentContext() != host->wgl.gl_window)
@@ -227,7 +227,7 @@ host_make_context_current_if_needed(alia_glfw_host* host)
         glfwMakeContextCurrent(host->window);
 }
 
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
 static bool
 host_wgl_context_create(alia_glfw_host* host)
 {
@@ -279,7 +279,7 @@ host_show_window_if_needed(alia_glfw_host* host)
     host->window_shown = true;
 }
 
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
 static bool
 host_vk_sync_surfaces(alia_glfw_host* host)
 {
@@ -421,9 +421,12 @@ host_begin_modal_interaction(alia_glfw_host* host)
     ALIA_ASSERT(host);
     host->win32_in_modal_interaction = true;
     host_acquire_high_res_timer();
+#if defined(ALIA_ENABLE_VK_PRESENT)
     if (host->vulkan_present && host->vk_present)
         alia_glfw_vk_present_set_modal_interaction(host->vk_present, true);
-    else if (host->vsync)
+    else
+#endif
+    if (host->vsync)
         glfwSwapInterval(0);
 }
 
@@ -432,9 +435,12 @@ host_end_modal_interaction(alia_glfw_host* host)
 {
     ALIA_ASSERT(host);
     host->win32_in_modal_interaction = false;
+#if defined(ALIA_ENABLE_VK_PRESENT)
     if (host->vulkan_present && host->vk_present)
         alia_glfw_vk_present_set_modal_interaction(host->vk_present, false);
-    else if (host->vsync)
+    else
+#endif
+    if (host->vsync)
         glfwSwapInterval(1);
     host_release_high_res_timer();
 }
@@ -905,6 +911,8 @@ alia_glfw_host_destroy(alia_glfw_host* host)
     ALIA_ASSERT(host);
 #ifdef _WIN32
     host_uninstall_win32_modal_present(host);
+#endif
+#if defined(ALIA_ENABLE_VK_PRESENT)
     host_wgl_context_destroy(host);
     alia_glfw_vk_present_destroy(host->vk_present);
     host->vk_present = nullptr;
@@ -927,11 +935,14 @@ alia_glfw_host_open(
     resolved_options.vulkan_present = false;
     if (options)
         resolved_options = *options;
+#if !defined(ALIA_ENABLE_VK_PRESENT)
+    resolved_options.vulkan_present = false;
+#endif
 
     glfwWindowHint(
         GLFW_RESIZABLE, resolved_options.resizable ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     if (resolved_options.vulkan_present)
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #endif
@@ -939,7 +950,7 @@ alia_glfw_host_open(
     GLFWwindow* window
         = glfwCreateWindow(state.width, state.height, title, nullptr, nullptr);
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 #endif
     if (!window)
@@ -948,7 +959,7 @@ alia_glfw_host_open(
     if (state.has_position)
         glfwSetWindowPos(window, state.x, state.y);
 
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     alia_glfw_vk_present* vk_present = nullptr;
     if (resolved_options.vulkan_present)
     {
@@ -960,9 +971,7 @@ alia_glfw_host_open(
                 "[alia host] Vulkan present init failed; using glfwSwapBuffers\n");
         }
     }
-#endif
 
-#ifdef _WIN32
     if (resolved_options.vulkan_present)
     {
         if (!host_wgl_context_create(host))
@@ -985,7 +994,7 @@ alia_glfw_host_open(
         glfwMakeContextCurrent(window);
         if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         {
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
             alia_glfw_vk_present_destroy(vk_present);
 #endif
             glfwDestroyWindow(window);
@@ -1003,7 +1012,7 @@ alia_glfw_host_open(
     host->pace_to_monitor = !resolved_options.vsync;
     host_update_pacing_interval(host);
 
-#ifdef _WIN32
+#if defined(ALIA_ENABLE_VK_PRESENT)
     if (vk_present)
     {
         if (!alia_glfw_vk_present_complete(vk_present))

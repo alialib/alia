@@ -745,9 +745,6 @@ main()
     static alia_host_window_options const window_options = {
         .resizable = true,
         .vsync = true,
-#ifdef _WIN32
-        .vulkan_present = true,
-#endif
     };
 
     alia_gl_app app;

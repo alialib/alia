@@ -19,7 +19,12 @@
         "glfw": {
             "description": "GLFW backend",
             "dependencies": [
-                "glfw3",
+                "glfw3"
+            ]
+        },
+        "vk-present": {
+            "description": "Vulkan swapchain present compositor (Windows)",
+            "dependencies": [
                 "vulkan"
             ]
         },
