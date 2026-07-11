@@ -93,6 +93,7 @@ endif()
 
 if(WIN32 AND NOT EMSCRIPTEN)
     add_subdirectory(drivers/platforms/win32)
+    add_subdirectory(drivers/renderers/d3d11)
 endif()
 
 if(EMSCRIPTEN)
@@ -174,6 +175,16 @@ if(ALIA_ENABLE_EXAMPLES)
         add_executable(alia_dxgi_present_probe
             ${PROJECT_SOURCE_DIR}/examples/dxgi_present_probe.cpp)
         target_link_libraries(alia_dxgi_present_probe PRIVATE alia_win32_platform)
+
+        add_executable(alia_d3d11_boxes
+            ${PROJECT_SOURCE_DIR}/examples/d3d11_boxes_app.cpp)
+        target_link_libraries(alia_d3d11_boxes PRIVATE
+            alia_core
+            alia_win32_platform
+            alia_d3d11_renderer
+            alia_font_assets)
+        target_include_directories(alia_d3d11_boxes PRIVATE
+            ${PROJECT_SOURCE_DIR}/core/src)
     endif()
 
     if(EMSCRIPTEN)
