@@ -11,6 +11,7 @@ add_library(alia_core STATIC
     src/alia/kernel/timing.cpp
     src/alia/kernel/animation/unit_cubic_bezier.cpp
     src/alia/ui/drawing.cpp
+    src/alia/ui/effects.cpp
     src/alia/ui/msdf.cpp
     src/alia/ui/animation.cpp
     src/alia/ui/input/pointer.cpp

@@ -3,6 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/effects.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/ui/drawing.h>
@@ -21,8 +22,20 @@
 #include <cstring>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <new>
 #include <vector>
+
+struct alia_d3d11_renderer;
+
+struct d3d11_effect_slot
+{
+    alia_d3d11_renderer* renderer = nullptr;
+    ID3D11PixelShader* ps = nullptr;
+    ID3D11Buffer* params_cb = nullptr;
+    size_t params_size = 0;
+    size_t cb_bytes = 0;
+};
 
 struct alia_d3d11_renderer
 {
@@ -46,6 +59,15 @@ struct alia_d3d11_renderer
 
     UINT instance_capacity = 0;
     alia_arena rect_instance_arena{};
+
+    // Shared effect geometry; each registered effect is its own material.
+    ID3D11VertexShader* effect_vs = nullptr;
+    ID3D11InputLayout* effect_layout = nullptr;
+    ID3D11Buffer* effect_quad_vb = nullptr;
+    ID3D11BlendState* effect_blend = nullptr;
+    // Stock frame CB (region + surface) bound at b0 for all effects.
+    ID3D11Buffer* effect_frame_cb = nullptr;
+    std::vector<std::unique_ptr<d3d11_effect_slot>> effects;
 };
 
 namespace {
@@ -267,15 +289,17 @@ release_t(T*& p)
 
 bool
 compile_shader(
+    char const* source,
+    char const* source_name,
     char const* entry,
     char const* target,
     ID3DBlob** out_blob)
 {
     ID3DBlob* errors = nullptr;
     HRESULT hr = D3DCompile(
-        k_hlsl,
-        std::strlen(k_hlsl),
-        "alia_d3d11_primitives.hlsl",
+        source,
+        std::strlen(source),
+        source_name,
         nullptr,
         nullptr,
         entry,
@@ -302,13 +326,23 @@ compile_shader(
 }
 
 bool
+compile_primitive_shader(
+    char const* entry,
+    char const* target,
+    ID3DBlob** out_blob)
+{
+    return compile_shader(
+        k_hlsl, "alia_d3d11_primitives.hlsl", entry, target, out_blob);
+}
+
+bool
 renderer_init_gpu(alia_d3d11_renderer* renderer)
 {
     ID3DBlob* vs_blob = nullptr;
     ID3DBlob* ps_blob = nullptr;
-    if (!compile_shader("vs_main", "vs_5_0", &vs_blob))
+    if (!compile_primitive_shader("vs_main", "vs_5_0", &vs_blob))
         return false;
-    if (!compile_shader("ps_main", "ps_5_0", &ps_blob))
+    if (!compile_primitive_shader("ps_main", "ps_5_0", &ps_blob))
     {
         vs_blob->Release();
         return false;
@@ -649,6 +683,208 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     ctx->PSSetShaderResources(0, 1, &null_srv);
 }
 
+char const* const k_effect_vs_hlsl = R"(
+struct VSIn
+{
+    float2 pos : POSITION;
+};
+
+float4 vs_main(VSIn input) : SV_POSITION
+{
+    return float4(input.pos, 0.0, 1.0);
+}
+)";
+
+static size_t
+effect_params_cb_bytes(size_t params_size)
+{
+    if (params_size == 0)
+        return 16; // D3D11 constant buffers must be non-empty multiples of 16.
+    return (params_size + 15u) & ~size_t(15u);
+}
+
+bool
+ensure_effect_pipeline(alia_d3d11_renderer* renderer)
+{
+    if (renderer->effect_vs && renderer->effect_layout && renderer->effect_quad_vb
+        && renderer->effect_blend && renderer->effect_frame_cb)
+        return true;
+
+    ID3DBlob* vs_blob = nullptr;
+    if (!compile_shader(
+            k_effect_vs_hlsl,
+            "alia_d3d11_effect_vs.hlsl",
+            "vs_main",
+            "vs_5_0",
+            &vs_blob))
+        return false;
+
+    ID3D11Device* device = renderer->device;
+    HRESULT hr = device->CreateVertexShader(
+        vs_blob->GetBufferPointer(),
+        vs_blob->GetBufferSize(),
+        nullptr,
+        &renderer->effect_vs);
+    if (FAILED(hr))
+    {
+        vs_blob->Release();
+        return false;
+    }
+
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
+        {"POSITION",
+         0,
+         DXGI_FORMAT_R32G32_FLOAT,
+         0,
+         0,
+         D3D11_INPUT_PER_VERTEX_DATA,
+         0},
+    };
+    hr = device->CreateInputLayout(
+        layout,
+        1,
+        vs_blob->GetBufferPointer(),
+        vs_blob->GetBufferSize(),
+        &renderer->effect_layout);
+    vs_blob->Release();
+    if (FAILED(hr))
+        return false;
+
+    float quad[] = {
+        -1.f,
+        -1.f,
+        1.f,
+        -1.f,
+        -1.f,
+        1.f,
+        1.f,
+        1.f,
+    };
+    D3D11_BUFFER_DESC vb_desc{};
+    vb_desc.ByteWidth = sizeof(quad);
+    vb_desc.Usage = D3D11_USAGE_IMMUTABLE;
+    vb_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    D3D11_SUBRESOURCE_DATA vb_data{quad, 0, 0};
+    hr = device->CreateBuffer(&vb_desc, &vb_data, &renderer->effect_quad_vb);
+    if (FAILED(hr))
+        return false;
+
+    D3D11_BLEND_DESC blend{};
+    blend.RenderTarget[0].BlendEnable = FALSE;
+    blend.RenderTarget[0].RenderTargetWriteMask
+        = D3D11_COLOR_WRITE_ENABLE_ALL;
+    hr = device->CreateBlendState(&blend, &renderer->effect_blend);
+    if (FAILED(hr))
+        return false;
+
+    D3D11_BUFFER_DESC frame_desc{};
+    frame_desc.ByteWidth = 32; // region float4 + surface float4
+    frame_desc.Usage = D3D11_USAGE_DYNAMIC;
+    frame_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    hr = device->CreateBuffer(&frame_desc, nullptr, &renderer->effect_frame_cb);
+    return SUCCEEDED(hr);
+}
+
+void
+render_effect_command_list(void* user, alia_draw_bucket const* bucket)
+{
+    auto* slot = static_cast<d3d11_effect_slot*>(user);
+    if (!slot || !slot->renderer || !bucket || bucket->count == 0
+        || !bucket->clip_rect)
+        return;
+
+    alia_d3d11_renderer* renderer = slot->renderer;
+    if (!renderer->effect_vs || !renderer->effect_layout
+        || !renderer->effect_quad_vb || !renderer->effect_frame_cb || !slot->ps
+        || !slot->params_cb)
+        return;
+
+    alia_box const* clip = bucket->clip_rect;
+    if (clip->size.x <= 0.f || clip->size.y <= 0.f)
+        return;
+
+    alia_vec2f const surface_size
+        = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
+
+    ID3D11DeviceContext* ctx = renderer->context;
+    ctx->IASetInputLayout(renderer->effect_layout);
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    UINT stride = sizeof(float) * 2;
+    UINT offset = 0;
+    ctx->IASetVertexBuffers(0, 1, &renderer->effect_quad_vb, &stride, &offset);
+    ctx->VSSetShader(renderer->effect_vs, nullptr, 0);
+    ctx->PSSetShader(slot->ps, nullptr, 0);
+    ctx->OMSetBlendState(renderer->effect_blend, nullptr, 0xffffffff);
+    ctx->RSSetState(renderer->rasterizer);
+    ctx->OMSetDepthStencilState(renderer->depth, 0);
+
+    D3D11_RECT scissor{
+        LONG(clip->min.x),
+        LONG(clip->min.y),
+        LONG(clip->min.x + clip->size.x),
+        LONG(clip->min.y + clip->size.y)};
+    ctx->RSSetScissorRects(1, &scissor);
+
+    ID3D11Buffer* cbs[2] = {renderer->effect_frame_cb, slot->params_cb};
+    ctx->PSSetConstantBuffers(0, 2, cbs);
+
+    for (auto const* cmd = bucket->head; cmd; cmd = cmd->next)
+    {
+        auto const* effect_cmd
+            = alia::downcast<alia_effect_draw_command>(cmd);
+
+        alia_box const& r = effect_cmd->region;
+        if (r.size.x <= 0.f || r.size.y <= 0.f)
+            continue;
+
+        D3D11_VIEWPORT vp{};
+        vp.TopLeftX = r.min.x;
+        vp.TopLeftY = r.min.y;
+        vp.Width = r.size.x;
+        vp.Height = r.size.y;
+        vp.MinDepth = 0.f;
+        vp.MaxDepth = 1.f;
+        ctx->RSSetViewports(1, &vp);
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        if (FAILED(ctx->Map(
+                renderer->effect_frame_cb,
+                0,
+                D3D11_MAP_WRITE_DISCARD,
+                0,
+                &mapped)))
+            continue;
+        float frame[8] = {
+            r.min.x,
+            r.min.y,
+            r.size.x,
+            r.size.y,
+            surface_size.x,
+            surface_size.y,
+            0.f,
+            0.f};
+        std::memcpy(mapped.pData, frame, sizeof(frame));
+        ctx->Unmap(renderer->effect_frame_cb, 0);
+
+        if (FAILED(ctx->Map(
+                slot->params_cb, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+            continue;
+        std::memset(mapped.pData, 0, slot->cb_bytes);
+        if (effect_cmd->params_size > 0 && effect_cmd->params)
+        {
+            size_t const copy_n
+                = effect_cmd->params_size < slot->params_size
+                    ? effect_cmd->params_size
+                    : slot->params_size;
+            std::memcpy(mapped.pData, effect_cmd->params, copy_n);
+        }
+        ctx->Unmap(slot->params_cb, 0);
+
+        ctx->Draw(4, 0);
+    }
+}
+
 } // namespace
 
 extern "C" {
@@ -692,6 +928,74 @@ alia_d3d11_renderer_attach(
         ALIA_PRIMITIVE_MATERIAL_ID,
         alia_material_vtable{.draw_bucket = render_primitive_command_list},
         renderer);
+}
+
+int
+alia_d3d11_effect_register(
+    alia_d3d11_renderer* renderer,
+    alia_d3d11_effect_desc const* desc,
+    alia_draw_material_id* out_material_id)
+{
+    ALIA_ASSERT(renderer);
+    ALIA_ASSERT(renderer->system);
+    ALIA_ASSERT(desc);
+    ALIA_ASSERT(desc->pixel_shader_hlsl);
+    ALIA_ASSERT(out_material_id);
+
+    if (!ensure_effect_pipeline(renderer))
+    {
+        std::fprintf(stderr, "[alia d3d11] effect pipeline init failed\n");
+        return -1;
+    }
+
+    char const* entry
+        = desc->entry_point != nullptr ? desc->entry_point : "ps_main";
+    ID3DBlob* ps_blob = nullptr;
+    if (!compile_shader(
+            desc->pixel_shader_hlsl,
+            "alia_d3d11_effect.hlsl",
+            entry,
+            "ps_5_0",
+            &ps_blob))
+        return -1;
+
+    auto slot = std::make_unique<d3d11_effect_slot>();
+    slot->renderer = renderer;
+
+    HRESULT hr = renderer->device->CreatePixelShader(
+        ps_blob->GetBufferPointer(),
+        ps_blob->GetBufferSize(),
+        nullptr,
+        &slot->ps);
+    ps_blob->Release();
+    if (FAILED(hr))
+        return -1;
+
+    slot->params_size = desc->params_size;
+    slot->cb_bytes = effect_params_cb_bytes(desc->params_size);
+    D3D11_BUFFER_DESC cb_desc{};
+    cb_desc.ByteWidth = UINT(slot->cb_bytes);
+    cb_desc.Usage = D3D11_USAGE_DYNAMIC;
+    cb_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cb_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    hr = renderer->device->CreateBuffer(&cb_desc, nullptr, &slot->params_cb);
+    if (FAILED(hr))
+    {
+        release_t(slot->ps);
+        return -1;
+    }
+
+    alia_draw_material_id const material_id
+        = alia_material_alloc_ids(renderer->system, 1);
+    alia_material_register(
+        renderer->system,
+        material_id,
+        alia_material_vtable{.draw_bucket = render_effect_command_list},
+        slot.get());
+
+    renderer->effects.push_back(std::move(slot));
+    *out_material_id = material_id;
+    return 0;
 }
 
 void
@@ -755,6 +1059,19 @@ alia_d3d11_renderer_destroy(alia_d3d11_renderer* renderer)
 {
     if (!renderer)
         return;
+    for (auto& slot : renderer->effects)
+    {
+        if (!slot)
+            continue;
+        release_t(slot->ps);
+        release_t(slot->params_cb);
+    }
+    renderer->effects.clear();
+    release_t(renderer->effect_frame_cb);
+    release_t(renderer->effect_blend);
+    release_t(renderer->effect_quad_vb);
+    release_t(renderer->effect_layout);
+    release_t(renderer->effect_vs);
     release_t(renderer->msdf_srv);
     release_t(renderer->msdf_atlas);
     release_t(renderer->msdf_sampler);

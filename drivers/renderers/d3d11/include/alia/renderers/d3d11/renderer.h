@@ -2,6 +2,8 @@
 #define ALIA_RENDERERS_D3D11_RENDERER_H
 
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/effects.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 
@@ -30,6 +32,29 @@ alia_d3d11_renderer_attach(
 void
 alia_d3d11_renderer_upload_msdf_atlas(
     alia_d3d11_renderer* renderer, alia_msdf_atlas_image const* image);
+
+// Register an effect as its own draw material.
+//
+// The pixel shader should declare:
+//   cbuffer AliaEffectFrame : register(b0) {
+//     float4 alia_effect_region;  // xy=min, zw=size (Alia surface space)
+//     float4 alia_effect_surface; // xy=surface size in pixels
+//   };
+//   cbuffer Effect : register(b1) { /* user params, params_size bytes */ };
+//
+// On success, writes the new material ID to `out_material_id` and returns 0.
+typedef struct alia_d3d11_effect_desc
+{
+    char const* pixel_shader_hlsl;
+    char const* entry_point; // optional; defaults to "ps_main"
+    size_t params_size;
+} alia_d3d11_effect_desc;
+
+int
+alia_d3d11_effect_register(
+    alia_d3d11_renderer* renderer,
+    alia_d3d11_effect_desc const* desc,
+    alia_draw_material_id* out_material_id);
 
 void
 alia_d3d11_renderer_destroy(alia_d3d11_renderer* renderer);
