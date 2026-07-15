@@ -45,17 +45,17 @@ static alia_node_expander_style const default_node_expander_style = {
             ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
         0x30),
 
-    .layout_width = 48.f,
-    .layout_height = 48.f,
+    .layout_width = 32.f,
+    .layout_height = 32.f,
 
-    .triangle_side = 24.f,
+    .triangle_side = 16.f,
 
     // triangle "right" -> "down" rotation
     .collapsed_rotation_degrees = 90.f,
     .expanded_rotation_degrees = 180.f,
 
-    .highlight_radius = 20.f,
-    .flare_radius = 20.f,
+    .highlight_radius = 16.f,
+    .flare_radius = 16.f,
 };
 
 static inline alia_vec2f
