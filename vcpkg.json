@@ -17,15 +17,9 @@
             ]
         },
         "glfw": {
-            "description": "GLFW backend",
+            "description": "GLFW integration helpers and GL embed example",
             "dependencies": [
                 "glfw3"
-            ]
-        },
-        "vk-present": {
-            "description": "Vulkan swapchain present compositor (Windows)",
-            "dependencies": [
-                "vulkan"
             ]
         },
         "tests": {

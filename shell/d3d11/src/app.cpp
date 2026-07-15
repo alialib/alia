@@ -26,7 +26,6 @@ alia_d3d11_app_bootstrap_host(
         .title = config.title,
         .window_state = config.window_state,
         .window_options = config.window_options,
-        .backend = ALIA_HOST_BACKEND_WIN32,
         .canvas_selector = nullptr,
     };
     if (!alia_host_open(app->host, &open_config))

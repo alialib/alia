@@ -1,7 +1,7 @@
-// Win32 + D3D11 interactive smoke test: waitable present, slider, MSDF text.
+// GLFW + OpenGL embed smoke test: own window/loop, Alia UI + GL renderer.
 
-#include <alia/platforms/win32/host.h>
-#include <alia/renderers/d3d11/renderer.h>
+#include <alia/platforms/glfw/input_glue.h>
+#include <alia/renderers/gl/renderer.h>
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/base/object.h>
@@ -16,7 +16,9 @@
 
 #include "alia_fonts.h"
 
-#include <d3d11.h>
+#include <glad/glad.h>
+
+#include <GLFW/glfw3.h>
 
 #include <cstdio>
 #include <cstring>
@@ -27,9 +29,9 @@ using namespace alia;
 namespace {
 
 alia_ui_system* g_ui = nullptr;
-alia_win32_host* g_host = nullptr;
-alia_d3d11_renderer* g_renderer = nullptr;
+alia_gl_renderer* g_renderer = nullptr;
 alia_msdf_text_engine* g_text_engine = nullptr;
+alia_glfw_ui_binding g_binding{};
 float g_value = 0.35f;
 
 bool
@@ -45,7 +47,7 @@ setup_stock_text()
         .width = atlas_rle.width,
         .height = atlas_rle.height,
     };
-    alia_d3d11_renderer_upload_msdf_atlas(g_renderer, &atlas_image);
+    alia_gl_renderer_upload_msdf_atlas(g_renderer, &atlas_image);
 
     g_text_engine
         = alia_msdf_create_text_engine(alia_font_descriptions, alia_font_count);
@@ -69,7 +71,7 @@ teardown_stock_text()
 }
 
 void
-boxes_controller(void* /*user*/, alia_context* ctx)
+embed_controller(void* /*user*/, alia_context* ctx)
 {
     if (ctx->events && ctx->events->event
         && ctx->events->event->type == ALIA_EVENT_DRAW)
@@ -88,7 +90,7 @@ boxes_controller(void* /*user*/, alia_context* ctx)
 
         if (g_text_engine)
         {
-            char const* const label = "Hello D3D11";
+            char const* const label = "Hello GLFW+GL";
             alia_srgba8 const text_color = alia_srgba8_from_srgb8(
                 ctx->palette->foundation.text.base);
             alia_msdf_draw_text(
@@ -103,7 +105,6 @@ boxes_controller(void* /*user*/, alia_context* ctx)
                 alia_font_roboto_regular_index);
         }
 
-        // Value swatch — color tracks the slider.
         alia_draw_rounded_box(
             ctx,
             1,
@@ -124,41 +125,38 @@ boxes_controller(void* /*user*/, alia_context* ctx)
     alia_layout_edge_offsets_end(ctx);
 }
 
-void
-frame(void* /*user*/)
-{
-    alia_win32_host_sync_surface(g_host, g_ui);
-
-    ID3D11DeviceContext* context = alia_win32_host_context(g_host);
-    ID3D11RenderTargetView* rtv = alia_win32_host_rtv(g_host);
-    if (!context || !rtv)
-        return;
-
-    float clear[4] = {0.06f, 0.07f, 0.10f, 1.f};
-    context->ClearRenderTargetView(rtv, clear);
-
-    alia_ui_system_update(g_ui);
-    alia_ui_execute_draw_pass(g_ui);
-}
-
 } // namespace
 
 int
 main()
 {
-    g_host = alia_win32_host_create();
-    if (!g_host)
-        return 1;
-
-    alia_win32_host_open_config const open = {
-        .title = "Alia D3D11 Boxes",
-        .window_state = alia_window_state_make(900, 600),
-        .resizable = true,
-        .vsync = true,
-    };
-    if (!alia_win32_host_open(g_host, &open))
+    if (!glfwInit())
     {
-        alia_win32_host_destroy(g_host);
+        std::fprintf(stderr, "[alia glfw_gl_embed] glfwInit failed\n");
+        return 1;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window
+        = glfwCreateWindow(900, 600, "Alia GLFW+GL Embed", nullptr, nullptr);
+    if (!window)
+    {
+        std::fprintf(stderr, "[alia glfw_gl_embed] glfwCreateWindow failed\n");
+        glfwTerminate();
+        return 1;
+    }
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+    {
+        std::fprintf(stderr, "[alia glfw_gl_embed] gladLoadGLLoader failed\n");
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
@@ -166,16 +164,18 @@ main()
     void* ui_storage = alia_object_alloc(ui_spec);
     if (!ui_storage)
     {
-        alia_win32_host_destroy(g_host);
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
     g_ui = alia_ui_system_init(
-        ui_storage, {boxes_controller, nullptr}, {900, 600});
+        ui_storage, {embed_controller, nullptr}, {900, 600});
     if (!g_ui)
     {
         alia_object_free(ui_storage);
-        alia_win32_host_destroy(g_host);
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
@@ -192,49 +192,61 @@ main()
             ALIA_LITERAL_FIXED_SPECTRUM);
     }
 
-    alia_struct_spec const renderer_spec = alia_d3d11_renderer_object_spec();
+    alia_struct_spec const renderer_spec = alia_gl_renderer_object_spec();
     void* renderer_storage = alia_object_alloc(renderer_spec);
     if (!renderer_storage)
     {
         alia_object_free(ui_storage);
-        alia_win32_host_destroy(g_host);
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
-    g_renderer = alia_d3d11_renderer_init(renderer_storage);
-    alia_d3d11_renderer_attach(
-        g_renderer,
-        g_ui,
-        alia_win32_host_device(g_host),
-        alia_win32_host_context(g_host));
+    g_renderer = alia_gl_renderer_init(renderer_storage);
+    alia_gl_renderer_attach(g_renderer, g_ui);
 
     if (!setup_stock_text())
     {
-        std::fprintf(stderr, "[alia d3d11 boxes] MSDF text setup failed\n");
-        alia_d3d11_renderer_destroy(g_renderer);
+        std::fprintf(stderr, "[alia glfw_gl_embed] MSDF text setup failed\n");
+        alia_gl_renderer_destroy(g_renderer);
         alia_object_free(renderer_storage);
         alia_object_free(ui_storage);
-        alia_win32_host_destroy(g_host);
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return 1;
     }
 
-    alia_win32_host_install(g_host, g_ui);
-    alia_win32_host_sync_surface(g_host, g_ui);
+    g_binding.ui = g_ui;
+    alia_glfw_install_surface_callbacks(window, &g_binding);
+    alia_glfw_install_default_input_callbacks(window, &g_binding);
+
+    alia_glfw_sync_surface(window, g_ui);
     refresh_system(*g_ui);
     g_ui->ui_dirty = true;
 
-    alia_win32_host_run_config const run = {
-        .ui = g_ui,
-        .frame = {frame, nullptr},
-        .continuous = true,
-        .probe_clear = false,
-    };
-    alia_win32_host_run(g_host, &run);
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+        alia_glfw_sync_surface(window, g_ui);
+
+        int width = 0;
+        int height = 0;
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
+        glClearColor(0.06f, 0.07f, 0.10f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        alia_ui_system_update(g_ui);
+        alia_ui_execute_draw_pass(g_ui);
+
+        glfwSwapBuffers(window);
+    }
 
     teardown_stock_text();
-    alia_d3d11_renderer_destroy(g_renderer);
+    alia_gl_renderer_destroy(g_renderer);
     alia_object_free(renderer_storage);
     alia_object_free(ui_storage);
-    alia_win32_host_destroy(g_host);
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }

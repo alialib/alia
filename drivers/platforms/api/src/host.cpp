@@ -3,7 +3,6 @@
 #include <alia/abi/prelude.h>
 
 #ifndef __EMSCRIPTEN__
-#include <alia/platforms/glfw/host.h>
 #if defined(_WIN32)
 #include <alia/platforms/win32/host.h>
 #endif
@@ -16,9 +15,6 @@
 struct alia_host
 {
 #ifndef __EMSCRIPTEN__
-    alia_host_backend backend = ALIA_HOST_BACKEND_AUTO;
-    alia_glfw_host* glfw = nullptr;
-    bool glfw_platform_initialized = false;
 #if defined(_WIN32)
     alia_win32_host* win32 = nullptr;
 #endif
@@ -28,60 +24,9 @@ struct alia_host
 #endif
 };
 
+#if defined(_WIN32) && !defined(__EMSCRIPTEN__)
 namespace {
 
-#ifndef __EMSCRIPTEN__
-alia_host_backend
-resolve_backend(alia_host_backend requested)
-{
-    if (requested != ALIA_HOST_BACKEND_AUTO)
-        return requested;
-#if defined(_WIN32)
-    return ALIA_HOST_BACKEND_WIN32;
-#else
-    return ALIA_HOST_BACKEND_GLFW;
-#endif
-}
-
-bool
-host_open_glfw(alia_host* host, alia_host_open_config const* config)
-{
-    if (!alia_glfw_platform_init())
-        return false;
-    host->glfw_platform_initialized = true;
-
-    host->glfw = alia_glfw_host_create();
-    if (!host->glfw)
-    {
-        alia_glfw_platform_shutdown();
-        host->glfw_platform_initialized = false;
-        return false;
-    }
-
-    alia_glfw_window_options glfw_options{};
-    alia_glfw_window_options const* options = nullptr;
-    if (config->window_options)
-    {
-        glfw_options.resizable = config->window_options->resizable;
-        glfw_options.vsync = config->window_options->vsync;
-        glfw_options.vulkan_present = config->window_options->vulkan_present;
-        options = &glfw_options;
-    }
-
-    char const* const title = config->title ? config->title : "Alia";
-    if (!alia_glfw_host_open(
-            host->glfw, title, config->window_state, options))
-    {
-        alia_glfw_host_destroy(host->glfw);
-        host->glfw = nullptr;
-        alia_glfw_platform_shutdown();
-        host->glfw_platform_initialized = false;
-        return false;
-    }
-    return true;
-}
-
-#if defined(_WIN32)
 bool
 host_open_win32(alia_host* host, alia_host_open_config const* config)
 {
@@ -108,10 +53,9 @@ host_open_win32(alia_host* host, alia_host_open_config const* config)
     }
     return true;
 }
-#endif
-#endif
 
 } // namespace
+#endif
 
 extern "C" {
 
@@ -135,16 +79,6 @@ alia_host_destroy(alia_host* host)
         host->win32 = nullptr;
     }
 #endif
-    if (host->glfw)
-    {
-        alia_glfw_host_destroy(host->glfw);
-        host->glfw = nullptr;
-    }
-    if (host->glfw_platform_initialized)
-    {
-        alia_glfw_platform_shutdown();
-        host->glfw_platform_initialized = false;
-    }
 #else
     if (host->web)
     {
@@ -163,14 +97,13 @@ alia_host_open(alia_host* host, alia_host_open_config const* config)
     ALIA_ASSERT(config);
 
 #ifndef __EMSCRIPTEN__
-    host->backend = resolve_backend(config->backend);
 #if defined(_WIN32)
-    if (host->backend == ALIA_HOST_BACKEND_WIN32)
-        return host_open_win32(host, config);
-#endif
-    if (host->backend == ALIA_HOST_BACKEND_GLFW)
-        return host_open_glfw(host, config);
+    return host_open_win32(host, config);
+#else
+    (void) host;
+    (void) config;
     return false;
+#endif
 #else
     host->web = alia_web_host_create();
     if (!host->web)
@@ -195,14 +128,9 @@ alia_host_sync_surface(alia_host* host, alia_ui_system* ui)
 
 #ifndef __EMSCRIPTEN__
 #if defined(_WIN32)
-    if (host->win32)
-    {
-        alia_win32_host_sync_surface(host->win32, ui);
-        return;
-    }
+    ALIA_ASSERT(host->win32);
+    alia_win32_host_sync_surface(host->win32, ui);
 #endif
-    ALIA_ASSERT(host->glfw);
-    alia_glfw_host_sync_surface(host->glfw, ui);
 #else
     ALIA_ASSERT(host->web);
     alia_web_host_sync_surface(host->web, ui, host->canvas_selector);
@@ -219,27 +147,16 @@ alia_host_run(alia_host* host, alia_host_run_config const* config)
 
 #ifndef __EMSCRIPTEN__
 #if defined(_WIN32)
-    if (host->win32)
-    {
-        alia_win32_host_run_config const win32_config = {
-            .ui = config->ui,
-            .frame = config->frame,
-            .continuous = config->continuous,
-            .probe_clear = false,
-            .on_window_state_changed = config->on_window_state_changed,
-        };
-        alia_win32_host_run(host->win32, &win32_config);
-        return;
-    }
-#endif
-    ALIA_ASSERT(host->glfw);
-    alia_glfw_host_config const glfw_config = {
+    ALIA_ASSERT(host->win32);
+    alia_win32_host_run_config const win32_config = {
         .ui = config->ui,
         .frame = config->frame,
         .continuous = config->continuous,
+        .probe_clear = false,
         .on_window_state_changed = config->on_window_state_changed,
     };
-    alia_glfw_host_run(host->glfw, &glfw_config);
+    alia_win32_host_run(host->win32, &win32_config);
+#endif
 #else
     ALIA_ASSERT(host->web);
     alia_web_host_config const web_config = {
@@ -248,6 +165,10 @@ alia_host_run(alia_host* host, alia_host_run_config const* config)
         .frame = config->frame,
         .continuous = config->continuous,
     };
+    // Schedules requestAnimationFrame and returns. Do not tear down the app
+    // afterward — the Emscripten runtime stays alive for async callbacks
+    // (EXIT_RUNTIME=0). Avoid emscripten_exit_with_live_runtime here; it
+    // throws an unwind that fights -fwasm-exceptions.
     alia_web_host_run(host->web, &web_config);
 #endif
 }

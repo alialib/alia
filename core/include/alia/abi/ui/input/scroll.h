@@ -16,7 +16,7 @@ ALIA_EXTERN_C_BEGIN
 // `alia_ui_resolve_touch_gesture`. Widgets apply deltas directly (optionally
 // scaled by style).
 
-// approximate logical pixels for one mouse wheel notch (used by GLFW host)
+// approximate logical pixels for one mouse wheel notch (used by GLFW glue)
 #define ALIA_SCROLL_PIXELS_PER_WHEEL_NOTCH 120.f
 
 // approximate logical pixels per line when normalizing DOM_DELTA_LINE wheel

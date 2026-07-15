@@ -49,9 +49,10 @@ alia_web_host_install(alia_web_host* host, alia_web_host_config const* config);
 void
 alia_web_host_request_frame(alia_web_host* host);
 
-// Install callbacks (if not already) and enter the requestAnimationFrame loop.
-// Returns after scheduling the first frame; the Emscripten runtime stays
-// alive.
+// Install callbacks (if not already) and schedule the first
+// requestAnimationFrame. Returns immediately; the Emscripten runtime stays
+// alive while callbacks remain registered. Callers must keep host/UI storage
+// alive and must not destroy it after return.
 void
 alia_web_host_run(alia_web_host* host, alia_web_host_config const* config);
 

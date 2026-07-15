@@ -43,22 +43,11 @@ if(ALIA_ENABLE_OPENGL AND NOT ALIA_IS_EMSCRIPTEN)
   list(APPEND VCPKG_MANIFEST_FEATURES "opengl")
 endif()
 
-include(CMakeDependentOption)
-
-cmake_dependent_option(
-    ALIA_ENABLE_VK_PRESENT
-    "Enable the Vulkan present compositor on Windows"
-    OFF
-    "WIN32"
-    OFF)
-if(ALIA_ENABLE_VK_PRESENT)
-  list(APPEND VCPKG_MANIFEST_FEATURES "vk-present")
-endif()
-
+# GLFW integration helpers (input/surface glue) for embedding — not a host.
 option(
     ALIA_ENABLE_GLFW
-    "Enable the GLFW backend for the UI library"
-    ON)
+    "Enable GLFW integration helpers and the GL embed example"
+    ${ALIA_IS_MAIN_PROJECT})
 if(ALIA_ENABLE_GLFW AND NOT ALIA_IS_EMSCRIPTEN)
   list(APPEND VCPKG_MANIFEST_FEATURES "glfw")
 endif()
@@ -100,7 +89,8 @@ if(EMSCRIPTEN)
     add_subdirectory(drivers/platforms/web)
 endif()
 
-if(ALIA_ENABLE_OPENGL)
+# Product shells: web+GL on Emscripten, Win32+D3D11 on Windows desktop.
+if(EMSCRIPTEN AND ALIA_ENABLE_OPENGL)
     alia_add_host_library()
     add_subdirectory(shell/gl)
 endif()
@@ -162,7 +152,7 @@ if(ALIA_ENABLE_EXAMPLES)
         "${ALIA_GEN_DIR}"
         ${CMAKE_SOURCE_DIR}/core/include)
     target_link_libraries(alia_font_assets PUBLIC alia_core)
-    if(ALIA_ENABLE_OPENGL)
+    if(TARGET alia_gl_shell)
         target_link_libraries(alia_gl_shell PUBLIC alia_font_assets)
     endif()
     if(TARGET alia_d3d11_shell)
@@ -189,19 +179,15 @@ if(ALIA_ENABLE_EXAMPLES)
         target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
     endif()
 
-    if(WIN32 AND TARGET alia_win32_platform)
-        add_executable(alia_dxgi_present_probe
-            ${PROJECT_SOURCE_DIR}/examples/dxgi_present_probe.cpp)
-        target_link_libraries(alia_dxgi_present_probe PRIVATE alia_win32_platform)
-
-        add_executable(alia_d3d11_boxes
-            ${PROJECT_SOURCE_DIR}/examples/d3d11_boxes_app.cpp)
-        target_link_libraries(alia_d3d11_boxes PRIVATE
-            alia_core
-            alia_win32_platform
-            alia_d3d11_renderer
+    if(ALIA_ENABLE_GLFW AND ALIA_ENABLE_OPENGL AND NOT EMSCRIPTEN
+            AND TARGET alia_glfw)
+        add_executable(alia_glfw_gl_embed
+            ${PROJECT_SOURCE_DIR}/examples/glfw_gl_embed_app.cpp)
+        target_link_libraries(alia_glfw_gl_embed PRIVATE
+            alia_glfw
+            alia_gl_renderer
             alia_font_assets)
-        target_include_directories(alia_d3d11_boxes PRIVATE
+        target_include_directories(alia_glfw_gl_embed PRIVATE
             ${PROJECT_SOURCE_DIR}/core/src)
     endif()
 
@@ -210,8 +196,6 @@ if(ALIA_ENABLE_EXAMPLES)
             "-fwasm-exceptions")
         target_compile_options(alia_shader_gallery PRIVATE
             "-fwasm-exceptions")
-        # -s USE_GLFW=3 enables internal GLFW
-        # --preload-file maps source assets to virtual filesystem
 
         target_link_options(alia_app PRIVATE
             "-sUSE_WEBGL2=1"
