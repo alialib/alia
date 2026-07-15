@@ -901,7 +901,8 @@ main()
     {
         alia_theme_accent accent;
         alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
-        alia_theme_context theme_ctx = alia_theme_context_default(!light_theme);
+        alia_theme_context theme_ctx
+            = alia_theme_context_default(!light_theme);
         alia_palette_from_accent(
             &the_system->palette,
             &accent,
@@ -918,7 +919,9 @@ main()
     alia_d3d11_app_run_loop(&config, &app);
     alia_d3d11_app_destroy(&app);
 #else
-    alia_gl_app app;
+    // Web host returns after scheduling RAF; keep storage for the page
+    // lifetime.
+    static alia_gl_app app;
     alia_gl_app_config const config = {
         .inner = {the_demo_controller, nullptr},
         .shell = {
@@ -943,7 +946,8 @@ main()
     {
         alia_theme_accent accent;
         alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
-        alia_theme_context theme_ctx = alia_theme_context_default(!light_theme);
+        alia_theme_context theme_ctx
+            = alia_theme_context_default(!light_theme);
         alia_palette_from_accent(
             &the_system->palette,
             &accent,
@@ -958,7 +962,6 @@ main()
     the_msdf_text_engine = alia_gl_shell_text_engine(app.shell);
 
     alia_gl_app_run_loop(&config, &app);
-    alia_gl_app_destroy(&app);
 #endif
     return 0;
 }

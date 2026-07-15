@@ -45,16 +45,18 @@ typedef struct alia_gl_app_config
 int
 alia_gl_app_init(alia_gl_app_config const* config, alia_gl_app* app);
 
-// Run the platform host loop until exit. Requires a successful
-// `alia_gl_app_init`.
+// Run the platform host loop. Requires a successful `alia_gl_app_init`.
+// Desktop: blocks until exit, then callers may destroy.
+// Web: schedules RAF and returns; keep `app` alive (static/heap) and do not
+// call `alia_gl_app_destroy` afterward.
 void
 alia_gl_app_run_loop(alia_gl_app_config const* config, alia_gl_app* app);
 
 void
 alia_gl_app_destroy(alia_gl_app* app);
 
-// Convenience: `alia_gl_app_init`, `alia_gl_app_run_loop`,
-// `alia_gl_app_destroy`.
+// Convenience: init + run_loop. Destroys only on desktop (where run_loop
+// returns after the window closes).
 int
 alia_gl_app_run(alia_gl_app_config const* config, alia_gl_app* app);
 

@@ -24,8 +24,6 @@ alia_gl_app_bootstrap_host(alia_gl_app_config const& config, alia_gl_app* app)
         .title = config.title,
         .window_state = config.window_state,
         .window_options = config.window_options,
-        // GL shells always use GLFW (Win32 AUTO would select DXGI/D3D11).
-        .backend = ALIA_HOST_BACKEND_GLFW,
         .canvas_selector = config.canvas_selector,
     };
     if (!alia_host_open(app->host, &open_config))
@@ -122,7 +120,9 @@ alia_gl_app_run(alia_gl_app_config const* config, alia_gl_app* app)
 
     alia_gl_app_run_loop(config, app);
 
+#ifndef __EMSCRIPTEN__
     alia_gl_app_destroy(app);
+#endif
     return 0;
 }
 
