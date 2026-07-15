@@ -14,6 +14,10 @@
 #include <alia/ui/animation.h>
 #include <alia/ui/system/object.h>
 
+#if defined(ALIA_HAS_STOCK_FONTS)
+#include "alia_fonts.h"
+#endif
+
 using namespace alia::operators;
 
 namespace alia {
@@ -100,14 +104,16 @@ static alia_checkbox_style const default_checkbox_style = {
     .box_corner_radius = 5.f,
     .border_width = 3.f,
     .checkmark_size = 18.f,
+#if defined(ALIA_HAS_STOCK_FONTS)
+    .checkmark_font_index = alia_font_material_symbols_outlined_index,
+    .checkmark_codepoint = alia_font_material_symbols_outlined_icon_check,
+#else
+    .checkmark_font_index = 0,
+    .checkmark_codepoint = 0,
+#endif
     .highlight_radius = 21.f,
     .flare_radius = 21.f,
 };
-
-// TODO: Don't hardcode this.
-static constexpr size_t checkmark_font_index = 2;
-// Material Symbols Outlined "check" (see alia_font_material_symbols_outlined_icon_check).
-static constexpr uint32_t checkmark_codepoint = 58826u;
 
 static inline alia_vec2f
 checkbox_center(alia_box placement)
@@ -133,14 +139,17 @@ draw_checkbox_checkmark(
     alia_srgba8 color,
     alia_checkbox_style const* style)
 {
+    if (style->checkmark_codepoint == 0 || !ctx->system->msdf_text_engine)
+        return;
+
     float const icon_scale = alia_px(ctx, style->checkmark_size);
     float const icon_width = alia_msdf_measure_codepoint_width(
         ctx->system->msdf_text_engine,
-        checkmark_font_index,
-        checkmark_codepoint,
+        style->checkmark_font_index,
+        style->checkmark_codepoint,
         icon_scale);
     alia_msdf_font_metrics const* icon_metrics = alia_msdf_get_font_metrics(
-        ctx->system->msdf_text_engine, checkmark_font_index);
+        ctx->system->msdf_text_engine, style->checkmark_font_index);
     float const icon_height = icon_metrics->line_height * icon_scale;
     alia_vec2f const origin{
         box.min.x + (box.size.x - icon_width) * 0.5f,
@@ -149,11 +158,11 @@ draw_checkbox_checkmark(
         ctx->system->msdf_text_engine,
         ctx,
         ctx->geometry->z_base + 3,
-        checkmark_codepoint,
+        style->checkmark_codepoint,
         icon_scale,
         origin,
         color,
-        checkmark_font_index);
+        style->checkmark_font_index);
 }
 
 static void
@@ -205,10 +214,14 @@ render_checkbox(
         = {alia_default_curve, milliseconds(160)};
     float checkmark_opacity = checked ? 1.f : 0.f;
 
-    alia_srgba8 checkmark_color = alia_palette_color_resolve(
-        p, disabled ? style->disabled_checkmark : style->checkmark);
-    checkmark_color.a = uint8_t(float(checkmark_color.a) * checkmark_opacity);
-    draw_checkbox_checkmark(ctx, box, checkmark_color, style);
+    if (checkmark_opacity > 0.f)
+    {
+        alia_srgba8 checkmark_color = alia_palette_color_resolve(
+            p, disabled ? style->disabled_checkmark : style->checkmark);
+        checkmark_color.a
+            = uint8_t(float(checkmark_color.a) * checkmark_opacity);
+        draw_checkbox_checkmark(ctx, box, checkmark_color, style);
+    }
 
     if ((interaction_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
