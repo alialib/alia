@@ -152,6 +152,16 @@ if(ALIA_ENABLE_EXAMPLES)
         "${ALIA_GEN_DIR}"
         ${CMAKE_SOURCE_DIR}/core/include)
     target_link_libraries(alia_font_assets PUBLIC alia_core)
+
+    # Stock widget icons (e.g. checkbox checkmark) compile against generated
+    # glyph IDs so remapped private-use codepoints stay in sync per build tree.
+    add_custom_target(alia_fonts_gen DEPENDS "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}")
+    add_dependencies(alia_core alia_fonts_gen)
+    target_include_directories(alia_core PRIVATE "${ALIA_GEN_DIR}")
+    target_compile_definitions(alia_core PRIVATE ALIA_HAS_STOCK_FONTS=1)
+    set_source_files_properties(
+        "${CMAKE_SOURCE_DIR}/core/src/alia/ui/library/checkbox.cpp"
+        PROPERTIES OBJECT_DEPENDS "${ALIA_FONTS_H}")
     if(TARGET alia_gl_shell)
         target_link_libraries(alia_gl_shell PUBLIC alia_font_assets)
     endif()
