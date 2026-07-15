@@ -127,6 +127,14 @@ typedef struct alia_checkbox_style
     // icon glyph size for checkmark (logical px)
     float checkmark_size;
 
+    // Checkmark glyph in the UI's bound MSDF text engine.
+    // When using stock fonts, `alia_default_checkbox_style()` picks up the
+    // font and glyph index automatically from the generated font constants.
+    // When using a custom atlas, set these to match the loaded font/glyph.
+    // (The default values are 0 for both, which skips glyph drawing.)
+    size_t checkmark_font_index;
+    uint32_t checkmark_codepoint;
+
     // radius used for hover/active highlight + click flare (logical px)
     float highlight_radius;
     float flare_radius;
