@@ -182,7 +182,12 @@ if(ALIA_ENABLE_EXAMPLES)
 
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
-    target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
+    if(WIN32 AND TARGET alia_d3d11_shell)
+        target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_d3d11_shell)
+        target_compile_definitions(alia_shader_gallery PRIVATE ALIA_GALLERY_USE_D3D11=1)
+    else()
+        target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
+    endif()
 
     if(WIN32 AND TARGET alia_win32_platform)
         add_executable(alia_dxgi_present_probe

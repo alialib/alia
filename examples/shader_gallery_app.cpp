@@ -3,24 +3,22 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
-#include <vector>
 
+#if defined(ALIA_GALLERY_USE_D3D11)
+#include <alia/shell/d3d11/app.h>
+#include <alia/shell/d3d11/fonts.h>
+#include <alia/shell/d3d11/shell.h>
+#else
 #include <alia/shell/gl/app.h>
 #include <alia/shell/gl/fonts.h>
 #include <alia/shell/gl/shell.h>
-
-#include <alia/renderers/gl/shaders.h>
-
-#if defined(__EMSCRIPTEN__)
-#include <GLES3/gl3.h>
-#else
-#include <glad/glad.h>
 #endif
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/effects.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -30,7 +28,6 @@
 #include <alia/abi/ui/style.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
-#include <alia/abi/ui/viewport.h>
 #include <alia/base/color.hpp>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
@@ -49,49 +46,149 @@ using namespace alia;
 using namespace alia::operators;
 
 alia_msdf_text_engine* the_msdf_text_engine = nullptr;
+#if defined(ALIA_GALLERY_USE_D3D11)
+alia_d3d11_shell* the_shell = nullptr;
+#else
 alia_gl_shell* the_shell = nullptr;
+#endif
 
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
 
-char const* const notargs_vert_src = R"(
-layout(location = 0) in vec2 position;
-void main()
+// Param blob after the backend region header. Layout matches float4 packs in
+// both HLSL cbuffer b0 and GLSL std140 block `Effect`.
+struct notargs_effect_params
 {
-    gl_Position = vec4(position, 0.0, 1.0);
+    float zoom;
+    float t;
+    float curl;
+    float thickness;
+
+    float cosx_factor;
+    float cosy_factor;
+    float siny_factor;
+    float sinz_factor;
+
+    float normalize_rays;
+    float step_scaling;
+    float iterations;
+    float invert;
+
+    float color_r;
+    float color_g;
+    float color_b;
+    float color_factor;
+
+    float sine_factor;
+    float depth_scale;
+    float pad0;
+    float pad1;
+};
+
+static_assert(sizeof(notargs_effect_params) == 80);
+
+#if defined(ALIA_GALLERY_USE_D3D11)
+char const* const notargs_ps_hlsl = R"(
+cbuffer AliaEffectFrame : register(b0)
+{
+    float4 alia_effect_region;
+    float4 alia_effect_surface;
+};
+
+cbuffer Effect : register(b1)
+{
+    float4 p0;
+    float4 p1;
+    float4 p2;
+    float4 p3;
+    float4 p4;
+};
+
+static const float tau = 6.28318530718;
+
+float sdf(float3 p)
+{
+    float t = p0.y;
+    float curl = p0.z;
+    float thickness = p0.w;
+    float cosx_factor = p1.x;
+    float cosy_factor = p1.y;
+    float siny_factor = p1.z;
+    float sinz_factor = p1.w;
+
+    p.z -= t;
+    float a = fmod(p.z * 0.1, tau) * curl;
+    float cs = cos(a);
+    float sn = sin(a);
+    float2 xy = float2(cs * p.x - sn * p.y, sn * p.x + cs * p.y);
+    p.xy = xy;
+    return thickness
+         - length(
+               float2(cos(p.x) * cosx_factor, cos(p.y) * cosy_factor)
+               + float2(sin(p.y) * siny_factor, sin(p.z) * sinz_factor));
+}
+
+float4 ps_main(float4 frag_coord : SV_POSITION) : SV_TARGET
+{
+    float2 corner = alia_effect_region.xy;
+    float2 size = alia_effect_region.zw;
+    float zoom = p0.x;
+    bool normalize_rays = p2.x > 0.5;
+    float step_scaling = p2.y;
+    int iterations = int(p2.z + 0.5);
+    bool invert = p2.w > 0.5;
+    float3 color = p3.xyz;
+    float color_factor = p3.w;
+    float sine_factor = p4.x;
+    float depth_scale = p4.y;
+
+    float2 half_size = size / 2.0;
+    float2 uv = (frag_coord.xy - corner - half_size) / (zoom * half_size.y);
+
+    float3 direction;
+    if (normalize_rays)
+        direction = normalize(float3(uv, 1.0)) * step_scaling;
+    else
+        direction = float3(uv, step_scaling);
+
+    float distance_traveled = 0.0;
+    for (int i = 0; i < iterations; ++i)
+        distance_traveled += sdf(direction * distance_traveled);
+
+    float3 p = direction * distance_traveled;
+    float depth_factor = invert ? (length(p) * depth_scale / 120.0)
+                                : (1.0 / (length(p) * depth_scale));
+    return float4(
+        (sin(p) * sine_factor + color * color_factor) * depth_factor, 1.0);
 }
 )";
-
+#else
 char const* const notargs_frag_src = R"(
+uniform vec4 alia_effect_region;
+uniform vec4 alia_effect_surface;
+
+layout(std140) uniform Effect {
+    vec4 p0;
+    vec4 p1;
+    vec4 p2;
+    vec4 p3;
+    vec4 p4;
+};
+
 out vec4 frag_color;
-
-uniform vec2 corner;
-uniform vec2 size;
-uniform float zoom;
-
-uniform float t;
-
-uniform float curl;
-uniform float thickness;
-uniform float cosx_factor;
-uniform float cosy_factor;
-uniform float siny_factor;
-uniform float sinz_factor;
-
-uniform bool normalize_rays;
-uniform float step_scaling;
-uniform int iterations;
-
-uniform bool invert;
-uniform vec3 color;
-uniform float color_factor;
-uniform float sine_factor;
-uniform float depth_scale;
 
 const float tau = radians(360.0);
 
 float sdf(vec3 p)
 {
+    float t = p0.y;
+    float curl = p0.z;
+    float thickness = p0.w;
+    float cosx_factor = p1.x;
+    float cosy_factor = p1.y;
+    float siny_factor = p1.z;
+    float sinz_factor = p1.w;
+
     p.z -= t;
     float a = mod(p.z * 0.1, tau) * curl;
     p.xy *= mat2(cos(a), sin(a), -sin(a), cos(a));
@@ -103,24 +200,33 @@ float sdf(vec3 p)
 
 void main()
 {
+    vec2 corner = alia_effect_region.xy;
+    vec2 size = alia_effect_region.zw;
+    float zoom = p0.x;
+    bool normalize_rays = p2.x > 0.5;
+    float step_scaling = p2.y;
+    int iterations = int(p2.z + 0.5);
+    bool invert = p2.w > 0.5;
+    vec3 color = p3.xyz;
+    float color_factor = p3.w;
+    float sine_factor = p4.x;
+    float depth_scale = p4.y;
+
+    // Map GL bottom-left fragment coords into Alia surface space.
+    vec2 frag = vec2(gl_FragCoord.x, alia_effect_surface.y - gl_FragCoord.y);
+
     vec2 half_size = size / 2.0;
-    vec2 uv = (gl_FragCoord.xy - corner - half_size) / (zoom * half_size.y);
+    vec2 uv = (frag - corner - half_size) / (zoom * half_size.y);
 
     vec3 direction;
     if (normalize_rays)
-    {
         direction = normalize(vec3(uv, 1.0)) * step_scaling;
-    }
     else
-    {
         direction = vec3(uv, step_scaling);
-    }
 
     float distance_traveled = 0.0;
     for (int i = 0; i < iterations; ++i)
-    {
         distance_traveled += sdf(direction * distance_traveled);
-    }
 
     vec3 p = vec3(direction * distance_traveled);
     float depth_factor = invert ? (length(p) * depth_scale / 120.0)
@@ -129,6 +235,7 @@ void main()
         (sin(p) * sine_factor + color * color_factor) * depth_factor, 1.0);
 }
 )";
+#endif
 
 struct notargs_controls
 {
@@ -149,32 +256,6 @@ struct notargs_controls
     double depth_scale = 1.0;
 };
 
-struct GalleryNotargsGl
-{
-    alia_ui_system* system = nullptr;
-    GLuint program = 0;
-    GLint loc_corner = -1;
-    GLint loc_size = -1;
-    GLint loc_zoom = -1;
-    GLint loc_t = -1;
-    GLint loc_curl = -1;
-    GLint loc_thickness = -1;
-    GLint loc_cosx = -1;
-    GLint loc_cosy = -1;
-    GLint loc_siny = -1;
-    GLint loc_sinz = -1;
-    GLint loc_normalize_rays = -1;
-    GLint loc_step_scaling = -1;
-    GLint loc_iterations = -1;
-    GLint loc_invert = -1;
-    GLint loc_color = -1;
-    GLint loc_color_factor = -1;
-    GLint loc_sine_factor = -1;
-    GLint loc_depth_scale = -1;
-    GLuint vao = 0;
-    GLuint vbo = 0;
-};
-
 notargs_controls the_controls;
 double the_notargs_t = 0.0;
 int the_seed_index = 0;
@@ -189,76 +270,7 @@ alia_style the_style = {.spacing = 10.0f};
 std::chrono::high_resolution_clock::time_point the_last_anim_time
     = std::chrono::high_resolution_clock::now();
 
-GalleryNotargsGl the_gallery_gl{};
-alia_draw_material_id the_notargs_material_id = 0;
-
-void
-notargs_gl_init(GalleryNotargsGl* gpu, alia_ui_system* system)
-{
-    gpu->system = system;
-    gpu->program
-        = alia_gl_create_shader_program(notargs_vert_src, notargs_frag_src);
-    if (gpu->program == 0)
-    {
-        std::cerr << "notargs: shader program creation failed\n";
-        return;
-    }
-    gpu->loc_corner = glGetUniformLocation(gpu->program, "corner");
-    gpu->loc_size = glGetUniformLocation(gpu->program, "size");
-    gpu->loc_zoom = glGetUniformLocation(gpu->program, "zoom");
-    gpu->loc_t = glGetUniformLocation(gpu->program, "t");
-    gpu->loc_curl = glGetUniformLocation(gpu->program, "curl");
-    gpu->loc_thickness = glGetUniformLocation(gpu->program, "thickness");
-    gpu->loc_cosx = glGetUniformLocation(gpu->program, "cosx_factor");
-    gpu->loc_cosy = glGetUniformLocation(gpu->program, "cosy_factor");
-    gpu->loc_siny = glGetUniformLocation(gpu->program, "siny_factor");
-    gpu->loc_sinz = glGetUniformLocation(gpu->program, "sinz_factor");
-    gpu->loc_normalize_rays
-        = glGetUniformLocation(gpu->program, "normalize_rays");
-    gpu->loc_step_scaling = glGetUniformLocation(gpu->program, "step_scaling");
-    gpu->loc_iterations = glGetUniformLocation(gpu->program, "iterations");
-    gpu->loc_invert = glGetUniformLocation(gpu->program, "invert");
-    gpu->loc_color = glGetUniformLocation(gpu->program, "color");
-    gpu->loc_color_factor = glGetUniformLocation(gpu->program, "color_factor");
-    gpu->loc_sine_factor = glGetUniformLocation(gpu->program, "sine_factor");
-    gpu->loc_depth_scale = glGetUniformLocation(gpu->program, "depth_scale");
-
-    float vertices[] = {
-        -1.0f,
-        -1.0f,
-        1.0f,
-        -1.0f,
-        1.0f,
-        1.0f,
-        -1.0f,
-        1.0f,
-        -1.0f,
-        -1.0f,
-        1.0f,
-        1.0f};
-
-    glGenVertexArrays(1, &gpu->vao);
-    glGenBuffers(1, &gpu->vbo);
-    glBindVertexArray(gpu->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, gpu->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void
-notargs_gl_destroy(GalleryNotargsGl* gpu)
-{
-    if (gpu->vbo)
-        glDeleteBuffers(1, &gpu->vbo);
-    if (gpu->vao)
-        glDeleteVertexArrays(1, &gpu->vao);
-    if (gpu->program)
-        glDeleteProgram(gpu->program);
-    *gpu = {};
-}
+alia_draw_material_id the_notargs_effect_id = 0;
 
 void
 shader_color_for_seed(int seed_index, float* out_rgb)
@@ -289,67 +301,32 @@ shader_color_for_seed(int seed_index, float* out_rgb)
     }
 }
 
-void
-render_notargs_bucket(void* user, alia_draw_bucket const* bucket)
+notargs_effect_params
+make_notargs_params()
 {
-    auto* gpu = static_cast<GalleryNotargsGl*>(user);
-    if (!gpu->program || !gpu->system || bucket->count == 0)
-        return;
-
-    alia_vec2f const surface_size
-        = alia_vec2i_to_vec2f(alia_ui_surface_get_size(gpu->system));
-
-    glDisable(GL_BLEND);
-    glUseProgram(gpu->program);
-
-    glUniform1f(gpu->loc_zoom, float(std::exp(the_controls.zoom)));
-    glUniform1f(gpu->loc_t, float(the_notargs_t));
-    glUniform1f(gpu->loc_curl, float(the_controls.curl));
-    glUniform1f(gpu->loc_thickness, float(the_controls.thickness));
-    glUniform1f(gpu->loc_cosx, the_controls.include_cosx ? 1.0f : 0.0f);
-    glUniform1f(gpu->loc_cosy, the_controls.include_cosy ? 1.0f : 0.0f);
-    glUniform1f(gpu->loc_siny, the_controls.include_siny ? 1.0f : 0.0f);
-    glUniform1f(gpu->loc_sinz, the_controls.include_sinz ? 1.0f : 0.0f);
-    glUniform1i(gpu->loc_normalize_rays, the_controls.normalize_rays ? 1 : 0);
-    glUniform1f(gpu->loc_step_scaling, float(the_controls.step_scaling));
-    int const iter
-        = (int) std::lround(std::clamp(the_controls.iterations, 0.0, 120.0));
-    glUniform1i(gpu->loc_iterations, iter);
-    glUniform1i(gpu->loc_invert, the_light_theme_flag ? 0 : 1);
-
+    notargs_effect_params p{};
+    p.zoom = float(std::exp(the_controls.zoom));
+    p.t = float(the_notargs_t);
+    p.curl = float(the_controls.curl);
+    p.thickness = float(the_controls.thickness);
+    p.cosx_factor = the_controls.include_cosx ? 1.0f : 0.0f;
+    p.cosy_factor = the_controls.include_cosy ? 1.0f : 0.0f;
+    p.siny_factor = the_controls.include_siny ? 1.0f : 0.0f;
+    p.sinz_factor = the_controls.include_sinz ? 1.0f : 0.0f;
+    p.normalize_rays = the_controls.normalize_rays ? 1.0f : 0.0f;
+    p.step_scaling = float(the_controls.step_scaling);
+    p.iterations = float(
+        std::lround(std::clamp(the_controls.iterations, 0.0, 120.0)));
+    p.invert = the_light_theme_flag ? 0.0f : 1.0f;
     float rgb[3];
     shader_color_for_seed(the_seed_index, rgb);
-    glUniform3f(gpu->loc_color, rgb[0], rgb[1], rgb[2]);
-    glUniform1f(gpu->loc_color_factor, float(the_controls.color_factor));
-    glUniform1f(gpu->loc_sine_factor, float(the_controls.sine_factor));
-    glUniform1f(gpu->loc_depth_scale, float(the_controls.depth_scale));
-
-    glBindVertexArray(gpu->vao);
-
-    for (alia_draw_command* walk = bucket->head; walk != nullptr;
-         walk = walk->next)
-    {
-        auto* vp = reinterpret_cast<alia_viewport_draw_command*>(walk);
-        alia_box const& r = vp->region;
-
-        alia_gl_viewport const viewport
-            = alia_viewport_region_to_gl_viewport(r, surface_size);
-        glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-        float const corner_x = r.min.x;
-        float const corner_y = surface_size.y - (r.min.y + r.size.y);
-        float const corner_uv[2] = {corner_x, corner_y};
-        float const size_uv[2] = {r.size.x, r.size.y};
-        glUniform2fv(gpu->loc_corner, 1, corner_uv);
-        glUniform2fv(gpu->loc_size, 1, size_uv);
-
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
-
-    glBindVertexArray(0);
-
-    // TODO: Develop/document a better state management system.
-    glEnable(GL_BLEND);
+    p.color_r = rgb[0];
+    p.color_g = rgb[1];
+    p.color_b = rgb[2];
+    p.color_factor = float(the_controls.color_factor);
+    p.sine_factor = float(the_controls.sine_factor);
+    p.depth_scale = float(the_controls.depth_scale);
+    return p;
 }
 
 struct pass_aborted
@@ -373,16 +350,6 @@ with_spacing(context& ctx, float spacing, Content&& content)
     ctx.style->spacing = old_spacing;
 }
 
-template<class Content>
-void
-with_palette(context& ctx, alia_palette* palette, Content&& content)
-{
-    alia_palette* old_palette = ctx.palette;
-    ctx.palette = palette;
-    content();
-    ctx.palette = old_palette;
-}
-
 void
 do_heading(context& ctx, char const* text)
 {
@@ -391,19 +358,6 @@ do_heading(context& ctx, char const* text)
         2,
         alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2),
         18.f,
-        text,
-        NO_FLAGS,
-        1);
-}
-
-void
-do_subheading(context& ctx, char const* text)
-{
-    do_text(
-        ctx,
-        2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1),
-        14.f,
         text,
         NO_FLAGS,
         1);
@@ -532,6 +486,7 @@ control_checkbox_b(context& ctx, char const* label, bool* value)
         }
     });
 }
+
 void
 do_theme_controls(context& ctx)
 {
@@ -656,6 +611,8 @@ shader_gallery_root(context& ctx)
             the_theme_dirty_flag = false;
         }
 
+        notargs_effect_params const effect_params = make_notargs_params();
+
         with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
@@ -690,10 +647,12 @@ shader_gallery_root(context& ctx)
                     ctx.palette->foundation.background.base,
                     GROW,
                     [&]() {
-                        alia_do_viewport(
+                        alia_do_effect(
                             &ctx,
                             0,
-                            the_notargs_material_id,
+                            the_notargs_effect_id,
+                            &effect_params,
+                            sizeof(effect_params),
                             ALIA_GROW | ALIA_FILL,
                             nullptr);
                     });
@@ -730,7 +689,11 @@ update()
              * std::exp(static_cast<double>(the_controls.speed)) * 0.1;
     }
 
+#if defined(ALIA_GALLERY_USE_D3D11)
+    alia_d3d11_shell_draw(the_system);
+#else
     alia_gl_shell_draw(the_system);
+#endif
 }
 
 static void
@@ -747,7 +710,50 @@ main()
         .vsync = true,
     };
 
-    alia_gl_app app;
+#if defined(ALIA_GALLERY_USE_D3D11)
+    alia_d3d11_app app;
+    alia_d3d11_app_config const config = {
+        .inner = {shader_gallery_root_controller, nullptr},
+        .shell = {
+            .draw_foundation_underlay = false,
+            .surface_padding = {},
+        },
+        .frame = {shader_gallery_frame, nullptr},
+        .continuous = true,
+        .title = "Alia Shader Gallery",
+        .window_state = alia_window_state_make(1200, 800),
+        .window_options = &window_options,
+    };
+    if (alia_d3d11_app_init(&config, &app) != 0)
+        return 1;
+
+    the_system = app.ui;
+    the_shell = app.shell;
+    the_theme_dirty_flag = true;
+
+    the_notargs_effect_id = 0;
+    alia_d3d11_effect_desc const d3d_effect = {
+        .pixel_shader_hlsl = notargs_ps_hlsl,
+        .entry_point = "ps_main",
+        .params_size = sizeof(notargs_effect_params),
+    };
+    if (alia_d3d11_effect_register(
+            app.renderer, &d3d_effect, &the_notargs_effect_id)
+        != 0)
+    {
+        std::cerr << "notargs: D3D11 effect registration failed\n";
+        alia_d3d11_app_destroy(&app);
+        return 1;
+    }
+
+    alia_d3d11_shell_setup_stock_text(app.shell, app.ui, app.renderer);
+    the_msdf_text_engine = alia_d3d11_shell_text_engine(app.shell);
+
+    alia_d3d11_app_run_loop(&config, &app);
+    alia_d3d11_app_destroy(&app);
+#else
+    // Web host returns after scheduling RAF; keep storage for the page lifetime.
+    static alia_gl_app app;
     alia_gl_app_config const config = {
         .inner = {shader_gallery_root_controller, nullptr},
         .shell = {
@@ -768,20 +774,24 @@ main()
     the_shell = app.shell;
     the_theme_dirty_flag = true;
 
-    the_notargs_material_id = alia_material_alloc_ids(app.ui, 1);
-    notargs_gl_init(&the_gallery_gl, app.ui);
-    alia_material_register(
-        app.ui,
-        the_notargs_material_id,
-        alia_material_vtable{.draw_bucket = render_notargs_bucket},
-        &the_gallery_gl);
+    the_notargs_effect_id = 0;
+    alia_gl_effect_desc const gl_effect = {
+        .fragment_shader_source = notargs_frag_src,
+        .params_size = sizeof(notargs_effect_params),
+    };
+    if (alia_gl_effect_register(
+            app.renderer, &gl_effect, &the_notargs_effect_id)
+        != 0)
+    {
+        std::cerr << "notargs: GL effect registration failed\n";
+        alia_gl_app_destroy(&app);
+        return 1;
+    }
 
     alia_gl_shell_setup_stock_text(app.shell, app.ui, app.renderer);
     the_msdf_text_engine = alia_gl_shell_text_engine(app.shell);
 
     alia_gl_app_run_loop(&config, &app);
-
-    notargs_gl_destroy(&the_gallery_gl);
-    alia_gl_app_destroy(&app);
+#endif
     return 0;
 }
