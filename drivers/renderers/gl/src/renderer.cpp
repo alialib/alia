@@ -20,6 +20,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <string>
 #include <vector>
 
 namespace {
@@ -578,7 +579,8 @@ effect_params_ubo_bytes(size_t params_size)
 bool
 ensure_effect_geometry(alia_gl_renderer* renderer)
 {
-    if (renderer->effect_vao != 0 && renderer->effect_vbo != 0)
+    if (renderer->effect_vao != 0 && renderer->effect_vbo != 0
+        && renderer->effect_frame_ubo != 0)
         return true;
 
     float vertices[] = {
@@ -596,16 +598,72 @@ ensure_effect_geometry(alia_gl_renderer* renderer)
         1.f,
     };
 
-    glGenVertexArrays(1, &renderer->effect_vao);
-    glGenBuffers(1, &renderer->effect_vbo);
-    glBindVertexArray(renderer->effect_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->effect_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    return renderer->effect_vao != 0 && renderer->effect_vbo != 0;
+    if (renderer->effect_vao == 0 || renderer->effect_vbo == 0)
+    {
+        glGenVertexArrays(1, &renderer->effect_vao);
+        glGenBuffers(1, &renderer->effect_vbo);
+        glBindVertexArray(renderer->effect_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, renderer->effect_vbo);
+        glBufferData(
+            GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+        glEnableVertexAttribArray(0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    if (renderer->effect_frame_ubo == 0)
+    {
+        glGenBuffers(1, &renderer->effect_frame_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, renderer->effect_frame_ubo);
+        glBufferData(GL_UNIFORM_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    return renderer->effect_vao != 0 && renderer->effect_vbo != 0
+        && renderer->effect_frame_ubo != 0;
+}
+
+void
+bind_effect_uniform_blocks(
+    GLuint program,
+    size_t params_size,
+    size_t ubo_bytes,
+    gl_effect_slot* slot)
+{
+    GLint block_count = 0;
+    glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &block_count);
+    for (GLint i = 0; i < block_count; ++i)
+    {
+        GLint data_size = 0;
+        glGetActiveUniformBlockiv(
+            program, GLuint(i), GL_UNIFORM_BLOCK_DATA_SIZE, &data_size);
+        if (data_size == 32 && slot->frame_block_index == GL_INVALID_INDEX)
+            slot->frame_block_index = GLuint(i);
+        else if (
+            params_size > 0 && size_t(data_size) == ubo_bytes
+            && slot->params_block_index == GL_INVALID_INDEX)
+            slot->params_block_index = GLuint(i);
+    }
+
+    // Legacy hand-written GLSL: named `Effect` UBO + frame uniforms.
+    if (slot->frame_block_index == GL_INVALID_INDEX)
+    {
+        slot->loc_region = glGetUniformLocation(program, "alia_effect_region");
+        slot->loc_surface
+            = glGetUniformLocation(program, "alia_effect_surface");
+    }
+    if (slot->params_block_index == GL_INVALID_INDEX && params_size > 0)
+    {
+        GLuint named = glGetUniformBlockIndex(program, "Effect");
+        if (named != GL_INVALID_INDEX)
+            slot->params_block_index = named;
+    }
+
+    if (slot->frame_block_index != GL_INVALID_INDEX)
+        glUniformBlockBinding(program, slot->frame_block_index, 0);
+    if (slot->params_block_index != GL_INVALID_INDEX)
+        glUniformBlockBinding(program, slot->params_block_index, 1);
 }
 
 void
@@ -640,12 +698,35 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
             = alia_viewport_region_to_gl_viewport(r, surface_size);
         glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-        if (slot->loc_region >= 0)
-            glUniform4f(
-                slot->loc_region, r.min.x, r.min.y, r.size.x, r.size.y);
-        if (slot->loc_surface >= 0)
-            glUniform4f(
-                slot->loc_surface, surface_size.x, surface_size.y, 0.f, 0.f);
+        if (slot->frame_block_index != GL_INVALID_INDEX
+            && renderer->effect_frame_ubo != 0)
+        {
+            float frame[8] = {
+                r.min.x,
+                r.min.y,
+                r.size.x,
+                r.size.y,
+                surface_size.x,
+                surface_size.y,
+                0.f,
+                0.f};
+            glBindBuffer(GL_UNIFORM_BUFFER, renderer->effect_frame_ubo);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(frame), frame);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer->effect_frame_ubo);
+        }
+        else
+        {
+            if (slot->loc_region >= 0)
+                glUniform4f(
+                    slot->loc_region, r.min.x, r.min.y, r.size.x, r.size.y);
+            if (slot->loc_surface >= 0)
+                glUniform4f(
+                    slot->loc_surface,
+                    surface_size.x,
+                    surface_size.y,
+                    0.f,
+                    0.f);
+        }
 
         if (slot->params_ubo != 0 && slot->ubo_bytes > 0)
         {
@@ -664,7 +745,10 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
                 0,
                 GLsizeiptr(slot->ubo_bytes),
                 blob.data());
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, slot->params_ubo);
+            GLuint const params_binding
+                = slot->frame_block_index != GL_INVALID_INDEX ? 1u : 0u;
+            glBindBufferBase(
+                GL_UNIFORM_BUFFER, params_binding, slot->params_ubo);
         }
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -673,6 +757,84 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
     glBindVertexArray(0);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glEnable(GL_BLEND);
+}
+
+int
+register_effect_blob(
+    alia_gl_renderer* renderer,
+    alia_effect_desc const* desc,
+    alia_draw_material_id* out_material_id)
+{
+    ALIA_ASSERT(renderer);
+    ALIA_ASSERT(renderer->system);
+    ALIA_ASSERT(desc);
+    ALIA_ASSERT(out_material_id);
+
+    if (desc->shader.format != ALIA_SHADER_FORMAT_GLSL_ES
+        || !desc->shader.data || desc->shader.size == 0)
+    {
+        std::fprintf(
+            stderr, "[alia gl] effect requires ALIA_SHADER_FORMAT_GLSL_ES\n");
+        return -1;
+    }
+
+    if (!ensure_effect_geometry(renderer))
+    {
+        std::fprintf(stderr, "[alia gl] effect geometry init failed\n");
+        return -1;
+    }
+
+    // glShaderSource expects a NUL-terminated string when length is null.
+    std::string source(
+        static_cast<char const*>(desc->shader.data), desc->shader.size);
+
+    GLuint program = alia_gl_create_shader_program(
+        effect_vertex_shader_source, source.c_str());
+    if (program == 0)
+    {
+        std::fprintf(stderr, "[alia gl] effect program creation failed\n");
+        return -1;
+    }
+
+    auto slot = std::make_unique<gl_effect_slot>();
+    slot->renderer = renderer;
+    slot->program = program;
+    slot->params_size = desc->params_size;
+    slot->ubo_bytes = effect_params_ubo_bytes(desc->params_size);
+
+    bind_effect_uniform_blocks(
+        program, desc->params_size, slot->ubo_bytes, slot.get());
+
+    if (desc->params_size > 0)
+    {
+        if (slot->params_block_index == GL_INVALID_INDEX)
+        {
+            std::fprintf(
+                stderr, "[alia gl] effect params uniform block missing\n");
+            glDeleteProgram(program);
+            return -1;
+        }
+        glGenBuffers(1, &slot->params_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, slot->params_ubo);
+        glBufferData(
+            GL_UNIFORM_BUFFER,
+            GLsizeiptr(slot->ubo_bytes),
+            nullptr,
+            GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    alia_draw_material_id const material_id
+        = alia_material_alloc_ids(renderer->system, 1);
+    alia_material_register(
+        renderer->system,
+        material_id,
+        alia_material_vtable{.draw_bucket = render_effect_command_list},
+        slot.get());
+
+    renderer->effects.push_back(std::move(slot));
+    *out_material_id = material_id;
+    return 0;
 }
 
 } // namespace
@@ -715,6 +877,15 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
                 alia_gl_renderer_upload_msdf_atlas(
                     static_cast<alia_gl_renderer*>(user), image);
             },
+        .register_effect =
+            [](void* user,
+               alia_effect_desc const* desc,
+               alia_draw_material_id* out_material_id) {
+                return register_effect_blob(
+                    static_cast<alia_gl_renderer*>(user),
+                    desc,
+                    out_material_id);
+            },
         .user = renderer,
     };
     alia_ui_system_set_renderer_ops(ui, &ops);
@@ -727,65 +898,20 @@ alia_gl_effect_register(
     alia_draw_material_id* out_material_id)
 {
     ALIA_ASSERT(renderer);
-    ALIA_ASSERT(renderer->system);
     ALIA_ASSERT(desc);
     ALIA_ASSERT(desc->fragment_shader_source);
     ALIA_ASSERT(out_material_id);
 
-    if (!ensure_effect_geometry(renderer))
-    {
-        std::fprintf(stderr, "[alia gl] effect geometry init failed\n");
-        return -1;
-    }
-
-    GLuint program = alia_gl_create_shader_program(
-        effect_vertex_shader_source, desc->fragment_shader_source);
-    if (program == 0)
-    {
-        std::fprintf(stderr, "[alia gl] effect program creation failed\n");
-        return -1;
-    }
-
-    auto slot = std::make_unique<gl_effect_slot>();
-    slot->renderer = renderer;
-    slot->program = program;
-    slot->loc_region = glGetUniformLocation(program, "alia_effect_region");
-    slot->loc_surface = glGetUniformLocation(program, "alia_effect_surface");
-    slot->params_size = desc->params_size;
-    slot->ubo_bytes = effect_params_ubo_bytes(desc->params_size);
-
-    if (desc->params_size > 0)
-    {
-        GLuint block_index = glGetUniformBlockIndex(program, "Effect");
-        if (block_index == GL_INVALID_INDEX)
-        {
-            std::fprintf(
-                stderr, "[alia gl] effect UBO block 'Effect' missing\n");
-            glDeleteProgram(program);
-            return -1;
-        }
-        glUniformBlockBinding(program, block_index, 0);
-        glGenBuffers(1, &slot->params_ubo);
-        glBindBuffer(GL_UNIFORM_BUFFER, slot->params_ubo);
-        glBufferData(
-            GL_UNIFORM_BUFFER,
-            GLsizeiptr(slot->ubo_bytes),
-            nullptr,
-            GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-
-    alia_draw_material_id const material_id
-        = alia_material_alloc_ids(renderer->system, 1);
-    alia_material_register(
-        renderer->system,
-        material_id,
-        alia_material_vtable{.draw_bucket = render_effect_command_list},
-        slot.get());
-
-    renderer->effects.push_back(std::move(slot));
-    *out_material_id = material_id;
-    return 0;
+    alia_effect_desc const portable = {
+        .shader =
+            {
+                .format = ALIA_SHADER_FORMAT_GLSL_ES,
+                .data = desc->fragment_shader_source,
+                .size = std::strlen(desc->fragment_shader_source),
+            },
+        .params_size = desc->params_size,
+    };
+    return register_effect_blob(renderer, &portable, out_material_id);
 }
 
 void
@@ -846,6 +972,11 @@ alia_gl_renderer_destroy(alia_gl_renderer* renderer)
     {
         glDeleteVertexArrays(1, &renderer->effect_vao);
         renderer->effect_vao = 0;
+    }
+    if (renderer->effect_frame_ubo != 0)
+    {
+        glDeleteBuffers(1, &renderer->effect_frame_ubo);
+        renderer->effect_frame_ubo = 0;
     }
 
     if (renderer->msdf_atlas_texture != 0)

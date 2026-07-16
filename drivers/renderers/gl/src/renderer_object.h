@@ -20,8 +20,11 @@ struct gl_effect_slot
     alia_gl_renderer* renderer = nullptr;
     GLuint program = 0;
     GLuint params_ubo = 0;
+    // Legacy hand-written GLSL: frame uniforms instead of a frame UBO.
     GLint loc_region = -1;
     GLint loc_surface = -1;
+    GLuint frame_block_index = GL_INVALID_INDEX;
+    GLuint params_block_index = GL_INVALID_INDEX;
     size_t params_size = 0;
     size_t ubo_bytes = 0;
 };
@@ -40,5 +43,7 @@ struct alia_gl_renderer
     // shared effect geometry - Each registered effect is its own material.
     GLuint effect_vao = 0;
     GLuint effect_vbo = 0;
+    // Shared AliaEffectFrame UBO (binding 0) for Slang-baked effects.
+    GLuint effect_frame_ubo = 0;
     std::vector<std::unique_ptr<gl_effect_slot>> effects;
 };

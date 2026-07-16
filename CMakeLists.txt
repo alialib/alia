@@ -171,9 +171,72 @@ if(ALIA_ENABLE_EXAMPLES)
         ${PROJECT_SOURCE_DIR}/examples/app.cpp)
     target_link_libraries(alia_app PRIVATE alia_cpp alia_shell_app)
 
+    set(ALIA_GALLERY_SHADER_DIR
+        "${PROJECT_SOURCE_DIR}/examples/shader_gallery")
+    set(ALIA_NOTARGS_SLANG "${ALIA_GALLERY_SHADER_DIR}/notargs.slang")
+    set(ALIA_NOTARGS_GEN_H "${ALIA_GEN_DIR}/alia_notargs_effect.h")
+    set(ALIA_NOTARGS_GEN_CPP "${ALIA_GEN_DIR}/alia_notargs_effect.cpp")
+
+    if(WIN32 AND NOT EMSCRIPTEN)
+        set(ALIA_NOTARGS_FORMAT dxbc)
+    else()
+        set(ALIA_NOTARGS_FORMAT glsl-es)
+    endif()
+
+    if(ALIA_ENABLE_ASSET_PIPELINE AND TARGET alia_shader_builder)
+        set(ALIA_SHADER_BUILDER_CMD $<TARGET_FILE:alia_shader_builder>)
+        set(ALIA_SHADER_BUILDER_DEP alia_shader_builder)
+        set(ALIA_SLANGC_FOR_BUILD "${ALIA_SLANGC}")
+    elseif(EMSCRIPTEN)
+        set(ALIA_HOST_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/Release"
+            CACHE PATH "Native build directory containing host tools")
+        set(ALIA_SHADER_BUILDER_CMD
+            "${ALIA_HOST_BUILD_DIR}/tools/alia_shader_builder.exe")
+        set(ALIA_SHADER_BUILDER_DEP "${ALIA_SHADER_BUILDER_CMD}")
+        set(ALIA_SLANGC_FOR_BUILD
+            "${ALIA_HOST_BUILD_DIR}/slang-sdk/bin/slangc.exe")
+        if(NOT EXISTS "${ALIA_SHADER_BUILDER_CMD}")
+            message(FATAL_ERROR
+                "Native alia_shader_builder not found at:\n"
+                "  ${ALIA_SHADER_BUILDER_CMD}\n"
+                "Build the desktop Release tree first "
+                "(scripts/build.bat alia_shader_gallery).")
+        endif()
+    else()
+        message(FATAL_ERROR
+            "alia_shader_gallery requires alia_shader_builder "
+            "(enable ALIA_ENABLE_ASSET_PIPELINE on desktop).")
+    endif()
+
+    add_custom_command(
+        OUTPUT "${ALIA_NOTARGS_GEN_H}" "${ALIA_NOTARGS_GEN_CPP}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${ALIA_GEN_DIR}"
+        COMMAND ${ALIA_SHADER_BUILDER_CMD}
+            "${ALIA_NOTARGS_SLANG}"
+            "${ALIA_NOTARGS_GEN_H}"
+            "${ALIA_NOTARGS_GEN_CPP}"
+            --format "${ALIA_NOTARGS_FORMAT}"
+            --entry ps_main
+            --symbol alia_notargs_effect
+            --slangc "${ALIA_SLANGC_FOR_BUILD}"
+            --include-dir "${ALIA_GALLERY_SHADER_DIR}"
+        DEPENDS
+            ${ALIA_SHADER_BUILDER_DEP}
+            "${ALIA_NOTARGS_SLANG}"
+            "${ALIA_GALLERY_SHADER_DIR}/alia_effect_frame.slang"
+            "${ALIA_GALLERY_SHADER_DIR}/notargs_params.h"
+        COMMENT "Baking notargs effect shader (${ALIA_NOTARGS_FORMAT})"
+    )
+    set_source_files_properties("${ALIA_NOTARGS_GEN_CPP}" PROPERTIES
+        GENERATED TRUE)
+
     add_executable(alia_shader_gallery
-        ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
+        ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp
+        "${ALIA_NOTARGS_GEN_CPP}")
     target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_shell_app)
+    target_include_directories(alia_shader_gallery PRIVATE
+        "${ALIA_GEN_DIR}"
+        "${ALIA_GALLERY_SHADER_DIR}")
 
     if(ALIA_ENABLE_GLFW AND ALIA_ENABLE_OPENGL AND NOT EMSCRIPTEN
             AND TARGET alia_glfw)

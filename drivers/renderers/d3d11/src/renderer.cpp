@@ -886,6 +886,70 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
     }
 }
 
+int
+register_effect_blob(
+    alia_d3d11_renderer* renderer,
+    alia_effect_desc const* desc,
+    alia_draw_material_id* out_material_id)
+{
+    ALIA_ASSERT(renderer);
+    ALIA_ASSERT(renderer->system);
+    ALIA_ASSERT(renderer->device);
+    ALIA_ASSERT(desc);
+    ALIA_ASSERT(out_material_id);
+
+    if (desc->shader.format != ALIA_SHADER_FORMAT_DXBC || !desc->shader.data
+        || desc->shader.size == 0)
+    {
+        std::fprintf(
+            stderr, "[alia d3d11] effect requires ALIA_SHADER_FORMAT_DXBC\n");
+        return -1;
+    }
+
+    if (!ensure_effect_pipeline(renderer))
+    {
+        std::fprintf(stderr, "[alia d3d11] effect pipeline init failed\n");
+        return -1;
+    }
+
+    auto slot = std::make_unique<d3d11_effect_slot>();
+    slot->renderer = renderer;
+
+    HRESULT hr = renderer->device->CreatePixelShader(
+        desc->shader.data, desc->shader.size, nullptr, &slot->ps);
+    if (FAILED(hr))
+    {
+        std::fprintf(stderr, "[alia d3d11] CreatePixelShader failed\n");
+        return -1;
+    }
+
+    slot->params_size = desc->params_size;
+    slot->cb_bytes = effect_params_cb_bytes(desc->params_size);
+    D3D11_BUFFER_DESC cb_desc{};
+    cb_desc.ByteWidth = UINT(slot->cb_bytes);
+    cb_desc.Usage = D3D11_USAGE_DYNAMIC;
+    cb_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cb_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    hr = renderer->device->CreateBuffer(&cb_desc, nullptr, &slot->params_cb);
+    if (FAILED(hr))
+    {
+        release_t(slot->ps);
+        return -1;
+    }
+
+    alia_draw_material_id const material_id
+        = alia_material_alloc_ids(renderer->system, 1);
+    alia_material_register(
+        renderer->system,
+        material_id,
+        alia_material_vtable{.draw_bucket = render_effect_command_list},
+        slot.get());
+
+    renderer->effects.push_back(std::move(slot));
+    *out_material_id = material_id;
+    return 0;
+}
+
 } // namespace
 
 extern "C" {
@@ -936,6 +1000,15 @@ alia_d3d11_renderer_attach(
                 alia_d3d11_renderer_upload_msdf_atlas(
                     static_cast<alia_d3d11_renderer*>(user), image);
             },
+        .register_effect =
+            [](void* user,
+               alia_effect_desc const* desc,
+               alia_draw_material_id* out_material_id) {
+                return register_effect_blob(
+                    static_cast<alia_d3d11_renderer*>(user),
+                    desc,
+                    out_material_id);
+            },
         .user = renderer,
     };
     alia_ui_system_set_renderer_ops(ui, &ops);
@@ -948,16 +1021,9 @@ alia_d3d11_effect_register(
     alia_draw_material_id* out_material_id)
 {
     ALIA_ASSERT(renderer);
-    ALIA_ASSERT(renderer->system);
     ALIA_ASSERT(desc);
     ALIA_ASSERT(desc->pixel_shader_hlsl);
     ALIA_ASSERT(out_material_id);
-
-    if (!ensure_effect_pipeline(renderer))
-    {
-        std::fprintf(stderr, "[alia d3d11] effect pipeline init failed\n");
-        return -1;
-    }
 
     char const* entry
         = desc->entry_point != nullptr ? desc->entry_point : "ps_main";
@@ -970,43 +1036,18 @@ alia_d3d11_effect_register(
             &ps_blob))
         return -1;
 
-    auto slot = std::make_unique<d3d11_effect_slot>();
-    slot->renderer = renderer;
-
-    HRESULT hr = renderer->device->CreatePixelShader(
-        ps_blob->GetBufferPointer(),
-        ps_blob->GetBufferSize(),
-        nullptr,
-        &slot->ps);
+    alia_effect_desc const portable = {
+        .shader =
+            {
+                .format = ALIA_SHADER_FORMAT_DXBC,
+                .data = ps_blob->GetBufferPointer(),
+                .size = ps_blob->GetBufferSize(),
+            },
+        .params_size = desc->params_size,
+    };
+    int const rc = register_effect_blob(renderer, &portable, out_material_id);
     ps_blob->Release();
-    if (FAILED(hr))
-        return -1;
-
-    slot->params_size = desc->params_size;
-    slot->cb_bytes = effect_params_cb_bytes(desc->params_size);
-    D3D11_BUFFER_DESC cb_desc{};
-    cb_desc.ByteWidth = UINT(slot->cb_bytes);
-    cb_desc.Usage = D3D11_USAGE_DYNAMIC;
-    cb_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cb_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    hr = renderer->device->CreateBuffer(&cb_desc, nullptr, &slot->params_cb);
-    if (FAILED(hr))
-    {
-        release_t(slot->ps);
-        return -1;
-    }
-
-    alia_draw_material_id const material_id
-        = alia_material_alloc_ids(renderer->system, 1);
-    alia_material_register(
-        renderer->system,
-        material_id,
-        alia_material_vtable{.draw_bucket = render_effect_command_list},
-        slot.get());
-
-    renderer->effects.push_back(std::move(slot));
-    *out_material_id = material_id;
-    return 0;
+    return rc;
 }
 
 void

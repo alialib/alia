@@ -19,6 +19,47 @@ ALIA_EXTERN_C_BEGIN
 // Draw commands carry an Alia surface-space region and an opaque param blob.
 // How backends bind region / surface size / params to the GPU is
 // renderer-specific (see each renderer's effect_register docs).
+//
+// Portable registration uses `alia_effect_desc` + `alia_ui_register_effect`
+// (or `alia_renderer_ops.register_effect`). Native HLSL/GLSL source register
+// APIs remain as a single-backend escape hatch.
+
+typedef struct alia_ui_system alia_ui_system;
+
+// Shader bytecode / source formats for portable effect registration.
+typedef enum alia_shader_format
+{
+    // UTF-8 GLSL fragment source. Body-only: the GL backend prepends the
+    // appropriate #version (GLSL ES 300 on Emscripten / WebGL, 330 core on
+    // desktop GL). Prefer this over SPIR-V for the web product path.
+    ALIA_SHADER_FORMAT_GLSL_ES = 1,
+    // D3DCompile / fxc SM5 pixel-shader bytecode (DXBC).
+    ALIA_SHADER_FORMAT_DXBC = 2,
+} alia_shader_format;
+
+typedef struct alia_shader_blob
+{
+    alia_shader_format format;
+    void const* data;
+    // Byte length of `data`. For GLSL_ES, this is the source length (NUL
+    // terminator optional). For DXBC, the full bytecode size.
+    size_t size;
+} alia_shader_blob;
+
+// Backend-neutral effect registration descriptor.
+typedef struct alia_effect_desc
+{
+    alia_shader_blob shader;
+    size_t params_size;
+} alia_effect_desc;
+
+// Register an effect via `ui->renderer.register_effect`. Returns 0 on
+// success. Requires renderer ops already installed.
+int
+alia_ui_register_effect(
+    alia_ui_system* ui,
+    alia_effect_desc const* desc,
+    alia_draw_material_id* out_material_id);
 
 typedef struct alia_effect_style
 {

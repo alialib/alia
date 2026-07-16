@@ -5,6 +5,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/drawing.h>
@@ -35,6 +36,21 @@ alia_effect_style const*
 alia_default_effect_style(void)
 {
     return &default_effect_style;
+}
+
+int
+alia_ui_register_effect(
+    alia_ui_system* ui,
+    alia_effect_desc const* desc,
+    alia_draw_material_id* out_material_id)
+{
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(desc);
+    ALIA_ASSERT(out_material_id);
+    if (!ui->renderer.register_effect)
+        return -1;
+    return ui->renderer.register_effect(
+        ui->renderer.user, desc, out_material_id);
 }
 
 void

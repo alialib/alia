@@ -28,13 +28,14 @@ void
 alia_gl_renderer_upload_msdf_atlas(
     alia_gl_renderer* renderer, alia_msdf_atlas_image const* image);
 
-// Register an effect as its own draw material. `fragment_shader_source` is
-// body-only (version prepended). It should declare:
-//   uniform vec4 alia_effect_region;  // xy=min, zw=size (Alia surface space)
-//   uniform vec4 alia_effect_surface; // xy=surface size in pixels
-//   layout(std140) uniform Effect { /* user params */ }; // binding 0
+// Native-source hatch: compile `fragment_shader_source` (body-only; version
+// prepended) and register. Prefer `alia_ui_register_effect` with
+// `ALIA_SHADER_FORMAT_GLSL_ES` for portable registration.
 //
-// On success, writes the new material ID to `out_material_id` and returns 0.
+// Portable / Slang-baked GLSL should declare two std140 UBOs (bindings set
+// via the API): a 32-byte frame block and an Effect params block.
+// Legacy hatch shaders may instead use `uniform vec4 alia_effect_region` /
+// `alia_effect_surface` plus `layout(std140) uniform Effect { ... }`.
 typedef struct alia_gl_effect_desc
 {
     char const* fragment_shader_source;

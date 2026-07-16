@@ -5,11 +5,6 @@
 #include <iostream>
 
 #include <alia/shell/app.h>
-#if defined(ALIA_SHELL_BACKEND_D3D11)
-#include <alia/renderers/d3d11/renderer.h>
-#else
-#include <alia/renderers/gl/renderer.h>
-#endif
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
@@ -39,6 +34,9 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
+#include "alia_notargs_effect.h"
+#include "notargs_params.h"
+
 using namespace alia;
 using namespace alia::operators;
 
@@ -46,188 +44,6 @@ alia_msdf_text_engine* the_msdf_text_engine = nullptr;
 
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
-
-// Param blob after the backend region header. Layout matches float4 packs in
-// both HLSL cbuffer b0 and GLSL std140 block `Effect`.
-struct notargs_effect_params
-{
-    float zoom;
-    float t;
-    float curl;
-    float thickness;
-
-    float cosx_factor;
-    float cosy_factor;
-    float siny_factor;
-    float sinz_factor;
-
-    float normalize_rays;
-    float step_scaling;
-    float iterations;
-    float invert;
-
-    float color_r;
-    float color_g;
-    float color_b;
-    float color_factor;
-
-    float sine_factor;
-    float depth_scale;
-    float pad0;
-    float pad1;
-};
-
-static_assert(sizeof(notargs_effect_params) == 80);
-
-#if defined(ALIA_SHELL_BACKEND_D3D11)
-char const* const notargs_ps_hlsl = R"(
-cbuffer AliaEffectFrame : register(b0)
-{
-    float4 alia_effect_region;
-    float4 alia_effect_surface;
-};
-
-cbuffer Effect : register(b1)
-{
-    float4 p0;
-    float4 p1;
-    float4 p2;
-    float4 p3;
-    float4 p4;
-};
-
-static const float tau = 6.28318530718;
-
-float sdf(float3 p)
-{
-    float t = p0.y;
-    float curl = p0.z;
-    float thickness = p0.w;
-    float cosx_factor = p1.x;
-    float cosy_factor = p1.y;
-    float siny_factor = p1.z;
-    float sinz_factor = p1.w;
-
-    p.z -= t;
-    float a = fmod(p.z * 0.1, tau) * curl;
-    float cs = cos(a);
-    float sn = sin(a);
-    float2 xy = float2(cs * p.x - sn * p.y, sn * p.x + cs * p.y);
-    p.xy = xy;
-    return thickness
-         - length(
-               float2(cos(p.x) * cosx_factor, cos(p.y) * cosy_factor)
-               + float2(sin(p.y) * siny_factor, sin(p.z) * sinz_factor));
-}
-
-float4 ps_main(float4 frag_coord : SV_POSITION) : SV_TARGET
-{
-    float2 corner = alia_effect_region.xy;
-    float2 size = alia_effect_region.zw;
-    float zoom = p0.x;
-    bool normalize_rays = p2.x > 0.5;
-    float step_scaling = p2.y;
-    int iterations = int(p2.z + 0.5);
-    bool invert = p2.w > 0.5;
-    float3 color = p3.xyz;
-    float color_factor = p3.w;
-    float sine_factor = p4.x;
-    float depth_scale = p4.y;
-
-    float2 half_size = size / 2.0;
-    float2 uv = (frag_coord.xy - corner - half_size) / (zoom * half_size.y);
-
-    float3 direction;
-    if (normalize_rays)
-        direction = normalize(float3(uv, 1.0)) * step_scaling;
-    else
-        direction = float3(uv, step_scaling);
-
-    float distance_traveled = 0.0;
-    for (int i = 0; i < iterations; ++i)
-        distance_traveled += sdf(direction * distance_traveled);
-
-    float3 p = direction * distance_traveled;
-    float depth_factor = invert ? (length(p) * depth_scale / 120.0)
-                                : (1.0 / (length(p) * depth_scale));
-    return float4(
-        (sin(p) * sine_factor + color * color_factor) * depth_factor, 1.0);
-}
-)";
-#else
-char const* const notargs_frag_src = R"(
-uniform vec4 alia_effect_region;
-uniform vec4 alia_effect_surface;
-
-layout(std140) uniform Effect {
-    vec4 p0;
-    vec4 p1;
-    vec4 p2;
-    vec4 p3;
-    vec4 p4;
-};
-
-out vec4 frag_color;
-
-const float tau = radians(360.0);
-
-float sdf(vec3 p)
-{
-    float t = p0.y;
-    float curl = p0.z;
-    float thickness = p0.w;
-    float cosx_factor = p1.x;
-    float cosy_factor = p1.y;
-    float siny_factor = p1.z;
-    float sinz_factor = p1.w;
-
-    p.z -= t;
-    float a = mod(p.z * 0.1, tau) * curl;
-    p.xy *= mat2(cos(a), sin(a), -sin(a), cos(a));
-    return thickness
-        - length(
-               vec2(cos(p.x) * cosx_factor, cos(p.y) * cosy_factor)
-               + vec2(sin(p.y) * siny_factor, sin(p.z) * sinz_factor));
-}
-
-void main()
-{
-    vec2 corner = alia_effect_region.xy;
-    vec2 size = alia_effect_region.zw;
-    float zoom = p0.x;
-    bool normalize_rays = p2.x > 0.5;
-    float step_scaling = p2.y;
-    int iterations = int(p2.z + 0.5);
-    bool invert = p2.w > 0.5;
-    vec3 color = p3.xyz;
-    float color_factor = p3.w;
-    float sine_factor = p4.x;
-    float depth_scale = p4.y;
-
-    // Map GL bottom-left fragment coords into Alia surface space.
-    vec2 frag = vec2(gl_FragCoord.x, alia_effect_surface.y - gl_FragCoord.y);
-
-    vec2 half_size = size / 2.0;
-    vec2 uv = (frag - corner - half_size) / (zoom * half_size.y);
-
-    vec3 direction;
-    if (normalize_rays)
-        direction = normalize(vec3(uv, 1.0)) * step_scaling;
-    else
-        direction = vec3(uv, step_scaling);
-
-    float distance_traveled = 0.0;
-    for (int i = 0; i < iterations; ++i)
-        distance_traveled += sdf(direction * distance_traveled);
-
-    vec3 p = vec3(direction * distance_traveled);
-    float depth_factor = invert ? (length(p) * depth_scale / 120.0)
-                                : (1.0 / (length(p) * depth_scale));
-    frag_color = vec4(
-        (sin(p) * sine_factor + color * color_factor) * depth_factor, 1.0);
-}
-)";
-#endif
 
 struct notargs_controls
 {
@@ -721,34 +537,16 @@ main()
     the_theme_dirty_flag = true;
 
     the_notargs_effect_id = 0;
-#if defined(ALIA_SHELL_BACKEND_D3D11)
-    alia_d3d11_effect_desc const d3d_effect = {
-        .pixel_shader_hlsl = notargs_ps_hlsl,
-        .entry_point = "ps_main",
-        .params_size = sizeof(notargs_effect_params),
-    };
-    if (alia_d3d11_effect_register(
-            alia_app_d3d11_renderer(&app), &d3d_effect, &the_notargs_effect_id)
+    alia_effect_desc const notargs_desc
+        = alia_notargs_effect_desc(sizeof(notargs_effect_params));
+    if (alia_ui_register_effect(
+            the_system, &notargs_desc, &the_notargs_effect_id)
         != 0)
     {
-        std::cerr << "notargs: D3D11 effect registration failed\n";
+        std::cerr << "notargs: effect registration failed\n";
         alia_app_destroy(&app);
         return 1;
     }
-#else
-    alia_gl_effect_desc const gl_effect = {
-        .fragment_shader_source = notargs_frag_src,
-        .params_size = sizeof(notargs_effect_params),
-    };
-    if (alia_gl_effect_register(
-            alia_app_gl_renderer(&app), &gl_effect, &the_notargs_effect_id)
-        != 0)
-    {
-        std::cerr << "notargs: GL effect registration failed\n";
-        alia_app_destroy(&app);
-        return 1;
-    }
-#endif
 
     alia_app_setup_stock_text(&app);
     the_msdf_text_engine = alia_app_text_engine(&app);

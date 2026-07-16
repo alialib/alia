@@ -1,3 +1,47 @@
+# Fetch a pinned Slang SDK (provides slangc) into the build tree.
+function(alia_fetch_slang_sdk)
+    set(ALIA_SLANG_VERSION "2026.13.1" CACHE STRING "Slang SDK version")
+    set(ALIA_SLANG_ROOT "${CMAKE_BINARY_DIR}/slang-sdk" CACHE PATH
+        "Slang SDK extract directory")
+
+    if(WIN32)
+        set(_slang_archive
+            "slang-${ALIA_SLANG_VERSION}-windows-x86_64.zip")
+    elseif(APPLE)
+        set(_slang_archive
+            "slang-${ALIA_SLANG_VERSION}-macos-x86_64.zip")
+    else()
+        set(_slang_archive
+            "slang-${ALIA_SLANG_VERSION}-linux-x86_64.zip")
+    endif()
+
+    set(_slang_url
+        "https://github.com/shader-slang/slang/releases/download/v${ALIA_SLANG_VERSION}/${_slang_archive}")
+    set(_slangc "${ALIA_SLANG_ROOT}/bin/slangc${CMAKE_EXECUTABLE_SUFFIX}")
+
+    if(NOT EXISTS "${_slangc}")
+        message(STATUS "Downloading Slang SDK ${ALIA_SLANG_VERSION}...")
+        file(MAKE_DIRECTORY "${ALIA_SLANG_ROOT}")
+        set(_zip "${ALIA_SLANG_ROOT}/${_slang_archive}")
+        file(DOWNLOAD "${_slang_url}" "${_zip}"
+            SHOW_PROGRESS
+            STATUS _dl_status)
+        list(GET _dl_status 0 _dl_code)
+        if(NOT _dl_code EQUAL 0)
+            list(GET _dl_status 1 _dl_msg)
+            message(FATAL_ERROR "Failed to download Slang SDK: ${_dl_msg}")
+        endif()
+        file(ARCHIVE_EXTRACT INPUT "${_zip}" DESTINATION "${ALIA_SLANG_ROOT}")
+    endif()
+
+    if(NOT EXISTS "${_slangc}")
+        message(FATAL_ERROR "slangc not found at ${_slangc}")
+    endif()
+    set(ALIA_SLANGC "${_slangc}" PARENT_SCOPE)
+endfunction()
+
+alia_fetch_slang_sdk()
+
 # Asset builder uses FreeType (FetchContent, GPOS kerning enabled) and msdf-atlas-gen (FetchContent).
 set(MSDF_ATLAS_BUILD_STANDALONE OFF CACHE BOOL "Do not build msdf-atlas-gen standalone" FORCE)
 set(MSDF_ATLAS_NO_ARTERY_FONT ON CACHE BOOL "Disable Artery Font" FORCE)
@@ -38,3 +82,9 @@ target_link_libraries(alia_asset_builder PRIVATE
     CURL::libcurl
     yaml-cpp::yaml-cpp)
 target_compile_features(alia_asset_builder PRIVATE cxx_std_17)
+
+add_executable(alia_shader_builder shader_builder.cpp)
+target_compile_features(alia_shader_builder PRIVATE cxx_std_17)
+
+# Expose slangc path to the parent project.
+set(ALIA_SLANGC "${ALIA_SLANGC}" PARENT_SCOPE)
