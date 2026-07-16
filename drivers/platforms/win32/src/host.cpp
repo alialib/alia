@@ -243,7 +243,16 @@ host_create_rtv(alia_win32_host* host)
     host->buffer_width = td.Width;
     host->buffer_height = td.Height;
 
-    hr = host->device->CreateRenderTargetView(backbuffer, nullptr, &host->rtv);
+    // The shaders output linear-space color and rely on the render target to
+    // encode linear->sRGB on write. Flip-model swapchains can't use an _SRGB
+    // buffer format, so we keep the buffer as UNORM and view it as _SRGB here
+    // to get the encode (matching the OpenGL framebuffer's behavior).
+    D3D11_RENDER_TARGET_VIEW_DESC rtv_desc{};
+    rtv_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+    hr = host->device->CreateRenderTargetView(
+        backbuffer, &rtv_desc, &host->rtv);
     backbuffer->Release();
     return SUCCEEDED(hr) && host->rtv;
 }
