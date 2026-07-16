@@ -12,4 +12,5 @@ target_link_libraries(alia_win32_platform PUBLIC
     d3d11
     dxgi
     user32
-    gdi32)
+    gdi32
+    winmm)

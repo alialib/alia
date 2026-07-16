@@ -19,6 +19,7 @@
 
 #include <d3d11.h>
 #include <dxgi1_3.h>
+#include <timeapi.h>
 
 #include <cmath>
 #include <cstdio>
@@ -78,6 +79,9 @@ struct alia_win32_host
     bool size_move_coalesce = false;
     int size_move_calm_frames = 0;
     bool size_move_timer_armed = false;
+    // True while we have raised the system timer resolution (timeBeginPeriod)
+    // for the duration of the size/move modal loop.
+    bool timer_period_raised = false;
 };
 
 namespace {
@@ -85,7 +89,8 @@ namespace {
 wchar_t const* const k_window_class = L"AliaWin32Host";
 wchar_t const* const k_render_class = L"AliaWin32Render";
 UINT_PTR const k_size_move_timer_id = 1;
-// Leave coalesce mode after this many presents with no intervening size change.
+// Leave coalesce mode after this many presents with no intervening size
+// change.
 int const k_size_move_calm_frames_to_exit = 3;
 
 alia_win32_host*
@@ -127,6 +132,28 @@ host_size_move_kill_timer(alia_win32_host* host)
         return;
     KillTimer(host->hwnd, k_size_move_timer_id);
     host->size_move_timer_armed = false;
+}
+
+// The size/move pump rides on a USER timer, whose accuracy is tied to the
+// system timer resolution. Raise it to ~1ms for the duration of the modal
+// loop so the pump fires at a steady cadence instead of the default ~15.6ms
+// granularity (which makes move/resize animation visibly choppy).
+void
+host_size_move_raise_timer_period(alia_win32_host* host)
+{
+    if (host->timer_period_raised)
+        return;
+    if (timeBeginPeriod(1) == TIMERR_NOERROR)
+        host->timer_period_raised = true;
+}
+
+void
+host_size_move_restore_timer_period(alia_win32_host* host)
+{
+    if (!host->timer_period_raised)
+        return;
+    timeEndPeriod(1);
+    host->timer_period_raised = false;
 }
 
 void
@@ -359,17 +386,17 @@ host_sync_swapchain_to_client(alia_win32_host* host, bool commit_buffers)
     bool const needs_grow
         = client_w > host->buffer_width || client_h > host->buffer_height;
     bool const allow_trim = !host->in_size_move;
-    bool const needs_trim = allow_trim
-                         && (host->buffer_width > client_w
-                             || host->buffer_height > client_h);
+    bool const needs_trim
+        = allow_trim
+       && (host->buffer_width > client_w || host->buffer_height > client_h);
 
     if (needs_grow || needs_trim)
     {
         UINT const new_w
             = needs_grow ? host_max_u(host->buffer_width, client_w) : client_w;
-        UINT const new_h = needs_grow
-                             ? host_max_u(host->buffer_height, client_h)
-                             : client_h;
+        UINT const new_h
+            = needs_grow ? host_max_u(host->buffer_height, client_h)
+                         : client_h;
 
         if (!host_resize_buffers(host, new_w, new_h))
         {
@@ -404,8 +431,7 @@ host_set_viewport(alia_win32_host* host)
     vp.MaxDepth = 1.f;
     host->context->RSSetViewports(1, &vp);
 
-    D3D11_RECT scissor{
-        0, 0, LONG(host->width), LONG(host->height)};
+    D3D11_RECT scissor{0, 0, LONG(host->width), LONG(host->height)};
     host->context->RSSetScissorRects(1, &scissor);
     host->context->OMSetRenderTargets(1, &host->rtv, nullptr);
 }
@@ -598,8 +624,7 @@ host_present_frame(alia_win32_host* host, bool nonblocking)
     // a waitable object. Size/move always uses it (even if vsync is off) so
     // we do not enqueue flip-model frames.
     bool const need_pace
-        = host->frame_latency_waitable
-       && (host->vsync || host->in_size_move);
+        = host->frame_latency_waitable && (host->vsync || host->in_size_move);
     if (need_pace)
     {
         DWORD const wait_ms = nonblocking ? 0u : 1000u;
@@ -638,10 +663,8 @@ host_present_frame(alia_win32_host* host, bool nonblocking)
 
     // Present(0)+RESTART during size/move: low Present blocking, drop stale
     // flips. Present(1) when idle with vsync.
-    UINT const sync_interval
-        = (host->vsync && !host->in_size_move) ? 1u : 0u;
-    UINT const present_flags
-        = host->in_size_move ? DXGI_PRESENT_RESTART : 0u;
+    UINT const sync_interval = (host->vsync && !host->in_size_move) ? 1u : 0u;
+    UINT const present_flags = host->in_size_move ? DXGI_PRESENT_RESTART : 0u;
     host->swapchain->Present(sync_interval, present_flags);
     ++host->frame_index;
 
@@ -659,9 +682,11 @@ host_present_frame(alia_win32_host* host, bool nonblocking)
             ++host->size_move_calm_frames;
             if (host->size_move_calm_frames >= k_size_move_calm_frames_to_exit)
             {
+                // Leave coalesce mode so WM_SIZE resumes its immediate-present
+                // fast path, but keep the pump timer running for the rest of
+                // the modal loop so paused resizes and moves keep animating.
                 host->size_move_coalesce = false;
                 host->size_move_calm_frames = 0;
-                host_size_move_kill_timer(host);
             }
         }
     }
@@ -869,7 +894,13 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 host->in_size_move = true;
                 host->size_move_coalesce = false;
                 host->size_move_calm_frames = 0;
-                host_size_move_kill_timer(host);
+                // The OS owns the message thread for the whole modal loop, so
+                // our normal run loop cannot present. Drive a steady repaint
+                // pump instead. This is what keeps animations alive while the
+                // window is being moved (no WM_SIZE is ever sent) and while a
+                // resize drag is paused (WM_SIZE stops firing).
+                host_size_move_raise_timer_period(host);
+                host_size_move_ensure_timer(host);
                 host_note_size_event(host);
             }
             return 0;
@@ -877,6 +908,7 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (host)
             {
                 host_size_move_kill_timer(host);
+                host_size_move_restore_timer_period(host);
                 host->in_size_move = false;
                 host->size_move_coalesce = false;
                 host->size_move_calm_frames = 0;
@@ -887,11 +919,11 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_TIMER:
             if (host && wParam == k_size_move_timer_id)
             {
-                if (host->in_size_move && host->size_move_coalesce)
-                {
+                // Steady pump for the size/move modal loop. Covers window
+                // moves and paused resizes; WM_SIZE still presents immediately
+                // for responsiveness while the pointer is actively resizing.
+                if (host->in_size_move)
                     host_present_frame(host, /*nonblocking=*/false);
-                    // Present may have left coalesce mode and killed the timer.
-                }
                 return 0;
             }
             break;
@@ -961,6 +993,7 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (host)
             {
                 host_size_move_kill_timer(host);
+                host_size_move_restore_timer_period(host);
                 host->running = false;
             }
             PostQuitMessage(0);
