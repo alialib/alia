@@ -5,6 +5,7 @@
 #include <alia/abi/ui/drawing.h>
 #include <alia/abi/ui/effects.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/ui/drawing.h>
 
@@ -928,6 +929,16 @@ alia_d3d11_renderer_attach(
         ALIA_PRIMITIVE_MATERIAL_ID,
         alia_material_vtable{.draw_bucket = render_primitive_command_list},
         renderer);
+
+    alia_renderer_ops const ops = {
+        .upload_msdf_atlas =
+            [](void* user, alia_msdf_atlas_image const* image) {
+                alia_d3d11_renderer_upload_msdf_atlas(
+                    static_cast<alia_d3d11_renderer*>(user), image);
+            },
+        .user = renderer,
+    };
+    alia_ui_system_set_renderer_ops(ui, &ops);
 }
 
 int

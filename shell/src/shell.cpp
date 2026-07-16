@@ -1,4 +1,4 @@
-#include <alia/shell/d3d11/shell.h>
+#include <alia/shell/shell.h>
 
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/prelude.h>
@@ -7,7 +7,6 @@
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/impl/events.hpp>
-#include <alia/renderers/d3d11/renderer.h>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
@@ -15,10 +14,10 @@
 
 using namespace alia;
 
-struct alia_d3d11_shell
+struct alia_shell
 {
     alia_ui_controller inner{};
-    alia_d3d11_shell_config config{};
+    alia_shell_config config{};
     alia_msdf_text_engine* text_engine = nullptr;
     std::vector<std::uint8_t> atlas_rgb;
 };
@@ -53,7 +52,7 @@ shell_draw_foundation_underlay(alia_context* ctx)
 void
 shell_controller(void* user_data, alia_context* ctx)
 {
-    auto* shell = static_cast<alia_d3d11_shell*>(user_data);
+    auto* shell = static_cast<alia_shell*>(user_data);
     ALIA_ASSERT(shell);
     ALIA_ASSERT(shell->inner.fn);
 
@@ -78,14 +77,14 @@ shell_controller(void* user_data, alia_context* ctx)
 
 extern "C" {
 
-alia_d3d11_shell*
-alia_d3d11_shell_create(void)
+alia_shell*
+alia_shell_create(void)
 {
-    return new alia_d3d11_shell{};
+    return new alia_shell{};
 }
 
 void
-alia_d3d11_shell_destroy(alia_d3d11_shell* shell)
+alia_shell_destroy(alia_shell* shell)
 {
     ALIA_ASSERT(shell);
     if (shell->text_engine)
@@ -98,10 +97,8 @@ alia_d3d11_shell_destroy(alia_d3d11_shell* shell)
 }
 
 void
-alia_d3d11_shell_set_controller(
-    alia_d3d11_shell* shell,
-    alia_ui_controller inner,
-    alia_d3d11_shell_config config)
+alia_shell_set_controller(
+    alia_shell* shell, alia_ui_controller inner, alia_shell_config config)
 {
     ALIA_ASSERT(shell);
     ALIA_ASSERT(inner.fn);
@@ -110,36 +107,35 @@ alia_d3d11_shell_set_controller(
 }
 
 alia_ui_controller
-alia_d3d11_shell_ui_controller(alia_d3d11_shell* shell)
+alia_shell_ui_controller(alia_shell* shell)
 {
     ALIA_ASSERT(shell);
     return alia_ui_controller{shell_controller, shell};
 }
 
 alia_msdf_text_engine*
-alia_d3d11_shell_text_engine(alia_d3d11_shell* shell)
+alia_shell_text_engine(alia_shell* shell)
 {
     ALIA_ASSERT(shell);
     return shell->text_engine;
 }
 
 bool
-alia_d3d11_shell_setup_text(
-    alia_d3d11_shell* shell,
+alia_shell_setup_text(
+    alia_shell* shell,
     alia_ui_system* ui,
-    alia_d3d11_renderer* renderer,
     alia_msdf_atlas_rle const* atlas_rle,
     alia_msdf_font_description const* font_descriptions,
     size_t font_count)
 {
     ALIA_ASSERT(shell);
     ALIA_ASSERT(ui);
-    ALIA_ASSERT(renderer);
     ALIA_ASSERT(atlas_rle);
     ALIA_ASSERT(font_descriptions);
     ALIA_ASSERT(font_count > 0);
+    ALIA_ASSERT(ui->renderer.upload_msdf_atlas);
 
-    alia_d3d11_shell_teardown_text(shell, ui);
+    alia_shell_teardown_text(shell, ui);
 
     shell->atlas_rgb.resize(atlas_rle->decompressed_size);
     alia_msdf_decompress_atlas_rle(
@@ -150,7 +146,7 @@ alia_d3d11_shell_setup_text(
         .width = atlas_rle->width,
         .height = atlas_rle->height,
     };
-    alia_d3d11_renderer_upload_msdf_atlas(renderer, &atlas_image);
+    ui->renderer.upload_msdf_atlas(ui->renderer.user, &atlas_image);
 
     shell->text_engine
         = alia_msdf_create_text_engine(font_descriptions, font_count);
@@ -159,7 +155,7 @@ alia_d3d11_shell_setup_text(
 }
 
 void
-alia_d3d11_shell_teardown_text(alia_d3d11_shell* shell, alia_ui_system* ui)
+alia_shell_teardown_text(alia_shell* shell, alia_ui_system* ui)
 {
     ALIA_ASSERT(shell);
     ALIA_ASSERT(ui);
@@ -174,25 +170,26 @@ alia_d3d11_shell_teardown_text(alia_d3d11_shell* shell, alia_ui_system* ui)
 }
 
 void
-alia_d3d11_shell_draw(alia_ui_system* ui)
+alia_shell_draw(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
     alia_ui_execute_draw_pass(ui);
 }
 
 void
-alia_d3d11_shell_frame(alia_ui_system* ui)
+alia_shell_frame(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
     alia_ui_system_update(ui);
-    alia_d3d11_shell_draw(ui);
+    alia_shell_draw(ui);
 }
 
 void
-alia_d3d11_shell_initial_refresh(alia_ui_system* ui)
+alia_shell_initial_refresh(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
     refresh_system(*ui);
+    // Mark the UI as needing a frame to be drawn.
     ui->ui_dirty = true;
 }
 

@@ -9,6 +9,7 @@
 #include <alia/abi/ui/effects.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/viewport.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/prelude.hpp>
@@ -707,6 +708,16 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
         },
         renderer);
     renderer_setup_blend();
+
+    alia_renderer_ops const ops = {
+        .upload_msdf_atlas =
+            [](void* user, alia_msdf_atlas_image const* image) {
+                alia_gl_renderer_upload_msdf_atlas(
+                    static_cast<alia_gl_renderer*>(user), image);
+            },
+        .user = renderer,
+    };
+    alia_ui_system_set_renderer_ops(ui, &ops);
 }
 
 int

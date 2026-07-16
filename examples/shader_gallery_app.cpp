@@ -4,14 +4,11 @@
 #include <cstring>
 #include <iostream>
 
-#if defined(ALIA_GALLERY_USE_D3D11)
-#include <alia/shell/d3d11/app.h>
-#include <alia/shell/d3d11/fonts.h>
-#include <alia/shell/d3d11/shell.h>
+#include <alia/shell/app.h>
+#if defined(ALIA_SHELL_BACKEND_D3D11)
+#include <alia/renderers/d3d11/renderer.h>
 #else
-#include <alia/shell/gl/app.h>
-#include <alia/shell/gl/fonts.h>
-#include <alia/shell/gl/shell.h>
+#include <alia/renderers/gl/renderer.h>
 #endif
 
 #include <alia/abi/base/arena.h>
@@ -46,11 +43,6 @@ using namespace alia;
 using namespace alia::operators;
 
 alia_msdf_text_engine* the_msdf_text_engine = nullptr;
-#if defined(ALIA_GALLERY_USE_D3D11)
-alia_d3d11_shell* the_shell = nullptr;
-#else
-alia_gl_shell* the_shell = nullptr;
-#endif
 
 #include "prototyping/msdf.h"
 #include "prototyping/panel.h"
@@ -87,7 +79,7 @@ struct notargs_effect_params
 
 static_assert(sizeof(notargs_effect_params) == 80);
 
-#if defined(ALIA_GALLERY_USE_D3D11)
+#if defined(ALIA_SHELL_BACKEND_D3D11)
 char const* const notargs_ps_hlsl = R"(
 cbuffer AliaEffectFrame : register(b0)
 {
@@ -689,11 +681,7 @@ update()
              * std::exp(static_cast<double>(the_controls.speed)) * 0.1;
     }
 
-#if defined(ALIA_GALLERY_USE_D3D11)
-    alia_d3d11_shell_draw(the_system);
-#else
-    alia_gl_shell_draw(the_system);
-#endif
+    alia_app_shell_draw(the_system);
 }
 
 static void
@@ -710,51 +698,10 @@ main()
         .vsync = true,
     };
 
-#if defined(ALIA_GALLERY_USE_D3D11)
-    alia_d3d11_app app;
-    alia_d3d11_app_config const config = {
-        .inner = {shader_gallery_root_controller, nullptr},
-        .shell = {
-            .draw_foundation_underlay = false,
-            .surface_padding = {},
-        },
-        .frame = {shader_gallery_frame, nullptr},
-        .continuous = true,
-        .title = "Alia Shader Gallery",
-        .window_state = alia_window_state_make(1200, 800),
-        .window_options = &window_options,
-    };
-    if (alia_d3d11_app_init(&config, &app) != 0)
-        return 1;
-
-    the_system = app.ui;
-    the_shell = app.shell;
-    the_theme_dirty_flag = true;
-
-    the_notargs_effect_id = 0;
-    alia_d3d11_effect_desc const d3d_effect = {
-        .pixel_shader_hlsl = notargs_ps_hlsl,
-        .entry_point = "ps_main",
-        .params_size = sizeof(notargs_effect_params),
-    };
-    if (alia_d3d11_effect_register(
-            app.renderer, &d3d_effect, &the_notargs_effect_id)
-        != 0)
-    {
-        std::cerr << "notargs: D3D11 effect registration failed\n";
-        alia_d3d11_app_destroy(&app);
-        return 1;
-    }
-
-    alia_d3d11_shell_setup_stock_text(app.shell, app.ui, app.renderer);
-    the_msdf_text_engine = alia_d3d11_shell_text_engine(app.shell);
-
-    alia_d3d11_app_run_loop(&config, &app);
-    alia_d3d11_app_destroy(&app);
-#else
-    // Web host returns after scheduling RAF; keep storage for the page lifetime.
-    static alia_gl_app app;
-    alia_gl_app_config const config = {
+    // Web host returns after scheduling RAF; keep storage for the page
+    // lifetime.
+    static alia_app app;
+    alia_app_config const config = {
         .inner = {shader_gallery_root_controller, nullptr},
         .shell = {
             .draw_foundation_underlay = false,
@@ -767,31 +714,48 @@ main()
         .window_options = &window_options,
         .canvas_selector = "#canvas",
     };
-    if (alia_gl_app_init(&config, &app) != 0)
+    if (alia_app_init(&config, &app) != 0)
         return 1;
 
-    the_system = app.ui;
-    the_shell = app.shell;
+    the_system = alia_app_ui(&app);
     the_theme_dirty_flag = true;
 
     the_notargs_effect_id = 0;
+#if defined(ALIA_SHELL_BACKEND_D3D11)
+    alia_d3d11_effect_desc const d3d_effect = {
+        .pixel_shader_hlsl = notargs_ps_hlsl,
+        .entry_point = "ps_main",
+        .params_size = sizeof(notargs_effect_params),
+    };
+    if (alia_d3d11_effect_register(
+            alia_app_d3d11_renderer(&app), &d3d_effect, &the_notargs_effect_id)
+        != 0)
+    {
+        std::cerr << "notargs: D3D11 effect registration failed\n";
+        alia_app_destroy(&app);
+        return 1;
+    }
+#else
     alia_gl_effect_desc const gl_effect = {
         .fragment_shader_source = notargs_frag_src,
         .params_size = sizeof(notargs_effect_params),
     };
     if (alia_gl_effect_register(
-            app.renderer, &gl_effect, &the_notargs_effect_id)
+            alia_app_gl_renderer(&app), &gl_effect, &the_notargs_effect_id)
         != 0)
     {
         std::cerr << "notargs: GL effect registration failed\n";
-        alia_gl_app_destroy(&app);
+        alia_app_destroy(&app);
         return 1;
     }
+#endif
 
-    alia_gl_shell_setup_stock_text(app.shell, app.ui, app.renderer);
-    the_msdf_text_engine = alia_gl_shell_text_engine(app.shell);
+    alia_app_setup_stock_text(&app);
+    the_msdf_text_engine = alia_app_text_engine(&app);
 
-    alia_gl_app_run_loop(&config, &app);
+    alia_app_run_loop(&config, &app);
+#ifndef __EMSCRIPTEN__
+    alia_app_destroy(&app);
 #endif
     return 0;
 }

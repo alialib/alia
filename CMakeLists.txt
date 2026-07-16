@@ -89,15 +89,14 @@ if(EMSCRIPTEN)
     add_subdirectory(drivers/platforms/web)
 endif()
 
-# Product shells: web+GL on Emscripten, Win32+D3D11 on Windows desktop.
-if(EMSCRIPTEN AND ALIA_ENABLE_OPENGL)
+# Product shell: shared UI shell + app bootstrap (D3D11 on Win32, GL on web).
+if((EMSCRIPTEN AND ALIA_ENABLE_OPENGL)
+        OR (WIN32 AND NOT EMSCRIPTEN AND TARGET alia_win32_platform))
     alia_add_host_library()
-    add_subdirectory(shell/gl)
-endif()
-
-if(WIN32 AND NOT EMSCRIPTEN AND TARGET alia_win32_platform)
-    alia_add_host_library()
-    add_subdirectory(shell/d3d11)
+    add_subdirectory(shell)
+    set(ALIA_EMSCRIPTEN_SHELL_FILE
+        "${CMAKE_SOURCE_DIR}/shell/shell_minimal.html")
+    add_subdirectory(shell/app)
 endif()
 
 add_subdirectory(apis/cpp)
@@ -162,32 +161,19 @@ if(ALIA_ENABLE_EXAMPLES)
     set_source_files_properties(
         "${CMAKE_SOURCE_DIR}/core/src/alia/ui/library/checkbox.cpp"
         PROPERTIES OBJECT_DEPENDS "${ALIA_FONTS_H}")
-    if(TARGET alia_gl_shell)
-        target_link_libraries(alia_gl_shell PUBLIC alia_font_assets)
-    endif()
-    if(TARGET alia_d3d11_shell)
-        target_link_libraries(alia_d3d11_shell PUBLIC alia_font_assets)
+    if(TARGET alia_shell)
+        target_link_libraries(alia_shell PUBLIC alia_font_assets)
     endif()
 endif()
 
 if(ALIA_ENABLE_EXAMPLES)
     add_executable(alia_app
         ${PROJECT_SOURCE_DIR}/examples/app.cpp)
-    if(WIN32 AND TARGET alia_d3d11_shell)
-        target_link_libraries(alia_app PRIVATE alia_cpp alia_d3d11_shell)
-        target_compile_definitions(alia_app PRIVATE ALIA_APP_USE_D3D11=1)
-    else()
-        target_link_libraries(alia_app PRIVATE alia_cpp alia_gl_shell)
-    endif()
+    target_link_libraries(alia_app PRIVATE alia_cpp alia_shell_app)
 
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp)
-    if(WIN32 AND TARGET alia_d3d11_shell)
-        target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_d3d11_shell)
-        target_compile_definitions(alia_shader_gallery PRIVATE ALIA_GALLERY_USE_D3D11=1)
-    else()
-        target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_gl_shell)
-    endif()
+    target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_shell_app)
 
     if(ALIA_ENABLE_GLFW AND ALIA_ENABLE_OPENGL AND NOT EMSCRIPTEN
             AND TARGET alia_glfw)

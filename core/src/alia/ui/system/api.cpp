@@ -6,6 +6,7 @@
 
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/ui/system/object.h>
@@ -181,6 +182,19 @@ alia_ui_system_set_host_window_ops(
         return;
     }
     ui->host_window = *ops;
+}
+
+void
+alia_ui_system_set_renderer_ops(
+    alia_ui_system* ui, alia_renderer_ops const* ops)
+{
+    ALIA_ASSERT(ui);
+    if (!ops)
+    {
+        ui->renderer = {};
+        return;
+    }
+    ui->renderer = *ops;
 }
 
 } // extern "C"

@@ -17,6 +17,7 @@
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/host_window.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/drawing.h>
 
@@ -58,6 +59,8 @@ struct alia_ui_system
     alia_ui_controller controller{};
 
     alia_host_window_ops host_window{};
+
+    alia_renderer_ops renderer{};
 
     // alia__shared_ptr<alia::surface> surface;
     alia_vec2i surface_size;
