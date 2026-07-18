@@ -167,9 +167,16 @@ if(ALIA_ENABLE_EXAMPLES)
 endif()
 
 if(ALIA_ENABLE_EXAMPLES)
+    set(ALIA_DEMO_COMMON_SOURCES
+        ${PROJECT_SOURCE_DIR}/examples/common/demo_text.cpp)
+    set(ALIA_DEMO_COMMON_INCLUDE
+        ${PROJECT_SOURCE_DIR}/examples)
+
     add_executable(alia_app
-        ${PROJECT_SOURCE_DIR}/examples/app.cpp)
+        ${PROJECT_SOURCE_DIR}/examples/app.cpp
+        ${ALIA_DEMO_COMMON_SOURCES})
     target_link_libraries(alia_app PRIVATE alia_cpp alia_shell_app)
+    target_include_directories(alia_app PRIVATE ${ALIA_DEMO_COMMON_INCLUDE})
 
     set(ALIA_GALLERY_SHADER_DIR
         "${PROJECT_SOURCE_DIR}/examples/shader_gallery")
@@ -232,9 +239,11 @@ if(ALIA_ENABLE_EXAMPLES)
 
     add_executable(alia_shader_gallery
         ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp
+        ${ALIA_DEMO_COMMON_SOURCES}
         "${ALIA_NOTARGS_GEN_CPP}")
     target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_shell_app)
     target_include_directories(alia_shader_gallery PRIVATE
+        ${ALIA_DEMO_COMMON_INCLUDE}
         "${ALIA_GEN_DIR}"
         "${ALIA_GALLERY_SHADER_DIR}")
 

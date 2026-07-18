@@ -5,6 +5,7 @@
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/text.h>
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -41,6 +42,15 @@ alia_shell_ui_controller(alia_shell* shell);
 // Non-owning pointer to the active MSDF text engine, if text setup succeeded.
 alia_msdf_text_engine*
 alia_shell_text_engine(alia_shell* shell);
+
+// Number of stock typefaces registered during text setup (one per MSDF font).
+size_t
+alia_shell_typeface_count(alia_shell* shell);
+
+// Typeface ID for stock font `index` (same order as the MSDF font table).
+// Asserts if text is not set up or `index` is out of range.
+alia_typeface_id
+alia_shell_typeface(alia_shell* shell, size_t index);
 
 // Decompress the atlas, upload via `ui->renderer.upload_msdf_atlas`, and bind
 // an MSDF text engine. Requires renderer ops already installed on `ui`.

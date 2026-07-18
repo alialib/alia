@@ -13,6 +13,8 @@ add_library(alia_core STATIC
     src/alia/ui/drawing.cpp
     src/alia/ui/effects.cpp
     src/alia/ui/msdf.cpp
+    src/alia/ui/text/system.cpp
+    src/alia/ui/text/layout.cpp
     src/alia/ui/animation.cpp
     src/alia/ui/input/pointer.cpp
     src/alia/ui/input/regions.cpp

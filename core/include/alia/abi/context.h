@@ -12,6 +12,7 @@ typedef struct alia_event_traversal alia_event_traversal;
 typedef struct alia_stack alia_stack;
 typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_style alia_style;
+typedef struct alia_resolved_font alia_resolved_font;
 typedef struct alia_geometry_context alia_geometry_context;
 typedef struct alia_input_state alia_input_state;
 typedef struct alia_layout_context alia_layout_context;
@@ -31,6 +32,8 @@ typedef struct alia_context
     // UI-level capabilities
     alia_ui_system* system;
     alia_style* style;
+    // NULL until a font is pushed!
+    alia_resolved_font const* active_font;
     alia_geometry_context* geometry;
     alia_input_state* input;
     alia_layout_context* layout;

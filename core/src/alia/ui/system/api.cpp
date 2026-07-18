@@ -124,6 +124,11 @@ alia_ui_system_init(
 
     ui->ui_dirty = true;
 
+    // Reserve typeface ID 0 as the "invalid" sentinel so registered IDs map
+    // directly to entry indices.
+    ui->typefaces.push_back(
+        alia_resolved_typeface{ALIA_TYPEFACE_ID_INVALID, nullptr, nullptr});
+
     return ui;
 }
 

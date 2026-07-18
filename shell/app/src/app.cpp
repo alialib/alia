@@ -14,7 +14,8 @@
 #elif defined(ALIA_SHELL_BACKEND_GL)
 #include <alia/renderers/gl/renderer.h>
 #else
-#error "alia_shell_app requires ALIA_SHELL_BACKEND_D3D11 or ALIA_SHELL_BACKEND_GL"
+#error                                                                        \
+    "alia_shell_app requires ALIA_SHELL_BACKEND_D3D11 or ALIA_SHELL_BACKEND_GL"
 #endif
 
 namespace {
@@ -161,7 +162,6 @@ alia_app_init(alia_app_config const* config, alia_app* app)
         return 1;
     }
 
-    alia_shell_initial_refresh(state->ui);
     return 0;
 }
 
@@ -175,6 +175,12 @@ alia_app_run_loop(alia_app_config const* config, alia_app* app)
     alia_app_state* state = as_state(app);
     ALIA_ASSERT(state->ui);
     ALIA_ASSERT(state->host);
+
+    // Perform the initial layout refresh now (rather than at init time) so
+    // that any text setup done by the caller between `alia_app_init` and here
+    // - e.g. `alia_app_setup_stock_text`, which registers the shell's root
+    // font - is in place before the controller first runs.
+    alia_shell_initial_refresh(state->ui);
 
     alia_host_run_config const run_config = {
         .ui = state->ui,
@@ -261,6 +267,18 @@ alia_msdf_text_engine*
 alia_app_text_engine(alia_app* app)
 {
     return alia_shell_text_engine(as_state(app)->shell);
+}
+
+size_t
+alia_app_typeface_count(alia_app* app)
+{
+    return alia_shell_typeface_count(as_state(app)->shell);
+}
+
+alia_typeface_id
+alia_app_typeface(alia_app* app, size_t index)
+{
+    return alia_shell_typeface(as_state(app)->shell, index);
 }
 
 void

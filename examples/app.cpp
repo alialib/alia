@@ -41,8 +41,6 @@
 using namespace alia;
 using namespace alia::operators;
 
-constexpr rgba GRAY = {0.5f, 0.5f, 0.5f, 1.0f};
-
 static alia_srgb8 const primary_colors[] = {
     hex_color("94c1fd"), // hex_color("#154DCF"),
     hex_color("#6f42c1"),
@@ -51,9 +49,6 @@ static alia_srgb8 const primary_colors[] = {
 static int primary_index = 0;
 
 alia_ui_system* the_system;
-alia_msdf_text_engine* the_msdf_text_engine;
-alia_style the_style = {.spacing = 10.0f};
-float the_time = 0.0f;
 
 // Local widget style overrides for the content pane.
 static alia_switch_style local_switch_style;
@@ -66,10 +61,9 @@ static float demo_spacing = 6.f;
 static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
 
+#include "common/demo_text.hpp"
 #include "prototyping/allocation_probe.h"
 #include "prototyping/flow_panel.h"
-#include "prototyping/layout_mods.h"
-#include "prototyping/msdf.h"
 #include "prototyping/panel.h"
 #include "prototyping/rect.h"
 
@@ -150,32 +144,24 @@ abort_pass(context& ctx)
     throw pass_aborted();
 }
 
-#include "prototyping/demos.h"
-
 void
 do_heading(context& ctx, char const* text)
 {
-    do_text(
+    demo_text(
         ctx,
-        2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2),
-        18.f,
         text,
-        NO_FLAGS,
-        1);
+        &demo_get_fonts().heading_18,
+        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
 }
 
 void
 do_subheading(context& ctx, char const* text)
 {
-    do_text(
+    demo_text(
         ctx,
-        2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_1),
-        14.f,
         text,
-        NO_FLAGS,
-        1);
+        &demo_get_fonts().heading_14,
+        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_1));
 }
 
 void
@@ -188,15 +174,14 @@ do_radio_with_text(
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -214,15 +199,14 @@ do_checkbox_with_text(
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id
             = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, style);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -239,15 +223,14 @@ do_switch_with_text(
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y, style);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -265,15 +248,14 @@ do_node_expander_with_text(
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id
             = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y, style);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -522,12 +504,11 @@ do_collapsible_demo(context& ctx)
 
     alia::collapsible(ctx, &collapsed_signal, [&]() {
         flow(ctx, FILL, [&]() {
-            do_text(
+            demo_text(
                 ctx,
-                2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                14.f,
-                lorem_ipsum);
+                lorem_ipsum,
+                &demo_get_fonts().body_14,
+                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
         });
     });
 }
@@ -604,26 +585,21 @@ do_content(context& ctx)
         // do_heading(ctx, "");
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
-            do_text(
+            demo_text(
                 ctx,
-                2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                14.f,
-                lorem_ipsum);
-            do_text(
-                ctx,
-                2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                14.f,
                 lorem_ipsum,
-                NO_FLAGS,
-                1);
-            do_text(
+                &demo_get_fonts().body_14,
+                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+            demo_text(
                 ctx,
-                2,
-                alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-                14.f,
-                lorem_ipsum);
+                lorem_ipsum,
+                &demo_get_fonts().heading_14,
+                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+            demo_text(
+                ctx,
+                lorem_ipsum,
+                &demo_get_fonts().body_14,
+                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
         });
         do_heading(ctx, "FLOW PANEL");
         {
@@ -646,64 +622,54 @@ do_content(context& ctx)
                 alia::line_gap(line_gap),
                 alia::minimum_line_height(minimum_line_height),
                 [&]() {
-                    // do_flow_panel(
-                    //     ctx,
-                    //     1,
-                    //     alia_edge_offsets_make_uniform(20.f),
-                    //     ctx.palette->foundation.background.weaker_1,
-                    //     [&]() {
-                    do_text(
+                    demo_text(
                         ctx,
-                        2,
-                        alia_srgba8_from_srgb8(
-                            ctx.palette->foundation.text.base),
-                        14.f,
-                        lorem_ipsum);
-                    do_text(
+                        lorem_ipsum,
+                        &demo_get_fonts().body_14,
+                        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                    demo_text(
                         ctx,
-                        2,
-                        alia_srgba8_from_srgb8(
-                            ctx.palette->foundation.text.base),
-                        14.f,
-                        lorem_ipsum);
+                        lorem_ipsum,
+                        &demo_get_fonts().body_14,
+                        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
                     flow(
                         ctx,
                         alia::line_gap(40.f),
                         alia::minimum_line_height(40.f),
                         [&]() {
-                            do_text(
+                            demo_text(
                                 ctx,
-                                2,
-                                alia_srgba8_from_srgb8(
-                                    ctx.palette->foundation.text.weaker_1),
-                                14.f,
                                 "Nested flow (40px line gap and minimum line "
                                 "height). "
                                 "These lines should be more spaced than the "
-                                "outer flow when the outer sliders are low.");
+                                "outer flow when the outer sliders are low.",
+                                &demo_get_fonts().body_14,
+                                demo_text_color(
+                                    ALIA_PALETTE_RAMP_LEVEL_WEAKER_1));
                         });
                     do_flow_panel(
                         ctx,
-                        1,
+                        0,
                         alia_edge_offsets_make_uniform(8.f),
                         ctx.palette->primary.subtle,
                         [&]() {
-                            do_text(
+                            alia_palette_color const on_subtle
+                                = alia_palette_color_make(
+                                    alia_palette_index_swatch(
+                                        ALIA_PALETTE_SWATCH_PRIMARY,
+                                        ALIA_PALETTE_SWATCH_PART_ON_SUBTLE),
+                                    0xff);
+                            demo_text(
                                 ctx,
-                                2,
-                                alia_srgba8_from_srgb8(
-                                    ctx.palette->primary.on_subtle),
-                                14.f,
-                                "Panel text A.");
-                            do_text(
+                                "Panel text A.",
+                                &demo_get_fonts().body_14,
+                                on_subtle);
+                            demo_text(
                                 ctx,
-                                2,
-                                alia_srgba8_from_srgb8(
-                                    ctx.palette->primary.on_subtle),
-                                14.f,
-                                "Panel text B (gap from outer flow slider).");
+                                "Panel text B (gap from outer flow slider).",
+                                &demo_get_fonts().body_14,
+                                on_subtle);
                         });
-                    //});
                 });
         }
     });
@@ -811,9 +777,8 @@ update()
         last_frame_time = std::chrono::high_resolution_clock::now();
     auto const start_time = std::chrono::high_resolution_clock::now();
 
-    AllocProbeResult result = probe_allocations([&]() {
-        alia_app_shell_frame(the_system);
-    });
+    AllocProbeResult result
+        = probe_allocations([&]() { alia_app_shell_frame(the_system); });
 
     auto const end_time = std::chrono::high_resolution_clock::now();
     // auto const refresh_time = std::chrono::duration_cast<
@@ -895,7 +860,7 @@ main()
     }
 
     alia_app_setup_stock_text(&app);
-    the_msdf_text_engine = alia_app_text_engine(&app);
+    demo_setup_fonts(&app);
 
     alia_app_run_loop(&config, &app);
 #ifndef __EMSCRIPTEN__

@@ -6,6 +6,7 @@
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/text.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
@@ -20,6 +21,13 @@ struct alia_shell
     alia_shell_config config{};
     alia_msdf_text_engine* text_engine = nullptr;
     std::vector<std::uint8_t> atlas_rgb;
+    // core typeface IDs for each MSDF font registered at setup (index-aligned
+    // with the MSDF font table)
+    std::vector<alia_typeface_id> typefaces;
+    // root/default font - This is pre-resolved at text-setup time and pushed
+    // as the active font before the app controller runs. `typeface.id` is
+    // `ALIA_TYPEFACE_ID_INVALID` until setup.
+    alia_resolved_font resolved_default_font{};
 };
 
 namespace {
@@ -62,15 +70,27 @@ shell_controller(void* user_data, alia_context* ctx)
         shell_draw_foundation_underlay(ctx);
     }
 
+    // Establish the root font so components (e.g. `alia_text`) have an active
+    // font. The resolved record lives on the shell (filled at setup), so this
+    // is just a pointer push - no substrate use.
+    bool const has_font
+        = shell->resolved_default_font.typeface.id != ALIA_TYPEFACE_ID_INVALID;
+    if (has_font)
+        alia_font_push(ctx, &shell->resolved_default_font);
+
     if (edge_offsets_is_zero(shell->config.surface_padding))
     {
         shell->inner.fn(shell->inner.user_data, ctx);
-        return;
+    }
+    else
+    {
+        alia_layout_edge_offsets_begin(ctx, shell->config.surface_padding, 0);
+        shell->inner.fn(shell->inner.user_data, ctx);
+        alia_layout_edge_offsets_end(ctx);
     }
 
-    alia_layout_edge_offsets_begin(ctx, shell->config.surface_padding, 0);
-    shell->inner.fn(shell->inner.user_data, ctx);
-    alia_layout_edge_offsets_end(ctx);
+    if (has_font)
+        alia_font_pop(ctx);
 }
 
 } // namespace
@@ -120,6 +140,21 @@ alia_shell_text_engine(alia_shell* shell)
     return shell->text_engine;
 }
 
+size_t
+alia_shell_typeface_count(alia_shell* shell)
+{
+    ALIA_ASSERT(shell);
+    return shell->typefaces.size();
+}
+
+alia_typeface_id
+alia_shell_typeface(alia_shell* shell, size_t index)
+{
+    ALIA_ASSERT(shell);
+    ALIA_ASSERT(index < shell->typefaces.size());
+    return shell->typefaces[index];
+}
+
 bool
 alia_shell_setup_text(
     alia_shell* shell,
@@ -151,6 +186,34 @@ alia_shell_setup_text(
     shell->text_engine
         = alia_msdf_create_text_engine(font_descriptions, font_count);
     alia_ui_bind_msdf_text_engine(ui, shell->text_engine);
+
+    // Register every MSDF font as a core typeface, then adopt font 0 at a
+    // default size as the root font. Resolve once into shell storage so the
+    // controller can push a stable pointer without touching the substrate.
+    if (shell->text_engine)
+    {
+        shell->typefaces.reserve(font_count);
+        for (size_t i = 0; i < font_count; ++i)
+        {
+            shell->typefaces.push_back(
+                alia_msdf_register_typeface(ui, shell->text_engine, i));
+        }
+
+        float const size = 15.f;
+        alia_resolved_typeface const resolved
+            = alia_typeface_resolve(ui, shell->typefaces[0]);
+        ALIA_ASSERT(
+            resolved.engine && resolved.engine->vtable
+            && resolved.engine->vtable->get_font_metrics);
+        shell->resolved_default_font.typeface = resolved;
+        shell->resolved_default_font.size = size;
+        resolved.engine->vtable->get_font_metrics(
+            resolved.engine,
+            resolved.engine_handle,
+            size,
+            &shell->resolved_default_font.metrics);
+    }
+
     return shell->text_engine != nullptr;
 }
 
@@ -166,6 +229,8 @@ alia_shell_teardown_text(alia_shell* shell, alia_ui_system* ui)
         alia_msdf_destroy_text_engine(shell->text_engine);
         shell->text_engine = nullptr;
     }
+    shell->typefaces.clear();
+    shell->resolved_default_font = alia_resolved_font{};
     shell->atlas_rgb.clear();
 }
 

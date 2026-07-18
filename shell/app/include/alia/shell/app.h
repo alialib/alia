@@ -69,6 +69,12 @@ alia_app_setup_stock_text(alia_app* app);
 alia_msdf_text_engine*
 alia_app_text_engine(alia_app* app);
 
+size_t
+alia_app_typeface_count(alia_app* app);
+
+alia_typeface_id
+alia_app_typeface(alia_app* app, size_t index);
+
 // Update + draw for one frame (call from the host frame handler).
 void
 alia_app_shell_frame(alia_ui_system* ui);

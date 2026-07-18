@@ -6,6 +6,7 @@
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/text.h>
 #include <alia/base/stack.h>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
@@ -94,6 +95,9 @@ struct alia_ui_system
 
     // optional MSDF text engine used by core widgets that render glyphs
     alia_msdf_text_engine* msdf_text_engine = nullptr;
+
+    // typeface registry
+    std::vector<alia_resolved_typeface> typefaces;
 
     // pending timer events
     std::priority_queue<

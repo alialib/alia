@@ -69,6 +69,9 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .tick_count = sys.tick_count,
         .system = &sys,
         .style = &the_style,
+        // No active font until something pushes one (see `alia_font_push`).
+        // Using text before then is a programming error and asserts.
+        .active_font = nullptr,
         .geometry = &geometry,
         .input = &sys.input,
         .layout = &layout,

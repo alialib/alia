@@ -40,9 +40,7 @@
 using namespace alia;
 using namespace alia::operators;
 
-alia_msdf_text_engine* the_msdf_text_engine = nullptr;
-
-#include "prototyping/msdf.h"
+#include "common/demo_text.hpp"
 #include "prototyping/panel.h"
 
 struct notargs_controls
@@ -161,14 +159,11 @@ with_spacing(context& ctx, float spacing, Content&& content)
 void
 do_heading(context& ctx, char const* text)
 {
-    do_text(
+    demo_text(
         ctx,
-        2,
-        alia_srgba8_from_srgb8(ctx.palette->foundation.text.stronger_2),
-        18.f,
         text,
-        NO_FLAGS,
-        1);
+        &demo_get_fonts().heading_18,
+        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
 }
 
 void
@@ -178,15 +173,14 @@ do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id
             = alia_do_radio(&ctx, value, ALIA_CENTER_Y, nullptr);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -200,15 +194,14 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id
             = alia_do_switch(&ctx, value, ALIA_CENTER_Y, nullptr);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -222,15 +215,14 @@ do_checkbox_with_text(context& ctx, alia_bool_signal* value, char const* text)
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
         alia_element_id id
             = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, nullptr);
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(
-                value->flags & ALIA_SIGNAL_WRITABLE
-                    ? ctx.palette->foundation.text.base
-                    : ctx.palette->foundation.text.weaker_2),
-            14.f,
             text,
+            &demo_get_fonts().body_14,
+            demo_text_color(
+                (value->flags & ALIA_SIGNAL_WRITABLE)
+                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
+                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
             CENTER_Y);
         alia_element_box_region(
             &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
@@ -247,12 +239,11 @@ control_slider_d(
     double step)
 {
     row(ctx, [&]() {
-        do_text(
+        demo_text(
             ctx,
-            2,
-            alia_srgba8_from_srgb8(ctx.palette->foundation.text.base),
-            14.f,
             label,
+            &demo_get_fonts().body_14,
+            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
             CENTER_Y);
         flow(ctx, GROW, [&]() {
             alia_do_slider_d(
@@ -319,13 +310,11 @@ do_theme_controls(context& ctx)
                                 abort_pass(ctx);
                             }
                         });
-                        do_text(
+                        demo_text(
                             ctx,
-                            2,
-                            alia_srgba8_from_srgb8(
-                                ctx.palette->foundation.text.base),
-                            14.f,
                             " ",
+                            &demo_get_fonts().body_14,
+                            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
                             CENTER_Y);
                         spacer(ctx, {0, 0}, GROW);
                         with_spacing(ctx, 0, [&] {
@@ -549,7 +538,7 @@ main()
     }
 
     alia_app_setup_stock_text(&app);
-    the_msdf_text_engine = alia_app_text_engine(&app);
+    demo_setup_fonts(&app);
 
     alia_app_run_loop(&config, &app);
 #ifndef __EMSCRIPTEN__

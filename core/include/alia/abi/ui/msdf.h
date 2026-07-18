@@ -5,6 +5,7 @@
 #include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/text.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -115,6 +116,14 @@ alia_msdf_create_text_engine(
 
 void
 alia_msdf_destroy_text_engine(alia_msdf_text_engine* ctx);
+
+// Register one of the engine's fonts as a core typeface, returning its
+// `alia_typeface_id`. This adapts the MSDF engine to the abstract text engine
+// interface so the font can be resolved, activated, and drawn through the core
+// text system.
+alia_typeface_id
+alia_msdf_register_typeface(
+    alia_ui_system* ui, alia_msdf_text_engine* engine, size_t font_index);
 
 alia_msdf_font_metrics const*
 alia_msdf_get_font_metrics(alia_msdf_text_engine* ctx, size_t font_index);

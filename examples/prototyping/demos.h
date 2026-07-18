@@ -133,6 +133,10 @@ nested_flow_demo(context& ctx)
 
 #endif
 
+#if 0
+// Superseded by `alia_text` in the main demo. Re-enable (and migrate off
+// `do_text`) if you want these layout experiments again.
+
 void
 mixed_flow_demo(alia_context& ctx)
 {
@@ -156,29 +160,6 @@ mixed_flow_demo(alia_context& ctx)
                     x += 0.1f;
                 }
 
-                // panel(
-                //     ctx,
-                //     1,
-                //     alia_srgb8{
-                //         uint8_t(0xff * 0.05f),
-                //         uint8_t(0xff * 0.05f),
-                //         uint8_t(0xff * 0.06f)},
-                //     min_size({0, 0})
-                //         | margins(
-                //             {.left = 10,
-                //              .right = 10,
-                //              .top = 10,
-                //              .bottom = 10}),
-                //     [&] {
-                //         do_text(
-                //             ctx,
-                //             2,
-                //             alia_srgba8_from_srgb8(
-                //                 ctx.palette->foundation.text.base),
-                //             12 + i * 6,
-                //             "panel",
-                //             BASELINE_Y);
-                //     });
                 do_text(
                     ctx,
                     1,
@@ -186,8 +167,6 @@ mixed_flow_demo(alia_context& ctx)
                     12 + i * 4,
                     lorem_ipsum,
                     BASELINE_Y);
-
-                // spacer(ctx, 0.f);
             }
         });
     });
@@ -230,6 +209,8 @@ block_flow_demo(alia_context& ctx)
         }
     });
 }
+
+#endif
 
 #if 0
 
