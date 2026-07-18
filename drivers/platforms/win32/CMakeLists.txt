@@ -11,6 +11,7 @@ target_link_libraries(alia_win32_platform PUBLIC
     alia_core
     d3d11
     dxgi
+    dcomp
     user32
     gdi32
     winmm)
