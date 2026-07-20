@@ -9,8 +9,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/drawing.h>
-#include <alia/abi/ui/effects.h>
+#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -28,7 +28,7 @@
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
 #include <alia/prelude.hpp>
-#include <alia/ui/drawing.h>
+#include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/internal_api.h>
@@ -121,8 +121,8 @@ make_notargs_params()
     p.sinz_factor = the_controls.include_sinz ? 1.0f : 0.0f;
     p.normalize_rays = the_controls.normalize_rays ? 1.0f : 0.0f;
     p.step_scaling = float(the_controls.step_scaling);
-    p.iterations = float(
-        std::lround(std::clamp(the_controls.iterations, 0.0, 120.0)));
+    p.iterations
+        = float(std::lround(std::clamp(the_controls.iterations, 0.0, 120.0)));
     p.invert = the_light_theme_flag ? 0.0f : 1.0f;
     float rgb[3];
     shader_color_for_seed(the_seed_index, rgb);
@@ -451,7 +451,7 @@ shader_gallery_root(context& ctx)
                             &effect_params,
                             sizeof(effect_params),
                             ALIA_GROW | ALIA_FILL,
-                            nullptr);
+                            alia_vec2f_make(100.f, 100.f));
                     });
             });
         });

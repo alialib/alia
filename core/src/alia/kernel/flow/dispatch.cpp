@@ -33,7 +33,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
             .id = 0,
         },
         .next_clip_id = 1,
-        .z_base = 0,
+        .z_base = ALIA_DEFAULT_Z_BASE,
     };
 
     alia_layout_context layout;

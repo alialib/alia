@@ -6,7 +6,7 @@
 #include <alia/abi/context.h>
 #include <alia/abi/kernel/signal.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/palette.h>

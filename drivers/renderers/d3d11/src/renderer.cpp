@@ -2,12 +2,14 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing.h>
-#include <alia/abi/ui/effects.h>
+#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/system.h>
+#include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
-#include <alia/ui/drawing.h>
+#include <alia/ui/drawing/system.h>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -36,6 +38,16 @@ struct d3d11_effect_slot
     ID3D11Buffer* params_cb = nullptr;
     size_t params_size = 0;
     size_t cb_bytes = 0;
+};
+
+struct d3d11_offscreen_target
+{
+    bool in_use = false;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    ID3D11Texture2D* tex = nullptr;
+    ID3D11RenderTargetView* rtv = nullptr;
+    ID3D11ShaderResourceView* srv = nullptr;
 };
 
 struct alia_d3d11_renderer
@@ -69,6 +81,18 @@ struct alia_d3d11_renderer
     // Stock frame CB (region + surface) bound at b0 for all effects.
     ID3D11Buffer* effect_frame_cb = nullptr;
     std::vector<std::unique_ptr<d3d11_effect_slot>> effects;
+
+    // Offscreen draw targets. Slot 0 is unused (ALIA_DRAW_TARGET_PRIMARY).
+    std::vector<d3d11_offscreen_target> draw_targets;
+    // Captured at draw_pass_begin; primary bind restores these.
+    ID3D11RenderTargetView* pass_rtv = nullptr;
+    ID3D11DepthStencilView* pass_dsv = nullptr;
+
+    ID3D11VertexShader* blit_vs = nullptr;
+    ID3D11PixelShader* blit_ps = nullptr;
+    ID3D11InputLayout* blit_layout = nullptr;
+    ID3D11Buffer* blit_cb = nullptr;
+    ID3D11SamplerState* blit_sampler = nullptr;
 };
 
 namespace {
@@ -493,6 +517,119 @@ renderer_init_gpu(alia_d3d11_renderer* renderer)
     if (FAILED(hr))
         return false;
 
+    char const* const k_blit_hlsl = R"(
+cbuffer BlitCB : register(b0)
+{
+    float4x4 u_projection;
+    float2 dest_min;
+    float2 dest_size;
+    float opacity;
+    float3 _pad;
+};
+
+Texture2D u_source : register(t0);
+SamplerState u_samp : register(s0);
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv : TEXCOORD0;
+    nointerpolation float opacity : TEXCOORD1;
+};
+
+PSIn vs_main(float2 a_pos : POSITION)
+{
+    PSIn o;
+    float2 world = a_pos * dest_size + dest_min;
+    o.pos = mul(u_projection, float4(world, 0.0, 1.0));
+    o.uv = a_pos;
+    o.opacity = opacity;
+    return o;
+}
+
+float4 ps_main(PSIn input) : SV_TARGET
+{
+    float4 c = u_source.Sample(u_samp, input.uv);
+    return c * input.opacity;
+}
+)";
+
+    ID3DBlob* blit_vs_blob = nullptr;
+    ID3DBlob* blit_ps_blob = nullptr;
+    if (!compile_shader(
+            k_blit_hlsl,
+            "alia_d3d11_blit.hlsl",
+            "vs_main",
+            "vs_5_0",
+            &blit_vs_blob))
+        return false;
+    if (!compile_shader(
+            k_blit_hlsl,
+            "alia_d3d11_blit.hlsl",
+            "ps_main",
+            "ps_5_0",
+            &blit_ps_blob))
+    {
+        blit_vs_blob->Release();
+        return false;
+    }
+    hr = device->CreateVertexShader(
+        blit_vs_blob->GetBufferPointer(),
+        blit_vs_blob->GetBufferSize(),
+        nullptr,
+        &renderer->blit_vs);
+    if (FAILED(hr))
+    {
+        blit_vs_blob->Release();
+        blit_ps_blob->Release();
+        return false;
+    }
+    hr = device->CreatePixelShader(
+        blit_ps_blob->GetBufferPointer(),
+        blit_ps_blob->GetBufferSize(),
+        nullptr,
+        &renderer->blit_ps);
+    blit_ps_blob->Release();
+    if (FAILED(hr))
+    {
+        blit_vs_blob->Release();
+        return false;
+    }
+    D3D11_INPUT_ELEMENT_DESC blit_layout_desc[] = {
+        {"POSITION",
+         0,
+         DXGI_FORMAT_R32G32_FLOAT,
+         0,
+         0,
+         D3D11_INPUT_PER_VERTEX_DATA,
+         0},
+    };
+    hr = device->CreateInputLayout(
+        blit_layout_desc,
+        1,
+        blit_vs_blob->GetBufferPointer(),
+        blit_vs_blob->GetBufferSize(),
+        &renderer->blit_layout);
+    blit_vs_blob->Release();
+    if (FAILED(hr))
+        return false;
+
+    D3D11_BUFFER_DESC blit_cb_desc{};
+    blit_cb_desc.ByteWidth = 96; // float4x4 + float2 + float2 + float + pad
+    blit_cb_desc.Usage = D3D11_USAGE_DYNAMIC;
+    blit_cb_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    blit_cb_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    hr = device->CreateBuffer(&blit_cb_desc, nullptr, &renderer->blit_cb);
+    if (FAILED(hr))
+        return false;
+
+    hr = device->CreateSamplerState(&samp, &renderer->blit_sampler);
+    if (FAILED(hr))
+        return false;
+
+    // Slot 0 reserved for ALIA_DRAW_TARGET_PRIMARY.
+    renderer->draw_targets.resize(1);
+
     alia::initialize_lazy_commit_arena(&renderer->rect_instance_arena);
     return true;
 }
@@ -519,6 +656,330 @@ ensure_instance_capacity(alia_d3d11_renderer* renderer, UINT count)
         return false;
     renderer->instance_capacity = capacity;
     return true;
+}
+
+void
+release_offscreen_target(d3d11_offscreen_target& target)
+{
+    release_t(target.srv);
+    release_t(target.rtv);
+    release_t(target.tex);
+    target.width = 0;
+    target.height = 0;
+}
+
+bool
+ensure_offscreen_target(
+    alia_d3d11_renderer* renderer,
+    d3d11_offscreen_target& target,
+    uint32_t width,
+    uint32_t height)
+{
+    if (width == 0 || height == 0)
+        return false;
+    if (target.tex && target.width == width && target.height == height)
+        return true;
+
+    release_offscreen_target(target);
+
+    // TYPELESS so we can create sRGB RTV/SRV views (same linear->sRGB encode
+    // path as the swapchain backbuffer).
+    D3D11_TEXTURE2D_DESC td{};
+    td.Width = width;
+    td.Height = height;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_TYPELESS;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+    HRESULT hr
+        = renderer->device->CreateTexture2D(&td, nullptr, &target.tex);
+    if (FAILED(hr) || !target.tex)
+    {
+        std::fprintf(
+            stderr,
+            "[alia d3d11] CreateTexture2D failed: 0x%08lx\n",
+            (unsigned long) hr);
+        return false;
+    }
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtv_desc{};
+    rtv_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    rtv_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    hr = renderer->device->CreateRenderTargetView(
+        target.tex, &rtv_desc, &target.rtv);
+    if (FAILED(hr) || !target.rtv)
+    {
+        std::fprintf(
+            stderr,
+            "[alia d3d11] CreateRenderTargetView failed: 0x%08lx\n",
+            (unsigned long) hr);
+        release_offscreen_target(target);
+        return false;
+    }
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{};
+    srv_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srv_desc.Texture2D.MipLevels = 1;
+    hr = renderer->device->CreateShaderResourceView(
+        target.tex, &srv_desc, &target.srv);
+    if (FAILED(hr) || !target.srv)
+    {
+        std::fprintf(
+            stderr,
+            "[alia d3d11] CreateShaderResourceView failed: 0x%08lx\n",
+            (unsigned long) hr);
+        release_offscreen_target(target);
+        return false;
+    }
+
+    target.width = width;
+    target.height = height;
+    return true;
+}
+
+d3d11_offscreen_target*
+offscreen_target_slot(
+    alia_d3d11_renderer* renderer, alia_draw_target_id id)
+{
+    if (id == ALIA_DRAW_TARGET_PRIMARY || id >= renderer->draw_targets.size())
+        return nullptr;
+    d3d11_offscreen_target& slot = renderer->draw_targets[id];
+    if (!slot.in_use)
+        return nullptr;
+    return &slot;
+}
+
+alia_draw_target_id
+d3d11_draw_target_create(void* user)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    for (size_t i = 1; i < renderer->draw_targets.size(); ++i)
+    {
+        if (!renderer->draw_targets[i].in_use)
+        {
+            renderer->draw_targets[i] = {};
+            renderer->draw_targets[i].in_use = true;
+            return alia_draw_target_id(i);
+        }
+    }
+    if (renderer->draw_targets.size() >= 0xffff)
+        return ALIA_DRAW_TARGET_PRIMARY;
+    alia_draw_target_id const id
+        = alia_draw_target_id(renderer->draw_targets.size());
+    d3d11_offscreen_target slot{};
+    slot.in_use = true;
+    renderer->draw_targets.push_back(slot);
+    return id;
+}
+
+void
+d3d11_draw_target_destroy(void* user, alia_draw_target_id target)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    if (target == ALIA_DRAW_TARGET_PRIMARY
+        || target >= renderer->draw_targets.size())
+        return;
+    release_offscreen_target(renderer->draw_targets[target]);
+    renderer->draw_targets[target] = {};
+}
+
+void
+d3d11_draw_target_ensure_size(
+    void* user, alia_draw_target_id target, alia_vec2i size)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    if (target == ALIA_DRAW_TARGET_PRIMARY
+        || target >= renderer->draw_targets.size())
+        return;
+    if (size.x <= 0 || size.y <= 0)
+        return;
+    if (!ensure_offscreen_target(
+            renderer,
+            renderer->draw_targets[target],
+            uint32_t(size.x),
+            uint32_t(size.y)))
+    {
+        std::fprintf(
+            stderr,
+            "[alia d3d11] draw_target_ensure_size failed for %u (%d x %d)\n",
+            unsigned(target),
+            size.x,
+            size.y);
+    }
+}
+
+void
+d3d11_draw_pass_begin(void* user)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    release_t(renderer->pass_rtv);
+    release_t(renderer->pass_dsv);
+    renderer->context->OMGetRenderTargets(
+        1, &renderer->pass_rtv, &renderer->pass_dsv);
+}
+
+void
+d3d11_draw_pass_end(void* user)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    if (renderer->pass_rtv)
+        renderer->context->OMSetRenderTargets(
+            1, &renderer->pass_rtv, renderer->pass_dsv);
+    release_t(renderer->pass_rtv);
+    release_t(renderer->pass_dsv);
+}
+
+void
+d3d11_draw_target_bind(void* user, alia_draw_target_id target)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    ID3D11ShaderResourceView* null_srv[1] = {nullptr};
+    renderer->context->PSSetShaderResources(0, 1, null_srv);
+
+    if (target == ALIA_DRAW_TARGET_PRIMARY)
+    {
+        if (renderer->pass_rtv)
+            renderer->context->OMSetRenderTargets(
+                1, &renderer->pass_rtv, renderer->pass_dsv);
+        return;
+    }
+
+    d3d11_offscreen_target* slot = offscreen_target_slot(renderer, target);
+    if (!slot || !slot->rtv)
+    {
+        std::fprintf(
+            stderr,
+            "[alia d3d11] draw_target_bind: target %u has no RTV\n",
+            unsigned(target));
+        if (renderer->pass_rtv)
+            renderer->context->OMSetRenderTargets(
+                1, &renderer->pass_rtv, renderer->pass_dsv);
+        return;
+    }
+    renderer->context->OMSetRenderTargets(1, &slot->rtv, nullptr);
+}
+
+void
+d3d11_draw_target_clear(
+    void* user, alia_draw_target_id target, float const rgba[4])
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    d3d11_offscreen_target* slot = offscreen_target_slot(renderer, target);
+    if (!slot || !slot->rtv)
+        return;
+    renderer->context->ClearRenderTargetView(slot->rtv, rgba);
+}
+
+struct blit_cb_data
+{
+    float projection[16];
+    float dest_min[2];
+    float dest_size[2];
+    float opacity;
+    float pad[3];
+};
+
+void
+render_draw_target_command_list(void* user, alia_draw_bucket const* bucket)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    if (!bucket || bucket->count == 0 || !bucket->clip_rect)
+        return;
+    if (!renderer->blit_vs || !renderer->blit_ps || !renderer->blit_cb)
+        return;
+
+    alia_box const* clip = bucket->clip_rect;
+    if (clip->size.x <= 0.f || clip->size.y <= 0.f)
+        return;
+
+    ID3D11DeviceContext* ctx = renderer->context;
+
+    D3D11_VIEWPORT vp{};
+    vp.TopLeftX = clip->min.x;
+    vp.TopLeftY = clip->min.y;
+    vp.Width = clip->size.x;
+    vp.Height = clip->size.y;
+    vp.MinDepth = 0.f;
+    vp.MaxDepth = 1.f;
+    ctx->RSSetViewports(1, &vp);
+
+    D3D11_RECT scissor{
+        LONG(clip->min.x),
+        LONG(clip->min.y),
+        LONG(clip->min.x + clip->size.x),
+        LONG(clip->min.y + clip->size.y)};
+    ctx->RSSetScissorRects(1, &scissor);
+
+    float l = clip->min.x;
+    float r = clip->min.x + clip->size.x;
+    float t = clip->min.y;
+    float b = clip->min.y + clip->size.y;
+    float n = -1.f;
+    float f = 1.f;
+    float ortho[16] = {
+        2.f / (r - l),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        2.f / (t - b),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        -2.f / (f - n),
+        0.f,
+        -(r + l) / (r - l),
+        -(t + b) / (t - b),
+        -(f + n) / (f - n),
+        1.f};
+
+    ctx->IASetInputLayout(renderer->blit_layout);
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    UINT stride = sizeof(float) * 2;
+    UINT offset = 0;
+    ctx->IASetVertexBuffers(0, 1, &renderer->quad_vb, &stride, &offset);
+    ctx->VSSetShader(renderer->blit_vs, nullptr, 0);
+    ctx->PSSetShader(renderer->blit_ps, nullptr, 0);
+    ctx->VSSetConstantBuffers(0, 1, &renderer->blit_cb);
+    ctx->PSSetSamplers(0, 1, &renderer->blit_sampler);
+    ctx->OMSetBlendState(renderer->blend, nullptr, 0xffffffff);
+    ctx->RSSetState(renderer->rasterizer);
+    ctx->OMSetDepthStencilState(renderer->depth, 0);
+
+    for (auto const* cmd = bucket->head; cmd; cmd = cmd->next)
+    {
+        auto const* blit = alia::downcast<alia_draw_target_command>(cmd);
+        d3d11_offscreen_target* source
+            = offscreen_target_slot(renderer, blit->source);
+        if (!source || !source->srv)
+            continue;
+
+        blit_cb_data cb{};
+        std::memcpy(cb.projection, ortho, sizeof(ortho));
+        cb.dest_min[0] = blit->dest.min.x;
+        cb.dest_min[1] = blit->dest.min.y;
+        cb.dest_size[0] = blit->dest.size.x;
+        cb.dest_size[1] = blit->dest.size.y;
+        cb.opacity = blit->opacity;
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        if (FAILED(
+                ctx->Map(renderer->blit_cb, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+            continue;
+        std::memcpy(mapped.pData, &cb, sizeof(cb));
+        ctx->Unmap(renderer->blit_cb, 0);
+
+        ctx->PSSetShaderResources(0, 1, &source->srv);
+        ctx->Draw(4, 0);
+    }
+
+    ID3D11ShaderResourceView* null_srv = nullptr;
+    ctx->PSSetShaderResources(0, 1, &null_srv);
 }
 
 void
@@ -898,11 +1359,13 @@ register_effect_blob(
     ALIA_ASSERT(desc);
     ALIA_ASSERT(out_material_id);
 
-    if (desc->shader.format != ALIA_SHADER_FORMAT_DXBC || !desc->shader.data
+    if (desc->shader.format != ALIA_D3D11_SHADER_FORMAT || !desc->shader.data
         || desc->shader.size == 0)
     {
         std::fprintf(
-            stderr, "[alia d3d11] effect requires ALIA_SHADER_FORMAT_DXBC\n");
+            stderr,
+            "[alia d3d11] effect requires FourCC DXBC "
+            "(ALIA_D3D11_SHADER_FORMAT)\n");
         return -1;
     }
 
@@ -993,6 +1456,11 @@ alia_d3d11_renderer_attach(
         ALIA_PRIMITIVE_MATERIAL_ID,
         alia_material_vtable{.draw_bucket = render_primitive_command_list},
         renderer);
+    alia_material_register(
+        ui,
+        ALIA_DRAW_TARGET_MATERIAL_ID,
+        alia_material_vtable{.draw_bucket = render_draw_target_command_list},
+        renderer);
 
     alia_renderer_ops const ops = {
         .upload_msdf_atlas =
@@ -1009,6 +1477,13 @@ alia_d3d11_renderer_attach(
                     desc,
                     out_material_id);
             },
+        .draw_target_create = d3d11_draw_target_create,
+        .draw_target_destroy = d3d11_draw_target_destroy,
+        .draw_target_ensure_size = d3d11_draw_target_ensure_size,
+        .draw_pass_begin = d3d11_draw_pass_begin,
+        .draw_pass_end = d3d11_draw_pass_end,
+        .draw_target_bind = d3d11_draw_target_bind,
+        .draw_target_clear = d3d11_draw_target_clear,
         .user = renderer,
     };
     alia_ui_system_set_renderer_ops(ui, &ops);
@@ -1039,7 +1514,7 @@ alia_d3d11_effect_register(
     alia_effect_desc const portable = {
         .shader =
             {
-                .format = ALIA_SHADER_FORMAT_DXBC,
+                .format = ALIA_D3D11_SHADER_FORMAT,
                 .data = ps_blob->GetBufferPointer(),
                 .size = ps_blob->GetBufferSize(),
             },
@@ -1119,6 +1594,16 @@ alia_d3d11_renderer_destroy(alia_d3d11_renderer* renderer)
         release_t(slot->params_cb);
     }
     renderer->effects.clear();
+    for (auto& target : renderer->draw_targets)
+        release_offscreen_target(target);
+    renderer->draw_targets.clear();
+    release_t(renderer->pass_rtv);
+    release_t(renderer->pass_dsv);
+    release_t(renderer->blit_sampler);
+    release_t(renderer->blit_cb);
+    release_t(renderer->blit_layout);
+    release_t(renderer->blit_ps);
+    release_t(renderer->blit_vs);
     release_t(renderer->effect_frame_cb);
     release_t(renderer->effect_blend);
     release_t(renderer->effect_quad_vb);

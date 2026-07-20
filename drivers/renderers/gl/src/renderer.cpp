@@ -5,8 +5,9 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing.h>
-#include <alia/abi/ui/effects.h>
+#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/system.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/renderer.h>
@@ -15,7 +16,7 @@
 #include <alia/prelude.hpp>
 
 // TODO: Remove these.
-#include <alia/ui/drawing.h>
+#include <alia/ui/drawing/system.h>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -770,11 +771,12 @@ register_effect_blob(
     ALIA_ASSERT(desc);
     ALIA_ASSERT(out_material_id);
 
-    if (desc->shader.format != ALIA_SHADER_FORMAT_GLSL_ES
+    if (desc->shader.format != ALIA_GL_SHADER_FORMAT
         || !desc->shader.data || desc->shader.size == 0)
     {
         std::fprintf(
-            stderr, "[alia gl] effect requires ALIA_SHADER_FORMAT_GLSL_ES\n");
+            stderr,
+            "[alia gl] effect requires FourCC GLES (ALIA_GL_SHADER_FORMAT)\n");
         return -1;
     }
 
@@ -905,7 +907,7 @@ alia_gl_effect_register(
     alia_effect_desc const portable = {
         .shader =
             {
-                .format = ALIA_SHADER_FORMAT_GLSL_ES,
+                .format = ALIA_GL_SHADER_FORMAT,
                 .data = desc->fragment_shader_source,
                 .size = std::strlen(desc->fragment_shader_source),
             },

@@ -10,8 +10,10 @@ add_library(alia_core STATIC
     src/alia/kernel/flow/traversal.cpp
     src/alia/kernel/timing.cpp
     src/alia/kernel/animation/unit_cubic_bezier.cpp
-    src/alia/ui/drawing.cpp
-    src/alia/ui/effects.cpp
+    src/alia/ui/drawing/commands.cpp
+    src/alia/ui/drawing/system.cpp
+    src/alia/ui/drawing/targets.cpp
+    src/alia/ui/drawing/effects.cpp
     src/alia/ui/msdf.cpp
     src/alia/ui/text/system.cpp
     src/alia/ui/text/layout.cpp

@@ -8,7 +8,7 @@
 #include <alia/abi/kernel/timing.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
-#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/elements.h>

@@ -11,7 +11,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/elements.h>
@@ -32,7 +33,7 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/ui/drawing.h>
+#include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/internal_api.h>
@@ -263,6 +264,49 @@ do_node_expander_with_text(
 }
 
 void
+do_draw_target_demo(context& ctx)
+{
+    do_subheading(ctx, "Draw Target");
+
+    static alia_draw_target_id target = ALIA_DRAW_TARGET_PRIMARY;
+    if (target == ALIA_DRAW_TARGET_PRIMARY && ctx.system)
+        target = alia_draw_target_create(ctx.system);
+
+    alia_vec2f const size{160.f, 96.f};
+    if (get_event_category(ctx) == ALIA_CATEGORY_REFRESH)
+    {
+        alia_layout_leaf_emit(&ctx, alia_layout_content_metrics_make(size), 0);
+        return;
+    }
+
+    alia_box const box = alia_layout_consume_box(&ctx);
+    if (get_event_category(ctx) != ALIA_CATEGORY_DRAWING)
+        return;
+    if (box.size.x < 1.f || box.size.y < 1.f)
+        return;
+
+    if (target == ALIA_DRAW_TARGET_PRIMARY)
+    {
+        alia_draw_rounded_box(
+            &ctx, 0, box, alia_srgba8{220, 40, 40, 255}, 12.f);
+        return;
+    }
+
+    alia_draw_target_begin(&ctx, target, box.size);
+    alia_draw_rounded_box(
+        &ctx, 0, {{0.f, 0.f}, box.size}, alia_srgba8{40, 40, 255, 255}, 12.f);
+    alia_draw_rounded_box(
+        &ctx,
+        1,
+        {{20.f, 20.f}, {box.size.x - 40.f, box.size.y - 40.f}},
+        alia_srgba8{255, 255, 255, 220},
+        8.f);
+    alia_draw_target_end(&ctx);
+
+    alia_draw_target(&ctx, 2, target, box, 0.85f);
+}
+
+void
 do_controls(context& ctx)
 {
     do_heading(ctx, "GEOMETRY");
@@ -272,6 +316,8 @@ do_controls(context& ctx)
 
     do_subheading(ctx, "Scale");
     alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false, nullptr);
+
+    do_draw_target_demo(ctx);
 
     do_subheading(ctx, "Node Expander");
     alia_do_slider_f(

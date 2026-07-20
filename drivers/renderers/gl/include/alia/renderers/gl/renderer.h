@@ -2,8 +2,8 @@
 #define ALIA_RENDERERS_GL_RENDERER_H
 
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing.h>
-#include <alia/abi/ui/effects.h>
+#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 
@@ -29,13 +29,17 @@ alia_gl_renderer_upload_msdf_atlas(
     alia_gl_renderer* renderer, alia_msdf_atlas_image const* image);
 
 // Native-source hatch: compile `fragment_shader_source` (body-only; version
-// prepended) and register. Prefer `alia_ui_register_effect` with
-// `ALIA_SHADER_FORMAT_GLSL_ES` for portable registration.
+// prepended) and register. Prefer `alia_ui_register_effect` with format
+// `ALIA_FOURCC('G','L','E','S')` for portable registration.
 //
 // Portable / Slang-baked GLSL should declare two std140 UBOs (bindings set
 // via the API): a 32-byte frame block and an Effect params block.
 // Legacy hatch shaders may instead use `uniform vec4 alia_effect_region` /
 // `alia_effect_surface` plus `layout(std140) uniform Effect { ... }`.
+
+// UTF-8 GLSL ES fragment source FourCC (body-only; version prepended).
+#define ALIA_GL_SHADER_FORMAT ALIA_FOURCC('G', 'L', 'E', 'S')
+
 typedef struct alia_gl_effect_desc
 {
     char const* fragment_shader_source;

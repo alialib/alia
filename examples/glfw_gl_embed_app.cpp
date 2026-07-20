@@ -5,7 +5,8 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/base/object.h>
-#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/library.h>

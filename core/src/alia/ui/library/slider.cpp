@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
-#include <alia/abi/ui/drawing.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>

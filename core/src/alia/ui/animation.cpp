@@ -1,9 +1,9 @@
 #include <alia/ui/animation.h>
 
 #include <alia/abi/kernel/animation.h>
+#include <alia/abi/ui/drawing/primitives.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/animation/unit_cubic_bezier.h>
-#include <alia/ui/drawing.h>
 
 #include <algorithm>
 

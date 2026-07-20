@@ -9,7 +9,12 @@ ALIA_EXTERN_C_BEGIN
 
 typedef uint16_t alia_clip_id;
 
-typedef int32_t alia_z_index;
+typedef uint16_t alia_z_index;
+
+enum
+{
+    ALIA_DEFAULT_Z_BASE = 256,
+};
 
 typedef struct alia_clip_state
 {

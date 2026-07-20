@@ -218,6 +218,11 @@ alia_milliseconds(int32_t ms)
 
 typedef uint32_t alia_generation_counter;
 
+// FOURCC - Little-endian packing of four ASCII bytes into an uint32_t
+#define ALIA_FOURCC(a, b, c, d)                                               \
+    ((uint32_t) (uint8_t) (a) | ((uint32_t) (uint8_t) (b) << 8)               \
+     | ((uint32_t) (uint8_t) (c) << 16) | ((uint32_t) (uint8_t) (d) << 24))
+
 // MATH - TODO: Move these to a separate file?
 
 static inline float

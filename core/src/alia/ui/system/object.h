@@ -20,7 +20,7 @@
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/system/work.h>
-#include <alia/ui/drawing.h>
+#include <alia/ui/drawing/system.h>
 
 #include <cstdint>
 #include <deque>
