@@ -120,8 +120,7 @@ embed_controller(void* /*user*/, alia_context* ctx)
     alia_layout_edge_offsets_begin(
         ctx, alia_edge_offsets_make_uniform(32.f), 0);
     alia_layout_column_begin(ctx, ALIA_GROW | ALIA_FILL, 24.f);
-    alia_do_slider_f(
-        ctx, &g_value, 0.f, 1.f, 0.001f, ALIA_FILL_X, false, nullptr);
+    alia_do_slider_f(ctx, &g_value, 0.f, 1.f, 0.001f, ALIA_FILL_X, false);
     alia_layout_column_end(ctx);
     alia_layout_edge_offsets_end(ctx);
 }

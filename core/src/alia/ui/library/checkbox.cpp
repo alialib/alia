@@ -34,87 +34,6 @@ struct checkbox_data
     alia_keyboard_click_state keyboard_click_state_;
 };
 
-static alia_checkbox_style const default_checkbox_style = {
-    .unchecked = {
-        .outline = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-        .fill = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0x00),
-    },
-    .checked = {
-        .outline = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0xff),
-        .fill = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0xff),
-    },
-    .disabled_unchecked = {
-        .outline = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xa0),
-        .fill = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0x00),
-    },
-    .disabled_checked = {
-        .outline = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xa0),
-        .fill = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xa0),
-    },
-
-    .checkmark = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-    .disabled_checkmark = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0x33),
-
-    .layout_width = 40.f,
-    .layout_height = 40.f,
-    .box_size = 22.f,
-    .box_corner_radius = 5.f,
-    .border_width = 3.f,
-    .checkmark_size = 18.f,
-#if defined(ALIA_HAS_STOCK_FONTS)
-    .checkmark_font_index = alia_font_material_symbols_outlined_index,
-    .checkmark_codepoint = alia_font_material_symbols_outlined_icon_check,
-#else
-    .checkmark_font_index = 0,
-    .checkmark_codepoint = 0,
-#endif
-    .highlight_radius = 21.f,
-    .flare_radius = 21.f,
-};
-
 static inline alia_vec2f
 checkbox_center(alia_box placement)
 {
@@ -242,12 +161,104 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
+void
+alia_checkbox_style_generate(
+    alia_checkbox_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_checkbox_style{
+        .unchecked =
+            {
+                .outline = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                        ALIA_PALETTE_RAMP_LEVEL_BASE),
+                    0xff),
+                .fill = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                        ALIA_PALETTE_RAMP_LEVEL_BASE),
+                    0x00),
+            },
+        .checked =
+            {
+                .outline = alia_palette_color_make(
+                    alia_palette_index_swatch(
+                        ALIA_PALETTE_SWATCH_PRIMARY,
+                        ALIA_PALETTE_SWATCH_PART_SOLID),
+                    0xff),
+                .fill = alia_palette_color_make(
+                    alia_palette_index_swatch(
+                        ALIA_PALETTE_SWATCH_PRIMARY,
+                        ALIA_PALETTE_SWATCH_PART_SOLID),
+                    0xff),
+            },
+        .disabled_unchecked =
+            {
+                .outline = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+                    0xa0),
+                .fill = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                        ALIA_PALETTE_RAMP_LEVEL_BASE),
+                    0x00),
+            },
+        .disabled_checked =
+            {
+                .outline = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+                    0xa0),
+                .fill = alia_palette_color_make(
+                    alia_palette_index_foundation_ramp(
+                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+                    0xa0),
+            },
+
+        .checkmark = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+        .disabled_checkmark = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0x33),
+
+        .layout_width = 40.f * s.scale,
+        .layout_height = 40.f * s.scale,
+        .box_size = 22.f * s.scale,
+        .box_corner_radius = 5.f * s.scale * s.roundness,
+        .border_width = 3.f * s.scale,
+        .checkmark_size = 18.f * s.scale,
+#if defined(ALIA_HAS_STOCK_FONTS)
+        .checkmark_font_index = alia_font_material_symbols_outlined_index,
+        .checkmark_codepoint = alia_font_material_symbols_outlined_icon_check,
+#else
+        .checkmark_font_index = 0,
+        .checkmark_codepoint = 0,
+#endif
+        .highlight_radius = 21.f * s.scale,
+        .flare_radius = 21.f * s.scale,
+    };
+}
+
 alia_element_id
 alia_do_checkbox(
     alia_context* ctx,
     alia_bool_signal* value,
-    alia_layout_flags_t layout_flags,
-    alia_checkbox_style const* style)
+    alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(checkbox_data), alignof(checkbox_data));
@@ -261,8 +272,7 @@ alia_do_checkbox(
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_checkbox_style const* const effective_style
-        = style != nullptr ? style : &default_checkbox_style;
+    alia_checkbox_style const* const style = alia_checkbox_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -271,8 +281,8 @@ alia_do_checkbox(
             ctx,
             alia_layout_content_metrics_make(
                 alia_vec2f{
-                    alia_px(ctx, effective_style->layout_width),
-                    alia_px(ctx, effective_style->layout_height)}),
+                    alia_px(ctx, style->layout_width),
+                    alia_px(ctx, style->layout_height)}),
             layout_flags);
         return id;
     }
@@ -318,18 +328,12 @@ alia_do_checkbox(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_checkbox(
-                ctx, box, *data, checked, interaction_status, effective_style);
+                ctx, box, *data, checked, interaction_status, style);
             break;
         }
     }
 
     return id;
-}
-
-alia_checkbox_style const*
-alia_default_checkbox_style(void)
-{
-    return &default_checkbox_style;
 }
 
 ALIA_EXTERN_C_END

@@ -12,12 +12,6 @@ alia_ctx_system(alia_context* ctx)
     return ctx->system;
 }
 
-static inline alia_style*
-alia_ctx_style(alia_context* ctx)
-{
-    return ctx->style;
-}
-
 static inline alia_palette*
 alia_ctx_palette(alia_context* ctx)
 {

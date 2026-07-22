@@ -23,7 +23,7 @@
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/input_processing.h>
@@ -51,13 +51,6 @@ static int primary_index = 0;
 
 alia_ui_system* the_system;
 
-// Local widget style overrides for the content pane.
-static alia_switch_style local_switch_style;
-static alia_slider_style local_slider_style;
-static alia_radio_style local_radio_style;
-static alia_checkbox_style local_checkbox_style;
-static alia_node_expander_style local_node_expander_style;
-static bool local_styles_initialized = false;
 static float demo_spacing = 6.f;
 static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
@@ -92,23 +85,25 @@ template<class Content>
 void
 with_spacing(context& ctx, float spacing, Content&& content)
 {
-    float old_spacing = ctx.style->spacing;
-    ctx.style->spacing = spacing * ctx.geometry->scale;
+    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
+    float old_spacing = layout_style->spacing;
+    layout_style->spacing = spacing * ctx.geometry->scale;
     content();
-    ctx.style->spacing = old_spacing;
+    layout_style->spacing = old_spacing;
 }
 
 template<class Content>
 void
 with_ui_scale(context& ctx, float scale, Content&& content)
 {
+    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
     float old_scale = ctx.geometry->scale;
-    float old_spacing = ctx.style->spacing;
+    float old_spacing = layout_style->spacing;
     ctx.geometry->scale *= scale;
-    ctx.style->spacing *= scale;
+    layout_style->spacing *= scale;
     content();
     ctx.geometry->scale = old_scale;
-    ctx.style->spacing = old_spacing;
+    layout_style->spacing = old_spacing;
 }
 
 template<class Content>
@@ -166,15 +161,11 @@ do_subheading(context& ctx, char const* text)
 }
 
 void
-do_radio_with_text(
-    context& ctx,
-    alia_bool_signal* value,
-    char const* text,
-    alia_radio_style const* style)
+do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y, style);
+        alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -190,16 +181,11 @@ do_radio_with_text(
 }
 
 void
-do_checkbox_with_text(
-    context& ctx,
-    alia_bool_signal* value,
-    char const* text,
-    alia_checkbox_style const* style)
+do_checkbox_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id
-            = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, style);
+        alia_element_id id = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -215,15 +201,11 @@ do_checkbox_with_text(
 }
 
 void
-do_switch_with_text(
-    context& ctx,
-    alia_bool_signal* value,
-    char const* text,
-    alia_switch_style const* style)
+do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y, style);
+        alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -240,15 +222,11 @@ do_switch_with_text(
 
 void
 do_node_expander_with_text(
-    context& ctx,
-    alia_bool_signal* value,
-    char const* text,
-    alia_node_expander_style const* style)
+    context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id
-            = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y, style);
+        alia_element_id id = alia_do_node_expander(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -312,27 +290,20 @@ do_controls(context& ctx)
     do_heading(ctx, "GEOMETRY");
 
     do_subheading(ctx, "Spacing");
-    alia_do_slider_f(&ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false, nullptr);
+    alia_do_slider_f(&ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false);
 
     do_subheading(ctx, "Scale");
-    alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false, nullptr);
+    alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false);
 
     do_draw_target_demo(ctx);
 
     do_subheading(ctx, "Node Expander");
     alia_do_slider_f(
-        &ctx,
-        &demo_node_expander_triangle_side,
-        14.f,
-        36.f,
-        0.5f,
-        0,
-        false,
-        nullptr);
+        &ctx, &demo_node_expander_triangle_side, 14.f, 36.f, 0.5f, 0, false);
 }
 
 void
-do_switch_demo(context& ctx, alia_switch_style const* style)
+do_switch_demo(context& ctx)
 {
     do_heading(ctx, "SWITCHES");
 
@@ -342,7 +313,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_one,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting One", style);
+        do_switch_with_text(ctx, &switch_signal, "Setting One");
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_one = switch_signal.value;
@@ -356,7 +327,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_two,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting Two", style);
+        do_switch_with_text(ctx, &switch_signal, "Setting Two");
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_two = switch_signal.value;
@@ -370,7 +341,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_three,
         };
-        do_switch_with_text(ctx, &switch_signal, "Setting Three", style);
+        do_switch_with_text(ctx, &switch_signal, "Setting Three");
         if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_three = switch_signal.value;
@@ -380,7 +351,7 @@ do_switch_demo(context& ctx, alia_switch_style const* style)
 }
 
 void
-do_radio_demo(context& ctx, alia_radio_style const* style)
+do_radio_demo(context& ctx)
 {
     static int radio_index = 0;
 
@@ -391,7 +362,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 0,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option One", style);
+        do_radio_with_text(ctx, &radio_signal, "Option One");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 0;
@@ -404,7 +375,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 1,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option Two", style);
+        do_radio_with_text(ctx, &radio_signal, "Option Two");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 1;
@@ -417,7 +388,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = radio_index == 2,
         };
-        do_radio_with_text(ctx, &radio_signal, "Option Three", style);
+        do_radio_with_text(ctx, &radio_signal, "Option Three");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             radio_index = 2;
@@ -427,7 +398,7 @@ do_radio_demo(context& ctx, alia_radio_style const* style)
 }
 
 void
-do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
+do_checkbox_demo(context& ctx)
 {
     do_heading(ctx, "CHECKBOXES");
 
@@ -437,8 +408,7 @@ do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_one,
         };
-        do_checkbox_with_text(
-            ctx, &checkbox_signal, "Initially Unchecked", style);
+        do_checkbox_with_text(ctx, &checkbox_signal, "Initially Unchecked");
         if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_one = checkbox_signal.value;
@@ -452,8 +422,7 @@ do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = setting_two,
         };
-        do_checkbox_with_text(
-            ctx, &checkbox_signal, "Initially Checked", style);
+        do_checkbox_with_text(ctx, &checkbox_signal, "Initially Checked");
         if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             setting_two = checkbox_signal.value;
@@ -467,8 +436,7 @@ do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
             .flags = ALIA_SIGNAL_READABLE,
             .value = setting_disabled,
         };
-        do_checkbox_with_text(
-            ctx, &checkbox_signal, "Disabled/Unchecked", style);
+        do_checkbox_with_text(ctx, &checkbox_signal, "Disabled/Unchecked");
         (void) setting_disabled;
     }
 
@@ -478,22 +446,19 @@ do_checkbox_demo(context& ctx, alia_checkbox_style const* style)
             .flags = ALIA_SIGNAL_READABLE,
             .value = setting_disabled,
         };
-        do_checkbox_with_text(
-            ctx, &checkbox_signal, "Disabled/Checked", style);
+        do_checkbox_with_text(ctx, &checkbox_signal, "Disabled/Checked");
         (void) setting_disabled;
     }
 }
 
 void
-do_node_expander_demo(context& ctx, alia_node_expander_style const* style)
+do_node_expander_demo(context& ctx)
 {
     do_heading(ctx, "NODE EXPANDER");
 
     // Apply interactive tuning sliders.
-    local_node_expander_style.triangle_side = demo_node_expander_triangle_side;
-
-    alia_node_expander_style const* effective_style
-        = style != nullptr ? style : &local_node_expander_style;
+    alia_node_expander_style_active(&ctx)->triangle_side
+        = demo_node_expander_triangle_side;
 
     {
         static bool expanded = false;
@@ -501,8 +466,7 @@ do_node_expander_demo(context& ctx, alia_node_expander_style const* style)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = expanded,
         };
-        do_node_expander_with_text(
-            ctx, &expanded_signal, "Expandable", effective_style);
+        do_node_expander_with_text(ctx, &expanded_signal, "Expandable");
         if (expanded_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             expanded = expanded_signal.value;
@@ -516,19 +480,18 @@ do_node_expander_demo(context& ctx, alia_node_expander_style const* style)
             .flags = ALIA_SIGNAL_READABLE,
             .value = disabled_expanded,
         };
-        do_node_expander_with_text(
-            ctx, &disabled_signal, "Disabled", effective_style);
+        do_node_expander_with_text(ctx, &disabled_signal, "Disabled");
         (void) disabled_expanded;
     }
 }
 
 void
-do_slider_demo(context& ctx, alia_slider_style const* style)
+do_slider_demo(context& ctx)
 {
     do_heading(ctx, "SLIDERS");
 
     static float slider_value = 5.f;
-    alia_do_slider_f(&ctx, &slider_value, 0.f, 10.f, 1.f, 0, false, style);
+    alia_do_slider_f(&ctx, &slider_value, 0.f, 10.f, 1.f, 0, false);
 }
 
 void
@@ -541,7 +504,7 @@ do_collapsible_demo(context& ctx)
         .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
         .value = collapsed,
     };
-    do_node_expander_with_text(ctx, &collapsed_signal, "Collapsible", nullptr);
+    do_node_expander_with_text(ctx, &collapsed_signal, "Collapsible");
     if (collapsed_signal.flags & ALIA_SIGNAL_WRITTEN)
     {
         collapsed = collapsed_signal.value;
@@ -563,25 +526,23 @@ void
 do_content(context& ctx)
 {
     column(ctx, [&]() {
-        do_switch_demo(ctx, nullptr); //&local_switch_style);
+        do_switch_demo(ctx);
         do_heading(ctx, "");
-        do_node_expander_demo(ctx, nullptr); //&local_node_expander_style);
+        do_node_expander_demo(ctx);
         do_heading(ctx, "");
-        do_radio_demo(ctx, nullptr); //&local_radio_style);
+        do_radio_demo(ctx);
         do_heading(ctx, "");
-        do_checkbox_demo(ctx, nullptr); //&local_checkbox_style);
+        do_checkbox_demo(ctx);
         do_heading(ctx, "");
-        do_slider_demo(ctx, nullptr); //&local_slider_style);
+        do_slider_demo(ctx);
         do_heading(ctx, "");
         do_collapsible_demo(ctx);
         do_heading(ctx, "");
         do_heading(ctx, "GAPS");
         {
             static float x_gap = 5.f, y_gap = 5.f;
-            alia_do_slider_f(
-                &ctx, &x_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
-            alia_do_slider_f(
-                &ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            alia_do_slider_f(&ctx, &x_gap, 0.f, 200.f, 0.1f, 0, false);
+            alia_do_slider_f(&ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false);
             column(ctx, alia::gap(y_gap), [&]() {
                 block_flow(ctx, alia::gap(x_gap), [&]() {
                     for (int i = 0; i < 60; ++i)
@@ -650,18 +611,10 @@ do_content(context& ctx)
         do_heading(ctx, "FLOW PANEL");
         {
             static float gap = 5.f, line_gap = 5.f, minimum_line_height = 5.f;
-            alia_do_slider_f(&ctx, &gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
+            alia_do_slider_f(&ctx, &gap, 0.f, 200.f, 0.1f, 0, false);
+            alia_do_slider_f(&ctx, &line_gap, 0.f, 200.f, 0.1f, 0, false);
             alia_do_slider_f(
-                &ctx, &line_gap, 0.f, 200.f, 0.1f, 0, false, nullptr);
-            alia_do_slider_f(
-                &ctx,
-                &minimum_line_height,
-                0.f,
-                200.f,
-                0.1f,
-                0,
-                false,
-                nullptr);
+                &ctx, &minimum_line_height, 0.f, 200.f, 0.1f, 0, false);
             flow(
                 ctx,
                 alia::gap(gap),
@@ -750,17 +703,6 @@ the_demo(context& ctx)
             }
         }
 
-        // Initialize local style structs from library defaults once.
-        if (!local_styles_initialized)
-        {
-            local_switch_style = *alia_default_switch_style();
-            local_slider_style = *alia_default_slider_style();
-            local_radio_style = *alia_default_radio_style();
-            local_checkbox_style = *alia_default_checkbox_style();
-            local_node_expander_style = *alia_default_node_expander_style();
-            local_styles_initialized = true;
-        }
-
         with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
@@ -788,7 +730,7 @@ the_demo(context& ctx)
                             [&]() {
                                 column(ctx, GROW, [&]() {
                                     alia_ui_scroll_view_begin(
-                                        &ctx, ALIA_GROW, 0x3, 0, nullptr);
+                                        &ctx, ALIA_GROW, 0x3, 0);
                                     edge_offsets(
                                         ctx,
                                         {.left = 40,
@@ -902,6 +844,7 @@ main()
             nullptr,
             nullptr,
             ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_style_generate_defaults(the_system, nullptr);
         theme_initialized = true;
     }
 

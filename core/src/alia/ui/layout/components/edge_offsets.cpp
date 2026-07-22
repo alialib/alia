@@ -1,7 +1,6 @@
 #include <alia/abi/base/geometry/box.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
-#include <alia/abi/ui/style.h>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>

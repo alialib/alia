@@ -129,6 +129,9 @@ alia_ui_system_init(
     ui->typefaces.push_back(
         alia_resolved_typeface{ALIA_TYPEFACE_ID_INVALID, nullptr, nullptr});
 
+    alia::style_catalog_init(ui->styles);
+    alia_style_generate_defaults(ui, nullptr);
+
     return ui;
 }
 

@@ -28,39 +28,6 @@ struct radio_data
     alia_keyboard_click_state keyboard_click_state_;
 };
 
-static alia_radio_style const default_radio_style = {
-    .outline = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-    .dot = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0xff),
-    .outline_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff),
-    .dot_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_1),
-        0xff),
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0x33),
-    .layout_width = 40.f,
-    .layout_height = 40.f,
-    .ring_radius = 12.f,
-    .dot_radius = 6.f,
-    .highlight_radius = 18.f,
-    .border_width = 3.f,
-    .flare_radius = 18.f,
-};
-
 static inline alia_vec2f
 radio_center(alia_box placement)
 {
@@ -185,12 +152,49 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
+void
+alia_radio_style_generate(alia_radio_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_radio_style{
+        .outline = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+        .dot = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0xff),
+        .outline_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+            0xff),
+        .dot_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_STRONGER_1),
+            0xff),
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0x33),
+        .layout_width = 40.f * s.scale,
+        .layout_height = 40.f * s.scale,
+        .ring_radius = 12.f * s.scale,
+        .dot_radius = 6.f * s.scale,
+        .highlight_radius = 18.f * s.scale,
+        .border_width = 3.f * s.scale,
+        .flare_radius = 18.f * s.scale,
+    };
+}
+
 alia_element_id
 alia_do_radio(
     alia_context* ctx,
     alia_bool_signal* value,
-    alia_layout_flags_t layout_flags,
-    alia_radio_style const* style)
+    alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(radio_data), alignof(radio_data));
@@ -204,8 +208,7 @@ alia_do_radio(
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_radio_style const* const effective_style
-        = style != nullptr ? style : &default_radio_style;
+    alia_radio_style const* const style = alia_radio_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -214,8 +217,8 @@ alia_do_radio(
             ctx,
             alia_layout_content_metrics_make(
                 alia_vec2f{
-                    alia_px(ctx, effective_style->layout_width),
-                    alia_px(ctx, effective_style->layout_height)}),
+                    alia_px(ctx, style->layout_width),
+                    alia_px(ctx, style->layout_height)}),
             layout_flags);
         return id;
     }
@@ -274,23 +277,12 @@ alia_do_radio(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_radio(
-                ctx,
-                box,
-                *data,
-                selected,
-                interaction_status,
-                effective_style);
+                ctx, box, *data, selected, interaction_status, style);
             break;
         }
     }
 
     return id;
-}
-
-alia_radio_style const*
-alia_default_radio_style(void)
-{
-    return &default_radio_style;
 }
 
 ALIA_EXTERN_C_END

@@ -29,35 +29,6 @@ struct node_expander_data
     alia_keyboard_click_state keyboard_click_state_;
 };
 
-static alia_node_expander_style const default_node_expander_style = {
-    .triangle = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-    .disabled_triangle = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
-        0xff),
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0x30),
-
-    .layout_width = 32.f,
-    .layout_height = 32.f,
-
-    .triangle_side = 16.f,
-
-    // triangle "right" -> "down" rotation
-    .collapsed_rotation_degrees = 90.f,
-    .expanded_rotation_degrees = 180.f,
-
-    .highlight_radius = 16.f,
-    .flare_radius = 16.f,
-};
-
 static inline alia_vec2f
 node_expander_center(alia_box placement)
 {
@@ -149,12 +120,46 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
+void
+alia_node_expander_style_generate(
+    alia_node_expander_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_node_expander_style{
+        .triangle = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+        .disabled_triangle = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
+            0xff),
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0x30),
+
+        .layout_width = 32.f * s.scale,
+        .layout_height = 32.f * s.scale,
+
+        .triangle_side = 16.f * s.scale,
+
+        // triangle "right" -> "down" rotation
+        .collapsed_rotation_degrees = 90.f,
+        .expanded_rotation_degrees = 180.f,
+
+        .highlight_radius = 16.f * s.scale,
+        .flare_radius = 16.f * s.scale,
+    };
+}
+
 alia_element_id
 alia_do_node_expander(
     alia_context* ctx,
     alia_bool_signal* expanded,
-    alia_layout_flags_t layout_flags,
-    alia_node_expander_style const* style)
+    alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(node_expander_data), alignof(node_expander_data));
@@ -172,8 +177,8 @@ alia_do_node_expander(
     bool const is_disabled = (expanded == nullptr)
                           || ((expanded->flags & ALIA_SIGNAL_WRITABLE) == 0);
 
-    alia_node_expander_style const* const effective_style
-        = style != nullptr ? style : &default_node_expander_style;
+    alia_node_expander_style const* const style
+        = alia_node_expander_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -182,8 +187,8 @@ alia_do_node_expander(
             ctx,
             alia_layout_content_metrics_make(
                 alia_vec2f{
-                    alia_px(ctx, effective_style->layout_width),
-                    alia_px(ctx, effective_style->layout_height)}),
+                    alia_px(ctx, style->layout_width),
+                    alia_px(ctx, style->layout_height)}),
             layout_flags);
         return id;
     }
@@ -233,23 +238,12 @@ alia_do_node_expander(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_node_expander(
-                ctx,
-                box,
-                *data,
-                expanded_state,
-                interaction_status,
-                effective_style);
+                ctx, box, *data, expanded_state, interaction_status, style);
             break;
         }
     }
 
     return id;
-}
-
-alia_node_expander_style const*
-alia_default_node_expander_style(void)
-{
-    return &default_node_expander_style;
 }
 
 ALIA_EXTERN_C_END

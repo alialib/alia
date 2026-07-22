@@ -4,6 +4,7 @@
 // <alia/abi/ui/text.h>. Kept for optional layout experiments / shader gallery.
 
 #include <alia/abi/ui/layout/utilities/flow.h>
+#include <alia/abi/ui/styling.h>
 
 struct text_layout_placement_header
 {
@@ -462,7 +463,7 @@ do_text(
             new_node->font_size = scale * ctx.geometry->scale;
             new_node->engine = the_msdf_text_engine;
             new_node->font_index = font_index;
-            new_node->spacing = ctx.style->spacing;
+            new_node->spacing = alia_layout_style_active(&ctx)->spacing;
             *emission.next_ptr = &new_node->base;
             emission.next_ptr = &new_node->base.next_sibling;
             break;

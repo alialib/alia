@@ -17,7 +17,7 @@
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
@@ -72,7 +72,6 @@ alia_srgb8 const the_seed_primaries[]
     = {hex_color("#154DCF"), hex_color("#6f42c1"), hex_color("#a52e45")};
 
 alia_ui_system* the_system = nullptr;
-alia_style the_style = {.spacing = 10.0f};
 std::chrono::high_resolution_clock::time_point the_last_anim_time
     = std::chrono::high_resolution_clock::now();
 
@@ -150,10 +149,11 @@ template<class Content>
 void
 with_spacing(context& ctx, float spacing, Content&& content)
 {
-    float old_spacing = ctx.style->spacing;
-    ctx.style->spacing = spacing * ctx.geometry->scale;
+    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
+    float old_spacing = layout_style->spacing;
+    layout_style->spacing = spacing * ctx.geometry->scale;
     content();
-    ctx.style->spacing = old_spacing;
+    layout_style->spacing = old_spacing;
 }
 
 void
@@ -171,8 +171,7 @@ do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id
-            = alia_do_radio(&ctx, value, ALIA_CENTER_Y, nullptr);
+        alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -192,8 +191,7 @@ do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id
-            = alia_do_switch(&ctx, value, ALIA_CENTER_Y, nullptr);
+        alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -213,8 +211,7 @@ do_checkbox_with_text(context& ctx, alia_bool_signal* value, char const* text)
 {
     alia_box row_box;
     row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id
-            = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y, nullptr);
+        alia_element_id id = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y);
         demo_text(
             ctx,
             text,
@@ -246,8 +243,7 @@ control_slider_d(
             demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
             CENTER_Y);
         flow(ctx, GROW, [&]() {
-            alia_do_slider_d(
-                &ctx, value, min_v, max_v, step, 0, false, nullptr);
+            alia_do_slider_d(&ctx, value, min_v, max_v, step, 0, false);
         });
     });
 }
@@ -420,7 +416,7 @@ shader_gallery_root(context& ctx)
                     [&]() {
                         column(ctx, GROW, [&]() {
                             alia_ui_scroll_view_begin(
-                                &ctx, ALIA_GROW, 0x2, 0, nullptr);
+                                &ctx, ALIA_GROW, 0x2, 0);
                             edge_offsets(
                                 ctx,
                                 {.left = 20,

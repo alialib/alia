@@ -22,27 +22,6 @@ struct slider_data
     uint32_t reserved;
 };
 
-static alia_slider_style const default_slider_style = {
-    .track_color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
-        0xff),
-    .thumb_color = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0xff),
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0x33),
-    .layout_width = 320.f,
-    .layout_height = 32.f,
-    .track_thickness = 6.f,
-    .thumb_radius = 10.f,
-    .highlight_radius = 16.f,
-};
-
 static inline float
 left_pad(alia_context* ctx, alia_slider_style const* s)
 {
@@ -253,8 +232,7 @@ do_slider_impl(
     double maximum,
     double step,
     alia_layout_flags_t layout_flags,
-    bool vertical,
-    alia_slider_style const* style)
+    bool vertical)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(slider_data), alignof(slider_data));
@@ -269,8 +247,7 @@ do_slider_impl(
 
     bool const is_disabled = false;
 
-    alia_slider_style const* const effective_style
-        = style != nullptr ? style : &default_slider_style;
+    alia_slider_style const* const style = alia_slider_style_active(ctx);
 
     unsigned const axis = vertical ? 1u : 0u;
 
@@ -280,8 +257,8 @@ do_slider_impl(
         alia_layout_leaf_emit(
             ctx,
             alia_layout_content_metrics_make(
-                {alia_px(ctx, effective_style->layout_width),
-                 alia_px(ctx, effective_style->layout_height)}),
+                {alia_px(ctx, style->layout_width),
+                 alia_px(ctx, style->layout_height)}),
             layout_flags);
         return base_id;
     }
@@ -299,7 +276,7 @@ do_slider_impl(
                 ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
             double const current = read_value();
             alia_box const thumb_box = get_thumb_region(
-                box, axis, ctx, effective_style, minimum, maximum, current);
+                box, axis, ctx, style, minimum, maximum, current);
             alia_element_box_region(
                 ctx,
                 thumb_id,
@@ -328,9 +305,9 @@ do_slider_impl(
                                              : static_cast<double>(box.min.x);
                 double new_value
                     = (p_axis - min_axis
-                       - static_cast<double>(left_pad(ctx, effective_style)))
+                       - static_cast<double>(left_pad(ctx, style)))
                         * get_values_per_pixel(
-                            box, axis, ctx, effective_style, minimum, maximum)
+                            box, axis, ctx, style, minimum, maximum)
                     + minimum;
                 write_value(
                     round_and_clamp(new_value, minimum, maximum, step));
@@ -422,14 +399,7 @@ do_slider_impl(
                     thumb_id,
                     is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
             render_slider(
-                ctx,
-                box,
-                axis,
-                effective_style,
-                minimum,
-                maximum,
-                current,
-                thumb_status);
+                ctx, box, axis, style, minimum, maximum, current, thumb_status);
             break;
         }
     }
@@ -444,6 +414,33 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
+void
+alia_slider_style_generate(
+    alia_slider_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_slider_style{
+        .track_color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
+            0xff),
+        .thumb_color = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0xff),
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0x33),
+        .layout_width = 320.f * s.scale,
+        .layout_height = 32.f * s.scale,
+        .track_thickness = 6.f * s.scale,
+        .thumb_radius = 10.f * s.scale,
+        .highlight_radius = 16.f * s.scale,
+    };
+}
+
 alia_element_id
 alia_do_slider_d(
     alia_context* ctx,
@@ -452,8 +449,7 @@ alia_do_slider_d(
     double maximum,
     double step,
     alia_layout_flags_t layout_flags,
-    bool vertical,
-    alia_slider_style const* style)
+    bool vertical)
 {
     return do_slider_impl(
         ctx,
@@ -463,8 +459,7 @@ alia_do_slider_d(
         maximum,
         step,
         layout_flags,
-        vertical,
-        style);
+        vertical);
 }
 
 alia_element_id
@@ -475,8 +470,7 @@ alia_do_slider_f(
     float maximum,
     float step,
     alia_layout_flags_t layout_flags,
-    bool vertical,
-    alia_slider_style const* style)
+    bool vertical)
 {
     return do_slider_impl(
         ctx,
@@ -486,14 +480,7 @@ alia_do_slider_f(
         static_cast<double>(maximum),
         static_cast<double>(step),
         layout_flags,
-        vertical,
-        style);
-}
-
-alia_slider_style const*
-alia_default_slider_style(void)
-{
-    return &default_slider_style;
+        vertical);
 }
 
 ALIA_EXTERN_C_END

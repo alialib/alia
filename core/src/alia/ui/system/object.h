@@ -21,6 +21,7 @@
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/drawing/system.h>
+#include <alia/ui/styling.h>
 
 #include <cstdint>
 #include <deque>
@@ -88,6 +89,8 @@ struct alia_ui_system
     uint32_t frame_counter = 0;
 
     alia_palette palette;
+
+    alia::style_catalog styles;
 
     alia_stack stack;
 

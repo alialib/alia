@@ -1,7 +1,6 @@
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
-#include <alia/abi/ui/style.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>

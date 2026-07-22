@@ -4,7 +4,7 @@
 #include <alia/abi/base/stack.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 #include <alia/base/stack.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/layout/system.h>
@@ -56,7 +56,7 @@ struct layout_fixture
     alia_stack stack = {};
     void* stack_buffer = nullptr;
 
-    alia_style style = {.spacing = 0.f};
+    alia_layout_style layout_style = {.spacing = 0.f};
     alia_geometry_context geometry = {.scale = 1.f};
 
     alia_event_traversal event_traversal = {};
@@ -101,7 +101,7 @@ wire_context(layout_fixture& fixture, bool refresh)
         .scratch = nullptr,
         .tick_count = 0,
         .system = nullptr,
-        .style = &fixture.style,
+        .active_styles = &fixture.layout_style,
         .geometry = &fixture.geometry,
         .input = nullptr,
         .layout = &fixture.layout_context,
@@ -192,7 +192,7 @@ void
 layout_fixture_set_spacing(layout_fixture* fixture, float spacing)
 {
     if (fixture)
-        fixture->style.spacing = spacing;
+        fixture->layout_style.spacing = spacing;
 }
 
 void

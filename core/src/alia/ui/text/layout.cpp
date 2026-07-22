@@ -12,7 +12,7 @@
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
@@ -316,13 +316,19 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
-static alia_text_style const default_text_style = {
-    .font = nullptr,
-    .color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_TEXT, ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-};
+void
+alia_text_style_generate(alia_text_style* out, alia_style_seeds const* seeds)
+{
+    (void) seeds;
+    *out = alia_text_style{
+        .font = nullptr,
+        .color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_TEXT,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+    };
+}
 
 void
 alia_text(
@@ -332,7 +338,7 @@ alia_text(
     alia_text_style const* style)
 {
     alia_text_style const* const effective_style
-        = style != nullptr ? style : &default_text_style;
+        = style != nullptr ? style : alia_text_style_active(ctx);
 
     alia_substrate_usage_result const result = alia_substrate_use_object(
         ctx,
@@ -407,7 +413,7 @@ alia_text(
         *node = text_layout_node{
             .base = {.vtable = &text_layout_vtable, .next_sibling = nullptr},
             .flags = flags,
-            .spacing = ctx->style->spacing,
+            .spacing = alia_layout_style_active(ctx)->spacing,
             .engine = engine,
             .block = cache->block,
             .text_length = cache->text_length,
@@ -454,12 +460,6 @@ alia_text(
                 break;
         }
     }
-}
-
-alia_text_style const*
-alia_default_text_style(void)
-{
-    return &default_text_style;
 }
 
 ALIA_EXTERN_C_END

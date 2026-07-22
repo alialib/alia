@@ -1,5 +1,5 @@
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
@@ -97,7 +97,7 @@ alia_layout_leaf_emit(
     *new_node = layout_leaf_node{
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
-        .spacing = ctx->style->spacing,
+        .spacing = alia_layout_style_active(ctx)->spacing,
         .content = content};
 }
 

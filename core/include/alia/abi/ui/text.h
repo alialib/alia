@@ -10,6 +10,7 @@
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling.h>
 
 #include <string.h>
 
@@ -262,13 +263,26 @@ typedef struct alia_text_style
     alia_palette_color color;
 } alia_text_style;
 
-// The default text style (inherit active font; foundation text color at full
-// opacity).
-alia_text_style const*
-alia_default_text_style(void);
+// Fill `out` with the text style for `seeds`.
+// Seeds can be `NULL` to use the default seeds.
+void
+alia_text_style_generate(alia_text_style* out, alia_style_seeds const* seeds);
 
-// Emit a text element. `flags` are layout flags. `style` may be null, in which
-// case `alia_default_text_style` is used.
+static inline alia_text_style*
+alia_text_style_default(alia_ui_system* ui)
+{
+    return (alia_text_style*) alia_style_default(ui, ALIA_STYLE_TEXT);
+}
+
+static inline alia_text_style*
+alia_text_style_active(alia_context* ctx)
+{
+    return (alia_text_style*) alia_style_active(ctx, ALIA_STYLE_TEXT);
+}
+
+// Emit a text element.
+// `flags` are layout flags.
+// `style` may be null, in which case the active text style is used.
 void
 alia_text(
     alia_context* ctx,

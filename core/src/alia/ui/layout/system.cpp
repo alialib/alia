@@ -2,7 +2,6 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/ui/layout/utilities.h>
-#include <alia/abi/ui/style.h>
 #include <alia/impl/base/arena.hpp>
 
 using namespace alia;

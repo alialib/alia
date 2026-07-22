@@ -4,7 +4,7 @@
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 
@@ -117,7 +117,8 @@ alia_element_handle_visibility(
             // TODO: Do we really want to expand here?
             alia_box_expand(
                 *region,
-                alia_edge_offsets_make_uniform(alia_ctx_style(ctx)->spacing)),
+                alia_edge_offsets_make_uniform(
+                    alia_layout_style_active(ctx)->spacing)),
             ctx->geometry->offset);
         e.acknowledged = true;
     }

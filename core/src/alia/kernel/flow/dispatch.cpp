@@ -3,20 +3,19 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/style.h>
+#include <alia/abi/ui/styling.h>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
+
+#include <cstring>
 
 namespace alia {
 
 void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
-    // TODO
-    static alia_style the_style = {.spacing = 10.0f};
-
     alia_bump_allocator scratch;
     alia_bump_allocator_init(&scratch, &sys.scratch);
 
@@ -60,6 +59,12 @@ invoke_controller(ui_system& sys, event_traversal& events)
         sys.frame_counter,
         events.event->type == ALIA_EVENT_REFRESH);
 
+    ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
+    size_t const actives_bytes = alia::align_up(sys.styles.defaults_size);
+    void* active_styles = alia_arena_ptr(
+        &scratch, alia_arena_alloc(&scratch, actives_bytes));
+    std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
+
     alia_context ctx = {
         .kernel = nullptr,
         .substrate = &substrate_traversal,
@@ -68,7 +73,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .scratch = &scratch,
         .tick_count = sys.tick_count,
         .system = &sys,
-        .style = &the_style,
+        .active_styles = active_styles,
         // No active font until something pushes one (see `alia_font_push`).
         // Using text before then is a programming error and asserts.
         .active_font = nullptr,

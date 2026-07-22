@@ -29,63 +29,6 @@ struct switch_data
     alia_keyboard_click_state keyboard_click_state_;
 };
 
-static alia_switch_style const default_switch_style = {
-    .off_track = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff),
-    .on_track = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
-        0xff),
-    .off_dot = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
-        0xff),
-    .on_dot = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0xff),
-    .off_track_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
-        0xff),
-    .on_track_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_3),
-        0xff),
-    .off_dot_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
-        0xff),
-    .on_dot_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0x33),
-    .layout_width = 55.f,
-    .layout_height = 30.f,
-    .track_width = 26.f,
-    .track_height = 12.f,
-    .track_corner_radius_fraction = 0.5f,
-    .dot_center_x_off = 16.f,
-    .dot_center_x_on = 39.f,
-    .dot_radius_off = 10.f,
-    .dot_radius_on = 11.f,
-    .highlight_radius = 17.f,
-    .flare_radius = 17.f,
-};
-
 static inline alia_vec2f
 switch_content_origin(
     alia_context* ctx, alia_box placement, alia_switch_style const* s)
@@ -239,12 +182,74 @@ using namespace alia;
 
 ALIA_EXTERN_C_BEGIN
 
+void
+alia_switch_style_generate(
+    alia_switch_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_switch_style{
+        .off_track = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
+            0xff),
+        .on_track = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
+            0xff),
+        .off_dot = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
+            0xff),
+        .on_dot = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0xff),
+        .off_track_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
+            0xff),
+        .on_track_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_3),
+            0xff),
+        .off_dot_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
+            0xff),
+        .on_dot_disabled = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+            0x33),
+        .layout_width = 55.f * s.scale,
+        .layout_height = 30.f * s.scale,
+        .track_width = 26.f * s.scale,
+        .track_height = 12.f * s.scale,
+        .track_corner_radius_fraction = 0.5f * s.roundness,
+        .dot_center_x_off = 16.f * s.scale,
+        .dot_center_x_on = 39.f * s.scale,
+        .dot_radius_off = 10.f * s.scale,
+        .dot_radius_on = 11.f * s.scale,
+        .highlight_radius = 17.f * s.scale,
+        .flare_radius = 17.f * s.scale,
+    };
+}
+
 alia_element_id
 alia_do_switch(
     alia_context* ctx,
     alia_bool_signal* value,
-    alia_layout_flags_t layout_flags,
-    alia_switch_style const* style)
+    alia_layout_flags_t layout_flags)
 {
     // TODO: Use C++ API for this.
     alia_substrate_usage_result result = alia_substrate_use_memory(
@@ -259,8 +264,7 @@ alia_do_switch(
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_switch_style const* const effective_style
-        = style != nullptr ? style : &default_switch_style;
+    alia_switch_style const* const style = alia_switch_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -269,8 +273,8 @@ alia_do_switch(
             ctx,
             alia_layout_content_metrics_make(
                 alia_vec2f{
-                    alia_px(ctx, effective_style->layout_width),
-                    alia_px(ctx, effective_style->layout_height)}),
+                    alia_px(ctx, style->layout_width),
+                    alia_px(ctx, style->layout_height)}),
             layout_flags);
         return id;
     }
@@ -327,23 +331,12 @@ alia_do_switch(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_switch(
-                ctx,
-                box,
-                *data,
-                selected,
-                interaction_status,
-                effective_style);
+                ctx, box, *data, selected, interaction_status, style);
 
             break;
         }
     }
     return id;
-}
-
-alia_switch_style const*
-alia_default_switch_style(void)
-{
-    return &default_switch_style;
 }
 
 ALIA_EXTERN_C_END

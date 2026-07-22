@@ -67,39 +67,6 @@ struct scroll_view_state
     bool scrollbars_on[2] = {false, false};
 };
 
-static alia_scrollbar_style const default_scrollbar_style = {
-    .track_color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_BASE),
-        0xff),
-    .thumb_color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-        0xff),
-    .button_color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
-        0xff),
-    .glyph_color = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-        0xff),
-    .highlight = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SUBTLE),
-        0x40),
-    .width = 24.f,
-    .button_length = 0.f,
-    .minimum_thumb_length = 20.f,
-    .thumb_corner_radius = 0.f,
-    .line_size = 72.f,
-    .scroll_sensitivity = 1.f,
-};
-
 static inline float
 axis_of(alia_vec2f const& v, unsigned axis)
 {
@@ -690,12 +657,50 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 void
+alia_scrollbar_style_generate(
+    alia_scrollbar_style* out, alia_style_seeds const* seeds)
+{
+    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
+    *out = alia_scrollbar_style{
+        .track_color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_BASE),
+            0xff),
+        .thumb_color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
+            0xff),
+        .button_color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
+            0xff),
+        .glyph_color = alia_palette_color_make(
+            alia_palette_index_foundation_ramp(
+                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
+                ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
+            0xff),
+        .highlight = alia_palette_color_make(
+            alia_palette_index_swatch(
+                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SUBTLE),
+            0x40),
+        .width = 24.f * s.scale,
+        .button_length = 0.f * s.scale,
+        .minimum_thumb_length = 20.f * s.scale,
+        .thumb_corner_radius = 0.f * s.scale * s.roundness,
+        .line_size = 72.f * s.scale,
+        .scroll_sensitivity = 1.f,
+    };
+}
+
+void
 alia_ui_scroll_view_begin(
     alia_context* ctx,
     alia_layout_flags_t layout_flags,
     uint8_t scrollable_axes,
-    uint8_t reserved_axes,
-    alia_scrollbar_style const* style)
+    uint8_t reserved_axes)
 {
     auto& scope = stack_push<scroll_view_scope>(ctx);
 
@@ -712,7 +717,7 @@ alia_ui_scroll_view_begin(
     data->scrollable_axes = scrollable_axes;
     data->reserved_axes = reserved_axes;
     data->layout_flags = layout_flags;
-    data->style = style != nullptr ? *style : default_scrollbar_style;
+    data->style = *alia_scrollbar_style_active(ctx);
 
     if (is_refresh_event(*ctx))
     {
@@ -830,12 +835,6 @@ alia_ui_scroll_view_end(alia_context* ctx)
         if (alia_input_detect_key_press(ctx, &key))
             scroll_view_handle_key(*scope.data, scope.placement, key);
     }
-}
-
-alia_scrollbar_style const*
-alia_default_scrollbar_style(void)
-{
-    return &default_scrollbar_style;
 }
 
 ALIA_EXTERN_C_END

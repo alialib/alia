@@ -1,7 +1,6 @@
 #include <alia/ui/layout/components/column.h>
 
 #include <alia/abi/ui/layout/utilities/placement.h>
-#include <alia/abi/ui/style.h>
 #include <alia/impl/ui/layout.hpp>
 
 using namespace alia::operators;
