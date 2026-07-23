@@ -23,20 +23,29 @@ demo/sandbox target, e.g.:
 
 # Comments
 
-Prefer to put comments above the code that they refer to. Use proper
-capitalization and punctuation for comments. The one exception to this is when
-documenting a variable/field and the comment text is just a noun clause, e.g.:
+In general, prefer to put comments above the code that they refer to.
+
+If you are documenting a function, please use the imperative. For example:
+"Reset `sys` to its default state."
+
+For fields and other short labels that require documentation, use a noun clause
+(no capitalization or punctuation). If more explanation is required, keep the
+noun clause and continue with a full sentence after a dash or on the next line.
+That sentence must meet the English language rules for a sentence. (e.g., "This
+is ...", "Note that ..."). Examples:
 
 ```
     // screen resolution in pixels
     alia_vec2i res;
-```
 
-Or:
-
-```
     // timer event cycle counter - This prevents timer requests from being
     // serviced in the same frame that they're requested (which could throw
     // the event handler into a loop).
     uint64_t timer_event_cycle = 0;
 ```
+
+Elsewhere, please favor complete sentences that are meant to be read by humans,
+with proper capitalization and punctuation.
+
+Spell the abbreviation for "identifier" as `ID` (e.g. "slot ID", "element ID"),
+not `id`.
