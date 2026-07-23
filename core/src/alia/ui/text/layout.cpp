@@ -360,52 +360,52 @@ alia_text(
     alia_text_engine* engine = font->typeface.engine;
     void* engine_handle = font->typeface.engine_handle;
 
-    // (Re)prepare the block when the content, typeface, or physical size
-    // changes. On a fresh slot the previous state is undefined, so we always
-    // rebuild without touching it.
-    bool const changed
-        = fresh || cache->engine_handle != engine_handle
-       || cache->physical_size != physical_size
-       || !alia_captured_id_matches_view(&cache->value_id, text.value_id);
-    if (changed)
-    {
-        if (cache->block && cache->engine)
-            cache->engine->vtable->release_block(cache->engine, cache->block);
-        alia_captured_id_release(&cache->value_id);
-
-        // Only inline value IDs (u64 revisions, literal pointers) are
-        // supported for now; external/content-hashed IDs would need a
-        // variable-size capture slab.
-        alia_struct_spec const spec = alia_captured_id_spec(text.value_id);
-        ALIA_ASSERT(
-            spec.size <= sizeof(cache->value_id)
-            && spec.align <= alignof(alia_captured_id));
-        alia_captured_id_capture_into(
-            text.value_id, &cache->value_id, sizeof(cache->value_id));
-
-        // Resolve the length lazily: this is the only path that scans the
-        // bytes of a null-terminated (literal) signal, and it runs only when
-        // the content actually changes.
-        size_t const length = text.length == ALIA_TEXT_LENGTH_NULL_TERMINATED
-                                ? (text.text ? strlen(text.text) : 0)
-                                : text.length;
-
-        cache->engine = engine;
-        cache->engine_handle = engine_handle;
-        cache->physical_size = physical_size;
-        cache->text_length = length;
-        cache->block = engine->vtable->prepare_block(
-            engine,
-            engine_handle,
-            physical_size,
-            ALIA_TEXT_DIRECTION_LTR,
-            text.text,
-            length);
-    }
-
     alia_event_category const category = get_event_category(*ctx);
+
+    // (Re)prepare the block when the content, typeface, or physical size
+    // changes. Layout nodes borrow this block until the next refresh, so
+    // rebuilds must only happen on refresh (or when the substrate slot is
+    // fresh). Doing so on input/draw would free a block that
+    // `run_layout_resolve` still walks via the previous emission.
     if (category == ALIA_CATEGORY_REFRESH)
     {
+        if (fresh || cache->engine_handle != engine_handle
+            || cache->physical_size != physical_size
+            || !alia_captured_id_matches_view(&cache->value_id, text.value_id))
+        {
+            if (cache->block && cache->engine)
+                cache->engine->vtable->release_block(
+                    cache->engine, cache->block);
+            alia_captured_id_release(&cache->value_id);
+
+            // Capture the ID.
+            // TODO: Support arbitrary IDs.
+            alia_struct_spec const spec = alia_captured_id_spec(text.value_id);
+            ALIA_ASSERT(
+                spec.size <= sizeof(cache->value_id)
+                && spec.align <= alignof(alia_captured_id));
+            alia_captured_id_capture_into(
+                text.value_id, &cache->value_id, sizeof(cache->value_id));
+
+            // Resolve the length.
+            size_t const length
+                = text.length == ALIA_TEXT_LENGTH_NULL_TERMINATED
+                    ? (text.text ? strlen(text.text) : 0)
+                    : text.length;
+
+            cache->engine = engine;
+            cache->engine_handle = engine_handle;
+            cache->physical_size = physical_size;
+            cache->text_length = length;
+            cache->block = engine->vtable->prepare_block(
+                engine,
+                engine_handle,
+                physical_size,
+                ALIA_TEXT_DIRECTION_LTR,
+                text.text,
+                length);
+        }
+
         auto& emission = ctx->layout->emission;
         auto* node = arena_alloc<text_layout_node>(emission.arena);
         *emission.next_ptr = &node->base;
@@ -423,6 +423,8 @@ alia_text(
             .descender = font->metrics.descender * geometry_scale};
         return;
     }
+
+    ALIA_ASSERT(!fresh);
 
     // Non-refresh passes: replay the placement records the layout wrote (this
     // must happen on every pass to keep the placement arena walk in sync) and
