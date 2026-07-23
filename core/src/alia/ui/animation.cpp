@@ -70,7 +70,7 @@ render_click_flares(
                 position,
                 radius * radius_scale_factor,
                 alia_srgba8_from_srgb8_alpha(
-                    color, uint8_t(intensity * 0x66)));
+                    color, uint8_t(intensity * 0x36)));
         }
     }
 
@@ -88,7 +88,7 @@ render_click_flares(
                 position,
                 radius,
                 alia_srgba8_from_srgb8_alpha(
-                    color, uint8_t(intensity * 0x66)));
+                    color, uint8_t(intensity * 0x36)));
         }
     }
 
@@ -109,7 +109,7 @@ render_click_flares(
             ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
             position,
             scale_factor * radius,
-            alia_srgba8_from_srgb8_alpha(color, uint8_t(scale_factor * 0x66)));
+            alia_srgba8_from_srgb8_alpha(color, uint8_t(scale_factor * 0x36)));
     }
 }
 

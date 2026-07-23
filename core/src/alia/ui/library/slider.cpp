@@ -399,7 +399,14 @@ do_slider_impl(
                     thumb_id,
                     is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
             render_slider(
-                ctx, box, axis, style, minimum, maximum, current, thumb_status);
+                ctx,
+                box,
+                axis,
+                style,
+                minimum,
+                maximum,
+                current,
+                thumb_status);
             break;
         }
     }
@@ -432,7 +439,7 @@ alia_slider_style_generate(
         .highlight = alia_palette_color_make(
             alia_palette_index_swatch(
                 ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x33),
+            0x18),
         .layout_width = 320.f * s.scale,
         .layout_height = 32.f * s.scale,
         .track_thickness = 6.f * s.scale,

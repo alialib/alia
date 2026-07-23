@@ -9,6 +9,10 @@
 // `frag_coord` is in Alia surface pixel space on D3D (top-left origin). On
 // GLSL targets, use alia_effect_surface.y to flip gl_FragCoord as needed
 // (see __target_switch in notargs.slang).
+//
+// Color: `SV_Target` is linear-light RGB with premultiplied alpha (same as the
+// UI primitive pipeline after sRGB decode). Backends encode to sRGB for
+// display after blending.
 
 cbuffer AliaEffectFrame : register(b0)
 {

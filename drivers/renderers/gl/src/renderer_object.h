@@ -29,6 +29,14 @@ struct gl_effect_slot
     size_t ubo_bytes = 0;
 };
 
+struct gl_linear_target
+{
+    GLuint fbo = 0;
+    GLuint color_tex = 0;
+    int width = 0;
+    int height = 0;
+};
+
 struct alia_gl_renderer
 {
     alia_ui_system* system = nullptr;
@@ -46,4 +54,12 @@ struct alia_gl_renderer
     // Shared AliaEffectFrame UBO (binding 0) for Slang-baked effects.
     GLuint effect_frame_ubo = 0;
     std::vector<std::unique_ptr<gl_effect_slot>> effects;
+    // Linear-blend primary surface - Shaders output linear premultiplied color
+    // into RGBA8. At draw_pass_end a present pass encodes linear->sRGB into
+    // the host framebuffer (WebGL has no sRGB backbuffer like D3D's RTV).
+    gl_linear_target primary_target{};
+    GLuint present_program = 0;
+    GLint present_sampler_location = -1;
+    // draw-framebuffer binding captured at draw_pass_begin (usually 0)
+    GLint pass_draw_fbo = 0;
 };

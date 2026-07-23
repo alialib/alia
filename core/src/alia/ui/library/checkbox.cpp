@@ -234,7 +234,7 @@ alia_checkbox_style_generate(
         .highlight = alia_palette_color_make(
             alia_palette_index_swatch(
                 ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x33),
+            0x18),
 
         .layout_width = 40.f * s.scale,
         .layout_height = 40.f * s.scale,

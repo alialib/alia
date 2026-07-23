@@ -6,8 +6,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/effects.h>
-#include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/renderer.h>
@@ -181,22 +181,10 @@ float sd_squircle(vec2 p, float R)
     return sqrt(sqrt(x2 * x2 + y2 * y2)) - R;
 }
 
-vec3 linear_to_srgb(vec3 linear) {
-    vec3 s1 = sqrt(linear);
-    vec3 s2 = sqrt(s1);
-    vec3 s3 = sqrt(s2);
-    return 0.662002687 * s1 + 0.684122060 * s2 - 0.323583601 * s3 -
-        0.0225411470 * linear;
-}
-
+// Output linear premultiplied color. Encoding happens on write to the sRGB
+// primary target (same blend-then-encode order as the D3D11 renderer).
 vec4 apply_aa_and_postprocess(vec4 color, float aa_alpha) {
-  #ifdef EMSCRIPTEN
-    vec3 unpremultiplied = color.a > 0.0 ? color.rgb / color.a : vec3(0.0);
-    float alpha = color.a * aa_alpha;
-    return vec4(linear_to_srgb(unpremultiplied) * alpha, alpha);
-  #else
     return color * aa_alpha;
-  #endif
 }
 
 vec4 sample_primitive(vec2 p)
@@ -282,6 +270,212 @@ renderer_setup_blend()
 {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+bool
+ensure_effect_geometry(alia_gl_renderer* renderer);
+
+void
+release_linear_target(gl_linear_target& target)
+{
+    if (target.fbo != 0)
+    {
+        glDeleteFramebuffers(1, &target.fbo);
+        target.fbo = 0;
+    }
+    if (target.color_tex != 0)
+    {
+        glDeleteTextures(1, &target.color_tex);
+        target.color_tex = 0;
+    }
+    target.width = 0;
+    target.height = 0;
+}
+
+// Ensure a linear RGBA8 color target for blend-then-encode (same ordering as
+// D3D11). Encoding to the host framebuffer happens in the present pass.
+bool
+ensure_linear_target(gl_linear_target& target, int width, int height)
+{
+    if (width <= 0 || height <= 0)
+        return false;
+    if (target.fbo != 0 && target.width == width && target.height == height)
+        return true;
+
+    release_linear_target(target);
+
+    glGenTextures(1, &target.color_tex);
+    glBindTexture(GL_TEXTURE_2D, target.color_tex);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA8,
+        width,
+        height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenFramebuffers(1, &target.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, target.fbo);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D,
+        target.color_tex,
+        0);
+
+    GLenum const status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::fprintf(
+            stderr,
+            "[alia gl] linear RGBA8 framebuffer incomplete (0x%04x)\n",
+            unsigned(status));
+        release_linear_target(target);
+        return false;
+    }
+
+    target.width = width;
+    target.height = height;
+    return true;
+}
+
+char const* present_vertex_shader_source = R"(
+layout(location = 0) in vec2 position;
+out vec2 v_uv;
+void main()
+{
+    v_uv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+}
+)";
+
+char const* present_fragment_shader_source = R"(
+in vec2 v_uv;
+uniform sampler2D u_linear;
+out vec4 frag_color;
+
+vec3 linear_to_srgb(vec3 linear)
+{
+    vec3 low = linear * 12.92;
+    vec3 high = 1.055 * pow(max(linear, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055;
+    vec3 mask = step(vec3(0.0031308), linear);
+    return mix(low, high, mask);
+}
+
+void main()
+{
+    vec4 color = texture(u_linear, v_uv);
+    // Premultiplied linear -> premultiplied sRGB for the host framebuffer.
+    vec3 unpremultiplied = color.a > 0.0 ? color.rgb / color.a : vec3(0.0);
+    frag_color = vec4(linear_to_srgb(unpremultiplied) * color.a, color.a);
+}
+)";
+
+bool
+ensure_present_pipeline(alia_gl_renderer* renderer)
+{
+    if (renderer->present_program != 0 && renderer->effect_vao != 0)
+        return true;
+
+    if (!ensure_effect_geometry(renderer))
+        return false;
+
+    if (renderer->present_program == 0)
+    {
+        renderer->present_program = alia_gl_create_shader_program(
+            present_vertex_shader_source, present_fragment_shader_source);
+        if (renderer->present_program == 0)
+        {
+            std::fprintf(
+                stderr, "[alia gl] present program creation failed\n");
+            return false;
+        }
+        renderer->present_sampler_location
+            = glGetUniformLocation(renderer->present_program, "u_linear");
+    }
+    return true;
+}
+
+void
+gl_draw_pass_begin(void* user)
+{
+    auto* renderer = static_cast<alia_gl_renderer*>(user);
+    if (!renderer || !renderer->system)
+        return;
+
+    alia_vec2i const size = alia_ui_surface_get_size(renderer->system);
+    if (!ensure_linear_target(renderer->primary_target, size.x, size.y))
+        return;
+    if (!ensure_present_pipeline(renderer))
+        return;
+
+    GLint draw_fbo = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_fbo);
+    renderer->pass_draw_fbo = draw_fbo;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, renderer->primary_target.fbo);
+    glViewport(
+        0, 0, renderer->primary_target.width, renderer->primary_target.height);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void
+gl_draw_pass_end(void* user)
+{
+    auto* renderer = static_cast<alia_gl_renderer*>(user);
+    if (!renderer || renderer->primary_target.fbo == 0
+        || renderer->present_program == 0 || renderer->effect_vao == 0)
+        return;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(renderer->pass_draw_fbo));
+    glViewport(
+        0, 0, renderer->primary_target.width, renderer->primary_target.height);
+    glDisable(GL_BLEND);
+    glUseProgram(renderer->present_program);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, renderer->primary_target.color_tex);
+    if (renderer->present_sampler_location >= 0)
+        glUniform1i(renderer->present_sampler_location, 0);
+    glBindVertexArray(renderer->effect_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glEnable(GL_BLEND);
+}
+
+void
+gl_draw_target_bind(void* user, alia_draw_target_id target)
+{
+    auto* renderer = static_cast<alia_gl_renderer*>(user);
+    if (!renderer)
+        return;
+
+    if (target == ALIA_DRAW_TARGET_PRIMARY)
+    {
+        if (renderer->primary_target.fbo != 0)
+            glBindFramebuffer(GL_FRAMEBUFFER, renderer->primary_target.fbo);
+        else
+            glBindFramebuffer(GL_FRAMEBUFFER, GLuint(renderer->pass_draw_fbo));
+        return;
+    }
+
+    // Offscreen draw targets are not implemented for GL yet.
+    std::fprintf(
+        stderr,
+        "[alia gl] draw_target_bind: offscreen target %u unsupported\n",
+        unsigned(target));
+    if (renderer->primary_target.fbo != 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, renderer->primary_target.fbo);
 }
 
 void
@@ -627,10 +821,7 @@ ensure_effect_geometry(alia_gl_renderer* renderer)
 
 void
 bind_effect_uniform_blocks(
-    GLuint program,
-    size_t params_size,
-    size_t ubo_bytes,
-    gl_effect_slot* slot)
+    GLuint program, size_t params_size, size_t ubo_bytes, gl_effect_slot* slot)
 {
     GLint block_count = 0;
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &block_count);
@@ -771,8 +962,8 @@ register_effect_blob(
     ALIA_ASSERT(desc);
     ALIA_ASSERT(out_material_id);
 
-    if (desc->shader.format != ALIA_GL_SHADER_FORMAT
-        || !desc->shader.data || desc->shader.size == 0)
+    if (desc->shader.format != ALIA_GL_SHADER_FORMAT || !desc->shader.data
+        || desc->shader.size == 0)
     {
         std::fprintf(
             stderr,
@@ -888,6 +1079,9 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
                     desc,
                     out_material_id);
             },
+        .draw_pass_begin = gl_draw_pass_begin,
+        .draw_pass_end = gl_draw_pass_end,
+        .draw_target_bind = gl_draw_target_bind,
         .user = renderer,
     };
     alia_ui_system_set_renderer_ops(ui, &ops);
@@ -1006,6 +1200,14 @@ alia_gl_renderer_destroy(alia_gl_renderer* renderer)
         glDeleteVertexArrays(1, &renderer->vao);
         renderer->vao = 0;
     }
+    if (renderer->present_program != 0)
+    {
+        glDeleteProgram(renderer->present_program);
+        renderer->present_program = 0;
+        renderer->present_sampler_location = -1;
+    }
+    release_linear_target(renderer->primary_target);
+    renderer->pass_draw_fbo = 0;
 }
 
 } // extern "C"

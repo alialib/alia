@@ -179,7 +179,7 @@ alia_radio_style_generate(alia_radio_style* out, alia_style_seeds const* seeds)
         .highlight = alia_palette_color_make(
             alia_palette_index_swatch(
                 ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x33),
+            0x18),
         .layout_width = 40.f * s.scale,
         .layout_height = 40.f * s.scale,
         .ring_radius = 12.f * s.scale,
@@ -276,8 +276,7 @@ alia_do_radio(
                         | (data->keyboard_click_state_.state
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
-            render_radio(
-                ctx, box, *data, selected, interaction_status, style);
+            render_radio(ctx, box, *data, selected, interaction_status, style);
             break;
         }
     }

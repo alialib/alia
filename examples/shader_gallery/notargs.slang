@@ -74,6 +74,12 @@ float4 ps_main(float4 frag_coord : SV_Position) : SV_Target
     float3 p = direction * distance_traveled;
     float depth_factor = invert ? (length(p) * depth_scale / 120.0)
                                 : (1.0 / (length(p) * depth_scale));
-    return float4(
-        (sin(p) * sine_factor + color * color_factor) * depth_factor, 1.0);
+    float3 srgb = (sin(p) * sine_factor + color * color_factor) * depth_factor;
+
+    // Convert to linear RGB.
+    float3 low = srgb / 12.92;
+    float3 high = pow((srgb + 0.055) / 1.055, 2.4);
+    float3 linear = lerp(low, high, step(0.04045, srgb));
+
+    return float4(linear, 1.0);
 }

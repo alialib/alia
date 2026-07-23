@@ -230,7 +230,7 @@ alia_switch_style_generate(
         .highlight = alia_palette_color_make(
             alia_palette_index_swatch(
                 ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x33),
+            0x20),
         .layout_width = 55.f * s.scale,
         .layout_height = 30.f * s.scale,
         .track_width = 26.f * s.scale,

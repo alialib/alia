@@ -14,8 +14,7 @@ GLuint
 compile_shader(GLenum type, char const* source)
 {
 #ifdef __EMSCRIPTEN__
-    char const* header
-        = "#version 300 es\nprecision highp float;\n#define EMSCRIPTEN 1\n";
+    char const* header = "#version 300 es\nprecision highp float;\n";
 #else
     char const* header = "#version 330 core\n";
 #endif
