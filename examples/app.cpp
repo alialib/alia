@@ -25,7 +25,6 @@
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/styling.h>
 #include <alia/abi/ui/system/api.h>
-#include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
 #include <alia/context.h>
@@ -52,7 +51,6 @@ static int primary_index = 0;
 alia_ui_system* the_system;
 
 static float demo_spacing = 6.f;
-static float demo_scale = 1.0f;
 static float demo_node_expander_triangle_side = 24.f;
 
 #include "common/demo_text.hpp"
@@ -89,20 +87,6 @@ with_spacing(context& ctx, float spacing, Content&& content)
     float old_spacing = layout_style->spacing;
     layout_style->spacing = spacing * ctx.geometry->scale;
     content();
-    layout_style->spacing = old_spacing;
-}
-
-template<class Content>
-void
-with_ui_scale(context& ctx, float scale, Content&& content)
-{
-    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
-    float old_scale = ctx.geometry->scale;
-    float old_spacing = layout_style->spacing;
-    ctx.geometry->scale *= scale;
-    layout_style->spacing *= scale;
-    content();
-    ctx.geometry->scale = old_scale;
     layout_style->spacing = old_spacing;
 }
 
@@ -292,8 +276,12 @@ do_controls(context& ctx)
     do_subheading(ctx, "Spacing");
     alia_do_slider_f(&ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false);
 
-    do_subheading(ctx, "Scale");
-    alia_do_slider_f(&ctx, &demo_scale, 0.1f, 3.0f, 0.001f, 0, false);
+    do_subheading(ctx, "Magnification");
+    {
+        float mag = alia_ui_get_magnification(ctx.system);
+        alia_do_slider_f(&ctx, &mag, 0.25f, 3.0f, 0.001f, 0, false);
+        alia_ui_set_magnification(ctx.system, mag);
+    }
 
     do_draw_target_demo(ctx);
 
@@ -679,30 +667,6 @@ the_demo(context& ctx)
 {
     try
     {
-        alia_key_info k;
-        if (alia_input_detect_global_key_press(&ctx, &k))
-        {
-            if (k.logical == ALIA_KEY_F11 && k.mods == ALIA_KMOD_NONE)
-            {
-                if (ctx.system->host_window.toggle_fullscreen)
-                {
-                    ctx.system->host_window.toggle_fullscreen(
-                        ctx.system->host_window.user);
-                }
-                alia_input_acknowledge_key_event(&ctx);
-            }
-            else if (k.logical == ALIA_KEY_EQUAL && k.mods == ALIA_KMOD_NONE)
-            {
-                demo_scale *= 1.1f;
-                alia_input_acknowledge_key_event(&ctx);
-            }
-            else if (k.logical == ALIA_KEY_MINUS && k.mods == ALIA_KMOD_NONE)
-            {
-                demo_scale /= 1.1f;
-                alia_input_acknowledge_key_event(&ctx);
-            }
-        }
-
         with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
                 concrete_panel(
@@ -720,28 +684,26 @@ the_demo(context& ctx)
                                 });
                             });
                     });
-                with_ui_scale(ctx, demo_scale, [&] {
-                    with_spacing(ctx, demo_spacing, [&] {
-                        concrete_panel(
-                            ctx,
-                            0,
-                            ctx.palette->foundation.background.base,
-                            GROW,
-                            [&]() {
-                                column(ctx, GROW, [&]() {
-                                    alia_ui_scroll_view_begin(
-                                        &ctx, ALIA_GROW, 0x3, 0);
-                                    edge_offsets(
-                                        ctx,
-                                        {.left = 40,
-                                         .right = 40,
-                                         .top = 40,
-                                         .bottom = 40},
-                                        [&]() { do_content(ctx); });
-                                    alia_ui_scroll_view_end(&ctx);
-                                });
+                with_spacing(ctx, demo_spacing, [&] {
+                    concrete_panel(
+                        ctx,
+                        0,
+                        ctx.palette->foundation.background.base,
+                        GROW,
+                        [&]() {
+                            column(ctx, GROW, [&]() {
+                                alia_ui_scroll_view_begin(
+                                    &ctx, ALIA_GROW, 0x3, 0);
+                                edge_offsets(
+                                    ctx,
+                                    {.left = 40,
+                                     .right = 40,
+                                     .top = 40,
+                                     .bottom = 40},
+                                    [&]() { do_content(ctx); });
+                                alia_ui_scroll_view_end(&ctx);
                             });
-                    });
+                        });
                 });
             });
         });
@@ -817,6 +779,8 @@ main()
         .shell = {
             .draw_foundation_underlay = true,
             .surface_padding = {},
+            .enable_keyboard_zoom = true,
+            .enable_smooth_zoom = true,
         },
         .frame = {app_frame, nullptr},
         .continuous = false,

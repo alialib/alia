@@ -61,8 +61,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
     size_t const actives_bytes = alia::align_up(sys.styles.defaults_size);
-    void* active_styles = alia_arena_ptr(
-        &scratch, alia_arena_alloc(&scratch, actives_bytes));
+    void* active_styles
+        = alia_arena_ptr(&scratch, alia_arena_alloc(&scratch, actives_bytes));
     std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
 
     alia_context ctx = {

@@ -52,8 +52,7 @@ alia_animation_process_flares(
 
 // TRANSITIONS
 
-// `alia_unit_cubic_bezier` represents a cubic bezier whose end points are at
-// `(0, 0)` and `(1, 1)` respectively.
+// unit cubic bezier with endpoints at (0, 0) and (1, 1)
 typedef struct alia_unit_cubic_bezier
 {
     float p1x;
@@ -71,16 +70,17 @@ extern alia_animation_curve const alia_ease_in_curve;
 extern alia_animation_curve const alia_ease_out_curve;
 extern alia_animation_curve const alia_ease_in_out_curve;
 
-// animated_transition specifies an animated transition from one state to
-// another, defined by a duration and a curve to follow.
+// specification of the duration and path of an animation transition
 typedef struct alia_animated_transition
 {
     alia_animation_curve curve;
     alia_nanosecond_count duration;
 } alia_animated_transition;
 
+// Interpolate between `false_value` and `true_value` as `current_state`
+// changes.
 float
-alia_smooth_float(
+alia_transition_float(
     alia_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
@@ -89,7 +89,7 @@ alia_smooth_float(
     float false_value);
 
 alia_rgb
-alia_smooth_rgb(
+alia_transition_rgb(
     alia_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
@@ -98,13 +98,50 @@ alia_smooth_rgb(
     alia_rgb false_value);
 
 alia_rgba
-alia_smooth_rgba(
+alia_transition_rgba(
     alia_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
     alia_rgba true_value,
     alia_rgba false_value);
+
+// CONTINUOUS VALUE SMOOTHING
+
+// smoother for continuous values that change abruptly
+typedef struct alia_float_smoother
+{
+    bool initialized;
+    bool in_transition;
+    alia_nanosecond_count duration;
+    alia_nanosecond_count transition_end;
+    float old_value;
+    float new_value;
+} alia_float_smoother;
+
+// Snap `smoother` to `value` with no animation.
+void
+alia_float_smoother_reset(alia_float_smoother* smoother, float value);
+
+// Advance `smoother` toward `target`.
+// Sets `*out_animating` when animation is in progress.
+// `out_animating` may be null.
+float
+alia_float_smoother_update(
+    alia_float_smoother* smoother,
+    float target,
+    alia_animated_transition const* transition,
+    alia_nanosecond_count now,
+    bool* out_animating);
+
+// Return a smoothed view of `target`.
+// Requests an animation refresh when needed.
+float
+alia_smooth_float(
+    alia_context* ctx,
+    alia_float_smoother* smoother,
+    float target,
+    alia_animated_transition const* transition);
 
 ALIA_EXTERN_C_END
 

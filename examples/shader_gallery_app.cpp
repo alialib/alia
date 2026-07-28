@@ -507,6 +507,8 @@ main()
         .shell = {
             .draw_foundation_underlay = false,
             .surface_padding = {},
+            .enable_keyboard_zoom = true,
+            .enable_smooth_zoom = true,
         },
         .frame = {shader_gallery_frame, nullptr},
         .continuous = true,

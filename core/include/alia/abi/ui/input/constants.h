@@ -290,6 +290,12 @@ enum
     X(327, KP_7, kp_7)                                                        \
     X(328, KP_8, kp_8)                                                        \
     X(329, KP_9, kp_9)                                                        \
+    X(330, KP_DECIMAL, kp_decimal)                                            \
+    X(331, KP_DIVIDE, kp_divide)                                              \
+    X(332, KP_MULTIPLY, kp_multiply)                                          \
+    X(333, KP_SUBTRACT, kp_subtract)                                          \
+    X(334, KP_ADD, kp_add)                                                    \
+    X(335, KP_ENTER, kp_enter)                                                \
     X(336, KP_EQUAL, kp_equal)                                                \
     X(340, LEFT_SHIFT, left_shift)                                            \
     X(341, LEFT_CONTROL, left_control)                                        \

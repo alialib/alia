@@ -20,7 +20,7 @@ namespace alia {
 struct switch_bit_layout
 {
     click_flare_bit_layout click_flare;
-    impl::smoothing_bitfield state_smoothing;
+    impl::transition_bitfield state_smoothing;
 };
 
 struct switch_data
@@ -97,7 +97,7 @@ render_switch(
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
-    float switch_position = alia_smooth_float(
+    float switch_position = alia_transition_float(
         ctx,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),

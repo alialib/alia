@@ -19,7 +19,7 @@ namespace alia {
 struct radio_bit_layout
 {
     click_flare_bit_layout click_flare;
-    impl::smoothing_bitfield state_smoothing;
+    impl::transition_bitfield state_smoothing;
 };
 
 struct radio_data
@@ -99,7 +99,7 @@ render_radio(
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
-    float const smoothed_state = alia_smooth_float(
+    float const smoothed_state = alia_transition_float(
         ctx,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),

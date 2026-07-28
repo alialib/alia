@@ -67,6 +67,7 @@ struct alia_ui_system
     // alia__shared_ptr<alia::surface> surface;
     alia_vec2i surface_size;
     float dpi;
+    // UI magnification (independent of DPI)
     float magnification = 1;
 
     // std::shared_ptr<os_interface> os;

@@ -46,6 +46,14 @@ alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi);
 float
 alia_ui_surface_get_dpi(alia_ui_system* ui);
 
+// Set the (DPI-independent) UI magnification factor.
+void
+alia_ui_set_magnification(alia_ui_system* ui, float magnification);
+
+// Return the UI magnification factor.
+float
+alia_ui_get_magnification(alia_ui_system* ui);
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_SYSTEM_API_H */

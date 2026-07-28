@@ -16,13 +16,27 @@ typedef struct alia_shell alia_shell;
 
 typedef struct alia_shell_config
 {
-    // When true, fill the surface with the palette foundation background on
-    // the draw pass before the application controller runs.
+    // palette foundation underlay drawn before the app controller
     bool draw_foundation_underlay;
-    // Insets applied around the application controller via layout edge
-    // offsets.
+    // insets around the application controller via layout edge offsets
     alia_edge_offsets surface_padding;
+    // Ctrl+/-/0 UI magnification shortcuts
+    bool enable_keyboard_zoom;
+    // smooth animation when magnification changes via keyboard zoom
+    bool enable_smooth_zoom;
 } alia_shell_config;
+
+// Return a shell config with no underlay, no padding, and zoom chrome on.
+static inline alia_shell_config
+alia_shell_config_defaults(void)
+{
+    alia_shell_config config;
+    config.draw_foundation_underlay = false;
+    config.surface_padding = alia_edge_offsets_make_uniform(0.f);
+    config.enable_keyboard_zoom = true;
+    config.enable_smooth_zoom = true;
+    return config;
+}
 
 alia_shell*
 alia_shell_create(void);

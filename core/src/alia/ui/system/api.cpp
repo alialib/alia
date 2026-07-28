@@ -180,6 +180,22 @@ alia_ui_surface_get_dpi(alia_ui_system* ui)
 }
 
 void
+alia_ui_set_magnification(alia_ui_system* ui, float magnification)
+{
+    ALIA_ASSERT(ui);
+    if (ui->magnification != magnification)
+        ui->ui_dirty = true;
+    ui->magnification = magnification;
+}
+
+float
+alia_ui_get_magnification(alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    return ui->magnification;
+}
+
+void
 alia_ui_system_set_host_window_ops(
     alia_ui_system* ui, alia_host_window_ops const* ops)
 {

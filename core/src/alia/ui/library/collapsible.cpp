@@ -20,7 +20,7 @@ namespace alia {
 
 struct collapsible_bit_layout
 {
-    impl::smoothing_bitfield expansion_smoothing;
+    impl::transition_bitfield expansion_smoothing;
 };
 
 struct collapsible_state
@@ -167,7 +167,7 @@ alia_ui_collapsible_begin(
     alia_animated_transition const* transition_eff
         = transition != nullptr ? transition : &default_collapsible_transition;
 
-    float const expansion = alia_smooth_float(
+    float const expansion = alia_transition_float(
         ctx,
         transition_eff,
         ALIA_BITREF(data->bits, expansion_smoothing),

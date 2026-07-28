@@ -1036,10 +1036,11 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
         case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
-            if (wParam == VK_ESCAPE && host)
+            if (wParam == VK_ESCAPE && host && host->fullscreen
+                && (lParam & (1 << 30)) == 0) // ignore key repeat
             {
-                PostMessageW(hwnd, WM_CLOSE, 0, 0);
+                // Leave fullscreen only. Do not quit the app.
+                host_leave_fullscreen(host);
                 return 0;
             }
             if (wParam == VK_F11 && host
@@ -1054,14 +1055,24 @@ host_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 return 0;
             }
             break;
+        case WM_SYSKEYDOWN:
+            // Enqueue the key for the UI, then fall through to DefWindowProc
+            // so Alt+F4, Alt+Space, and other system key chords still work.
+            if (host && host->binding.ui)
+                alia_win32_enqueue_key(host->binding.ui, wParam, lParam, true);
+            break;
         case WM_KEYUP:
-        case WM_SYSKEYUP:
             if (host && host->binding.ui)
             {
                 alia_win32_enqueue_key(
                     host->binding.ui, wParam, lParam, false);
                 return 0;
             }
+            break;
+        case WM_SYSKEYUP:
+            if (host && host->binding.ui)
+                alia_win32_enqueue_key(
+                    host->binding.ui, wParam, lParam, false);
             break;
         case WM_DESTROY:
             if (host)

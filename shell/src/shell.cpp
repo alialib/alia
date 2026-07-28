@@ -1,10 +1,13 @@
 #include <alia/shell/shell.h>
 
 #include <alia/abi/base/geometry/vec2.h>
+#include <alia/abi/kernel/animation.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/input/constants.h>
+#include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/text.h>
@@ -29,9 +32,17 @@ struct alia_shell
     // as the active font before the app controller runs. `typeface.id` is
     // `ALIA_TYPEFACE_ID_INVALID` until setup.
     alia_resolved_font resolved_default_font{};
+    // keyboard / smooth zoom target
+    float zoom_target = 1.f;
+    // last magnification written by the shell (detects external sets)
+    float last_applied_magnification = 1.f;
+    alia_float_smoother zoom_smoother{};
 };
 
 namespace {
+
+alia_animated_transition const k_zoom_transition
+    = {alia_default_curve, alia_milliseconds(200)};
 
 bool
 edge_offsets_is_zero(alia_edge_offsets offsets)
@@ -58,12 +69,109 @@ shell_draw_foundation_underlay(alia_context* ctx)
          .border_color = fill});
 }
 
+// Return true when `mods` is a Ctrl zoom chord.
+// Shift is optional; Alt/Win/Meta are rejected so system chords stay free.
+bool
+shell_is_ctrl_zoom_chord(alia_kmods_t mods)
+{
+    return (mods & ALIA_KMOD_CTRL) != 0
+        && (mods & ~(ALIA_KMOD_CTRL | ALIA_KMOD_SHIFT)) == 0;
+}
+
+void
+shell_set_zoom_target(alia_shell* shell, alia_ui_system* ui, float target)
+{
+    if (target < 0.25f)
+        target = 0.25f;
+    else if (target > 8.f)
+        target = 8.f;
+    shell->zoom_target = target;
+    if (!shell->config.enable_smooth_zoom)
+    {
+        alia_ui_set_magnification(ui, target);
+        shell->last_applied_magnification = target;
+        alia_float_smoother_reset(&shell->zoom_smoother, target);
+    }
+}
+
+void
+shell_handle_keyboard_zoom(alia_shell* shell, alia_context* ctx)
+{
+    alia_key_info k;
+    if (!alia_input_detect_global_key_press(ctx, &k))
+        return;
+    if (!alia_key_info_has_logical(k) || !shell_is_ctrl_zoom_chord(k.mods))
+        return;
+
+    float const mag = shell->config.enable_smooth_zoom
+                        ? shell->zoom_target
+                        : alia_ui_get_magnification(ctx->system);
+    if (k.logical == ALIA_KEY_EQUAL || k.logical == ALIA_KEY_KP_ADD
+        || k.logical == ALIA_KEY_KP_EQUAL)
+    {
+        shell_set_zoom_target(shell, ctx->system, mag * 1.1f);
+        alia_input_acknowledge_key_event(ctx);
+    }
+    else if (k.logical == ALIA_KEY_MINUS || k.logical == ALIA_KEY_KP_SUBTRACT)
+    {
+        shell_set_zoom_target(shell, ctx->system, mag / 1.1f);
+        alia_input_acknowledge_key_event(ctx);
+    }
+    else if (k.logical == ALIA_KEY_DIGIT_0 || k.logical == ALIA_KEY_KP_0)
+    {
+        // Ctrl+0 ignores Shift, matching common browser behavior.
+        if ((k.mods & ALIA_KMOD_SHIFT) == 0)
+        {
+            shell_set_zoom_target(shell, ctx->system, 1.f);
+            alia_input_acknowledge_key_event(ctx);
+        }
+    }
+}
+
+void
+shell_advance_smooth_zoom(alia_shell* shell, alia_context* ctx)
+{
+    if (!shell->config.enable_smooth_zoom)
+        return;
+
+    alia_ui_system* ui = ctx->system;
+    float const current = alia_ui_get_magnification(ui);
+
+    // Adopt external magnification changes (e.g. a demo slider) as the new
+    // target so smooth zoom does not fight them.
+    if (current != shell->last_applied_magnification)
+    {
+        shell->zoom_target = current;
+        alia_float_smoother_reset(&shell->zoom_smoother, current);
+        shell->last_applied_magnification = current;
+        return;
+    }
+
+    bool animating = false;
+    float const shown = alia_float_smoother_update(
+        &shell->zoom_smoother,
+        shell->zoom_target,
+        &k_zoom_transition,
+        alia_timing_tick_count(ctx),
+        &animating);
+    if (shown != current)
+        alia_ui_set_magnification(ui, shown);
+    shell->last_applied_magnification = shown;
+    if (animating)
+        alia_timing_request_animation_refresh(ctx);
+}
+
 void
 shell_controller(void* user_data, alia_context* ctx)
 {
     auto* shell = static_cast<alia_shell*>(user_data);
     ALIA_ASSERT(shell);
     ALIA_ASSERT(shell->inner.fn);
+
+    if (shell->config.enable_keyboard_zoom)
+        shell_handle_keyboard_zoom(shell, ctx);
+
+    shell_advance_smooth_zoom(shell, ctx);
 
     if (get_event_type(*ctx) == ALIA_EVENT_DRAW
         && shell->config.draw_foundation_underlay)
@@ -101,7 +209,9 @@ extern "C" {
 alia_shell*
 alia_shell_create(void)
 {
-    return new alia_shell{};
+    auto* shell = new alia_shell{};
+    alia_float_smoother_reset(&shell->zoom_smoother, 1.f);
+    return shell;
 }
 
 void

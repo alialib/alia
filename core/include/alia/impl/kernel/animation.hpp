@@ -9,7 +9,8 @@ struct flare_bitfield : bitfield<1>
 {
 };
 
-struct smoothing_bitfield : bitfield<2>
+// two bits of persistent state for `alia_transition_*` (off / on / in-flight)
+struct transition_bitfield : bitfield<2>
 {
 };
 
@@ -29,7 +30,7 @@ update_transition(
 
 template<class Value, class Lerp>
 Value
-smooth(
+transition_between(
     alia_context* ctx,
     alia_animated_transition const& transition,
     Lerp&& lerp,

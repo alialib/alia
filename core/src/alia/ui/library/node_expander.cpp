@@ -20,7 +20,7 @@ namespace alia {
 struct node_expander_bit_layout
 {
     click_flare_bit_layout click_flare;
-    impl::smoothing_bitfield state_smoothing;
+    impl::transition_bitfield state_smoothing;
 };
 
 struct node_expander_data
@@ -64,7 +64,7 @@ render_node_expander(
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
-    float const rotation_degrees = alia_smooth_float(
+    float const rotation_degrees = alia_transition_float(
         ctx,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),

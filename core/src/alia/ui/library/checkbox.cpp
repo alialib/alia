@@ -25,7 +25,6 @@ namespace alia {
 struct checkbox_bit_layout
 {
     click_flare_bit_layout click_flare;
-    impl::smoothing_bitfield state_smoothing;
 };
 
 struct checkbox_data

@@ -109,17 +109,17 @@ logical_to_hid(alia_key_code_t key)
             return ALIA_HID_RIGHT_BRACKET;
         case 96: // GRAVE_ACCENT
             return ALIA_HID_GRAVE_ACCENT;
-        case 330: // KP_DECIMAL
+        case ALIA_KEY_KP_DECIMAL:
             return ALIA_HID_KP_DECIMAL;
-        case 331: // KP_DIVIDE
+        case ALIA_KEY_KP_DIVIDE:
             return ALIA_HID_KP_DIVIDE;
-        case 332: // KP_MULTIPLY
+        case ALIA_KEY_KP_MULTIPLY:
             return ALIA_HID_KP_MULTIPLY;
-        case 333: // KP_SUBTRACT
+        case ALIA_KEY_KP_SUBTRACT:
             return ALIA_HID_KP_MINUS;
-        case 334: // KP_ADD
+        case ALIA_KEY_KP_ADD:
             return ALIA_HID_KP_PLUS;
-        case 335: // KP_ENTER
+        case ALIA_KEY_KP_ENTER:
             return ALIA_HID_KP_ENTER;
         default:
             return ALIA_HID_UNKNOWN;
@@ -181,7 +181,7 @@ vk_to_logical(UINT vk, LPARAM lParam)
         case VK_ESCAPE:
             return ALIA_KEY_ESCAPE;
         case VK_RETURN:
-            return extended ? (alia_key_code_t) 335 : ALIA_KEY_ENTER; // KP_ENTER
+            return extended ? ALIA_KEY_KP_ENTER : ALIA_KEY_ENTER;
         case VK_TAB:
             return ALIA_KEY_TAB;
         case VK_BACK:
@@ -253,15 +253,15 @@ vk_to_logical(UINT vk, LPARAM lParam)
         case VK_NUMPAD9:
             return ALIA_KEY_KP_9;
         case VK_DECIMAL:
-            return 330; // GLFW_KEY_KP_DECIMAL
+            return ALIA_KEY_KP_DECIMAL;
         case VK_DIVIDE:
-            return 331; // GLFW_KEY_KP_DIVIDE
+            return ALIA_KEY_KP_DIVIDE;
         case VK_MULTIPLY:
-            return 332; // GLFW_KEY_KP_MULTIPLY
+            return ALIA_KEY_KP_MULTIPLY;
         case VK_SUBTRACT:
-            return 333; // GLFW_KEY_KP_SUBTRACT
+            return ALIA_KEY_KP_SUBTRACT;
         case VK_ADD:
-            return 334; // GLFW_KEY_KP_ADD
+            return ALIA_KEY_KP_ADD;
         case VK_LWIN:
             return ALIA_KEY_LEFT_SUPER;
         case VK_RWIN:
