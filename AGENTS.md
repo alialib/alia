@@ -44,6 +44,25 @@ is ...", "Note that ..."). Examples:
     uint64_t timer_event_cycle = 0;
 ```
 
+Type comments can either follow the same "noun clause" pattern as fields or can
+be written out more verbosely as a sentence with the type as the subject.
+Examples:
+
+```
+    // specification of the duration and path of an animation transition
+    typedef struct alia_animated_transition
+    {
+        ...
+    } alia_animated_transition;
+
+    // `alia_ui_system` represents the top-level persistent object associated
+    // with an Alia UI instance.
+    typedef struct alia_ui_system
+    {
+        ...
+    } alia_ui_system;
+```
+
 Elsewhere, please favor complete sentences that are meant to be read by humans,
 with proper capitalization and punctuation.
 
