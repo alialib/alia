@@ -31,7 +31,7 @@ struct alia_substrate_key_map
         bool
         operator()(view_key const& a, view_key const& b) const
         {
-            return alia_id_view_equals(a.view, b.view);
+            return alia_id_view_equal(a.view, b.view);
         }
     };
 

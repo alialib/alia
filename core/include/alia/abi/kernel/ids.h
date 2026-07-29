@@ -181,7 +181,8 @@ alia_captured_id_is_null(alia_captured_id const* id)
 }
 
 bool
-alia_id_view_equals(alia_id_view a, alia_id_view b);
+alia_id_view_equal(alia_id_view a, alia_id_view b);
+ALIA_DEFINE_EQUALITY_OPERATOR(alia_id_view);
 
 uint32_t
 alia_id_view_hash(alia_id_view id);

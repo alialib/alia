@@ -544,9 +544,9 @@ test_substrate_path_for_object_flat(void)
 
     TEST_CHECK(!alia_id_view_is_null(path1a));
     TEST_CHECK(path1a.type_id == ALIA_ID_TYPE_U64);
-    TEST_CHECK(alia_id_view_equals(path1a, path1b));
+    TEST_CHECK(alia_id_view_equal(path1a, path1b));
     TEST_CHECK(alia_id_view_hash(path1a) == alia_id_view_hash(path1b));
-    TEST_CHECK(!alia_id_view_equals(path1a, path2));
+    TEST_CHECK(!alia_id_view_equal(path1a, path2));
     TEST_CHECK(test_u64_from_id(path1a) == 32u);
     TEST_CHECK(test_u64_from_id(path2) == 288u);
 
@@ -630,7 +630,7 @@ test_substrate_path_for_object_stable_normal_pass(void)
         = alia_substrate_path_for_object(&t.ctx, normal_use.ptr);
     (void) alia_substrate_end_block(&t.ctx);
 
-    TEST_CHECK(alia_id_view_equals(init_path, normal_path));
+    TEST_CHECK(alia_id_view_equal(init_path, normal_path));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_test_ctx_destroy(&t);

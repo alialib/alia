@@ -177,33 +177,33 @@ test_builtin_constructors_and_matchers(void)
     char const large[] = "abcdefghijk";
 
     alia_id_view i32 = alia_id_view_make_i32(-17);
-    TEST_CHECK(alia_id_view_equals(i32, alia_id_view_make_i32(-17)));
-    TEST_CHECK(!alia_id_view_equals(i32, alia_id_view_make_i32(-18)));
+    TEST_CHECK(alia_id_view_equal(i32, alia_id_view_make_i32(-17)));
+    TEST_CHECK(!alia_id_view_equal(i32, alia_id_view_make_i32(-18)));
 
     alia_id_view u32 = alia_id_view_make_u32(123u);
-    TEST_CHECK(alia_id_view_equals(u32, alia_id_view_make_u32(123u)));
-    TEST_CHECK(!alia_id_view_equals(u32, alia_id_view_make_u32(124u)));
+    TEST_CHECK(alia_id_view_equal(u32, alia_id_view_make_u32(123u)));
+    TEST_CHECK(!alia_id_view_equal(u32, alia_id_view_make_u32(124u)));
 
     alia_id_view i64 = alia_id_view_make_i64(-9000000000ll);
-    TEST_CHECK(alia_id_view_equals(i64, alia_id_view_make_i64(-9000000000ll)));
+    TEST_CHECK(alia_id_view_equal(i64, alia_id_view_make_i64(-9000000000ll)));
 
     alia_id_view u64 = alia_id_view_make_u64(9000000000ull);
-    TEST_CHECK(alia_id_view_equals(u64, alia_id_view_make_u64(9000000000ull)));
+    TEST_CHECK(alia_id_view_equal(u64, alia_id_view_make_u64(9000000000ull)));
 
     alia_id_view ptr = alia_id_view_make_pointer(&dummy);
-    TEST_CHECK(alia_id_view_equals(ptr, alia_id_view_make_pointer(&dummy)));
+    TEST_CHECK(alia_id_view_equal(ptr, alia_id_view_make_pointer(&dummy)));
     TEST_CHECK(i32.size_and_flags == 0);
     TEST_CHECK(u64.size_and_flags == 0);
     TEST_CHECK(ptr.size_and_flags == 0);
 
     alia_id_view bytes_inline = alia_id_view_make_bytes(small, 3u);
     TEST_CHECK((bytes_inline.size_and_flags & ALIA_ID_EXTERNAL_FLAG) == 0);
-    TEST_CHECK(alia_id_view_equals(bytes_inline, alia_id_view_make_bytes(small, 3u)));
+    TEST_CHECK(alia_id_view_equal(bytes_inline, alia_id_view_make_bytes(small, 3u)));
 
     alia_id_view bytes_external = alia_id_view_make_bytes(large, 11u);
     TEST_CHECK((bytes_external.size_and_flags & ALIA_ID_EXTERNAL_FLAG) != 0);
     TEST_CHECK(
-        alia_id_view_equals(bytes_external, alia_id_view_make_bytes(large, 11u)));
+        alia_id_view_equal(bytes_external, alia_id_view_make_bytes(large, 11u)));
 }
 
 static void
@@ -214,7 +214,7 @@ test_null_ids(void)
     TEST_CHECK(null_view.type_id == ALIA_ID_TYPE_NONE);
     TEST_CHECK(null_view.size_and_flags == 0);
     TEST_CHECK(alia_id_view_hash(null_view) == 0u);
-    TEST_CHECK(alia_id_view_equals(null_view, alia_id_view_null()));
+    TEST_CHECK(alia_id_view_equal(null_view, alia_id_view_null()));
 
     alia_captured_id null_cap = alia_captured_id_null();
     TEST_CHECK(alia_captured_id_is_null(&null_cap));
@@ -243,15 +243,15 @@ test_equality_and_hash_for_builtin_ids(void)
     alia_id_view a = alia_id_view_make_u64(42u);
     alia_id_view b = alia_id_view_make_u64(42u);
     alia_id_view c = alia_id_view_make_u64(43u);
-    TEST_CHECK(alia_id_view_equals(a, b));
-    TEST_CHECK(!alia_id_view_equals(a, c));
+    TEST_CHECK(alia_id_view_equal(a, b));
+    TEST_CHECK(!alia_id_view_equal(a, c));
     TEST_CHECK(alia_id_view_hash(a) == alia_id_view_hash(b));
 
     alia_id_view bytes1 = alia_id_view_make_bytes(value_a, 11u);
     alia_id_view bytes2 = alia_id_view_make_bytes(value_b, 11u);
     alia_id_view bytes3 = alia_id_view_make_bytes(value_c, 11u);
-    TEST_CHECK(alia_id_view_equals(bytes1, bytes2));
-    TEST_CHECK(!alia_id_view_equals(bytes1, bytes3));
+    TEST_CHECK(alia_id_view_equal(bytes1, bytes2));
+    TEST_CHECK(!alia_id_view_equal(bytes1, bytes3));
     TEST_CHECK(alia_id_view_hash(bytes1) == alia_id_view_hash(bytes2));
 }
 
@@ -295,8 +295,8 @@ test_pair_equality_and_hash(void)
         alia_id_view_make_i32(1),
         alia_id_view_make_u64(3));
 
-    TEST_CHECK(alia_id_view_equals(a, b));
-    TEST_CHECK(!alia_id_view_equals(a, c));
+    TEST_CHECK(alia_id_view_equal(a, b));
+    TEST_CHECK(!alia_id_view_equal(a, c));
     TEST_CHECK(alia_id_view_hash(a) == alia_id_view_hash(b));
     TEST_CHECK(alia_id_view_hash(a) != alia_id_view_hash(c));
 }
@@ -316,7 +316,7 @@ test_pair_tree_shape(void)
     alia_id_view right_deep = alia_id_view_make_pair(
         &root_right_deep, a, alia_id_view_make_pair(&bc_right_deep, b, c));
 
-    TEST_CHECK(!alia_id_view_equals(left_deep, right_deep));
+    TEST_CHECK(!alia_id_view_equal(left_deep, right_deep));
     TEST_CHECK(alia_id_view_hash(left_deep) != alia_id_view_hash(right_deep));
 }
 
@@ -366,7 +366,7 @@ test_capture_into_bytes_and_pair(void)
     alia_captured_id_capture_into(transient_bytes, mem, spec.size);
     alia_captured_id* cap = (alia_captured_id*) mem;
     TEST_CHECK(
-        alia_id_view_equals(transient_bytes, *alia_captured_id_as_view(cap)));
+        alia_id_view_equal(transient_bytes, *alia_captured_id_as_view(cap)));
     alia_captured_id_release(mem);
     aligned_free_portable(mem);
 
@@ -381,7 +381,7 @@ test_capture_into_bytes_and_pair(void)
     TEST_ASSERT(mem != NULL);
     alia_captured_id_capture_into(transient_pair, mem, spec.size);
     cap = (alia_captured_id*) mem;
-    TEST_CHECK(alia_id_view_equals(
+    TEST_CHECK(alia_id_view_equal(
         transient_pair, *alia_captured_id_as_view(cap)));
     alia_captured_id_release(mem);
     aligned_free_portable(mem);
@@ -453,8 +453,8 @@ test_custom_type_and_release(void)
     alia_id_view id3 = alia_id_view_make_custom_external(
         custom_type_id, &p3, sizeof(custom_payload));
 
-    TEST_CHECK(alia_id_view_equals(id1, id2));
-    TEST_CHECK(!alia_id_view_equals(id1, id3));
+    TEST_CHECK(alia_id_view_equal(id1, id2));
+    TEST_CHECK(!alia_id_view_equal(id1, id3));
     TEST_CHECK(alia_id_view_hash(id1) == alia_id_view_hash(id2));
 
     alia_struct_spec spec = alia_captured_id_spec(id1);
@@ -463,7 +463,7 @@ test_custom_type_and_release(void)
     TEST_ASSERT(mem != NULL);
     alia_captured_id_capture_into(id1, mem, spec.size);
     alia_captured_id* cap = (alia_captured_id*) mem;
-    TEST_CHECK(alia_id_view_equals(id1, *alia_captured_id_as_view(cap)));
+    TEST_CHECK(alia_id_view_equal(id1, *alia_captured_id_as_view(cap)));
 
     TEST_CHECK(g_custom_release_count == 0);
     alia_captured_id_release(mem);
@@ -495,8 +495,8 @@ test_custom_inline_constructor(void)
     alia_id_view id3 = alia_id_view_make_custom_inline(
         small_custom_type_id, &p3, sizeof(small_custom_payload));
 
-    TEST_CHECK(alia_id_view_equals(id1, id2));
-    TEST_CHECK(!alia_id_view_equals(id1, id3));
+    TEST_CHECK(alia_id_view_equal(id1, id2));
+    TEST_CHECK(!alia_id_view_equal(id1, id3));
     TEST_CHECK(alia_id_view_hash(id1) == alia_id_view_hash(id2));
 
     alia_struct_spec spec = alia_captured_id_spec(id1);
@@ -547,7 +547,7 @@ test_custom_measure_capture_tail_larger_than_view_size(void)
     TEST_ASSERT(mem != NULL);
     alia_captured_id_capture_into(transient, mem, spec.size);
     alia_captured_id* cap = (alia_captured_id*) mem;
-    TEST_CHECK(alia_id_view_equals(transient, *alia_captured_id_as_view(cap)));
+    TEST_CHECK(alia_id_view_equal(transient, *alia_captured_id_as_view(cap)));
 
     alia_captured_id_release(mem);
     TEST_CHECK(g_custom_release_count == 1);

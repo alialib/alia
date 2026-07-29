@@ -245,7 +245,7 @@ alia_id_get_vtable(uint32_t type_id)
 }
 
 extern "C" bool
-alia_id_view_equals(alia_id_view a, alia_id_view b)
+alia_id_view_equal(alia_id_view a, alia_id_view b)
 {
     if (a.type_id != b.type_id || a.size_and_flags != b.size_and_flags)
         return false;
@@ -284,8 +284,8 @@ alia_id_view_equals(alia_id_view a, alia_id_view b)
                 = static_cast<alia_id_pair const*>(a.payload.external_data);
             alia_id_pair const* b_pair
                 = static_cast<alia_id_pair const*>(b.payload.external_data);
-            return alia_id_view_equals(a_pair->left, b_pair->left)
-                && alia_id_view_equals(a_pair->right, b_pair->right);
+            return alia_id_view_equal(a_pair->left, b_pair->left)
+                && alia_id_view_equal(a_pair->right, b_pair->right);
         }
 
         default: {
@@ -426,7 +426,7 @@ alia_captured_id_matches_view(
     alia_captured_id const* captured, alia_id_view view)
 {
     ALIA_ASSERT(captured);
-    return alia_id_view_equals(captured->view, view);
+    return alia_id_view_equal(captured->view, view);
 }
 
 extern "C" alia_id_view
