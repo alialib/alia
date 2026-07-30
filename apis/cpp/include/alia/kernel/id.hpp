@@ -5,6 +5,8 @@
 #include <concepts>
 #include <functional>
 #include <stdint.h>
+#include <string>
+#include <type_traits>
 
 namespace alia {
 
@@ -18,8 +20,16 @@ null_id()
     return alia_id_view_null();
 }
 
+inline id_view
+unit_id()
+{
+    return alia_id_view_unit();
+}
+
 // `make_id(v)` for various common types - This takes care of selecting a
 // compatible `alia_id_view` constructor based on the type.
+// Note that this is only defined for types that can be fully stored within
+// the `alia_id_view`.
 
 inline id_view
 make_id(bool v)
@@ -75,6 +85,53 @@ id_view
 make_pointer_id(T const* ptr)
 {
     return alia_id_view_make_pointer(static_cast<void const*>(ptr));
+}
+
+// `make_id_by_reference(v)` makes an ID for an existing object. The ID may
+// borrow memory from `v`, so `v` must outlive any use of the returned `id_view`.
+// This is designed to be overloaded for custom types.
+
+inline id_view
+make_id_by_reference(bool const& v)
+{
+    return make_id(v);
+}
+
+template<class T>
+    requires std::integral<T> && (!std::same_as<T, bool>)
+id_view
+make_id_by_reference(T const& v)
+{
+    return make_id(v);
+}
+
+inline id_view
+make_id_by_reference(float const& v)
+{
+    return make_id(v);
+}
+
+inline id_view
+make_id_by_reference(double const& v)
+{
+    return make_id(v);
+}
+
+inline id_view
+make_id_by_reference(std::string const& v)
+{
+    return alia_id_view_make_bytes(
+        v.data(), static_cast<uint32_t>(v.size()));
+}
+
+template<class T>
+    requires std::is_trivially_copyable_v<T> && (!std::integral<T>)
+          && (!std::floating_point<T>)
+id_view
+make_id_by_reference(T const& v)
+{
+    return alia_id_view_make_bytes(
+        reinterpret_cast<char const*>(&v), static_cast<uint32_t>(sizeof(T)));
 }
 
 } // namespace alia

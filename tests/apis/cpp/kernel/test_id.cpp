@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <stdint.h>
+#include <string>
 
 using namespace alia;
 using namespace alia::operators;
@@ -11,6 +12,15 @@ TEST_CASE("null id")
 {
     CHECK(alia_id_view_is_null(null_id()));
     CHECK((null_id() == null_id()));
+}
+
+TEST_CASE("unit id")
+{
+    CHECK(alia_id_view_is_unit(unit_id()));
+    CHECK_FALSE(alia_id_view_is_null(unit_id()));
+    CHECK((unit_id() == unit_id()));
+    CHECK((unit_id() == alia_id_view_unit()));
+    CHECK((unit_id() != null_id()));
 }
 
 TEST_CASE("make_id bool and integrals")
@@ -49,6 +59,24 @@ TEST_CASE("make_pointer_id")
     // Distinct static arrays are distinct pointer identities even with the
     // same contents.
     CHECK((make_pointer_id(lit_a) != make_pointer_id(lit_b)));
+}
+
+TEST_CASE("make_id_by_reference")
+{
+    int const x = 7;
+    CHECK((make_id_by_reference(x) == make_id(7)));
+
+    std::string const s = "abc";
+    CHECK((make_id_by_reference(s) == alia_id_view_make_bytes("abc", 3u)));
+
+    struct pod
+    {
+        int a;
+        int b;
+    };
+    pod const p{1, 2};
+    CHECK((make_id_by_reference(p) == alia_id_view_make_bytes(
+               reinterpret_cast<char const*>(&p), sizeof(pod))));
 }
 
 TEST_CASE("std::hash matches alia_id_view_hash")

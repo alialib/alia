@@ -1,25 +1,31 @@
-#ifndef ALIA_CORE_SIGNALS_BASIC_HPP
-#define ALIA_CORE_SIGNALS_BASIC_HPP
+#pragma once
 
-#include <alia/core/signals/core.hpp>
-#include <alia/core/signals/utilities.hpp>
+#include <alia/kernel/signals/core.hpp>
+#include <alia/kernel/signals/utilities.hpp>
 
-// This file defines various utilities for constructing basic signals.
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// This file defines utilities for constructing basic signals.
 
 namespace alia {
 
-// empty<Value>() gives a signal that never has a value.
+// `empty<Value>()` gives a signal that never has a value.
 template<class Value>
 struct empty_signal
-    : signal<empty_signal<Value>, Value, move_activated_clearable_signal>
+    : signal<
+          empty_signal<Value>,
+          Value,
+          binding_caps<signal_move_activated, signal_clearable>>
 {
     empty_signal()
     {
     }
-    id_interface const&
+    id_view
     value_id() const override
     {
-        return null_id;
+        return null_id();
     }
     bool
     has_value() const override
@@ -58,10 +64,10 @@ struct empty_signal
     }
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
-    id_interface const&
+    id_view
     write(Value) const override
     {
-        return null_id;
+        return null_id();
     }
     void
     clear() const override
@@ -79,10 +85,13 @@ empty()
 // default_initialized<Value>() creates a read-only signal whose value is a
 // default-initialized value of type Value.
 template<class Value>
-struct default_initialized_signal
-    : signal<default_initialized_signal<Value>, Value, move_activated_signal>
+struct default_initialized_view
+    : signal<
+          default_initialized_view<Value>,
+          Value,
+          view_caps<signal_move_activated>>
 {
-    default_initialized_signal()
+    default_initialized_view()
     {
     }
     bool
@@ -90,10 +99,10 @@ struct default_initialized_signal
     {
         return true;
     }
-    id_interface const&
+    id_view
     value_id() const override
     {
-        return unit_id;
+        return unit_id();
     }
     Value const&
     read() const override
@@ -112,21 +121,24 @@ struct default_initialized_signal
     }
 
  private:
-    mutable Value value_;
+    mutable Value value_{};
 };
 template<class Value>
-default_initialized_signal<Value>
+default_initialized_view<Value>
 default_initialized()
 {
-    return default_initialized_signal<Value>();
+    return default_initialized_view<Value>();
 }
 
 // value(v) creates a read-only signal that carries the value v.
 template<class Value>
-struct value_signal
-    : regular_signal<value_signal<Value>, Value, move_activated_signal>
+struct value_view
+    : regular_signal<
+          value_view<Value>,
+          Value,
+          view_caps<signal_move_activated>>
 {
-    explicit value_signal(Value v) : v_(std::move(v))
+    explicit value_view(Value v) : v_(std::move(v))
     {
     }
     bool
@@ -155,24 +167,27 @@ struct value_signal
     mutable Value v_;
 };
 template<class Value>
-value_signal<Value>
+value_view<Value>
 value(Value v)
 {
-    return value_signal<Value>(std::move(v));
+    return value_view<Value>(std::move(v));
 }
 
-// This is a special overload of value() for C-style string literals.
-struct string_literal_signal
-    : lazy_signal<string_literal_signal, std::string, move_activated_signal>
+// This is a special overload of `value()` for C-style string literals - The
+// identity of the signal is simply the address of the literal.
+struct string_literal_view
+    : lazy_signal<
+          string_literal_view,
+          std::string,
+          view_caps<signal_move_activated>>
 {
-    string_literal_signal(char const* x) : text_(x)
+    string_literal_view(char const* x) : text_(x)
     {
     }
-    id_interface const&
+    id_view
     value_id() const override
     {
-        id_ = make_id(text_);
-        return id_;
+        return make_pointer_id(text_);
     }
     bool
     has_value() const override
@@ -187,30 +202,32 @@ struct string_literal_signal
 
  private:
     char const* text_;
-    mutable simple_id<char const*> id_;
 };
-inline string_literal_signal
+inline string_literal_view
 value(char const* text)
 {
-    return string_literal_signal(text);
+    return string_literal_view(text);
 }
 
 // literal operators
 namespace literals {
-inline string_literal_signal
-operator"" _a(char const* s, size_t)
+inline string_literal_view
+operator""_a(char const* s, size_t)
 {
-    return string_literal_signal(s);
+    return string_literal_view(s);
 }
 } // namespace literals
 
-// direct(x), where x is a non-const reference, creates a duplex signal that
-// directly exposes the value of x.
+// ref(x), where x is a non-const reference, creates a binding that directly
+// exposes the value of x.
 template<class Value>
-struct direct_signal
-    : regular_signal<direct_signal<Value>, Value, movable_duplex_signal>
+struct pointer_binding
+    : regular_signal<
+          pointer_binding<Value>,
+          Value,
+          binding_caps<signal_movable>>
 {
-    explicit direct_signal(Value* v) : v_(v)
+    explicit pointer_binding(Value* v) : v_(v)
     {
     }
     bool
@@ -239,7 +256,7 @@ struct direct_signal
     {
         return true;
     }
-    id_interface const&
+    id_view
     write(Value value) const override
     {
         *v_ = std::move(value);
@@ -250,19 +267,19 @@ struct direct_signal
     Value* v_;
 };
 template<class Value>
-direct_signal<Value>
-direct(Value& x)
+pointer_binding<Value>
+ref(Value& x)
 {
-    return direct_signal<Value>(&x);
+    return pointer_binding<Value>(&x);
 }
 
-// direct(x), where x is a const reference, creates a read-only signal that
-// directly exposes the value of x.
+// ref(x), where x is a const reference, creates a view that directly exposes
+// the value of x.
 template<class Value>
-struct direct_const_signal
-    : regular_signal<direct_const_signal<Value>, Value, read_only_signal>
+struct pointer_view
+    : regular_signal<pointer_view<Value>, Value, view_caps<signal_readable>>
 {
-    explicit direct_const_signal(Value const* v) : v_(v)
+    explicit pointer_view(Value const* v) : v_(v)
     {
     }
     bool
@@ -280,12 +297,25 @@ struct direct_const_signal
     Value const* v_;
 };
 template<class Value>
-direct_const_signal<Value>
-direct(Value const& x)
+pointer_view<Value>
+ref(Value const& x)
 {
-    return direct_const_signal<Value>(&x);
+    return pointer_view<Value>(&x);
+}
+
+// signalize(x) turns x into a signal if it isn't already one.
+template<signal_type Signal>
+Signal
+signalize(Signal s)
+{
+    return std::move(s);
+}
+template<class Value>
+    requires(!signal_type<Value>)
+auto
+signalize(Value v)
+{
+    return value(std::move(v));
 }
 
 } // namespace alia
-
-#endif

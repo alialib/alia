@@ -20,7 +20,7 @@ ALIA_EXTERN_C_BEGIN
 //     plus a `value_id` change token (used for caching). They exist where a
 //     value only flows into components and where a bidirectional form would be
 //     a structurally different type (e.g. editable text). By convention,
-//     `alia_X_signal` is the full/duplex-capable form and
+//     `alia_X_signal` is the full bidirectional form and
 //     `alia_X_input_signal` is the read-only input form.
 
 typedef uint32_t alia_signal_flags;

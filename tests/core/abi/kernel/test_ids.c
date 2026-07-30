@@ -234,6 +234,31 @@ test_null_ids(void)
 }
 
 static void
+test_unit_ids(void)
+{
+    alia_id_view unit_view = alia_id_view_unit();
+    TEST_CHECK(alia_id_view_is_unit(unit_view));
+    TEST_CHECK(!alia_id_view_is_null(unit_view));
+    TEST_CHECK(unit_view.type_id == ALIA_ID_TYPE_UNIT);
+    TEST_CHECK(alia_id_view_equal(unit_view, alia_id_view_unit()));
+    TEST_CHECK(!alia_id_view_equal(unit_view, alia_id_view_null()));
+    TEST_CHECK(alia_id_view_hash(unit_view) != 0u);
+    TEST_CHECK(alia_id_view_hash(unit_view) != alia_id_view_hash(alia_id_view_null()));
+
+    alia_struct_spec spec = alia_captured_id_spec(unit_view);
+    TEST_CHECK(spec.size >= sizeof(alia_captured_id));
+
+    void* mem = aligned_alloc_portable(spec.align, spec.size);
+    TEST_ASSERT(mem != NULL);
+    alia_captured_id_capture_into(unit_view, mem, spec.size);
+    alia_captured_id* captured = (alia_captured_id*) mem;
+    TEST_CHECK(alia_id_view_is_unit(*alia_captured_id_as_view(captured)));
+    TEST_CHECK(alia_captured_id_matches_view(captured, unit_view));
+    alia_captured_id_release(mem);
+    aligned_free_portable(mem);
+}
+
+static void
 test_equality_and_hash_for_builtin_ids(void)
 {
     char const value_a[] = "abcdefghijk";
@@ -558,6 +583,7 @@ void
 ids_tests(void)
 {
     test_null_ids();
+    test_unit_ids();
     test_builtin_constructors_and_matchers();
     test_equality_and_hash_for_builtin_ids();
     test_pair_equality_and_hash();

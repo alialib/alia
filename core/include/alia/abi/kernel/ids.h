@@ -12,7 +12,10 @@ ALIA_EXTERN_C_BEGIN
 // IDs for built-in value types
 enum
 {
+    // null/empty ID - represents the absence of an ID
     ALIA_ID_TYPE_NONE,
+    // unit ID - represents the unique inhabitant of a unit type
+    ALIA_ID_TYPE_UNIT,
     ALIA_ID_TYPE_I32,
     ALIA_ID_TYPE_U32,
     ALIA_ID_TYPE_I64,
@@ -124,7 +127,7 @@ typedef struct alia_id_view
 {
     uint32_t type_id;
     // Type-family-dependent metadata (opaque to normal callers):
-    // - NONE / fixed-size built-ins: ignored
+    // - NONE / UNIT / fixed-size built-ins: ignored
     // - BYTES / CUSTOM: top bit storage mode (external vs inline), lower bits
     // size
     // - PAIR: ignored (external `alia_id_pair` implied)
@@ -143,8 +146,10 @@ typedef struct alia_id_pair
     alia_id_view right;
 } alia_id_pair;
 
-// stable captured identity - wraps a view whose external payloads (if any)
-// live entirely inside the same caller-owned slab as this struct
+// stable captured identity - This is used to store an ID outside of the scope
+// in which it was initially created. It wraps an ID view whose external
+// payloads (if any) live entirely inside the same caller-owned slab as this
+// struct
 typedef struct alia_captured_id
 {
     alia_id_view view;
@@ -171,13 +176,28 @@ alia_id_view_is_null(alia_id_view id)
 static inline alia_captured_id
 alia_captured_id_null(void)
 {
-    return ALIA_BRACED_INIT(alia_captured_id, 0);
+    return ALIA_BRACED_INIT(alia_captured_id, alia_id_view_null());
 }
 
 static inline bool
 alia_captured_id_is_null(alia_captured_id const* id)
 {
     return id->view.type_id == ALIA_ID_TYPE_NONE;
+}
+
+// Construct "the" unit ID. This is distinct from the null ID in that it is a
+// valid ID representing the unique inhabitant of a unit type.
+static inline alia_id_view
+alia_id_view_unit(void)
+{
+    alia_id_view id = {ALIA_ID_TYPE_UNIT, 0};
+    return id;
+}
+
+static inline bool
+alia_id_view_is_unit(alia_id_view id)
+{
+    return id.type_id == ALIA_ID_TYPE_UNIT;
 }
 
 bool

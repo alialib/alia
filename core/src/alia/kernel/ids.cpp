@@ -18,6 +18,7 @@ id_view_get_data(alia_id_view const& id)
     switch (id.type_id)
     {
         case ALIA_ID_TYPE_NONE:
+        case ALIA_ID_TYPE_UNIT:
             return nullptr;
         case ALIA_ID_TYPE_I32:
         case ALIA_ID_TYPE_U32:
@@ -73,9 +74,9 @@ alia_id_view_pool_start(void* mem)
 static alia_id_view
 capture_view_into(alia_id_view src, alia_id_capture_context* ctx)
 {
-    if (src.type_id == ALIA_ID_TYPE_NONE || src.type_id == ALIA_ID_TYPE_I32
-        || src.type_id == ALIA_ID_TYPE_U32 || src.type_id == ALIA_ID_TYPE_I64
-        || src.type_id == ALIA_ID_TYPE_U64
+    if (src.type_id == ALIA_ID_TYPE_NONE || src.type_id == ALIA_ID_TYPE_UNIT
+        || src.type_id == ALIA_ID_TYPE_I32 || src.type_id == ALIA_ID_TYPE_U32
+        || src.type_id == ALIA_ID_TYPE_I64 || src.type_id == ALIA_ID_TYPE_U64
         || src.type_id == ALIA_ID_TYPE_POINTER)
     {
         return src;
@@ -133,7 +134,7 @@ capture_view_into(alia_id_view src, alia_id_capture_context* ctx)
 static void
 release_view_in_slab(alia_id_view* v)
 {
-    if (v->type_id == ALIA_ID_TYPE_NONE)
+    if (v->type_id == ALIA_ID_TYPE_NONE || v->type_id == ALIA_ID_TYPE_UNIT)
         return;
 
     if (id_view_is_inline(*v))
@@ -253,6 +254,7 @@ alia_id_view_equal(alia_id_view a, alia_id_view b)
     switch (a.type_id)
     {
         case ALIA_ID_TYPE_NONE:
+        case ALIA_ID_TYPE_UNIT:
             return true;
 
         case ALIA_ID_TYPE_I32:
@@ -310,6 +312,9 @@ alia_id_view_hash(alia_id_view id)
     {
         case ALIA_ID_TYPE_NONE:
             return 0u;
+
+        case ALIA_ID_TYPE_UNIT:
+            return 0x9e3779b9U;
 
         case ALIA_ID_TYPE_I32:
         case ALIA_ID_TYPE_U32: {
