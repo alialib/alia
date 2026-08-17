@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/kernel/substrate.h>
+#include <alia/kernel/substrate.hpp>
 
 // TODO: Consider defining our own `forward` and `move` functions.
 #include <utility>
@@ -91,18 +91,15 @@ static inline if_else_chain_scope
 get_if_else_chain_scope(alia_context* ctx)
 {
     // TODO: Merge block and branch storage into a single allocation.
-    alia_substrate_anchor* anchor = alia_substrate_use_anchor(ctx);
-    // TODO: Use C++ interface for this.
-    auto branch_storage
-        = alia_substrate_use_memory(ctx, sizeof(int), alignof(int));
-    int* active_branch = static_cast<int*>(branch_storage.ptr);
-    if (branch_storage.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL)
-        *active_branch = -1;
+    alia_substrate_anchor* anchor = use_anchor(ctx);
+    auto branch_storage = use_memory<int>(ctx);
+    if (branch_storage.is_fresh())
+        *branch_storage = -1;
     return {
         anchor,
         true,
         0,
-        active_branch,
+        branch_storage.ptr,
     };
 }
 

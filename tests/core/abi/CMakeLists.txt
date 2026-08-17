@@ -9,7 +9,7 @@ add_executable(test_core_c
     base/geometry/test_vec2.c
     kernel/test_ids.c
     kernel/test_substrate.c
-    kernel/substrate_harness.cpp
+    kernel/substrate_fixture.cpp
     ui/layout/test_abi_headers.c
     ui/layout/test_placement.c
     ui/layout/test_line.c)

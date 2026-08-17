@@ -3,12 +3,12 @@
 #include <alia/abi/context.h>
 #include <alia/abi/kernel/substrate.h>
 
-// test-only substrate harness
+// test-only substrate fixture
 //
 // The core substrate API is C ABI, but the initialization/cleanup helpers and
-// internal substrate struct layouts live in C++ internals. This harness
+// internal substrate struct layouts live in C++ internals. This fixture
 // provides opaque C-callable entry points to set up a usable substrate
-// context for C tests.
+// for C tests.
 
 ALIA_EXTERN_C_BEGIN
 

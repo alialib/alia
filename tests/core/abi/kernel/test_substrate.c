@@ -1,4 +1,4 @@
-#include "substrate_harness.h"
+#include "substrate_fixture.h"
 
 #include <alia/abi/base/stack.h>
 #include <alia/abi/context.h>
@@ -108,19 +108,19 @@ test_object_cleanup(
     }
 }
 
-// --------- helpers to build a minimal C substrate context ---------
+// --------- helpers to build a minimal C substrate fixture ---------
 
-typedef struct substrate_test_ctx
+typedef struct substrate_fixture
 {
     alia_test_substrate_fixture* fixture;
     alia_stack* stack;
     void* stack_obj_storage;
     void* stack_buffer;
     alia_context ctx;
-} substrate_test_ctx;
+} substrate_fixture;
 
 static void
-substrate_test_ctx_init(substrate_test_ctx* t)
+substrate_fixture_init(substrate_fixture* t)
 {
     memset(t, 0, sizeof(*t));
 
@@ -148,7 +148,7 @@ substrate_test_ctx_init(substrate_test_ctx* t)
 }
 
 static void
-substrate_test_ctx_destroy(substrate_test_ctx* t)
+substrate_fixture_destroy(substrate_fixture* t)
 {
     if (!t)
         return;
@@ -172,8 +172,8 @@ substrate_test_ctx_destroy(substrate_test_ctx* t)
 static void
 test_basic_block(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -204,14 +204,14 @@ test_basic_block(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_basic_block_discovery(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -274,14 +274,14 @@ test_basic_block_discovery(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_use_anchor(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -312,14 +312,14 @@ test_substrate_use_anchor(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_destructors(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -419,14 +419,14 @@ test_substrate_destructors(void)
     TEST_CHECK(state.ids[4] == 2);
     TEST_CHECK(state.ids[5] == 1);
 
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_deactivate_anchor(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -504,7 +504,7 @@ test_substrate_deactivate_anchor(void)
     TEST_CHECK(state.count == 1);
     TEST_CHECK(state.ids[0] == 1);
 
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static uint64_t
@@ -519,8 +519,8 @@ test_u64_from_id(alia_id_view id)
 static void
 test_substrate_path_for_object_flat(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -553,14 +553,14 @@ test_substrate_path_for_object_flat(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_path_for_object_nested(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -593,14 +593,14 @@ test_substrate_path_for_object_nested(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_path_for_object_stable_normal_pass(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -633,14 +633,14 @@ test_substrate_path_for_object_stable_normal_pass(void)
     TEST_CHECK(alia_id_view_equal(init_path, normal_path));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_path_for_object_discovery(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -661,14 +661,14 @@ test_substrate_path_for_object_discovery(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_path_capture_smoke(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -699,14 +699,14 @@ test_substrate_path_capture_smoke(void)
     (void) alia_substrate_end_block(&t.ctx);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_substrate_generations(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -730,7 +730,7 @@ test_substrate_generations(void)
         alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     }
 
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 // --------- key scope tests ---------
@@ -747,7 +747,7 @@ typedef struct keyed_visit_state
 
 static void*
 keyed_visit_object(
-    substrate_test_ctx* t,
+    substrate_fixture* t,
     alia_substrate_key_scope* scope,
     uint64_t key,
     keyed_visit_state* state,
@@ -774,14 +774,14 @@ keyed_visit_object(
 }
 
 static void
-keyed_visit_end(substrate_test_ctx* t)
+keyed_visit_end(substrate_fixture* t)
 {
     alia_substrate_end_keyed_block(&t->ctx);
 }
 
 static void
 run_keyed_pass(
-    substrate_test_ctx* t,
+    substrate_fixture* t,
     alia_substrate_key_table* table,
     keyed_visit_state* state,
     uint64_t const* keys,
@@ -800,8 +800,8 @@ run_keyed_pass(
 static void
 test_keyed_block_basic(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -840,14 +840,14 @@ test_keyed_block_basic(void)
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_reorder(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -878,14 +878,14 @@ test_keyed_block_reorder(void)
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_sweep_stale(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -917,14 +917,14 @@ test_keyed_block_sweep_stale(void)
     TEST_CHECK(state.destroy_state.ids[0] == 3);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_scope_requires_explicit_delete(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -967,14 +967,14 @@ test_keyed_scope_requires_explicit_delete(void)
     TEST_CHECK(state.destroy_state.ids[0] == 3);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_soft_delete_while_active(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1014,14 +1014,14 @@ test_keyed_block_soft_delete_while_active(void)
     TEST_CHECK(state.destroy_state.ids[0] == 5);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_nested_scopes(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1068,14 +1068,14 @@ test_keyed_block_nested_scopes(void)
     TEST_CHECK(inner_state.ptr_count == 1);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_partial_pass(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1115,14 +1115,14 @@ test_keyed_block_partial_pass(void)
     TEST_CHECK(state.destroy_state.ids[0] == 3);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_keyed_block_partial_preserves_prediction(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1169,14 +1169,14 @@ test_keyed_block_partial_preserves_prediction(void)
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_key_table_cache_clear_on_deactivate(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1273,14 +1273,14 @@ test_key_table_cache_clear_on_deactivate(void)
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 static void
 test_key_table_cache_clear_preserves_sibling_block(void)
 {
-    substrate_test_ctx t;
-    substrate_test_ctx_init(&t);
+    substrate_fixture t;
+    substrate_fixture_init(&t);
 
     alia_substrate_anchor* root
         = alia_test_substrate_fixture_root_anchor(t.fixture);
@@ -1345,7 +1345,7 @@ test_key_table_cache_clear_preserves_sibling_block(void)
     TEST_CHECK(((test_object*) sibling_obj_ptr)->cached_value == 77);
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
-    substrate_test_ctx_destroy(&t);
+    substrate_fixture_destroy(&t);
 }
 
 void
