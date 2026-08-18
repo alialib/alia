@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
@@ -89,6 +90,194 @@ writability_faker<Wrapped>
 fake_writability(Wrapped wrapped)
 {
     return writability_faker<Wrapped>(std::move(wrapped));
+}
+
+// `has_value_view(s)` yields a view to a boolean that is true iff `s`
+// currently has a value. The returned signal always has a value.
+template<class Wrapped>
+struct has_value_view_signal
+    : regular_signal<
+          has_value_view_signal<Wrapped>,
+          bool,
+          view_caps<signal_readable>>
+{
+    has_value_view_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return true;
+    }
+    bool const&
+    read() const override
+    {
+        value_ = wrapped_.has_value();
+        return value_;
+    }
+
+ private:
+    Wrapped wrapped_;
+    mutable bool value_;
+};
+template<view_signal Wrapped>
+auto
+has_value_view(Wrapped wrapped)
+{
+    return has_value_view_signal<Wrapped>(std::move(wrapped));
+}
+
+// `ready_to_write_view(s)` yields a view to a boolean that is true iff `s` is
+// currently ready to write. The returned signal always has a value.
+template<class Wrapped>
+struct ready_to_write_view_signal
+    : regular_signal<
+          ready_to_write_view_signal<Wrapped>,
+          bool,
+          view_caps<signal_readable>>
+{
+    ready_to_write_view_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return true;
+    }
+    bool const&
+    read() const override
+    {
+        value_ = wrapped_.ready_to_write();
+        return value_;
+    }
+
+ private:
+    Wrapped wrapped_;
+    mutable bool value_;
+};
+template<signal_type Wrapped>
+auto
+ready_to_write_view(Wrapped wrapped)
+{
+    return ready_to_write_view_signal<Wrapped>(std::move(wrapped));
+}
+
+// `mask(signal, flag)` is empty unless `flag` is true, in which case it is
+// equivalent to `signal`. `flag` may be a signal or a raw value.
+template<class Primary, class Mask>
+struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
+{
+    masking_signal(Primary primary, Mask mask)
+        : masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
+    }
+    id_view
+    value_id() const override
+    {
+        if (mask_.has_value() && mask_.read())
+            return this->wrapped_.value_id();
+        return null_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return mask_.has_value() && mask_.read()
+            && this->wrapped_.ready_to_write();
+    }
+
+ private:
+    Mask mask_;
+};
+template<class Signal, class AvailabilityFlag>
+    requires(!action_type<Signal>)
+auto
+mask(Signal signal, AvailabilityFlag availability_flag)
+{
+    auto signalized = signalize(std::move(signal));
+    auto flag = signalize(std::move(availability_flag));
+    return masking_signal<decltype(signalized), decltype(flag)>(
+        std::move(signalized), std::move(flag));
+}
+
+// `mask_writes(signal, flag)` keeps `signal`'s read behavior but only allows
+// writes when `flag` is true. Capabilities are unchanged.
+template<class Primary, class Mask>
+struct write_masking_signal
+    : signal_wrapper<write_masking_signal<Primary, Mask>, Primary>
+{
+    write_masking_signal(Primary primary, Mask mask)
+        : write_masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
+    {
+    }
+    bool
+    ready_to_write() const override
+    {
+        return mask_.has_value() && mask_.read()
+            && this->wrapped_.ready_to_write();
+    }
+
+ private:
+    Mask mask_;
+};
+template<signal_type Signal, class WritabilityFlag>
+auto
+mask_writes(Signal signal, WritabilityFlag writability_flag)
+{
+    auto flag = signalize(std::move(writability_flag));
+    return write_masking_signal<Signal, decltype(flag)>(
+        std::move(signal), std::move(flag));
+}
+
+// `disable_writes(s)` yields a wrapper for `s` with writes disabled.
+template<signal_type Signal>
+auto
+disable_writes(Signal s)
+{
+    return mask_writes(std::move(s), false);
+}
+
+// `mask_reads(signal, flag)` keeps `signal`'s write behavior but only has a
+// value when `flag` is true. Capabilities are unchanged.
+template<class Primary, class Mask>
+struct read_masking_signal
+    : signal_wrapper<read_masking_signal<Primary, Mask>, Primary>
+{
+    read_masking_signal(Primary primary, Mask mask)
+        : read_masking_signal::signal_wrapper(std::move(primary)),
+          mask_(std::move(mask))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
+    }
+
+ private:
+    Mask mask_;
+};
+template<signal_type Signal, class ReadabilityFlag>
+auto
+mask_reads(Signal signal, ReadabilityFlag readability_flag)
+{
+    auto flag = signalize(std::move(readability_flag));
+    return read_masking_signal<Signal, decltype(flag)>(
+        std::move(signal), std::move(flag));
+}
+
+// `disable_reads(s)` yields a wrapper for `s` with reads disabled.
+template<signal_type Signal>
+auto
+disable_reads(Signal s)
+{
+    return mask_reads(std::move(s), false);
 }
 
 // `move(signal)` returns a signal with movement activated (if possible).
