@@ -9,6 +9,7 @@ namespace alia {
 // `regular_signal` is a partial signal implementation whose value ID is
 // just the signal value itself.
 template<class Derived, class Value, class Capabilities>
+    requires identifiable<Value>
 struct regular_signal : signal<Derived, Value, Capabilities>
 {
     id_view
@@ -48,6 +49,75 @@ struct lazy_signal : signal<Derived, Value, Capabilities>
 
  private:
     mutable Value value_;
+};
+
+// `signal_wrapper` is a utility for wrapping another signal. It's designed to
+// be used as a base class. By default, it passes every signal function through
+// to the wrapped signal (a protected member named `wrapped_`). You customize
+// your wrapper by overriding what's different.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Capabilities = typename Wrapped::capabilities>
+struct signal_wrapper : signal<Derived, Value, Capabilities>
+{
+    signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return wrapped_.has_value();
+    }
+    typename Wrapped::value_type const&
+    read() const override
+    {
+        return wrapped_.read();
+    }
+    typename Wrapped::value_type
+    move_out() const override
+    {
+        return wrapped_.move_out();
+    }
+    typename Wrapped::value_type&
+    destructive_ref() const override
+    {
+        return wrapped_.destructive_ref();
+    }
+    id_view
+    value_id() const override
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return wrapped_.ready_to_write();
+    }
+    id_view
+    write(typename Wrapped::value_type value) const override
+    {
+        return wrapped_.write(std::move(value));
+    }
+    void
+    clear() const override
+    {
+        wrapped_.clear();
+    }
+    bool
+    invalidate(std::exception_ptr error) const override
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const override
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
 };
 
 } // namespace alia

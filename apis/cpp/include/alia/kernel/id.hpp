@@ -88,8 +88,8 @@ make_pointer_id(T const* ptr)
 }
 
 // `make_id_by_reference(v)` makes an ID for an existing object. The ID may
-// borrow memory from `v`, so `v` must outlive any use of the returned `id_view`.
-// This is designed to be overloaded for custom types.
+// borrow memory from `v`, so `v` must outlive any use of the returned
+// `id_view`. This is designed to be overloaded for custom types.
 
 inline id_view
 make_id_by_reference(bool const& v)
@@ -120,8 +120,7 @@ make_id_by_reference(double const& v)
 inline id_view
 make_id_by_reference(std::string const& v)
 {
-    return alia_id_view_make_bytes(
-        v.data(), static_cast<uint32_t>(v.size()));
+    return alia_id_view_make_bytes(v.data(), static_cast<uint32_t>(v.size()));
 }
 
 template<class T>
@@ -132,6 +131,20 @@ make_id_by_reference(T const& v)
 {
     return alia_id_view_make_bytes(
         reinterpret_cast<char const*>(&v), static_cast<uint32_t>(sizeof(T)));
+}
+
+// `identifiable<T>` is true iff an ID can be formed from a live `T` via
+// `make_id_by_reference`.
+template<class T>
+concept identifiable = requires(T const& v) {
+    { make_id_by_reference(v) } -> std::convertible_to<id_view>;
+};
+
+// Combine two IDs into a pair. `storage` must outlive the returned view.
+inline id_view
+make_id_pair(alia_id_pair& storage, id_view left, id_view right)
+{
+    return alia_id_view_make_pair(&storage, left, right);
 }
 
 } // namespace alia

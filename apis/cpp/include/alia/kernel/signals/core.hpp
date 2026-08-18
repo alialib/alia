@@ -508,7 +508,7 @@ write_signal(Signal const& signal, Value value)
 // Move out a signal's value.
 template<signal_with<view_caps<signal_move_activated>> Signal>
 Signal::value_type
-move_signal(Signal const& signal)
+move_from_signal(Signal const& signal)
 {
     assert(signal.has_value());
     return signal.move_out();

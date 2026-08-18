@@ -66,8 +66,7 @@ struct lazy_apply2_signal
     id_view
     value_id() const override
     {
-        pair_ = {arg0_.value_id(), arg1_.value_id()};
-        return alia_id_view_make_pair(&pair_, pair_.left, pair_.right);
+        return make_id_pair(pair_, arg0_.value_id(), arg1_.value_id());
     }
     bool
     has_value() const override

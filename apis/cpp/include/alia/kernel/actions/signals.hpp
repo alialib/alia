@@ -1,8 +1,10 @@
-#ifndef ALIA_CORE_ACTIONS_SIGNALS_HPP
-#define ALIA_CORE_ACTIONS_SIGNALS_HPP
+#pragma once
 
-#include <alia/core/actions/core.hpp>
-#include <alia/core/signals/utilities.hpp>
+#include <alia/kernel/actions/core.hpp>
+#include <alia/kernel/signals/core.hpp>
+#include <alia/kernel/signals/utilities.hpp>
+
+#include <utility>
 
 // This file provides action-centric adaptors that operate on signals.
 
@@ -17,9 +19,9 @@ struct write_action_signal
           write_action_signal<Wrapped, OnWrite>,
           Wrapped,
           typename Wrapped::value_type,
-          typename signal_capabilities_union<
-              write_only_signal,
-              typename Wrapped::capabilities>::type>
+          signal_capabilities_union<
+              sink_caps<signal_writable>,
+              typename Wrapped::capabilities>>
 {
     write_action_signal(Wrapped wrapped, OnWrite on_write)
         : write_action_signal::signal_wrapper(std::move(wrapped)),
@@ -31,7 +33,7 @@ struct write_action_signal
     {
         return this->wrapped_.ready_to_write() && on_write_.is_ready();
     }
-    id_interface const&
+    id_view
     write(typename Wrapped::value_type value) const override
     {
         perform_action(on_write_, value);
@@ -50,5 +52,3 @@ add_write_action(Wrapped wrapped, OnWrite on_write)
 }
 
 } // namespace alia
-
-#endif

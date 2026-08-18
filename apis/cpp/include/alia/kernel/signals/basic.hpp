@@ -82,8 +82,8 @@ empty()
     return empty_signal<Value>();
 }
 
-// default_initialized<Value>() creates a read-only signal whose value is a
-// default-initialized value of type Value.
+// `default_initialized<Value>()` creates a read-only signal whose value is a
+// default-initialized value of type `Value`.
 template<class Value>
 struct default_initialized_view
     : signal<
@@ -130,7 +130,7 @@ default_initialized()
     return default_initialized_view<Value>();
 }
 
-// value(v) creates a read-only signal that carries the value v.
+// `value(v)` creates a read-only signal that carries the value `v`.
 template<class Value>
 struct value_view
     : regular_signal<
@@ -218,8 +218,8 @@ operator""_a(char const* s, size_t)
 }
 } // namespace literals
 
-// ref(x), where x is a non-const reference, creates a binding that directly
-// exposes the value of x.
+// `ref(x)`, where `x` is a non-const reference, creates a binding that
+// directly exposes the value of x.
 template<class Value>
 struct pointer_binding
     : regular_signal<
@@ -273,8 +273,8 @@ ref(Value& x)
     return pointer_binding<Value>(&x);
 }
 
-// ref(x), where x is a const reference, creates a view that directly exposes
-// the value of x.
+// `ref(x)`, where `x` is a const reference, creates a view that directly
+// exposes the value of `x`.
 template<class Value>
 struct pointer_view
     : regular_signal<pointer_view<Value>, Value, view_caps<signal_readable>>
@@ -303,7 +303,7 @@ ref(Value const& x)
     return pointer_view<Value>(&x);
 }
 
-// signalize(x) turns x into a signal if it isn't already one.
+// `signalize(x)` turns `x` into a signal if it isn't already one.
 template<signal_type Signal>
 Signal
 signalize(Signal s)

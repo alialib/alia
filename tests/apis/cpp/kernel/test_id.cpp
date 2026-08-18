@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 using namespace alia;
 using namespace alia::operators;
@@ -75,8 +76,33 @@ TEST_CASE("make_id_by_reference")
         int b;
     };
     pod const p{1, 2};
-    CHECK((make_id_by_reference(p) == alia_id_view_make_bytes(
-               reinterpret_cast<char const*>(&p), sizeof(pod))));
+    CHECK(
+        (make_id_by_reference(p)
+         == alia_id_view_make_bytes(
+             reinterpret_cast<char const*>(&p), sizeof(pod))));
+}
+
+TEST_CASE("identifiable")
+{
+    CHECK((identifiable<bool>));
+    CHECK((identifiable<int>));
+    CHECK((identifiable<float>));
+    CHECK((identifiable<double>));
+    CHECK((identifiable<std::string>));
+
+    struct pod
+    {
+        int a;
+        int b;
+    };
+    CHECK((identifiable<pod>));
+
+    struct no_id
+    {
+        std::string s;
+    };
+    CHECK_FALSE((identifiable<no_id>));
+    CHECK_FALSE((identifiable<std::vector<int>>));
 }
 
 TEST_CASE("std::hash matches alia_id_view_hash")
@@ -85,4 +111,15 @@ TEST_CASE("std::hash matches alia_id_view_hash")
     CHECK(hash(make_id(7)) == alia_id_view_hash(make_id(7)));
     CHECK(hash(make_id(7)) == hash(make_id(7)));
     CHECK(hash(make_id(7)) != hash(null_id()));
+}
+
+TEST_CASE("make_id_pair")
+{
+    alia_id_pair a_storage{};
+    alia_id_pair a_again_storage{};
+    alia_id_pair b_storage{};
+    auto a = make_id_pair(a_storage, make_id(0), make_id(1));
+    auto b = make_id_pair(b_storage, make_id(1), make_id(2));
+    CHECK((a != b));
+    CHECK((a == make_id_pair(a_again_storage, make_id(0), make_id(1))));
 }

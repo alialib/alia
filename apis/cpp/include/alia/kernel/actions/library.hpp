@@ -1,18 +1,20 @@
-#ifndef ALIA_CORE_ACTIONS_LIBRARY_HPP
-#define ALIA_CORE_ACTIONS_LIBRARY_HPP
+#pragma once
 
-#include <alia/core/actions/core.hpp>
-#include <alia/core/actions/operators.hpp>
-#include <alia/core/signals/adaptors.hpp>
-#include <alia/core/signals/basic.hpp>
-#include <alia/core/signals/core.hpp>
+#include <alia/kernel/actions/core.hpp>
+#include <alia/kernel/actions/operators.hpp>
+#include <alia/kernel/signals/adaptors.hpp>
+#include <alia/kernel/signals/application.hpp>
+#include <alia/kernel/signals/basic.hpp>
+#include <alia/kernel/signals/core.hpp>
+
+#include <utility>
 
 namespace alia {
 
-// actions::toggle(flag), where :flag is a signal to a boolean, creates an
-// action that will toggle the value of :flag between true and false.
+// `actions::toggle(flag)`, where `flag` is a signal to a boolean, creates an
+// action that will toggle the value of `flag` between `true` and `false`.
 //
-// Note that this could also be used with other value types as long as the !
+// Note that this could also be used with other value types as long as the `!`
 // operator provides a reasonable "toggle" function.
 
 namespace actions {
@@ -26,9 +28,9 @@ toggle(Flag flag)
 
 } // namespace actions
 
-// actions::push_back(container), where :container is a signal, creates an
+// `actions::push_back(container)`, where `container` is a signal, creates an
 // action that takes an item as a parameter and pushes it onto the back of
-// :container.
+// `container`.
 
 template<class Container, class Item>
 struct push_back_action : action_interface<Item>
@@ -70,10 +72,11 @@ push_back(Container container)
 
 } // namespace actions
 
-// actions::erase_index(container, index) creates an actions that erases the
-// item at :index from :container.
-// :container must be a duplex signal carrying a random access container.
-// :index can be either a raw size_t or a readable signal carrying a size_t.
+// `actions::erase_index(container, index)` creates an action that erases the
+// item at `index` from `container`.
+// `container` must be a duplex signal carrying a random access container.
+// `index` can be either a raw `size_t` or a readable signal carrying a
+// `size_t`.
 
 template<class Container, class Index>
 struct erase_index_action : action_interface<>
@@ -117,10 +120,10 @@ erase_index(Container container, Index index)
 
 } // namespace actions
 
-// actions::erase_key(container, key) creates an actions that erases the
-// item associated with :key from :container.
-// :container must be a duplex signal carrying an associative container.
-// :key can be either a raw key or a readable signal carrying a key.
+// `actions::erase_key(container, key)` creates an action that erases the item
+// associated with `key` from `container`.
+// `container` must be a duplex signal carrying an associative container.
+// `key` can be either a raw key or a readable signal carrying a key.
 
 template<class Container, class Key>
 struct erase_key_action : action_interface<>
@@ -164,10 +167,10 @@ erase_key(Container container, Key key)
 
 } // namespace actions
 
-// actions::apply(f, state, [args...]), where :state is a signal, creates an
-// action that will apply :f to the value of :state and write the result back
-// to :state. Any :args should also be signals and will be passed along as
-// additional arguments to :f.
+// `actions::apply(f, state, [args...])`, where `state` is a signal, creates an
+// action that will apply `f` to the value of `state` and write the result back
+// to `state`. Any `args` should also be signals and will be passed along as
+// additional arguments to `f`.
 
 namespace actions {
 
@@ -184,5 +187,3 @@ apply(Function&& f, PrimaryState state, Args... args)
 } // namespace actions
 
 } // namespace alia
-
-#endif
