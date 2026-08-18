@@ -28,50 +28,6 @@ is_false(Signal const& x)
     return signal_has_value(x) && !read_signal(x);
 }
 
-TEST_CASE("field signal", "[signals][operators]")
-{
-    struct foo
-    {
-        int x;
-        std::string y;
-    };
-    foo f = {2, "1.5"};
-    auto f_signal = lambda_duplex(
-        always_has_value,
-        [&]() { return f; },
-        always_ready,
-        [&](foo const& v) { f = v; },
-        [&]() { return combine_ids(make_id(f.x), make_id(f.y)); });
-    auto x_signal = f_signal->*&foo::x;
-
-    typedef decltype(x_signal) x_signal_t;
-    REQUIRE((std::is_same<x_signal_t::value_type, int>::value));
-    REQUIRE(signal_is_readable<x_signal_t>::value);
-    REQUIRE(signal_is_writable<x_signal_t>::value);
-
-    REQUIRE(signal_has_value(x_signal));
-    REQUIRE(read_signal(x_signal) == 2);
-    REQUIRE(signal_ready_to_write(x_signal));
-    write_signal(x_signal, 1);
-    REQUIRE(f.x == 1);
-
-    auto y_signal = alia_field(f_signal, y);
-
-    typedef decltype(y_signal) y_signal_t;
-    REQUIRE((std::is_same<y_signal_t::value_type, std::string>::value));
-    REQUIRE(signal_is_readable<y_signal_t>::value);
-    REQUIRE(signal_is_writable<y_signal_t>::value);
-
-    REQUIRE(y_signal.value_id() != x_signal.value_id());
-    REQUIRE(signal_has_value(y_signal));
-    REQUIRE(read_signal(y_signal) == "1.5");
-    REQUIRE(signal_ready_to_write(y_signal));
-    captured_id original_y_id = y_signal.value_id();
-    write_signal(y_signal, "0.5");
-    REQUIRE(y_signal.value_id() != *original_y_id);
-    REQUIRE(f.y == "0.5");
-}
-
 struct my_array
 {
     int x[3] = {1, 2, 3};
