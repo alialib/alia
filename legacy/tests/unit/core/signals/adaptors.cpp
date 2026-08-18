@@ -1,7 +1,6 @@
 #include <alia/core/signals/adaptors.hpp>
 
 #include <map>
-#include <optional>
 #include <type_traits>
 
 #include <alia/core/actions/operators.hpp>
@@ -188,44 +187,6 @@ TEST_CASE("signalize a value", "[signals][adaptors]")
     REQUIRE(read_signal(t) == 12);
 }
 
-TEST_CASE("unwrap a duplex signal", "[signals][adaptors]")
-{
-    {
-        auto x = std::optional<int>(1);
-        auto d = direct(x);
-        auto s = unwrap(d);
-
-        typedef decltype(s) signal_t;
-        REQUIRE((std::is_same<signal_t::value_type, int>::value));
-        REQUIRE(signal_is_readable<signal_t>::value);
-        REQUIRE(signal_is_writable<signal_t>::value);
-
-        REQUIRE(signal_has_value(s));
-        REQUIRE(read_signal(s) == 1);
-        REQUIRE(s.value_id() == d.value_id());
-        REQUIRE(signal_ready_to_write(s));
-        write_signal(s, 0);
-        REQUIRE(x.has_value());
-        REQUIRE(*x == 0);
-    }
-    {
-        auto x = std::optional<int>();
-        auto s = unwrap(direct(x));
-        REQUIRE(!signal_has_value(s));
-        REQUIRE(s.value_id() == null_id);
-        REQUIRE(signal_ready_to_write(s));
-        write_signal(s, 0);
-        REQUIRE(x.has_value());
-        REQUIRE(*x == 0);
-    }
-    {
-        auto x = std::optional<int>(1);
-        auto s = unwrap(direct(x));
-        clear_signal(s);
-        REQUIRE(!x.has_value());
-    }
-}
-
 TEST_CASE("signal value movement", "[signals][adaptors]")
 {
     // Test that copy counting work.
@@ -251,24 +212,4 @@ TEST_CASE("signal value movement", "[signals][adaptors]")
     perform_action(state_signal <<= move(direct(x)));
     REQUIRE(copy_count == 0);
     REQUIRE(state.get().n == 4);
-}
-
-TEST_CASE("radio signal", "[signals][adaptors]")
-{
-    {
-        int selected = 0;
-        auto radio = make_radio_signal(direct(selected), value(1));
-        REQUIRE(signal_has_value(radio));
-        REQUIRE(!read_signal(radio));
-        REQUIRE(signal_ready_to_write(radio));
-        write_signal(radio, true);
-        REQUIRE(selected == 1);
-    }
-    {
-        int selected = 1;
-        auto radio = make_radio_signal(direct(selected), value(1));
-        REQUIRE(signal_has_value(radio));
-        REQUIRE(read_signal(radio));
-        REQUIRE(signal_ready_to_write(radio));
-    }
 }

@@ -5,6 +5,8 @@
 
 #include <doctest/doctest.h>
 
+#include <optional>
+
 using namespace alia;
 using namespace alia::operators;
 
@@ -394,4 +396,77 @@ TEST_CASE("mask/disable_reads")
     auto raw_flag = mask_reads(ref(x), false);
     CHECK_FALSE(signal_has_value(raw_flag));
     CHECK(signal_ready_to_write(raw_flag));
+}
+
+TEST_CASE("unwrap a binding")
+{
+    {
+        auto x = std::optional<int>(1);
+        auto d = alia::ref(x);
+        auto s = unwrap(d);
+
+        static_assert(std::same_as<decltype(s)::value_type, int>);
+        static_assert(view_signal<decltype(s)>);
+        static_assert(sink_signal<decltype(s)>);
+        static_assert(signal_with<decltype(s), sink_caps<signal_clearable>>);
+
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 1);
+        CHECK((s.value_id() == d.value_id()));
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 0);
+        CHECK(x.has_value());
+        CHECK(*x == 0);
+    }
+    {
+        auto x = std::optional<int>();
+        auto s = unwrap(alia::ref(x));
+        CHECK_FALSE(signal_has_value(s));
+        CHECK((s.value_id() == null_id()));
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 0);
+        CHECK(x.has_value());
+        CHECK(*x == 0);
+    }
+    {
+        auto x = std::optional<int>(1);
+        auto s = unwrap(alia::ref(x));
+        clear_signal(s);
+        CHECK_FALSE(x.has_value());
+    }
+}
+
+TEST_CASE("unwrap a read-only signal")
+{
+    auto s = unwrap(value(std::optional<int>(3)));
+    static_assert(view_signal<decltype(s)>);
+    static_assert(!sink_signal<decltype(s)>);
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 3);
+
+    auto empty_optional = unwrap(value(std::optional<int>()));
+    CHECK_FALSE(signal_has_value(empty_optional));
+    CHECK((empty_optional.value_id() == null_id()));
+}
+
+TEST_CASE("radio signal")
+{
+    {
+        int selected = 0;
+        auto radio = make_radio_signal(ref(selected), value(1));
+        static_assert(view_signal<decltype(radio)>);
+        static_assert(sink_signal<decltype(radio)>);
+        CHECK(signal_has_value(radio));
+        CHECK_FALSE(read_signal(radio));
+        CHECK(signal_ready_to_write(radio));
+        write_signal(radio, true);
+        CHECK(selected == 1);
+    }
+    {
+        int selected = 1;
+        auto radio = make_radio_signal(ref(selected), value(1));
+        CHECK(signal_has_value(radio));
+        CHECK(read_signal(radio));
+        CHECK(signal_ready_to_write(radio));
+    }
 }

@@ -405,6 +405,73 @@ disable_reads(Signal s)
     return mask_reads(std::move(s), false);
 }
 
+// `unwrap(signal)`, where `signal` carries a `std::optional` value, yields a
+// signal that directly carries the value wrapped inside the optional.
+// If the optional signal is writable, the unwrapped signal is clearable.
+// (Clearing the signal sets the optional to `std::nullopt`.)
+template<class Wrapped>
+using unwrapper_signal_capabilities = signal_capabilities<
+    Wrapped::capabilities::reading,
+    Wrapped::capabilities::writing == signal_unwritable ? signal_unwritable
+                                                        : signal_clearable>;
+
+template<class Wrapped>
+struct unwrapper_signal
+    : casting_signal_wrapper<
+          unwrapper_signal<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type::value_type,
+          unwrapper_signal_capabilities<Wrapped>>
+{
+    unwrapper_signal(Wrapped wrapped)
+        : unwrapper_signal::casting_signal_wrapper(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return this->wrapped_.has_value() && this->wrapped_.read().has_value();
+    }
+    typename Wrapped::value_type::value_type const&
+    read() const override
+    {
+        return this->wrapped_.read().value();
+    }
+    typename Wrapped::value_type::value_type
+    move_out() const override
+    {
+        return *this->wrapped_.move_out();
+    }
+    typename Wrapped::value_type::value_type&
+    destructive_ref() const override
+    {
+        return *this->wrapped_.destructive_ref();
+    }
+    id_view
+    value_id() const override
+    {
+        if (this->has_value())
+            return this->wrapped_.value_id();
+        return null_id();
+    }
+    id_view
+    write(typename Wrapped::value_type::value_type value) const override
+    {
+        return this->wrapped_.write(std::move(value));
+    }
+    void
+    clear() const override
+    {
+        this->wrapped_.write(typename Wrapped::value_type());
+    }
+};
+template<view_signal Signal>
+auto
+unwrap(Signal signal)
+{
+    return unwrapper_signal<Signal>(std::move(signal));
+}
+
 // `move(signal)` returns a signal with movement activated (if possible).
 //
 // If the input signal supports movement, the returned signal's value can be
@@ -440,6 +507,65 @@ auto
 move(Signal signal)
 {
     return signal;
+}
+
+// A radio signal models the semantics of a radio button.
+//
+// `make_radio_signal(selected, index)` yields a boolean binding that is true
+// iff the value of `selected` matches the value of `index`. Writing `true` to
+// the signal sets `selected` to `index`. (Writing `false` is considered
+// a meaningless operation.)
+//
+template<class Selected, class Index>
+struct radio_signal
+    : lazy_signal<
+          radio_signal<Selected, Index>,
+          bool,
+          binding_caps<signal_readable>>
+{
+    radio_signal(Selected selected, Index index)
+        : selected_(std::move(selected)), index_(std::move(index))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return signal_has_value(selected_) && signal_has_value(index_);
+    }
+    bool
+    move_out() const override
+    {
+        return read_signal(selected_) == read_signal(index_);
+    }
+    id_view
+    value_id() const override
+    {
+        return selected_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return signal_ready_to_write(selected_) && signal_has_value(index_);
+    }
+    id_view
+    write(bool) const override
+    {
+        write_signal(selected_, read_signal(index_));
+        return null_id();
+    }
+
+ private:
+    Selected selected_;
+    Index index_;
+};
+template<class Selected, class Index>
+    requires view_signal<Selected> && sink_signal<Selected>
+          && view_signal<Index>
+radio_signal<Selected, Index>
+make_radio_signal(Selected selected, Index index)
+{
+    return radio_signal<Selected, Index>(
+        std::move(selected), std::move(index));
 }
 
 } // namespace alia
