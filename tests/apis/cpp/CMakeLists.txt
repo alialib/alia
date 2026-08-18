@@ -8,6 +8,7 @@ add_executable(test_apis_cpp
     kernel/signals/test_application.cpp
     kernel/signals/test_operators.cpp
     kernel/signals/test_adaptors.cpp
+    kernel/signals/test_containers.cpp
     kernel/actions/test_core.cpp
     kernel/actions/test_basic.cpp
     kernel/actions/test_operators.cpp
