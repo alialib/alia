@@ -51,6 +51,39 @@ make_id_by_reference(movable_object const& v)
     return alia::make_id(v.n);
 }
 
+template<class Wrapped>
+struct transparent_casting_wrapper : casting_signal_wrapper<
+                                         transparent_casting_wrapper<Wrapped>,
+                                         Wrapped,
+                                         typename Wrapped::value_type>
+{
+    transparent_casting_wrapper(Wrapped wrapped)
+        : transparent_casting_wrapper::casting_signal_wrapper(
+            std::move(wrapped))
+    {
+    }
+    typename Wrapped::value_type const&
+    read() const override
+    {
+        return this->wrapped_.read();
+    }
+    typename Wrapped::value_type
+    move_out() const override
+    {
+        return this->wrapped_.move_out();
+    }
+    typename Wrapped::value_type&
+    destructive_ref() const override
+    {
+        return this->wrapped_.destructive_ref();
+    }
+    id_view
+    write(typename Wrapped::value_type value) const override
+    {
+        return this->wrapped_.write(std::move(value));
+    }
+};
+
 } // namespace
 
 TEST_CASE("fake_readability")
@@ -78,6 +111,114 @@ TEST_CASE("fake_writability")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 0);
     CHECK_FALSE(signal_ready_to_write(s));
+}
+
+TEST_CASE("casting_signal_wrapper")
+{
+    int x = 1;
+    auto wrapped = ref(x);
+    auto s = transparent_casting_wrapper(wrapped);
+
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK((s.value_id() == wrapped.value_id()));
+    CHECK(read_signal(s) == 1);
+    CHECK(signal_ready_to_write(s));
+    write_signal(s, 2);
+    CHECK(x == 2);
+}
+
+TEST_CASE("signal_cast")
+{
+    int x = 1;
+    auto s = signal_cast<double>(ref(x));
+
+    static_assert(std::same_as<decltype(s)::value_type, double>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 1.0);
+    CHECK(signal_ready_to_write(s));
+    write_signal(s, 0.0);
+    CHECK(x == 0);
+
+    auto same = signal_cast<int>(ref(x));
+    static_assert(std::same_as<decltype(same), decltype(ref(x))>);
+    CHECK(read_signal(same) == 0);
+}
+
+TEST_CASE("add_default")
+{
+    {
+        auto s = add_default(value(0), value(1));
+        static_assert(view_signal<decltype(s)>);
+        static_assert(!sink_signal<decltype(s)>);
+        static_assert(
+            signal_with<decltype(s), view_caps<signal_move_activated>>);
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 0);
+        CHECK(move_from_signal(s) == 0);
+    }
+
+    {
+        int p = 1;
+        auto s = add_default(ref(p), value(0));
+        static_assert(view_signal<decltype(s)>);
+        static_assert(sink_signal<decltype(s)>);
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 1);
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 2);
+        CHECK(p == 2);
+    }
+
+    {
+        int p = 1;
+        auto s = add_default(fake_readability(ref(p)), value(0));
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 0);
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 2);
+        CHECK(p == 2);
+    }
+
+    {
+        int p = 1;
+        auto s = add_default(fake_readability(ref(p)), empty<int>());
+        CHECK_FALSE(signal_has_value(s));
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 2);
+        CHECK(p == 2);
+    }
+
+    {
+        int p = 1;
+        auto s = add_default(disable_writes(ref(p)), empty<int>());
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 1);
+        CHECK_FALSE(signal_ready_to_write(s));
+    }
+
+    {
+        // The overall signal produces a different value ID when using the
+        // primary vs the default, even when the two component signals have
+        // the same value.
+        auto s = add_default(value(0), empty<int>());
+        auto t = add_default(empty<int>(), value(0));
+        CHECK(signal_has_value(s));
+        CHECK(signal_has_value(t));
+        CHECK(read_signal(s) == read_signal(t));
+        CHECK((s.value_id() != t.value_id()));
+    }
+
+    {
+        auto s = add_default(empty<int>(), 4);
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 4);
+    }
 }
 
 TEST_CASE("signal value movement")

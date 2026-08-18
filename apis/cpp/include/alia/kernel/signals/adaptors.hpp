@@ -92,6 +92,131 @@ fake_writability(Wrapped wrapped)
     return writability_faker<Wrapped>(std::move(wrapped));
 }
 
+// `signal_cast<Value>(x)` yields a proxy for `x` with the value type `Value`.
+// The proxy applies `static_cast`s to convert its own values to and from
+// `x`'s value type. If `Value` is already `x`'s value type, `x` is returned
+// unchanged.
+template<class Wrapped, class To>
+struct casting_signal
+    : casting_signal_wrapper<
+          casting_signal<Wrapped, To>,
+          Wrapped,
+          To,
+          signal_capabilities_intersection<
+              typename Wrapped::capabilities,
+              binding_caps<signal_move_activated, signal_clearable>>>
+{
+    casting_signal(Wrapped wrapped)
+        : casting_signal::casting_signal_wrapper(std::move(wrapped))
+    {
+    }
+    To const&
+    read() const override
+    {
+        value_ = this->move_out();
+        return value_;
+    }
+    To
+    move_out() const override
+    {
+        return static_cast<To>(forward_signal(this->wrapped_));
+    }
+    To&
+    destructive_ref() const override
+    {
+        value_ = this->move_out();
+        return value_;
+    }
+    id_view
+    write(To value) const override
+    {
+        return this->wrapped_.write(
+            static_cast<typename Wrapped::value_type>(value));
+    }
+
+ private:
+    mutable To value_;
+};
+template<class To, signal_type Wrapped>
+auto
+signal_cast(Wrapped wrapped)
+{
+    if constexpr (std::same_as<To, typename Wrapped::value_type>)
+        return wrapped;
+    else
+        return casting_signal<Wrapped, To>(std::move(wrapped));
+}
+
+// `add_default(primary, default_)` yields a signal whose value is that of
+// `primary` if it has one and that of `default_` otherwise.
+// All writes go directly to `primary`. Either argument may be a signal or a
+// raw value.
+template<class Primary, class Default>
+struct default_value_signal
+    : signal_wrapper<
+          default_value_signal<Primary, Default>,
+          Primary,
+          typename Primary::value_type,
+          signal_capabilities<
+              signal_capability_level_intersection<
+                  Primary::capabilities::reading,
+                  Default::capabilities::reading>,
+              Primary::capabilities::writing>>
+{
+    default_value_signal(Primary primary, Default default_value)
+        : default_value_signal::signal_wrapper(std::move(primary)),
+          default_(std::move(default_value))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return this->wrapped_.has_value() || default_.has_value();
+    }
+    typename Primary::value_type const&
+    read() const override
+    {
+        return this->wrapped_.has_value() ? this->wrapped_.read()
+                                          : default_.read();
+    }
+    typename Primary::value_type
+    move_out() const override
+    {
+        return this->wrapped_.has_value() ? this->wrapped_.move_out()
+                                          : default_.move_out();
+    }
+    typename Primary::value_type&
+    destructive_ref() const override
+    {
+        return this->wrapped_.has_value() ? this->wrapped_.destructive_ref()
+                                          : default_.destructive_ref();
+    }
+    id_view
+    value_id() const override
+    {
+        bool const using_primary = this->wrapped_.has_value();
+        return make_id_pair(
+            pair_,
+            make_id(using_primary),
+            using_primary ? this->wrapped_.value_id() : default_.value_id());
+    }
+
+ private:
+    mutable alia_id_pair pair_{};
+    Default default_;
+};
+template<class Primary, class Default>
+auto
+add_default(Primary primary, Default default_)
+{
+    auto primary_signal = signalize(std::move(primary));
+    auto default_signal = signalize(std::move(default_));
+    return default_value_signal<
+        decltype(primary_signal),
+        decltype(default_signal)>(
+        std::move(primary_signal), std::move(default_signal));
+}
+
 // `has_value_view(s)` yields a view to a boolean that is true iff `s`
 // currently has a value. The returned signal always has a value.
 template<class Wrapped>

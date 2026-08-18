@@ -120,4 +120,54 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     Wrapped wrapped_;
 };
 
+// `casting_signal_wrapper` is similar to `signal_wrapper` but it doesn't try
+// to implement any functions that depend on the value type of the signal. It's
+// intended for wrappers that plan to cast the wrapped signal value to a
+// different type. Using `signal_wrapper` in those cases would result in errors
+// in the default implementations of `read()`, `write()`, etc.
+template<
+    class Derived,
+    class Wrapped,
+    class Value,
+    class Capabilities = typename Wrapped::capabilities>
+struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
+{
+    casting_signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return wrapped_.has_value();
+    }
+    id_view
+    value_id() const override
+    {
+        return wrapped_.value_id();
+    }
+    bool
+    ready_to_write() const override
+    {
+        return wrapped_.ready_to_write();
+    }
+    void
+    clear() const override
+    {
+        wrapped_.clear();
+    }
+    bool
+    invalidate(std::exception_ptr error) const override
+    {
+        return wrapped_.invalidate(error);
+    }
+    bool
+    is_invalidated() const override
+    {
+        return wrapped_.is_invalidated();
+    }
+
+ protected:
+    Wrapped wrapped_;
+};
+
 } // namespace alia
