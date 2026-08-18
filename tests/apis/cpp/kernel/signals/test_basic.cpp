@@ -2,7 +2,9 @@
 
 #include <doctest/doctest.h>
 
+#include <stdint.h>
 #include <string>
+#include <vector>
 
 using namespace alia;
 using namespace alia::operators;
@@ -76,4 +78,41 @@ TEST_CASE("default_initialized")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 0);
     CHECK((s.value_id() == unit_id()));
+}
+
+TEST_CASE("versioned_ref binding")
+{
+    std::vector<int> items{1, 2};
+    uint32_t version = 0;
+    auto s = versioned_ref(items, version);
+
+    static_assert(!identifiable<std::vector<int>>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK((read_signal(s) == std::vector<int>{1, 2}));
+    CHECK((s.value_id() == make_id(uint32_t{0})));
+
+    write_signal(s, std::vector<int>{3, 4, 5});
+    CHECK((items == std::vector<int>{3, 4, 5}));
+    CHECK(version == 1);
+    CHECK((s.value_id() == make_id(uint32_t{1})));
+
+    version = 7;
+    CHECK((s.value_id() == make_id(uint32_t{7})));
+}
+
+TEST_CASE("versioned_ref const view")
+{
+    std::vector<int> const items{1, 2};
+    uint32_t const version = 5;
+    auto s = versioned_ref(items, version);
+
+    static_assert(view_signal<decltype(s)>);
+    static_assert(!sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK((read_signal(s) == std::vector<int>{1, 2}));
+    CHECK((s.value_id() == make_id(uint32_t{5})));
 }

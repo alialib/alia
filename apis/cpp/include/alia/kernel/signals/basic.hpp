@@ -303,6 +303,115 @@ ref(Value const& x)
     return pointer_view<Value>(&x);
 }
 
+// `versioned_ref(x, version)` creates a binding to `x` that uses `version` as
+// its value ID. Use this for objects that are not `identifiable` (e.g.
+// containers) when you already maintain a revision counter.
+//
+// If `x` and `version` are mutable, the result is a binding, and writes
+// (including destructive movement) increment `version`. If both are const,
+// the result is a view.
+
+template<class Value, std::unsigned_integral Version>
+struct versioned_pointer_binding
+    : signal<
+          versioned_pointer_binding<Value, Version>,
+          Value,
+          binding_caps<signal_movable>>
+{
+    versioned_pointer_binding(Value* v, Version* version)
+        : v_(v), version_(version)
+    {
+    }
+    id_view
+    value_id() const override
+    {
+        return make_id_by_reference(*version_);
+    }
+    bool
+    has_value() const override
+    {
+        return true;
+    }
+    Value const&
+    read() const override
+    {
+        return *v_;
+    }
+    Value
+    move_out() const override
+    {
+        ++*version_;
+        Value moved = std::move(*v_);
+        return moved;
+    }
+    Value&
+    destructive_ref() const override
+    {
+        ++*version_;
+        return *v_;
+    }
+    bool
+    ready_to_write() const override
+    {
+        return true;
+    }
+    id_view
+    write(Value value) const override
+    {
+        *v_ = std::move(value);
+        ++*version_;
+        return this->value_id();
+    }
+
+ private:
+    Value* v_;
+    Version* version_;
+};
+template<class Value, std::unsigned_integral Version>
+versioned_pointer_binding<Value, Version>
+versioned_ref(Value& x, Version& version)
+{
+    return versioned_pointer_binding<Value, Version>(&x, &version);
+}
+
+template<class Value, std::unsigned_integral Version>
+struct versioned_pointer_view
+    : signal<
+          versioned_pointer_view<Value, Version>,
+          Value,
+          view_caps<signal_readable>>
+{
+    versioned_pointer_view(Value const* v, Version const* version)
+        : v_(v), version_(version)
+    {
+    }
+    id_view
+    value_id() const override
+    {
+        return make_id_by_reference(*version_);
+    }
+    bool
+    has_value() const override
+    {
+        return true;
+    }
+    Value const&
+    read() const override
+    {
+        return *v_;
+    }
+
+ private:
+    Value const* v_;
+    Version const* version_;
+};
+template<class Value, std::unsigned_integral Version>
+versioned_pointer_view<Value, Version>
+versioned_ref(Value const& x, Version const& version)
+{
+    return versioned_pointer_view<Value, Version>(&x, &version);
+}
+
 // `signalize(x)` turns `x` into a signal if it isn't already one.
 template<signal_type Signal>
 Signal
