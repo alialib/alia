@@ -170,4 +170,35 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
     Wrapped wrapped_;
 };
 
+// `lazy_signal_wrapper` is the combination of `signal_wrapper` and
+// `lazy_signal`.
+template<
+    class Derived,
+    class Wrapped,
+    class Value = typename Wrapped::value_type,
+    class Capabilities = typename Wrapped::capabilities>
+struct lazy_signal_wrapper
+    : signal_wrapper<Derived, Wrapped, Value, Capabilities>
+{
+    lazy_signal_wrapper(Wrapped wrapped)
+        : lazy_signal_wrapper::signal_wrapper(std::move(wrapped))
+    {
+    }
+    Value const&
+    read() const override
+    {
+        value_ = static_cast<Derived const&>(*this).move_out();
+        return value_;
+    }
+    Value&
+    destructive_ref() const override
+    {
+        value_ = static_cast<Derived const&>(*this).move_out();
+        return value_;
+    }
+
+ private:
+    mutable Value value_;
+};
+
 } // namespace alia
