@@ -2,14 +2,21 @@
 
 The project is undergoing a transition from a pure C++ library to one that has
 a similar C++ API layered on top of a core C ABI (with a C++ implementation).
-Remnants of the C++ library live in `legacy/`. They shouldn't be touched, but
-they can be a good model for understanding functionality and C++ API direction.
+
+Unported C++ still lives in `legacy/`. It is not part of the build. Use it as
+a model for behavior and C++ API direction. When porting a file, move it
+(`git mv`) into the new tree so `legacy/` shrinks. Do not add features there
+or try to keep the old tree compiling.
+
 The intention is that the new C ABI (and its C++ implementation) will focus
 more on low-level efficiency, data-oriented design, etc.
 
 The project is not currently concerned with ABI or API stability. The goal is
 to break/improve things now while it is still in an intentionally unstable
 state.
+
+The source tree is layered as **base** / **kernel** / **ui**. See the Source
+Layout section of the README.
 
 # Build Environment and Execution
 

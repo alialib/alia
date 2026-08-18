@@ -48,3 +48,19 @@ layout results, component trees, internal state, signal data flow, etc.
 
 **i18n, l10n, a11y, IME, etc.** - While there might be a prototype or two to
 demonstrate what's possible, these aren't early requirements for Alia.
+
+## Source Layout
+
+- `core/` - the C ABI and its C++ implementation
+- `apis/cpp/` - idiomatic C++ API
+
+The above share the same internal organization:
+
+- `ui/` - the UI layer: layout, input, drawing, widgets, styling, etc.
+- `kernel/` - the core Alia runtime for identity-stable re-execution of a
+  functional spec: IDs, substrate, event delivery, signals, actions, timing
+- `base/` - foundational code, independent of the Alia model: geometry, color,
+  arenas, stacks, flag sets, etc.
+
+Note that `legacy/` holds code from previous generations of Alia that is still
+waiting to be ported. It's not part of the build.
