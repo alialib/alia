@@ -10,6 +10,7 @@ add_executable(test_apis_cpp
     kernel/signals/test_adaptors.cpp
     kernel/signals/test_containers.cpp
     kernel/signals/test_numeric.cpp
+    kernel/signals/test_lambdas.cpp
     kernel/actions/test_core.cpp
     kernel/actions/test_basic.cpp
     kernel/actions/test_operators.cpp
