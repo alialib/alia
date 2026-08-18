@@ -400,7 +400,10 @@ struct signal_ref
 
 // `signal_type<T>` is true iff `T` is an Alia signal type.
 template<class T>
-concept signal_type = std::is_base_of_v<untyped_signal_base, T>;
+concept signal_type = requires {
+    sizeof(T);
+    requires std::is_base_of_v<untyped_signal_base, T>;
+};
 
 // `signal_with<Signal, Caps>` is true iff `Signal` is compatible with the
 // capability pack `Caps`.

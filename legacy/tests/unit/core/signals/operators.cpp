@@ -7,7 +7,6 @@
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <alia/core/actions/operators.hpp>
 #include <alia/core/signals/basic.hpp>
 #include <alia/core/signals/lambdas.hpp>
 #include <alia/core/signals/state.hpp>
@@ -27,49 +26,6 @@ bool
 is_false(Signal const& x)
 {
     return signal_has_value(x) && !read_signal(x);
-}
-
-TEST_CASE("basic signal operators", "[signals][operators]")
-{
-    REQUIRE(is_true(value(2) == value(2)));
-    REQUIRE(is_false(value(6) == value(2)));
-    REQUIRE(is_true(value(6) != value(2)));
-    REQUIRE(is_false(value(2) != value(2)));
-    REQUIRE(is_true(value(6) > value(2)));
-    REQUIRE(is_false(value(6) < value(2)));
-    REQUIRE(is_true(value(6) >= value(2)));
-    REQUIRE(is_true(value(2) >= value(2)));
-    REQUIRE(is_false(value(2) >= value(6)));
-    REQUIRE(is_true(value(2) < value(6)));
-    REQUIRE(is_false(value(6) < value(2)));
-    REQUIRE(is_true(value(2) <= value(6)));
-    REQUIRE(is_true(value(2) <= value(2)));
-    REQUIRE(is_false(value(6) <= value(2)));
-
-    REQUIRE(is_true(value(6) + value(2) == value(8)));
-    REQUIRE(is_true(value(6) - value(2) == value(4)));
-    REQUIRE(is_true(value(6) * value(2) == value(12)));
-    REQUIRE(is_true(value(6) / value(2) == value(3)));
-    REQUIRE(is_true(value(6) % value(2) == value(0)));
-    REQUIRE(is_true((value(6) ^ value(2)) == value(4)));
-    REQUIRE(is_true((value(6) & value(2)) == value(2)));
-    REQUIRE(is_true((value(6) | value(2)) == value(6)));
-    REQUIRE(is_true(value(6) << value(2) == value(24)));
-    REQUIRE(is_true(value(6) >> value(2) == value(1)));
-
-    REQUIRE(is_true(value(6) + 2 == value(8)));
-    REQUIRE(is_true(6 + value(2) == value(8)));
-    REQUIRE(is_true(value(6) + value(2) == 8));
-
-    REQUIRE(is_true(-value(2) == value(-2)));
-    REQUIRE(is_false(!(value(2) == value(2))));
-}
-
-TEST_CASE("unary operator *", "[signals][operators]")
-{
-    auto x = value(std::optional<int>(2));
-    REQUIRE(is_true(*x == value(2)));
-    REQUIRE(is_false(*x + 1 == value(2)));
 }
 
 TEST_CASE("signal &&", "[signals][operators]")
@@ -494,18 +450,4 @@ TEST_CASE("empty subscript", "[signals][operators]")
 
     REQUIRE(!signal_has_value(s));
     REQUIRE(s.value_id() == null_id);
-}
-
-TEST_CASE("state subscript", "[signals][operators]")
-{
-    using namespace alia;
-
-    state_storage<std::map<int, int>> state;
-    state.set(std::map<int, int>());
-    auto state_signal = make_state_signal(state);
-
-    auto s = state_signal[value(2)];
-
-    perform_action(s <<= value(3));
-    REQUIRE(state.nonconst_ref()[2] == 3);
 }

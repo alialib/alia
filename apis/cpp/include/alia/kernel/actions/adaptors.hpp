@@ -1,10 +1,9 @@
-#ifndef ALIA_CORE_ACTIONS_ADAPTORS_HPP
-#define ALIA_CORE_ACTIONS_ADAPTORS_HPP
+#pragma once
 
-#include <type_traits>
+#include <alia/kernel/actions/basic.hpp>
+#include <alia/kernel/signals/basic.hpp>
 
-#include <alia/core/actions/basic.hpp>
-#include <alia/core/signals/adaptors.hpp>
+#include <utility>
 
 namespace alia {
 
@@ -50,7 +49,7 @@ struct only_if_ready_adaptor<Wrapped, action_interface<Args...>>
 
 } // namespace detail
 
-template<class Wrapped>
+template<action_type Wrapped>
 auto
 only_if_ready(Wrapped wrapped)
 {
@@ -62,15 +61,14 @@ only_if_ready(Wrapped wrapped)
 // actionize(x) returns the action form of x (if it isn't already one).
 // Specifically, if x is a callable object, this returns callback(x).
 // If x is an action, this returns x itself.
-template<class Action>
-std::enable_if_t<is_action_type<Action>::value, Action>
+template<action_type Action>
+Action
 actionize(Action x)
 {
     return x;
 }
-template<
-    class Callable,
-    std::enable_if_t<!is_action_type<Callable>::value, int> = 0>
+template<class Callable>
+    requires(!action_type<Callable>)
 auto
 actionize(Callable x)
 {
@@ -80,7 +78,7 @@ actionize(Callable x)
 // mask(a, s), where :a is an action and :s is a signal, returns an equivalent
 // action that's only ready if :a is ready and :s has a value that evaluates to
 // :true.
-//
+
 template<class Wrapped, class ReadinessMask, class Action>
 struct action_masking_adaptor;
 
@@ -114,10 +112,7 @@ struct action_masking_adaptor<
     ReadinessMask mask_;
 };
 
-template<
-    class Action,
-    class ReadinessMask,
-    std::enable_if_t<is_action_type<Action>::value, int> = 0>
+template<action_type Action, class ReadinessMask>
 auto
 mask(Action action, ReadinessMask readiness_mask)
 {
@@ -129,5 +124,3 @@ mask(Action action, ReadinessMask readiness_mask)
 }
 
 } // namespace alia
-
-#endif

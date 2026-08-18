@@ -1,7 +1,9 @@
-#ifndef ALIA_CORE_ACTIONS_BASIC_HPP
-#define ALIA_CORE_ACTIONS_BASIC_HPP
+#pragma once
 
-#include <alia/core/actions/core.hpp>
+#include <alia/kernel/actions/core.hpp>
+
+#include <cassert>
+#include <utility>
 
 namespace alia {
 
@@ -93,7 +95,7 @@ struct call_operator_action_signature
 template<class T, class R, class... Args>
 struct call_operator_action_signature<R (T::*)(Args...) const>
 {
-    typedef action_interface<Args...> type;
+    using type = action_interface<Args...>;
 };
 
 template<class Lambda>
@@ -156,5 +158,3 @@ callback(Perform perform)
 }
 
 } // namespace alia
-
-#endif

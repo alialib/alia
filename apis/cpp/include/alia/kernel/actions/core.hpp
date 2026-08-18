@@ -1,7 +1,10 @@
-#ifndef ALIA_CORE_ACTIONS_CORE_HPP
-#define ALIA_CORE_ACTIONS_CORE_HPP
+#pragma once
 
-#include <alia/core/common.hpp>
+#include <alia/base/function_view.hpp>
+
+#include <concepts>
+#include <type_traits>
+#include <utility>
 
 // This file defines the core action interface.
 //
@@ -18,7 +21,7 @@
 
 namespace alia {
 
-// untyped_action_interface defines functionality common to all actions,
+// `untyped_action_interface` defines functionality common to all actions,
 // irrespective of the type of arguments that the action takes.
 struct untyped_action_interface
 {
@@ -31,24 +34,25 @@ struct untyped_action_interface
 template<class... Args>
 struct action_interface : untyped_action_interface
 {
-    typedef action_interface action_type;
+    using action_type = action_interface;
 
     // Perform this action.
     //
-    // :intermediary is used to implement the latch-like semantics of actions.
-    // It should be invoked AFTER reading any signals you need to read but
-    // BEFORE invoking any side effects.
-    //
+    // `intermediary` is used to implement the latch-like semantics of
+    // actions. It should be invoked AFTER reading any signals you need to
+    // read but BEFORE invoking any side effects.
     virtual void
     perform(function_view<void()> const& intermediary, Args... args) const
         = 0;
 };
 
-// is_action_type<T>::value yields a compile-time boolean indicating whether or
-// not T is an alia action type.
+// `action_type<T>` is true iff `T` is an Alia action type.
+// The `sizeof` check keeps this from being a hard error on incomplete types
+// (e.g. `std::ostream` when `operator<<` is considered for stringification).
 template<class T>
-struct is_action_type : std::is_base_of<untyped_action_interface, T>
-{
+concept action_type = requires {
+    sizeof(T);
+    requires std::is_base_of_v<untyped_action_interface, T>;
 };
 
 // Is the given action ready?
@@ -68,8 +72,8 @@ perform_action(action_interface<Args...> const& action, Args... args)
         action.perform([]() {}, std::move(args)...);
 }
 
-// action_ref is a reference to an action that implements the action interface
-// itself.
+// `action_ref` is a reference to an action that implements the action
+// interface itself.
 template<class... Args>
 struct action_ref : action_interface<Args...>
 {
@@ -104,5 +108,3 @@ template<class... Args>
 using action = action_ref<Args...>;
 
 } // namespace alia
-
-#endif

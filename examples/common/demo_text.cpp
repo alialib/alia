@@ -1,7 +1,7 @@
 #include "demo_text.hpp"
 
 #include <alia/abi/prelude.h>
-#include <alia/flags.hpp>
+#include <alia/base/flags.hpp>
 
 namespace {
 

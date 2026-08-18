@@ -5,6 +5,11 @@ add_executable(test_apis_cpp
     kernel/signals/test_basic.cpp
     kernel/signals/test_core.cpp
     kernel/signals/test_state.cpp
+    kernel/signals/test_operators.cpp
+    kernel/actions/test_core.cpp
+    kernel/actions/test_basic.cpp
+    kernel/actions/test_operators.cpp
+    kernel/actions/test_adaptors.cpp
     ${PROJECT_SOURCE_DIR}/tests/core/abi/kernel/substrate_fixture.cpp
     ui/layout/test_layout_components.cpp
     ui/layout/test_layout_wrappers.cpp

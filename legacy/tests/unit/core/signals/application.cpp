@@ -13,39 +13,6 @@
 
 using namespace alia;
 
-TEST_CASE("lazy_apply", "[signals][application]")
-{
-    auto s1 = lazy_apply([](int i) { return 2 * i; }, value(1));
-
-    typedef decltype(s1) signal_t1;
-    REQUIRE(signal_is_move_activated<signal_t1>::value);
-    REQUIRE(!signal_is_writable<signal_t1>::value);
-
-    REQUIRE(signal_has_value(s1));
-    REQUIRE(read_signal(s1) == 2);
-
-    auto s2
-        = lazy_apply([](int i, int j) { return i + j; }, value(1), value(6));
-
-    typedef decltype(s2) signal_t2;
-    REQUIRE(signal_is_move_activated<signal_t2>::value);
-    REQUIRE(!signal_is_writable<signal_t2>::value);
-
-    REQUIRE(signal_has_value(s2));
-    REQUIRE(read_signal(s2) == 7);
-    REQUIRE(s1.value_id() != s2.value_id());
-
-    // Create some similar signals to make sure that they produce different
-    // value IDs.
-    auto s3
-        = lazy_apply([](int i, int j) { return i + j; }, value(2), value(6));
-    auto s4
-        = lazy_apply([](int i, int j) { return i + j; }, value(1), value(0));
-    REQUIRE(s2.value_id() != s3.value_id());
-    REQUIRE(s2.value_id() != s4.value_id());
-    REQUIRE(s3.value_id() != s4.value_id());
-}
-
 TEST_CASE("duplex_lazy_apply", "[signals][application]")
 {
     alia::test_system sys;
@@ -98,81 +65,6 @@ TEST_CASE("duplex_lazy_apply", "[signals][application]")
 
     do_traversal(sys, make_controller(0));
     REQUIRE(n == 1);
-}
-
-TEST_CASE("failing lazy_apply", "[signals][application]")
-{
-    clear_log();
-
-    tree_node<test_object> root;
-    root.object.name = "root";
-
-    auto f = [&](size_t i) { return std::string("abcdef").substr(i); };
-
-    int n = 0;
-
-    auto controller = [&](test_context ctx) {
-        alia_try
-        {
-            do_object(ctx, lazy_apply(f, value(n)));
-        }
-        alia_catch(...)
-        {
-            do_object(ctx, "error");
-        }
-        alia_end
-    };
-
-    alia::test_system sys;
-    initialize_test_system(sys, [&](core_context vanilla_ctx) {
-        tree_traversal<test_object> traversal;
-        auto ctx = add_context_object<tree_traversal_tag>(
-            vanilla_ctx, std::ref(traversal));
-        if (is_refresh_event(ctx))
-        {
-            traverse_object_tree(traversal, root, [&]() { controller(ctx); });
-        }
-        else
-        {
-            controller(ctx);
-        }
-    });
-
-    n = 0;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(abcdef();)");
-
-    n = 3;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(def();)");
-
-    n = 7;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(error();)");
-
-    n = 7;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(error();)");
-
-    n = 2;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(cdef();)");
-
-    n = 17;
-    refresh_system(sys);
-    REQUIRE(root.object.to_string() == "root(error();)");
-}
-
-TEST_CASE("lazy_lift", "[signals][application]")
-{
-    auto s = lazy_lift([](int i) { return 2 * i; })(value(1));
-
-    typedef decltype(s) signal_t;
-    REQUIRE(signal_is_readable<signal_t>::value);
-    REQUIRE(!signal_is_writable<signal_t>::value);
-
-    REQUIRE(signal_has_value(s));
-    REQUIRE(read_signal(s) == 2);
 }
 
 TEST_CASE("simple apply", "[signals][application]")
@@ -438,12 +330,4 @@ TEST_CASE("duplex_apply on state", "[signals][application]")
     do_traversal(sys, make_controller(0));
     REQUIRE(f_call_count == 1);
     REQUIRE(r_call_count == 1);
-}
-
-TEST_CASE("alia_mem_fn", "[signals][application]")
-{
-    auto v = value("test text");
-    REQUIRE(read_signal(lazy_apply(ALIA_MEM_FN(length), v)) == 9);
-    REQUIRE(
-        read_signal(lazy_apply(alia_mem_fn(substr), v, value(5))) == "text");
 }
