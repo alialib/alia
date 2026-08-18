@@ -2,6 +2,8 @@
 
 #include <alia/kernel/actions/operators.hpp>
 #include <alia/kernel/signals/basic.hpp>
+#include <alia/kernel/signals/numeric.hpp>
+#include <alia/kernel/signals/operators.hpp>
 
 #include <doctest/doctest.h>
 
@@ -220,6 +222,46 @@ TEST_CASE("add_default")
         auto s = add_default(empty<int>(), 4);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 4);
+    }
+}
+
+TEST_CASE("simplify_id")
+{
+    {
+        auto raw_a = value(1) + value(4);
+        auto raw_b = value(2) + value(3);
+        CHECK(read_signal(raw_a) == read_signal(raw_b));
+        CHECK((raw_a.value_id() != raw_b.value_id()));
+
+        auto a = simplify_id(raw_a);
+        auto b = simplify_id(raw_b);
+        static_assert(view_signal<decltype(a)>);
+        static_assert(!sink_signal<decltype(a)>);
+        CHECK(read_signal(a) == 5);
+        CHECK(read_signal(b) == 5);
+        CHECK((a.value_id() == b.value_id()));
+        CHECK((a.value_id() == make_id_by_reference(read_signal(a))));
+        CHECK((a.value_id() != raw_a.value_id()));
+    }
+
+    {
+        double x = 1;
+        auto scaled = scale(ref(x), 0.5);
+        auto s = simplify_id(scaled);
+        static_assert(view_signal<decltype(s)>);
+        static_assert(sink_signal<decltype(s)>);
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 0.5);
+        CHECK((s.value_id() != scaled.value_id()));
+        CHECK(signal_ready_to_write(s));
+        write_signal(s, 2);
+        CHECK(x == 4);
+    }
+
+    {
+        auto s = simplify_id(empty<int>());
+        CHECK_FALSE(signal_has_value(s));
+        CHECK((s.value_id() == null_id()));
     }
 }
 

@@ -82,29 +82,6 @@ TEST_CASE("fake_writability", "[signals][adaptors]")
     }
 }
 
-TEST_CASE("simplify_id", "[signals][adaptors]")
-{
-    using namespace alia;
-
-    auto c = std::map<int, std::string>{{2, "1"}, {0, "3"}};
-    auto c_signal = direct(c);
-    auto unwrapped = c_signal[value(2)];
-    auto s = simplify_id(unwrapped);
-
-    typedef decltype(s) signal_t;
-    REQUIRE((std::is_same<signal_t::value_type, std::string>::value));
-    REQUIRE(signal_is_readable<signal_t>::value);
-    REQUIRE(signal_is_writable<signal_t>::value);
-
-    REQUIRE(s.value_id() != unwrapped.value_id());
-    REQUIRE(s.value_id() == make_id_by_reference(c[2]));
-    REQUIRE(signal_has_value(s));
-    REQUIRE(read_signal(s) == "1");
-    REQUIRE(signal_ready_to_write(s));
-    write_signal(s, "7");
-    REQUIRE((c == std::map<int, std::string>{{2, "7"}, {0, "3"}}));
-}
-
 TEST_CASE("minimize_id_changes", "[signals][adaptors]")
 {
     alia::test_system sys;

@@ -113,44 +113,6 @@ fake_writability(Wrapped wrapped)
     return writability_faker<Wrapped>(std::move(wrapped));
 }
 
-// simplify_id(s), where :s is a signal, yields a wrapper for :s with the exact
-// same read/write behavior but whose value ID is a simple_id (i.e., it is
-// simply the value of the signal).
-//
-// The main utility of this is in cases where you have a signal carrying a
-// small value with a complicated value ID (because it was picked from the
-// signal of a larger data structure, for example). The more complicated ID
-// might change superfluously.
-//
-template<class Wrapped>
-struct simplified_id_wrapper
-    : signal_wrapper<simplified_id_wrapper<Wrapped>, Wrapped>
-{
-    simplified_id_wrapper(Wrapped wrapped)
-        : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
-    {
-    }
-    id_interface const&
-    value_id() const override
-    {
-        if (this->has_value())
-        {
-            id_ = make_id_by_reference(this->read());
-            return id_;
-        }
-        return null_id;
-    }
-
- private:
-    mutable simple_id_by_reference<typename Wrapped::value_type> id_;
-};
-template<class Wrapped>
-simplified_id_wrapper<Wrapped>
-simplify_id(Wrapped wrapped)
-{
-    return simplified_id_wrapper<Wrapped>(std::move(wrapped));
-}
-
 // minimize_id_changes(ctx, x), where :x is a signal, yields a new signal to
 // x's value with a local ID that only changes when x's value actually changes.
 template<class Value>

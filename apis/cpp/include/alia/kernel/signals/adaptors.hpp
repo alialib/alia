@@ -217,6 +217,38 @@ add_default(Primary primary, Default default_)
         std::move(primary_signal), std::move(default_signal));
 }
 
+// `simplify_id(s)` yields a wrapper for `s` with the same read/write behavior
+// but whose value ID is the value itself.
+//
+// This is useful when `s` carries a small identifiable value whose native ID
+// is a proxy for its inputs (a `lazy_apply`, an arithmetic combination, and so
+// on) and can change even when the value does not.
+//
+template<class Wrapped>
+    requires identifiable<typename Wrapped::value_type>
+struct simplified_id_wrapper
+    : signal_wrapper<simplified_id_wrapper<Wrapped>, Wrapped>
+{
+    simplified_id_wrapper(Wrapped wrapped)
+        : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
+    {
+    }
+    id_view
+    value_id() const override
+    {
+        if (this->has_value())
+            return make_id_by_reference(this->read());
+        return null_id();
+    }
+};
+template<view_signal Wrapped>
+    requires identifiable<typename Wrapped::value_type>
+simplified_id_wrapper<Wrapped>
+simplify_id(Wrapped wrapped)
+{
+    return simplified_id_wrapper<Wrapped>(std::move(wrapped));
+}
+
 // `has_value_view(s)` yields a view to a boolean that is true iff `s`
 // currently has a value. The returned signal always has a value.
 template<class Wrapped>
