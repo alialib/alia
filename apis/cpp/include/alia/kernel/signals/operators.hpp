@@ -6,6 +6,7 @@
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/core.hpp>
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 
@@ -416,6 +417,229 @@ conditional(Condition condition, T t, F f)
         decltype(t_signal),
         decltype(f_signal)>(
         std::move(condition_signal), std::move(t_signal), std::move(f_signal));
+}
+
+// The following support `operator[]` on container signals.
+
+template<class T>
+concept has_value_type = requires { typename T::value_type; };
+
+template<class T>
+concept has_mapped_type = requires { typename T::mapped_type; };
+
+// `subscript_result_type<Container, Index>::type` is the value type produced
+// by subscripting `Container` with `Index`.
+//
+// The logic is as follows:
+// 1 - If the container has a `mapped_type` field, use that.
+//     (This covers associative containers.)
+// 2 - Otherwise, if the container has a `value_type` field, use that.
+//     (This covers sequence containers.)
+// 3 - Otherwise, use the decayed return type of `operator[]`.
+//
+template<class Container, class Index>
+struct subscript_result_type
+{
+    using type = std::decay_t<
+        decltype(std::declval<Container>()[std::declval<Index>()])>;
+};
+template<class Container, class Index>
+    requires has_value_type<Container> && (!has_mapped_type<Container>)
+struct subscript_result_type<Container, Index>
+{
+    using type = typename Container::value_type;
+};
+template<class Container, class Index>
+    requires has_mapped_type<Container>
+struct subscript_result_type<Container, Index>
+{
+    using type = typename Container::mapped_type;
+};
+
+template<class Container, class Index>
+constexpr bool subscript_returns_reference = std::is_reference_v<
+    decltype(std::declval<Container>()[std::declval<Index>()])>;
+
+template<class Container, class Index>
+concept has_at_indexer = requires(
+    Container const& container, Index const& index) { container.at(index); };
+
+template<class Container, class Index>
+    requires has_at_indexer<Container, Index>
+auto
+invoke_const_subscript(Container const& container, Index const& index)
+    -> decltype(container.at(index))
+{
+    return container.at(index);
+}
+
+template<class Container, class Index>
+    requires(!has_at_indexer<Container, Index>)
+auto
+invoke_const_subscript(Container const& container, Index const& index)
+    -> decltype(container[index])
+{
+    return container[index];
+}
+
+template<class Container, class Index>
+constexpr bool const_subscript_returns_reference
+    = std::is_reference_v<decltype(invoke_const_subscript(
+        std::declval<Container>(), std::declval<Index>()))>;
+
+// Invoke a const subscript and always return a reference. If the container
+// yields a proxy or a value, store it so a reference can be returned.
+template<class Container, class Index>
+struct const_subscript_invoker
+{
+    auto const&
+    operator()(Container const& container, Index const& index) const
+    {
+        if constexpr (const_subscript_returns_reference<Container, Index>)
+        {
+            return invoke_const_subscript(container, index);
+        }
+        else
+        {
+            storage_ = invoke_const_subscript(container, index);
+            return storage_;
+        }
+    }
+
+ private:
+    mutable typename subscript_result_type<Container, Index>::type storage_{};
+};
+
+// Given a signal to a container, `container[index]` yields a signal to that
+// element. `index` can either be a signal or a raw value.
+//
+// Reads prefer `at` when the container provides it. Writes move (or copy) the
+// container, assign through `operator[]`, and write the container back.
+//
+// If the element type is `identifiable`, the value ID is the element value.
+// Otherwise it is the container ID paired with the index ID.
+//
+// If `operator[]` returns a reference, the result is movable. Otherwise
+// (proxies such as `std::vector<bool>`), movement is activated and
+// `destructive_ref` is unavailable.
+//
+template<class ContainerSignal, class IndexSignal>
+struct subscript_signal
+    : signal<
+          subscript_signal<ContainerSignal, IndexSignal>,
+          typename subscript_result_type<
+              typename ContainerSignal::value_type,
+              typename IndexSignal::value_type>::type,
+          signal_capabilities_intersection<
+              typename ContainerSignal::capabilities,
+              std::conditional_t<
+                  subscript_returns_reference<
+                      typename ContainerSignal::value_type,
+                      typename IndexSignal::value_type>,
+                  binding_caps<signal_movable>,
+                  binding_caps<signal_move_activated>>>>
+{
+    using value_type = typename subscript_signal::value_type;
+
+    subscript_signal(ContainerSignal container, IndexSignal index)
+        : container_(std::move(container)), index_(std::move(index))
+    {
+    }
+    bool
+    has_value() const override
+    {
+        return container_.has_value() && index_.has_value();
+    }
+    value_type const&
+    read() const override
+    {
+        return invoker_(container_.read(), index_.read());
+    }
+    value_type
+    move_out() const override
+    {
+        return std::move(container_.destructive_ref()[index_.read()]);
+    }
+    value_type&
+    destructive_ref() const override
+    {
+        if constexpr (
+            subscript_returns_reference<
+                typename ContainerSignal::value_type,
+                typename IndexSignal::value_type>)
+        {
+            return container_.destructive_ref()[index_.read()];
+        }
+        else
+        {
+            // The signal capabilities system should prevent us from ever
+            // getting here.
+            // LCOV_EXCL_START
+            throw nullptr;
+            // LCOV_EXCL_STOP
+        }
+    }
+    id_view
+    value_id() const override
+    {
+        if constexpr (identifiable<value_type>)
+        {
+            if (!this->has_value())
+                return null_id();
+            return make_id_by_reference(this->read());
+        }
+        else
+        {
+            return make_id_pair(
+                pair_, container_.value_id(), index_.value_id());
+        }
+    }
+    bool
+    ready_to_write() const override
+    {
+        return container_.has_value() && index_.has_value()
+            && container_.ready_to_write();
+    }
+    id_view
+    write(value_type x) const override
+    {
+        if constexpr (sink_signal<ContainerSignal>)
+        {
+            auto new_container = forward_signal(alia::move(container_));
+            new_container[index_.read()] = std::move(x);
+            return container_.write(std::move(new_container));
+        }
+        else
+        {
+            return null_id();
+        }
+    }
+
+ private:
+    ContainerSignal container_;
+    IndexSignal index_;
+    const_subscript_invoker<
+        typename ContainerSignal::value_type,
+        typename IndexSignal::value_type>
+        invoker_;
+    mutable alia_id_pair pair_{};
+};
+
+template<class ContainerSignal, class IndexSignal>
+subscript_signal<ContainerSignal, IndexSignal>
+make_subscript_signal(ContainerSignal container, IndexSignal index)
+{
+    return subscript_signal<ContainerSignal, IndexSignal>(
+        std::move(container), std::move(index));
+}
+
+template<class Derived, class Value, class Capabilities>
+template<class Index>
+auto
+signal_base<Derived, Value, Capabilities>::operator[](Index index) const
+{
+    return make_subscript_signal(
+        static_cast<Derived const&>(*this), signalize(std::move(index)));
 }
 
 } // namespace alia

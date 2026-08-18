@@ -5,7 +5,10 @@
 
 #include <doctest/doctest.h>
 
+#include <map>
+#include <stdint.h>
 #include <string>
+#include <vector>
 
 using namespace alia;
 using namespace alia::operators;
@@ -323,5 +326,209 @@ TEST_CASE("field signal with non-identifiable field")
     write_signal(first, inner{"c", 3});
     CHECK(storage.value.first.name == "c");
     CHECK(storage.value.first.n == 3);
+    CHECK(read_signal(second).n == 2);
+}
+
+struct my_array
+{
+    int x[3] = {1, 2, 3};
+    int&
+    operator[](int i)
+    {
+        return x[i];
+    }
+    int const&
+    operator[](int i) const
+    {
+        return x[i];
+    }
+};
+
+struct my_const_array
+{
+    int x[3] = {1, 2, 3};
+    int
+    operator[](int i) const
+    {
+        return x[i];
+    }
+};
+
+TEST_CASE("subscript metafunctions")
+{
+    static_assert(has_at_indexer<std::vector<int>, int>);
+    static_assert(has_at_indexer<std::map<int, int>, int>);
+    static_assert(has_at_indexer<std::vector<bool>, int>);
+    static_assert(!has_at_indexer<my_array, int>);
+    static_assert(!has_at_indexer<my_const_array, int>);
+
+    static_assert(std::same_as<
+                  subscript_result_type<std::vector<float>, int>::type,
+                  float>);
+    static_assert(std::same_as<
+                  subscript_result_type<std::map<int, float>, int>::type,
+                  float>);
+    static_assert(std::same_as<
+                  subscript_result_type<std::vector<bool>, int>::type,
+                  bool>);
+    static_assert(
+        std::same_as<subscript_result_type<my_array, int>::type, int>);
+    static_assert(
+        std::same_as<subscript_result_type<my_const_array, int>::type, int>);
+
+    static_assert(const_subscript_returns_reference<std::vector<int>, int>);
+    static_assert(const_subscript_returns_reference<std::map<int, int>, int>);
+    static_assert(
+        !const_subscript_returns_reference<std::vector<bool>, int>);
+    static_assert(const_subscript_returns_reference<my_array, int>);
+    static_assert(!const_subscript_returns_reference<my_const_array, int>);
+}
+
+TEST_CASE("vector subscript")
+{
+    std::vector<int> c{2, 0, 3};
+    uint32_t version = 0;
+    auto c_signal = versioned_ref(c, version);
+    auto s = c_signal[value(1)];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 0);
+    CHECK(signal_ready_to_write(s));
+    auto original_id = s.value_id();
+    write_signal(s, 1);
+    CHECK((c == std::vector<int>{2, 1, 3}));
+    CHECK((s.value_id() != original_id));
+
+    auto t = c_signal[value(0)];
+    CHECK((t.value_id() != s.value_id()));
+}
+
+TEST_CASE("read-only subscript")
+{
+    std::vector<int> const c{2, 0, 3};
+    uint32_t const version = 1;
+    auto s = versioned_ref(c, version)[value(1)];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(!sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 0);
+}
+
+TEST_CASE("subscript with raw index")
+{
+    std::vector<int> const c{2, 0, 3};
+    uint32_t const version = 1;
+    auto s = versioned_ref(c, version)[1];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(!sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 0);
+}
+
+TEST_CASE("vector<bool> subscript")
+{
+    std::vector<bool> c{true, false, false};
+    uint32_t version = 0;
+    auto s = versioned_ref(c, version)[value(1)];
+
+    static_assert(std::same_as<decltype(s)::value_type, bool>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == false);
+    CHECK(signal_ready_to_write(s));
+    write_signal(s, true);
+    CHECK((c == std::vector<bool>{true, true, false}));
+}
+
+TEST_CASE("map subscript")
+{
+    std::map<int, int> c{{2, 1}, {0, 3}};
+    uint32_t version = 0;
+    auto s = versioned_ref(c, version)[value(2)];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 1);
+    CHECK(signal_ready_to_write(s));
+    write_signal(s, 7);
+    CHECK((c == std::map<int, int>{{2, 7}, {0, 3}}));
+}
+
+TEST_CASE("custom ref subscript")
+{
+    my_array c;
+    uint32_t version = 0;
+    auto s = versioned_ref(c, version)[value(2)];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 3);
+    CHECK(signal_ready_to_write(s));
+    write_signal(s, 4);
+    CHECK(c[2] == 4);
+}
+
+TEST_CASE("custom by-value subscript")
+{
+    my_const_array const c;
+    uint32_t const version = 1;
+    auto s = versioned_ref(c, version)[value(2)];
+
+    static_assert(std::same_as<decltype(s)::value_type, int>);
+    static_assert(view_signal<decltype(s)>);
+    static_assert(!sink_signal<decltype(s)>);
+
+    CHECK(signal_has_value(s));
+    CHECK(read_signal(s) == 3);
+}
+
+TEST_CASE("empty subscript")
+{
+    auto s = empty<std::map<int, int>>()[value(2)];
+    CHECK_FALSE(signal_has_value(s));
+    CHECK((s.value_id() == null_id()));
+}
+
+TEST_CASE("subscript with non-identifiable element")
+{
+    struct inner
+    {
+        std::string name;
+        int n;
+    };
+
+    static_assert(!identifiable<inner>);
+
+    std::vector<inner> c{{"a", 1}, {"b", 2}};
+    uint32_t version = 0;
+    auto container = versioned_ref(c, version);
+    auto first = container[0];
+    auto second = container[1];
+
+    CHECK(signal_has_value(first));
+    CHECK(read_signal(first).n == 1);
+    CHECK((first.value_id() != second.value_id()));
+
+    write_signal(first, inner{"c", 3});
+    CHECK(c[0].name == "c");
+    CHECK(c[0].n == 3);
     CHECK(read_signal(second).n == 2);
 }

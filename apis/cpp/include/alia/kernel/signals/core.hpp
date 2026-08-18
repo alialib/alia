@@ -200,6 +200,11 @@ template<class Derived, class Value, class Capabilities>
 struct signal_base : signal_interface<Value>
 {
     using capabilities = Capabilities;
+
+    // Yield a signal to the element at `index`. `index` may be a signal or a
+    // raw value. The definition is in `operators.hpp`.
+    template<class Index>
+    auto operator[](Index index) const;
 };
 
 template<class Derived, class Value, class Capabilities>
