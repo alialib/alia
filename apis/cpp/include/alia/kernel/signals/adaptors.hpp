@@ -249,6 +249,36 @@ simplify_id(Wrapped wrapped)
     return simplified_id_wrapper<Wrapped>(std::move(wrapped));
 }
 
+// `override_id(s, generate_id)` yields a wrapper for `s` with the same
+// read/write behavior but whose value ID is produced by calling
+// `generate_id`. This replaces `s`'s native ID entirely, including when `s`
+// has no value.
+template<class Wrapped, class GenerateId>
+struct override_id_wrapper
+    : signal_wrapper<override_id_wrapper<Wrapped, GenerateId>, Wrapped>
+{
+    override_id_wrapper(Wrapped wrapped, GenerateId generate_id)
+        : override_id_wrapper::signal_wrapper(std::move(wrapped)),
+          generate_id_(std::move(generate_id))
+    {
+    }
+    id_view
+    value_id() const override
+    {
+        return generate_id_();
+    }
+
+ private:
+    GenerateId generate_id_;
+};
+template<view_signal Wrapped, class GenerateId>
+override_id_wrapper<Wrapped, std::decay_t<GenerateId>>
+override_id(Wrapped wrapped, GenerateId generate_id)
+{
+    return override_id_wrapper<Wrapped, std::decay_t<GenerateId>>(
+        std::move(wrapped), std::move(generate_id));
+}
+
 // `has_value_view(s)` yields a view to a boolean that is true iff `s`
 // currently has a value. The returned signal always has a value.
 template<class Wrapped>

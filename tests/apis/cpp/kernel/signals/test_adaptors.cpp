@@ -265,6 +265,47 @@ TEST_CASE("simplify_id")
     }
 }
 
+TEST_CASE("override_id")
+{
+    {
+        auto raw_a = value(1) + value(4);
+        auto raw_b = value(2) + value(3);
+        CHECK((raw_a.value_id() != raw_b.value_id()));
+
+        auto a = override_id(raw_a, [] { return unit_id(); });
+        auto b = override_id(raw_b, [] { return unit_id(); });
+        static_assert(view_signal<decltype(a)>);
+        static_assert(!sink_signal<decltype(a)>);
+        CHECK(read_signal(a) == 5);
+        CHECK((a.value_id() == unit_id()));
+        CHECK((a.value_id() == b.value_id()));
+        CHECK((a.value_id() != raw_a.value_id()));
+    }
+
+    {
+        int x = 1;
+        uint32_t version = 0;
+        auto s = override_id(ref(x), [&version] { return make_id(version); });
+        static_assert(view_signal<decltype(s)>);
+        static_assert(sink_signal<decltype(s)>);
+        CHECK(signal_has_value(s));
+        CHECK(read_signal(s) == 1);
+        CHECK((s.value_id() == make_id(uint32_t{0})));
+
+        write_signal(s, 2);
+        CHECK(x == 2);
+        CHECK((s.value_id() == make_id(uint32_t{0})));
+        version = 1;
+        CHECK((s.value_id() == make_id(uint32_t{1})));
+    }
+
+    {
+        auto s = override_id(empty<int>(), [] { return unit_id(); });
+        CHECK_FALSE(signal_has_value(s));
+        CHECK((s.value_id() == unit_id()));
+    }
+}
+
 TEST_CASE("signal value movement")
 {
     copy_count = 0;
