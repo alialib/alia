@@ -74,9 +74,9 @@ push_back(Container container)
 
 // `actions::erase_index(container, index)` creates an action that erases the
 // item at `index` from `container`.
-// `container` must be a duplex signal carrying a random access container.
-// `index` can be either a raw `size_t` or a readable signal carrying a
-// `size_t`.
+// `container` must be a bidirectional signal carrying a random access
+// container. `index` can be either a raw `size_t` or a readable signal
+// carrying a `size_t`.
 
 template<class Container, class Index>
 struct erase_index_action : action_interface<>
@@ -122,8 +122,9 @@ erase_index(Container container, Index index)
 
 // `actions::erase_key(container, key)` creates an action that erases the item
 // associated with `key` from `container`.
-// `container` must be a duplex signal carrying an associative container.
-// `key` can be either a raw key or a readable signal carrying a key.
+// `container` must be a bidirectional signal carrying an associative
+// container. `key` can be either a raw key or a readable signal carrying a
+// key.
 
 template<class Container, class Key>
 struct erase_key_action : action_interface<>

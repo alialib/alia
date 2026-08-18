@@ -97,4 +97,66 @@ lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
         Arg1>(std::move(f), std::move(arg0), std::move(arg1));
 }
 
+// `lazy_bidirectional_apply(forward, reverse, arg)`, where `arg` is a
+// bidirectional signal, yields another bidirectional signal with a value
+// mapping in both directions. The resulting signal's value is the result of
+// applying `forward` to the value of `arg`, and writing to the that signal
+// applies `reverse` and writes the result back to `arg`.
+// The applications in both directions are done lazily, on demand.
+template<class Result, class Forward, class Reverse, class Arg>
+struct lazy_bidirectional_apply_signal
+    : lazy_signal<
+          lazy_bidirectional_apply_signal<Result, Forward, Reverse, Arg>,
+          Result,
+          binding_caps<signal_move_activated>>
+{
+    lazy_bidirectional_apply_signal(Forward forward, Reverse reverse, Arg arg)
+        : forward_(std::move(forward)),
+          reverse_(std::move(reverse)),
+          arg_(std::move(arg))
+    {
+    }
+    id_view
+    value_id() const override
+    {
+        return arg_.value_id();
+    }
+    bool
+    has_value() const override
+    {
+        return arg_.has_value();
+    }
+    Result
+    move_out() const override
+    {
+        return forward_(forward_signal(arg_));
+    }
+    bool
+    ready_to_write() const override
+    {
+        return arg_.ready_to_write();
+    }
+    id_view
+    write(Result value) const override
+    {
+        return arg_.write(reverse_(std::move(value)));
+    }
+
+ private:
+    Forward forward_;
+    Reverse reverse_;
+    Arg arg_;
+};
+
+template<class Forward, class Reverse, binding_signal Arg>
+auto
+lazy_bidirectional_apply(Forward forward, Reverse reverse, Arg arg)
+{
+    return lazy_bidirectional_apply_signal<
+        decltype(forward(forward_signal(arg))),
+        Forward,
+        Reverse,
+        Arg>(std::move(forward), std::move(reverse), std::move(arg));
+}
+
 } // namespace alia

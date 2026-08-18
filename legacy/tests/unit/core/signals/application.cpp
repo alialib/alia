@@ -13,60 +13,6 @@
 
 using namespace alia;
 
-TEST_CASE("duplex_lazy_apply", "[signals][application]")
-{
-    alia::test_system sys;
-    initialize_test_system(sys, [](core_context) {});
-
-    int n = 0;
-
-    captured_id signal_id;
-
-    auto make_controller = [&](double new_value) {
-        return [=, &n, &signal_id](core_context) {
-            auto f = [](int x) -> double { return x * 2.0; };
-            auto r = [](double x) -> int { return int(x / 2.0 + 0.5); };
-
-            auto s = lazy_duplex_apply(f, r, direct(n));
-
-            typedef decltype(s) signal_t;
-            REQUIRE(signal_is_move_activated<signal_t>::value);
-            REQUIRE(signal_is_writable<signal_t>::value);
-
-            REQUIRE(signal_has_value(s));
-            REQUIRE(read_signal(s) == n * 2.0);
-
-            signal_id.capture(s.value_id());
-
-            REQUIRE(s.ready_to_write());
-            if (new_value > 0)
-                write_signal(s, new_value);
-        };
-    };
-
-    do_traversal(sys, make_controller(0));
-    REQUIRE(n == 0);
-
-    {
-        captured_id last_id = signal_id;
-        do_traversal(sys, make_controller(4));
-        REQUIRE(n == 2);
-
-        do_traversal(sys, make_controller(4));
-        REQUIRE(n == 2);
-        REQUIRE(last_id != signal_id);
-    }
-
-    do_traversal(sys, make_controller(0));
-    REQUIRE(n == 2);
-
-    do_traversal(sys, make_controller(2));
-    REQUIRE(n == 1);
-
-    do_traversal(sys, make_controller(0));
-    REQUIRE(n == 1);
-}
-
 TEST_CASE("simple apply", "[signals][application]")
 {
     int f_call_count = 0;

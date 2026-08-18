@@ -5,6 +5,7 @@ add_executable(test_apis_cpp
     kernel/signals/test_basic.cpp
     kernel/signals/test_core.cpp
     kernel/signals/test_state.cpp
+    kernel/signals/test_application.cpp
     kernel/signals/test_operators.cpp
     kernel/signals/test_adaptors.cpp
     kernel/actions/test_core.cpp
