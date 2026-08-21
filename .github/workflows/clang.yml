@@ -27,17 +27,17 @@ jobs:
         with:
           committish: 41c447cc210dc39aa85d4a5f58b4a1b9e573b3dc
           path: the-vcpkg
-          cache-version: ubuntu-24-clang-18
+          cache-version: ubuntu-24-clang-19
 
       - name: Install toolchain and tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 llvm-18 ninja-build gcovr
+          sudo apt-get install -y clang-19 llvm-19 ninja-build gcovr
 
       - name: Configure
         env:
-          CC: clang-18
-          CXX: clang++-18
+          CC: clang-19
+          CXX: clang++-19
         run: |
           COVERAGE_FLAGS=""
           if [ "${{ matrix.config }}" = "Debug" ]; then
@@ -76,7 +76,7 @@ jobs:
         if: matrix.config == 'Debug'
         run: |
           gcovr --root "${GITHUB_WORKSPACE}" \
-            --gcov-executable "llvm-cov-18 gcov" \
+            --gcov-executable "llvm-cov-19 gcov" \
             --xml -o "${GITHUB_WORKSPACE}/coverage.xml" \
             "${GITHUB_WORKSPACE}/build"
 
