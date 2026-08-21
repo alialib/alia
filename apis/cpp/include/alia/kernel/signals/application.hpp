@@ -19,7 +19,7 @@ struct lazy_apply1_signal
     : lazy_signal<
           lazy_apply1_signal<Result, Function, Arg>,
           Result,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, Arg::capabilities::presence>,
           typename Arg::value_id_type>
 {
     lazy_apply1_signal(Function f, Arg arg)
@@ -60,7 +60,11 @@ struct lazy_apply2_signal
     : lazy_signal<
           lazy_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
-          view_caps<signal_move_activated>,
+          view_caps<
+              signal_move_activated,
+              signal_capability_level_intersection<
+                  Arg0::capabilities::presence,
+                  Arg1::capabilities::presence>>,
           std::
               pair<typename Arg0::value_id_type, typename Arg1::value_id_type>>
 {
@@ -112,7 +116,7 @@ struct uncached_apply1_signal
     : lazy_signal<
           uncached_apply1_signal<Result, Function, Arg>,
           Result,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, Arg::capabilities::presence>,
           Result>
 {
     uncached_apply1_signal(Function f, Arg arg)
@@ -158,7 +162,11 @@ struct uncached_apply2_signal
     : lazy_signal<
           uncached_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
-          view_caps<signal_move_activated>,
+          view_caps<
+              signal_move_activated,
+              signal_capability_level_intersection<
+                  Arg0::capabilities::presence,
+                  Arg1::capabilities::presence>>,
           Result>
 {
     uncached_apply2_signal(Function f, Arg0 arg0, Arg1 arg1)
@@ -212,7 +220,10 @@ struct lazy_bidirectional_apply_signal
     : lazy_signal<
           lazy_bidirectional_apply_signal<Result, Forward, Reverse, Arg>,
           Result,
-          binding_caps<signal_move_activated>,
+          binding_caps<
+              signal_move_activated,
+              signal_writable,
+              Arg::capabilities::presence>,
           typename Arg::value_id_type>
 {
     lazy_bidirectional_apply_signal(Forward forward, Reverse reverse, Arg arg)

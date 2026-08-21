@@ -18,7 +18,7 @@ struct lambda_constant_signal
     : lazy_signal<
           lambda_constant_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, signal_nonempty>,
           constant_value_tag>
 {
     explicit lambda_constant_signal(Get get) : get_(std::move(get))
@@ -61,7 +61,7 @@ struct lambda_view_signal
     : lazy_signal<
           lambda_view_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, signal_nonempty>,
           Value>
 {
     explicit lambda_view_signal(Get get) : get_(std::move(get))
@@ -105,7 +105,10 @@ struct lambda_binding_signal
     : lazy_signal<
           lambda_binding_signal<Value, Get, Set>,
           Value,
-          binding_caps<signal_move_activated>,
+          binding_caps<
+              signal_move_activated,
+              signal_writable,
+              signal_nonempty>,
           Value>
 {
     lambda_binding_signal(Get get, Set set)

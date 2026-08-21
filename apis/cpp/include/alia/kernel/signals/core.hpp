@@ -40,12 +40,22 @@ constexpr unsigned signal_unwritable = 0b00;
 constexpr unsigned signal_writable = 0b01;
 constexpr unsigned signal_clearable = 0b11;
 
+// Presence is a read-side guarantee about `has_value()`.
+// `signal_maybe_empty` is the default: `has_value()` may be false.
+// `signal_nonempty` means `has_value()` is always true.
+constexpr unsigned signal_maybe_empty = 0b0;
+constexpr unsigned signal_nonempty = 0b1;
+
 // combined capabilities
-template<unsigned Reading, unsigned Writing>
+template<
+    unsigned Reading,
+    unsigned Writing,
+    unsigned Presence = signal_maybe_empty>
 struct signal_capabilities
 {
     static constexpr unsigned reading = Reading;
     static constexpr unsigned writing = Writing;
+    static constexpr unsigned presence = Presence;
 };
 
 // Signals in Alia are grouped into three basic roles:
@@ -56,14 +66,17 @@ struct signal_capabilities
 // The following allow you to construct capability packs for the various roles
 // at varying levels of capability.
 
-template<unsigned Reading>
-using view_caps = signal_capabilities<Reading, signal_unwritable>;
+template<unsigned Reading, unsigned Presence = signal_maybe_empty>
+using view_caps = signal_capabilities<Reading, signal_unwritable, Presence>;
 
-template<unsigned Writing>
-using sink_caps = signal_capabilities<signal_unreadable, Writing>;
+template<unsigned Writing, unsigned Presence = signal_maybe_empty>
+using sink_caps = signal_capabilities<signal_unreadable, Writing, Presence>;
 
-template<unsigned Reading, unsigned Writing = signal_writable>
-using binding_caps = signal_capabilities<Reading, Writing>;
+template<
+    unsigned Reading,
+    unsigned Writing = signal_writable,
+    unsigned Presence = signal_maybe_empty>
+using binding_caps = signal_capabilities<Reading, Writing, Presence>;
 
 // signal_capability_level_is_compatible<Expected,Actual> is true iff a
 // signal with `Actual` capability level can be used in a context expecting
@@ -78,9 +91,10 @@ constexpr bool signal_capability_level_is_compatible
 template<class Expected, class Actual>
 constexpr bool signal_capabilities_compatible
     = signal_capability_level_is_compatible<Expected::reading, Actual::reading>
+   && signal_capability_level_is_compatible<Expected::writing, Actual::writing>
    && signal_capability_level_is_compatible<
-          Expected::writing,
-          Actual::writing>;
+          Expected::presence,
+          Actual::presence>;
 
 // signal_capability_level_intersection<A,B> is the capability level that is
 // common to both `A` and `B`.
@@ -93,7 +107,8 @@ constexpr unsigned signal_capability_level_intersection = A & B;
 template<class A, class B>
 using signal_capabilities_intersection = signal_capabilities<
     signal_capability_level_intersection<A::reading, B::reading>,
-    signal_capability_level_intersection<A::writing, B::writing>>;
+    signal_capability_level_intersection<A::writing, B::writing>,
+    signal_capability_level_intersection<A::presence, B::presence>>;
 
 // signal_capability_level_union<A,B> is the capability level that is the
 // union of `A` and `B`, i.e. the set of capabilities that are supported by
@@ -107,7 +122,8 @@ constexpr unsigned signal_capability_level_union = A | B;
 template<class A, class B>
 using signal_capabilities_union = signal_capabilities<
     signal_capability_level_union<A::reading, B::reading>,
-    signal_capability_level_union<A::writing, B::writing>>;
+    signal_capability_level_union<A::writing, B::writing>,
+    signal_capability_level_union<A::presence, B::presence>>;
 
 // `untyped_signal_base` defines functionality common to all signals,
 // irrespective of the type of the value that the signal carries.
@@ -233,7 +249,7 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
 
 // The following implement the various unused functions that are required by
 // `signal_interface` but won't be used because of the capabilities of the
-// signal...
+// signal. Presence is a free parameter so nonempty packs share these stubs.
 
 // LCOV_EXCL_START
 
@@ -277,68 +293,108 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
         throw nullptr;                                                        \
     }
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, view_caps<signal_readable>, ValueId>
-    : signal_base<Derived, Value, view_caps<signal_readable>, ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<Derived, Value, view_caps<signal_readable, Presence>, ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          view_caps<signal_readable, Presence>,
+          ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
 };
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, view_caps<signal_move_activated>, ValueId>
-    : signal_base<Derived, Value, view_caps<signal_move_activated>, ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    view_caps<signal_move_activated, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          view_caps<signal_move_activated, Presence>,
+          ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, view_caps<signal_movable>, ValueId>
-    : signal_base<Derived, Value, view_caps<signal_movable>, ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, sink_caps<signal_writable>, ValueId>
-    : signal_base<Derived, Value, sink_caps<signal_writable>, ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<Derived, Value, sink_caps<signal_writable, Presence>, ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          sink_caps<signal_writable, Presence>,
+          ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, binding_caps<signal_readable>, ValueId>
-    : signal_base<Derived, Value, binding_caps<signal_readable>, ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_readable, signal_writable, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          binding_caps<signal_readable, signal_writable, Presence>,
+          ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, binding_caps<signal_movable>, ValueId>
-    : signal_base<Derived, Value, binding_caps<signal_movable>, ValueId>
-{
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
-};
-
-template<class Derived, class Value, class ValueId>
-struct signal<Derived, Value, binding_caps<signal_move_activated>, ValueId>
-    : signal_base<Derived, Value, binding_caps<signal_move_activated>, ValueId>
-{
-    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
-};
-
-template<class Derived, class Value, class ValueId>
+template<class Derived, class Value, unsigned Presence, class ValueId>
 struct signal<
     Derived,
     Value,
-    binding_caps<signal_readable, signal_clearable>,
+    binding_caps<signal_movable, signal_writable, Presence>,
     ValueId>
     : signal_base<
           Derived,
           Value,
-          binding_caps<signal_readable, signal_clearable>,
+          binding_caps<signal_movable, signal_writable, Presence>,
+          ValueId>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_move_activated, signal_writable, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          binding_caps<signal_move_activated, signal_writable, Presence>,
+          ValueId>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_readable, signal_clearable, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          binding_caps<signal_readable, signal_clearable, Presence>,
           ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
@@ -413,6 +469,11 @@ struct signal_ref
     {
         ref_->write(std::move(value));
     }
+    void
+    clear() const override
+    {
+        ref_->clear();
+    }
     bool
     invalidate(std::exception_ptr error) const override
     {
@@ -461,6 +522,11 @@ concept signal_of = signal_with<Signal, Caps>
 ALIA_DEFINE_SIGNAL_SUGAR(view, view_caps<signal_readable>)
 ALIA_DEFINE_SIGNAL_SUGAR(sink, sink_caps<signal_writable>)
 ALIA_DEFINE_SIGNAL_SUGAR(binding, binding_caps<signal_movable>)
+using nonempty_view_caps = view_caps<signal_readable, signal_nonempty>;
+using nonempty_binding_caps
+    = binding_caps<signal_movable, signal_writable, signal_nonempty>;
+ALIA_DEFINE_SIGNAL_SUGAR(nonempty_view, nonempty_view_caps)
+ALIA_DEFINE_SIGNAL_SUGAR(nonempty_binding, nonempty_binding_caps)
 
 #undef ALIA_DEFINE_SIGNAL_SUGAR
 
@@ -475,14 +541,16 @@ signal_has_value(Signal const& signal)
 }
 
 // Read a signal's value.
-// Unlike calling signal.read() directly, this will generate a compile-time
-// error if the signal's type doesn't support reading and a run-time error if
-// the signal doesn't currently have a value.
+// Unlike calling signal.read() directly, this will generate a
+// compile-time error if the signal's type doesn't support reading.
+// If the signal is not known to be nonempty, a run-time assert checks that it
+// currently has a value.
 template<view_signal Signal>
 Signal::value_type const&
 read_signal(Signal const& signal)
 {
-    assert(signal.has_value());
+    if constexpr (!nonempty_view_signal<Signal>)
+        assert(signal.has_value());
     return signal.read();
 }
 
@@ -539,7 +607,8 @@ template<signal_with<view_caps<signal_move_activated>> Signal>
 Signal::value_type
 move_from_signal(Signal const& signal)
 {
-    assert(signal.has_value());
+    if constexpr (!nonempty_view_signal<Signal>)
+        assert(signal.has_value());
     return signal.move_out();
 }
 
@@ -550,7 +619,8 @@ template<signal_with<view_caps<signal_move_activated>> Signal>
 Signal::value_type
 forward_signal(Signal const& signal)
 {
-    assert(signal.has_value());
+    if constexpr (!nonempty_view_signal<Signal>)
+        assert(signal.has_value());
     return signal.move_out();
 }
 template<view_signal Signal>
@@ -558,7 +628,8 @@ template<view_signal Signal>
 Signal::value_type const&
 forward_signal(Signal const& signal)
 {
-    assert(signal.has_value());
+    if constexpr (!nonempty_view_signal<Signal>)
+        assert(signal.has_value());
     return signal.read();
 }
 

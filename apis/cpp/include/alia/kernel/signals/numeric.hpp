@@ -18,7 +18,12 @@ struct scaled_signal
           scaled_signal<N, Factor>,
           N,
           typename N::value_type,
-          signal_capabilities<signal_move_activated, N::capabilities::writing>,
+          signal_capabilities<
+              signal_move_activated,
+              N::capabilities::writing,
+              signal_capability_level_intersection<
+                  N::capabilities::presence,
+                  Factor::capabilities::presence>>,
           typename N::value_type>
 {
     scaled_signal(N n, Factor scale_factor)
@@ -71,7 +76,12 @@ struct offset_signal
           offset_signal<N, Delta>,
           N,
           typename N::value_type,
-          signal_capabilities<signal_move_activated, N::capabilities::writing>,
+          signal_capabilities<
+              signal_move_activated,
+              N::capabilities::writing,
+              signal_capability_level_intersection<
+                  N::capabilities::presence,
+                  Delta::capabilities::presence>>,
           typename N::value_type>
 {
     offset_signal(N n, Delta delta)

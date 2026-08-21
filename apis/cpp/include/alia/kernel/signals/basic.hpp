@@ -89,7 +89,7 @@ struct default_initialized_view
     : signal<
           default_initialized_view<Value>,
           Value,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, signal_nonempty>,
           constant_value_tag>
 {
     default_initialized_view()
@@ -137,7 +137,7 @@ struct value_view
     : regular_signal<
           value_view<Value>,
           Value,
-          view_caps<signal_move_activated>>
+          view_caps<signal_move_activated, signal_nonempty>>
 {
     explicit value_view(Value v) : v_(std::move(v))
     {
@@ -180,7 +180,7 @@ struct string_literal_view
     : lazy_signal<
           string_literal_view,
           std::string,
-          view_caps<signal_move_activated>,
+          view_caps<signal_move_activated, signal_nonempty>,
           char const*>
 {
     string_literal_view(char const* x) : text_(x)
@@ -227,7 +227,7 @@ struct pointer_binding
     : regular_signal<
           pointer_binding<Value>,
           Value,
-          binding_caps<signal_movable>>
+          binding_caps<signal_movable, signal_writable, signal_nonempty>>
 {
     explicit pointer_binding(Value* v) : v_(v)
     {
@@ -278,7 +278,10 @@ ref(Value& x)
 // exposes the value of `x`.
 template<class Value>
 struct pointer_view
-    : regular_signal<pointer_view<Value>, Value, view_caps<signal_readable>>
+    : regular_signal<
+          pointer_view<Value>,
+          Value,
+          view_caps<signal_readable, signal_nonempty>>
 {
     explicit pointer_view(Value const* v) : v_(v)
     {
@@ -317,7 +320,7 @@ struct versioned_pointer_binding
     : signal<
           versioned_pointer_binding<Value, Version>,
           Value,
-          binding_caps<signal_movable>,
+          binding_caps<signal_movable, signal_writable, signal_nonempty>,
           Version>
 {
     versioned_pointer_binding(Value* v, Version* version)
@@ -380,7 +383,7 @@ struct versioned_pointer_view
     : signal<
           versioned_pointer_view<Value, Version>,
           Value,
-          view_caps<signal_readable>,
+          view_caps<signal_readable, signal_nonempty>,
           Version>
 {
     versioned_pointer_view(Value const* v, Version const* version)

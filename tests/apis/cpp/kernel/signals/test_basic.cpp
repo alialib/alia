@@ -15,6 +15,7 @@ TEST_CASE("value and read")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 42);
     CHECK(s.value_id() == 42);
+    static_assert(nonempty_view_signal<decltype(s)>);
 }
 
 TEST_CASE("empty signal")
@@ -24,12 +25,15 @@ TEST_CASE("empty signal")
     CHECK(
         (static_cast<untyped_signal_base const&>(s).value_id_view()
          == null_id()));
+    static_assert(!nonempty_view_signal<decltype(s)>);
+    static_assert(view_signal<decltype(s)>);
 }
 
 TEST_CASE("ref binding write")
 {
     int x = 1;
     auto s = ref(x);
+    static_assert(nonempty_binding_signal<decltype(s)>);
     CHECK(read_signal(s) == 1);
     write_signal(s, 7);
     CHECK(x == 7);

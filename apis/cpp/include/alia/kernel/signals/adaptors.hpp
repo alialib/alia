@@ -155,7 +155,8 @@ struct default_value_signal
               signal_capability_level_intersection<
                   Primary::capabilities::reading,
                   Default::capabilities::reading>,
-              Primary::capabilities::writing>,
+              Primary::capabilities::writing,
+              signal_maybe_empty>,
           std::pair<bool, id_view>>
 {
     default_value_signal(Primary primary, Default default_value)
@@ -291,7 +292,7 @@ struct has_value_view_signal
     : regular_signal<
           has_value_view_signal<Wrapped>,
           bool,
-          view_caps<signal_readable>>
+          view_caps<signal_readable, signal_nonempty>>
 {
     has_value_view_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -326,7 +327,7 @@ struct ready_to_write_view_signal
     : regular_signal<
           ready_to_write_view_signal<Wrapped>,
           bool,
-          view_caps<signal_readable>>
+          view_caps<signal_readable, signal_nonempty>>
 {
     ready_to_write_view_signal(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -473,7 +474,8 @@ template<class Wrapped>
 using unwrapper_signal_capabilities = signal_capabilities<
     Wrapped::capabilities::reading,
     Wrapped::capabilities::writing == signal_unwritable ? signal_unwritable
-                                                        : signal_clearable>;
+                                                        : signal_clearable,
+    signal_maybe_empty>;
 
 template<class Wrapped>
 struct unwrapper_signal
@@ -539,7 +541,8 @@ struct signal_movement_activator
           typename Wrapped::value_type,
           signal_capabilities<
               signal_move_activated,
-              Wrapped::capabilities::writing>>
+              Wrapped::capabilities::writing,
+              Wrapped::capabilities::presence>>
 {
     signal_movement_activator(Wrapped wrapped)
         : signal_movement_activator::signal_wrapper(std::move(wrapped))

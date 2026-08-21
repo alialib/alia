@@ -31,7 +31,7 @@ struct field_signal
           Field,
           signal_capabilities_intersection<
               typename StructureSignal::capabilities,
-              binding_caps<signal_movable>>,
+              binding_caps<signal_movable, signal_writable, signal_nonempty>>,
           std::conditional_t<
               identifiable<Field>,
               Field,
@@ -327,9 +327,18 @@ struct signal_mux
     : signal<
           signal_mux<Condition, T, F>,
           typename T::value_type,
-          signal_capabilities_intersection<
-              typename T::capabilities,
-              typename F::capabilities>,
+          signal_capabilities<
+              signal_capability_level_intersection<
+                  T::capabilities::reading,
+                  F::capabilities::reading>,
+              signal_capability_level_intersection<
+                  T::capabilities::writing,
+                  F::capabilities::writing>,
+              signal_capability_level_intersection<
+                  signal_capability_level_intersection<
+                      T::capabilities::presence,
+                      F::capabilities::presence>,
+                  Condition::capabilities::presence>>,
           typename T::value_type>
 {
     signal_mux(Condition condition, T t, F f)
@@ -530,14 +539,30 @@ struct subscript_signal
           typename subscript_result_type<
               typename ContainerSignal::value_type,
               typename IndexSignal::value_type>::type,
-          signal_capabilities_intersection<
-              typename ContainerSignal::capabilities,
-              std::conditional_t<
-                  subscript_returns_reference<
-                      typename ContainerSignal::value_type,
-                      typename IndexSignal::value_type>,
-                  binding_caps<signal_movable>,
-                  binding_caps<signal_move_activated>>>,
+          std::conditional_t<
+              subscript_returns_reference<
+                  typename ContainerSignal::value_type,
+                  typename IndexSignal::value_type>,
+              signal_capabilities<
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::reading,
+                      signal_movable>,
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::writing,
+                      signal_writable>,
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::presence,
+                      IndexSignal::capabilities::presence>>,
+              signal_capabilities<
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::reading,
+                      signal_move_activated>,
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::writing,
+                      signal_writable>,
+                  signal_capability_level_intersection<
+                      ContainerSignal::capabilities::presence,
+                      IndexSignal::capabilities::presence>>>,
           std::conditional_t<
               identifiable<typename subscript_result_type<
                   typename ContainerSignal::value_type,

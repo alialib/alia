@@ -1,5 +1,6 @@
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/core.hpp>
+#include <alia/kernel/signals/operators.hpp>
 
 #include <doctest/doctest.h>
 
@@ -67,6 +68,11 @@ TEST_CASE("signal_capabilities_compatible")
         binding_caps<signal_move_activated>,
         binding_caps<signal_movable>,
         false);
+    TEST_COMPATIBILITY(
+        nonempty_view_caps, view_caps<signal_readable>, false);
+    TEST_COMPATIBILITY(
+        view_caps<signal_readable>, nonempty_view_caps, true);
+    TEST_COMPATIBILITY(nonempty_view_caps, nonempty_view_caps, true);
 #undef TEST_COMPATIBILITY
 }
 
@@ -123,6 +129,10 @@ TEST_CASE("signal_capabilities_intersection")
         binding_caps<signal_movable>,
         view_caps<signal_move_activated>,
         view_caps<signal_movable>);
+    TEST_INTERSECTION(
+        nonempty_view_caps, nonempty_view_caps, nonempty_view_caps);
+    TEST_INTERSECTION(
+        nonempty_view_caps, view_caps<signal_readable>, view_caps<signal_readable>);
 #undef TEST_INTERSECTION
 }
 
@@ -183,7 +193,28 @@ TEST_CASE("signal_capabilities_union")
         binding_caps<signal_movable>,
         view_caps<signal_move_activated>,
         binding_caps<signal_move_activated>);
+    TEST_UNION(
+        nonempty_view_caps, view_caps<signal_readable>, nonempty_view_caps);
 #undef TEST_UNION
+}
+
+TEST_CASE("nonempty sugar and propagation")
+{
+    static_assert(nonempty_view_signal<decltype(value(1))>);
+    static_assert(nonempty_binding_signal<decltype(ref(*(int*) nullptr))>);
+    static_assert(nonempty_view_signal<decltype(value(1) + value(2))>);
+    static_assert(!nonempty_view_signal<decltype(empty<int>() + value(2))>);
+    static_assert(!nonempty_view_signal<decltype(empty<int>())>);
+
+    auto v = value(1);
+    nonempty_view<int> nv = v;
+    CHECK(read_signal(nv) == 1);
+
+    int x = 2;
+    auto r = ref(x);
+    nonempty_binding<int> nb = r;
+    write_signal(nb, 3);
+    CHECK(x == 3);
 }
 
 TEST_CASE("signal_type")
