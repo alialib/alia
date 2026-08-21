@@ -3,8 +3,13 @@
 #include <doctest/doctest.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string>
 #include <vector>
+
+#if defined(_MSC_VER)
+#include <malloc.h>
+#endif
 
 using namespace alia;
 using namespace alia::operators;
@@ -122,4 +127,151 @@ TEST_CASE("make_id_pair")
     auto b = make_id_pair(b_storage, make_id(1), make_id(2));
     CHECK((a != b));
     CHECK((a == make_id_pair(a_again_storage, make_id(0), make_id(1))));
+}
+
+namespace {
+
+void*
+test_aligned_alloc(size_t size, size_t alignment)
+{
+#if defined(_MSC_VER)
+    return _aligned_malloc(size, alignment);
+#else
+    size_t const align = alignment < sizeof(void*) ? sizeof(void*) : alignment;
+    void* p = nullptr;
+    if (posix_memalign(&p, align, size) != 0)
+        return nullptr;
+    return p;
+#endif
+}
+
+void
+test_aligned_free(void* ptr)
+{
+#if defined(_MSC_VER)
+    _aligned_free(ptr);
+#else
+    free(ptr);
+#endif
+}
+
+alia_general_allocator
+test_malloc_allocator()
+{
+    return alia_general_allocator{
+        [](void*, size_t size, size_t alignment) -> void* {
+            if (alignment <= sizeof(void*))
+                return malloc(size);
+            return test_aligned_alloc(size, alignment);
+        },
+        [](void*, void* ptr, size_t, size_t alignment) {
+            if (alignment <= sizeof(void*))
+                free(ptr);
+            else
+                test_aligned_free(ptr);
+        },
+        nullptr};
+}
+
+} // namespace
+
+TEST_CASE("captured_id value types")
+{
+    captured_id<int> c;
+    CHECK(c.empty());
+    CHECK_FALSE(c.matches(0));
+
+    c.capture(7);
+    CHECK_FALSE(c.empty());
+    CHECK(c.matches(7));
+    CHECK_FALSE(c.matches(8));
+
+    c.clear();
+    CHECK(c.empty());
+    CHECK_FALSE(c.matches(7));
+}
+
+TEST_CASE("captured_id constant_value_tag")
+{
+    captured_id<constant_value_tag> c;
+    CHECK(c.empty());
+    c.capture(constant_value_tag{});
+    CHECK(c.matches(constant_value_tag{}));
+    c.clear();
+    CHECK(c.empty());
+}
+
+TEST_CASE("captured_id pair")
+{
+    captured_id<std::pair<int, int>> c;
+    CHECK(c.empty());
+    c.capture({1, 2});
+    CHECK(c.matches({1, 2}));
+    CHECK_FALSE(c.matches({1, 3}));
+    c.clear();
+    CHECK(c.empty());
+}
+
+TEST_CASE("captured_id id_view inline avoids allocation")
+{
+    int allocs = 0;
+    alia_general_allocator alloc = test_malloc_allocator();
+    auto counting = alloc;
+    counting.user_data = &allocs;
+    counting.alloc = [](void* user_data, size_t size, size_t alignment) -> void* {
+        ++*static_cast<int*>(user_data);
+        return test_malloc_allocator().alloc(nullptr, size, alignment);
+    };
+
+    captured_id<id_view> c;
+    c.capture(make_id(7), &counting);
+    CHECK_FALSE(c.empty());
+    CHECK(c.matches(make_id(7)));
+    CHECK_FALSE(c.matches(make_id(8)));
+    CHECK(allocs == 0);
+
+    // Allocator may be omitted for fully inline IDs.
+    c.capture(make_id(9), nullptr);
+    CHECK(c.matches(make_id(9)));
+    CHECK(allocs == 0);
+
+    c.clear();
+    CHECK(c.empty());
+}
+
+TEST_CASE("captured_id id_view with external payload")
+{
+    int allocs = 0;
+    alia_general_allocator base = test_malloc_allocator();
+    alia_general_allocator alloc = base;
+    alloc.user_data = &allocs;
+    alloc.alloc = [](void* user_data, size_t size, size_t alignment) -> void* {
+        ++*static_cast<int*>(user_data);
+        return test_malloc_allocator().alloc(nullptr, size, alignment);
+    };
+    alloc.free = [](void*, void* ptr, size_t size, size_t alignment) {
+        test_malloc_allocator().free(nullptr, ptr, size, alignment);
+    };
+
+    captured_id<id_view> c;
+    CHECK(c.empty());
+    CHECK(c.matches(null_id()));
+
+    std::string text = "hello-captured-id";
+    id_view transient = make_id_by_reference(text);
+    c.capture(transient, &alloc);
+    CHECK(allocs == 1);
+    CHECK_FALSE(c.empty());
+    CHECK(c.matches(transient));
+    CHECK(c.matches(make_id_by_reference(std::string("hello-captured-id"))));
+    CHECK_FALSE(c.matches(make_id_by_reference(std::string("other"))));
+
+    // Mutating the original buffer must not change the captured ID.
+    text[0] = 'H';
+    CHECK(c.matches(make_id_by_reference(std::string("hello-captured-id"))));
+    CHECK_FALSE(c.matches(make_id_by_reference(text)));
+
+    c.clear();
+    CHECK(c.empty());
+    CHECK(c.matches(null_id()));
 }

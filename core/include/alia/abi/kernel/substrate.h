@@ -70,6 +70,10 @@ typedef struct alia_context alia_context;
 alia_substrate_system*
 alia_ctx_substrate_system(alia_context* ctx);
 
+// general allocator owned by `system`
+alia_general_allocator*
+alia_substrate_system_allocator(alia_substrate_system* system);
+
 enum alia_substrate_block_traversal_mode
 {
     // normal mode

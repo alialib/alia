@@ -10,6 +10,13 @@
 
 namespace alia {
 
+// general allocator associated with the substrate system on `ctx`
+inline alia_general_allocator*
+substrate_allocator(alia_context* ctx)
+{
+    return alia_substrate_system_allocator(alia_ctx_substrate_system(ctx));
+}
+
 // result of a typed substrate usage
 template<class T>
 struct use_result

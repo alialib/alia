@@ -1,8 +1,13 @@
 #pragma once
 
+#include <alia/impl/events.hpp>
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
+#include <alia/kernel/substrate.hpp>
 
+#include <exception>
+#include <stdint.h>
+#include <type_traits>
 #include <utility>
 
 // This file defines function application over signals.
@@ -273,6 +278,197 @@ lazy_bidirectional_apply(Forward forward, Reverse reverse, Arg arg)
         Forward,
         Reverse,
         Arg>(std::move(forward), std::move(reverse), std::move(arg));
+}
+
+// `apply(ctx, f, args...)` eagerly applies `f` to the values of `args` and
+// caches the result in the substrate. If any argument is empty, the result is
+// also empty. The result is recomputed on refresh when any argument's value ID
+// changes (or if an argument transitions to or from the empty state). The
+// returned signal's ID is a simple revision counter.
+
+namespace detail {
+
+enum class apply_status
+{
+    // not computed since the last input change
+    UNCOMPUTED,
+    // the function threw an exception
+    // TODO: Reconsider this behavior.
+    FAILED,
+    // up-to-date cached result
+    READY,
+    // result was moved out; recompute on the next refresh
+    MOVED
+};
+
+template<class Value>
+struct apply_result_data
+{
+    apply_status status = apply_status::UNCOMPUTED;
+    // identity of the cached result - Incremented whenever inputs change.
+    uint32_t version = 0;
+    Value value{};
+    std::exception_ptr error;
+};
+
+template<class Value>
+void
+reset_apply_result(apply_result_data<Value>& data)
+{
+    ++data.version;
+    data.status = apply_status::UNCOMPUTED;
+    data.error = nullptr;
+}
+
+template<class Result, class Arg>
+void
+process_apply_arg(
+    alia_context* ctx,
+    apply_result_data<Result>& data,
+    bool& args_ready,
+    Arg const& arg)
+{
+    auto cache = use_object<captured_id<typename Arg::value_id_type>>(ctx);
+    if (!is_refresh_event(*ctx))
+        return;
+
+    if (!signal_has_value(arg))
+    {
+        reset_apply_result(data);
+        args_ready = false;
+        cache->clear(substrate_allocator(ctx));
+        return;
+    }
+
+    auto const id = arg.value_id();
+    if (cache->empty() || !cache->matches(id))
+    {
+        reset_apply_result(data);
+        cache->capture(id, substrate_allocator(ctx));
+    }
+}
+
+template<class Result>
+void
+process_apply_args(alia_context*, apply_result_data<Result>&, bool&)
+{
+}
+
+template<class Result, class Arg, class... Rest>
+void
+process_apply_args(
+    alia_context* ctx,
+    apply_result_data<Result>& data,
+    bool& args_ready,
+    Arg const& arg,
+    Rest const&... rest)
+{
+    process_apply_arg(ctx, data, args_ready, arg);
+    process_apply_args(ctx, data, args_ready, rest...);
+}
+
+template<class Value, class Function, class... Args>
+void
+process_apply_body(
+    alia_context* ctx,
+    apply_result_data<Value>& data,
+    bool args_ready,
+    Function&& f,
+    Args const&... args)
+{
+    if (!is_refresh_event(*ctx))
+        return;
+
+    if ((data.status == apply_status::UNCOMPUTED
+         || data.status == apply_status::MOVED)
+        && args_ready)
+    {
+        try
+        {
+            data.value = std::forward<Function>(f)(forward_signal(args)...);
+            data.status = apply_status::READY;
+            data.error = nullptr;
+        }
+        catch (...)
+        {
+            data.error = std::current_exception();
+            data.status = apply_status::FAILED;
+            // TODO: Surface or rethrow apply failures.
+        }
+    }
+}
+
+} // namespace detail
+
+template<class Value>
+struct apply_signal
+    : signal<
+          apply_signal<Value>,
+          Value,
+          view_caps<signal_move_activated>,
+          uint32_t>
+{
+    explicit apply_signal(detail::apply_result_data<Value>& data)
+        : data_(&data)
+    {
+    }
+    uint32_t
+    value_id() const
+    {
+        return data_->version;
+    }
+    bool
+    has_value() const override
+    {
+        return data_->status == detail::apply_status::READY
+            || data_->status == detail::apply_status::MOVED;
+    }
+    Value const&
+    read() const override
+    {
+        return data_->value;
+    }
+    Value
+    move_out() const override
+    {
+        auto moved_out = std::move(data_->value);
+        data_->status = detail::apply_status::MOVED;
+        return moved_out;
+    }
+    Value&
+    destructive_ref() const override
+    {
+        data_->status = detail::apply_status::MOVED;
+        return data_->value;
+    }
+
+ private:
+    detail::apply_result_data<Value>* data_;
+};
+
+template<class Function, view_signal... Args>
+auto
+apply(alia_context* ctx, Function&& f, Args const&... args)
+{
+    using result_type = decltype(std::declval<Function>()(
+        forward_signal(std::declval<Args>())...));
+    auto data = use_object<detail::apply_result_data<result_type>>(ctx);
+    bool args_ready = true;
+    detail::process_apply_args(ctx, *data, args_ready, args...);
+    detail::process_apply_body(
+        ctx, *data, args_ready, std::forward<Function>(f), args...);
+    return apply_signal<result_type>(*data);
+}
+
+// `lift(f)` yields a function that takes a context and signal arguments and
+// returns `apply(ctx, f, args...)`.
+template<class Function>
+auto
+lift(Function f)
+{
+    return [f = std::move(f)](alia_context* ctx, auto const&... args) {
+        return apply(ctx, f, args...);
+    };
 }
 
 } // namespace alia

@@ -459,6 +459,13 @@ alia_ctx_substrate_system(alia_context* ctx)
     return ctx->substrate->system;
 }
 
+alia_general_allocator*
+alia_substrate_system_allocator(alia_substrate_system* system)
+{
+    ALIA_ASSERT(system);
+    return &system->allocator;
+}
+
 alia_substrate_usage_result
 alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
 {
