@@ -10,14 +10,12 @@ namespace alia {
 // just the signal value itself.
 template<class Derived, class Value, class Capabilities>
     requires identifiable<Value>
-struct regular_signal : signal<Derived, Value, Capabilities>
+struct regular_signal : signal<Derived, Value, Capabilities, Value>
 {
-    id_view
-    value_id() const override
+    Value const&
+    value_id() const
     {
-        if (this->has_value())
-            return make_id_by_reference(this->read());
-        return null_id();
+        return static_cast<Derived const*>(this)->read();
     }
 };
 
@@ -31,8 +29,8 @@ struct regular_signal : signal<Derived, Value, Capabilities>
 // return references, so we can implement those mechanically on top of
 // `move_out()`.
 //
-template<class Derived, class Value, class Capabilities>
-struct lazy_signal : signal<Derived, Value, Capabilities>
+template<class Derived, class Value, class Capabilities, class ValueId>
+struct lazy_signal : signal<Derived, Value, Capabilities, ValueId>
 {
     Value const&
     read() const override
@@ -59,8 +57,9 @@ template<
     class Derived,
     class Wrapped,
     class Value = typename Wrapped::value_type,
-    class Capabilities = typename Wrapped::capabilities>
-struct signal_wrapper : signal<Derived, Value, Capabilities>
+    class Capabilities = typename Wrapped::capabilities,
+    class ValueId = typename Wrapped::value_id_type>
+struct signal_wrapper : signal<Derived, Value, Capabilities, ValueId>
 {
     signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -85,8 +84,8 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
         return wrapped_.destructive_ref();
     }
-    id_view
-    value_id() const override
+    decltype(auto)
+    value_id() const
     {
         return wrapped_.value_id();
     }
@@ -95,10 +94,10 @@ struct signal_wrapper : signal<Derived, Value, Capabilities>
     {
         return wrapped_.ready_to_write();
     }
-    id_view
+    void
     write(typename Wrapped::value_type value) const override
     {
-        return wrapped_.write(std::move(value));
+        wrapped_.write(std::move(value));
     }
     void
     clear() const override
@@ -129,8 +128,10 @@ template<
     class Derived,
     class Wrapped,
     class Value,
-    class Capabilities = typename Wrapped::capabilities>
-struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
+    class Capabilities = typename Wrapped::capabilities,
+    class ValueId = typename Wrapped::value_id_type>
+struct casting_signal_wrapper
+    : signal<Derived, Value, Capabilities, ValueId>
 {
     casting_signal_wrapper(Wrapped wrapped) : wrapped_(std::move(wrapped))
     {
@@ -140,8 +141,8 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities>
     {
         return wrapped_.has_value();
     }
-    id_view
-    value_id() const override
+    decltype(auto)
+    value_id() const
     {
         return wrapped_.value_id();
     }
@@ -176,9 +177,10 @@ template<
     class Derived,
     class Wrapped,
     class Value = typename Wrapped::value_type,
-    class Capabilities = typename Wrapped::capabilities>
+    class Capabilities = typename Wrapped::capabilities,
+    class ValueId = typename Wrapped::value_id_type>
 struct lazy_signal_wrapper
-    : signal_wrapper<Derived, Wrapped, Value, Capabilities>
+    : signal_wrapper<Derived, Wrapped, Value, Capabilities, ValueId>
 {
     lazy_signal_wrapper(Wrapped wrapped)
         : lazy_signal_wrapper::signal_wrapper(std::move(wrapped))

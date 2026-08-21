@@ -14,14 +14,16 @@ TEST_CASE("value and read")
     auto s = value(42);
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 42);
-    CHECK((s.value_id() == make_id(42)));
+    CHECK(s.value_id() == 42);
 }
 
 TEST_CASE("empty signal")
 {
     auto s = empty<int>();
     CHECK_FALSE(signal_has_value(s));
-    CHECK((s.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == null_id()));
 }
 
 TEST_CASE("ref binding write")
@@ -47,7 +49,9 @@ TEST_CASE("string literal value")
 {
     auto s = value("hello");
     CHECK(read_signal(s) == std::string("hello"));
-    CHECK((s.value_id() == make_pointer_id("hello")));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == make_pointer_id("hello")));
 }
 
 TEST_CASE("signalize")
@@ -77,7 +81,7 @@ TEST_CASE("default_initialized")
     auto s = default_initialized<int>();
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 0);
-    CHECK((s.value_id() == unit_id()));
+    CHECK(std::is_same_v<decltype(s.value_id()), constant_value_tag>);
 }
 
 TEST_CASE("versioned_ref binding")
@@ -92,15 +96,15 @@ TEST_CASE("versioned_ref binding")
 
     CHECK(signal_has_value(s));
     CHECK((read_signal(s) == std::vector<int>{1, 2}));
-    CHECK((s.value_id() == make_id(uint32_t{0})));
+    CHECK(s.value_id() == 0u);
 
     write_signal(s, std::vector<int>{3, 4, 5});
     CHECK((items == std::vector<int>{3, 4, 5}));
     CHECK(version == 1);
-    CHECK((s.value_id() == make_id(uint32_t{1})));
+    CHECK(s.value_id() == 1u);
 
     version = 7;
-    CHECK((s.value_id() == make_id(uint32_t{7})));
+    CHECK(s.value_id() == 7u);
 }
 
 TEST_CASE("versioned_ref const view")
@@ -114,5 +118,5 @@ TEST_CASE("versioned_ref const view")
 
     CHECK(signal_has_value(s));
     CHECK((read_signal(s) == std::vector<int>{1, 2}));
-    CHECK((s.value_id() == make_id(uint32_t{5})));
+    CHECK(s.value_id() == 5u);
 }

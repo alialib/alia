@@ -5,6 +5,7 @@
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
 
+#include <type_traits>
 #include <utility>
 
 // This file defines adaptors that wrap signals to change their capabilities
@@ -28,11 +29,6 @@ struct readability_faker
     readability_faker(Wrapped wrapped)
         : readability_faker::signal_wrapper(std::move(wrapped))
     {
-    }
-    id_view
-    value_id() const override
-    {
-        return null_id();
     }
     bool
     has_value() const override
@@ -79,9 +75,8 @@ struct writability_faker
     }
     // Since this is only faking writability, write() should never be called.
     // LCOV_EXCL_START
-    id_view write(typename Wrapped::value_type) const override
+    void write(typename Wrapped::value_type) const override
     {
-        return null_id();
     }
     // LCOV_EXCL_STOP
 };
@@ -127,11 +122,10 @@ struct casting_signal
         value_ = this->move_out();
         return value_;
     }
-    id_view
+    void
     write(To value) const override
     {
-        return this->wrapped_.write(
-            static_cast<typename Wrapped::value_type>(value));
+        this->wrapped_.write(static_cast<typename Wrapped::value_type>(value));
     }
 
  private:
@@ -161,7 +155,8 @@ struct default_value_signal
               signal_capability_level_intersection<
                   Primary::capabilities::reading,
                   Default::capabilities::reading>,
-              Primary::capabilities::writing>>
+              Primary::capabilities::writing>,
+          std::pair<bool, id_view>>
 {
     default_value_signal(Primary primary, Default default_value)
         : default_value_signal::signal_wrapper(std::move(primary)),
@@ -191,18 +186,20 @@ struct default_value_signal
         return this->wrapped_.has_value() ? this->wrapped_.destructive_ref()
                                           : default_.destructive_ref();
     }
-    id_view
-    value_id() const override
+    std::pair<bool, id_view>
+    value_id() const
     {
         bool const using_primary = this->wrapped_.has_value();
-        return make_id_pair(
-            pair_,
-            make_id(using_primary),
-            using_primary ? this->wrapped_.value_id() : default_.value_id());
+        return {
+            using_primary,
+            using_primary
+                ? static_cast<untyped_signal_base const&>(this->wrapped_)
+                      .value_id_view()
+                : static_cast<untyped_signal_base const&>(default_)
+                      .value_id_view()};
     }
 
  private:
-    mutable alia_id_pair pair_{};
     Default default_;
 };
 template<class Primary, class Default>
@@ -221,24 +218,27 @@ add_default(Primary primary, Default default_)
 // but whose value ID is the value itself.
 //
 // This is useful when `s` carries a small identifiable value whose native ID
-// is a proxy for its inputs (a `lazy_apply`, an arithmetic combination, and so
-// on) and can change even when the value does not.
+// is a proxy for its inputs (e.g., `lazy_apply`) and can change even when the
+// value does not.
 //
 template<class Wrapped>
     requires identifiable<typename Wrapped::value_type>
 struct simplified_id_wrapper
-    : signal_wrapper<simplified_id_wrapper<Wrapped>, Wrapped>
+    : signal_wrapper<
+          simplified_id_wrapper<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type,
+          typename Wrapped::capabilities,
+          typename Wrapped::value_type>
 {
     simplified_id_wrapper(Wrapped wrapped)
         : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
     {
     }
-    id_view
-    value_id() const override
+    typename Wrapped::value_type const&
+    value_id() const
     {
-        if (this->has_value())
-            return make_id_by_reference(this->read());
-        return null_id();
+        return this->read();
     }
 };
 template<view_signal Wrapped>
@@ -251,19 +251,24 @@ simplify_id(Wrapped wrapped)
 
 // `override_id(s, generate_id)` yields a wrapper for `s` with the same
 // read/write behavior but whose value ID is produced by calling
-// `generate_id`. This replaces `s`'s native ID entirely, including when `s`
-// has no value.
+// `generate_id`.
 template<class Wrapped, class GenerateId>
 struct override_id_wrapper
-    : signal_wrapper<override_id_wrapper<Wrapped, GenerateId>, Wrapped>
+    : signal_wrapper<
+          override_id_wrapper<Wrapped, GenerateId>,
+          Wrapped,
+          typename Wrapped::value_type,
+          typename Wrapped::capabilities,
+          std::invoke_result_t<GenerateId const&>>
 {
+
     override_id_wrapper(Wrapped wrapped, GenerateId generate_id)
         : override_id_wrapper::signal_wrapper(std::move(wrapped)),
           generate_id_(std::move(generate_id))
     {
     }
-    id_view
-    value_id() const override
+    std::invoke_result_t<GenerateId const&>
+    value_id() const
     {
         return generate_id_();
     }
@@ -363,13 +368,6 @@ struct masking_signal : signal_wrapper<masking_signal<Primary, Mask>, Primary>
     has_value() const override
     {
         return mask_.has_value() && mask_.read() && this->wrapped_.has_value();
-    }
-    id_view
-    value_id() const override
-    {
-        if (mask_.has_value() && mask_.read())
-            return this->wrapped_.value_id();
-        return null_id();
     }
     bool
     ready_to_write() const override
@@ -509,17 +507,10 @@ struct unwrapper_signal
     {
         return *this->wrapped_.destructive_ref();
     }
-    id_view
-    value_id() const override
-    {
-        if (this->has_value())
-            return this->wrapped_.value_id();
-        return null_id();
-    }
-    id_view
+    void
     write(typename Wrapped::value_type::value_type value) const override
     {
-        return this->wrapped_.write(std::move(value));
+        this->wrapped_.write(std::move(value));
     }
     void
     clear() const override
@@ -583,7 +574,8 @@ struct radio_signal
     : lazy_signal<
           radio_signal<Selected, Index>,
           bool,
-          binding_caps<signal_readable>>
+          binding_caps<signal_readable>,
+          bool>
 {
     radio_signal(Selected selected, Index index)
         : selected_(std::move(selected)), index_(std::move(index))
@@ -599,21 +591,20 @@ struct radio_signal
     {
         return read_signal(selected_) == read_signal(index_);
     }
-    id_view
-    value_id() const override
+    bool
+    value_id() const
     {
-        return selected_.value_id();
+        return this->read();
     }
     bool
     ready_to_write() const override
     {
         return signal_ready_to_write(selected_) && signal_has_value(index_);
     }
-    id_view
+    void
     write(bool) const override
     {
         write_signal(selected_, read_signal(index_));
-        return null_id();
     }
 
  private:

@@ -22,9 +22,7 @@ TEST_CASE("signal_capabilities_compatible")
     TEST_COMPATIBILITY(
         view_caps<signal_readable>, view_caps<signal_movable>, true);
     TEST_COMPATIBILITY(
-        view_caps<signal_readable>,
-        binding_caps<signal_move_activated>,
-        true);
+        view_caps<signal_readable>, binding_caps<signal_move_activated>, true);
     TEST_COMPATIBILITY(
         view_caps<signal_movable>, view_caps<signal_readable>, false);
     TEST_COMPATIBILITY(
@@ -32,9 +30,7 @@ TEST_CASE("signal_capabilities_compatible")
     TEST_COMPATIBILITY(
         view_caps<signal_move_activated>, view_caps<signal_movable>, false);
     TEST_COMPATIBILITY(
-        view_caps<signal_move_activated>,
-        binding_caps<signal_movable>,
-        false);
+        view_caps<signal_move_activated>, binding_caps<signal_movable>, false);
     TEST_COMPATIBILITY(
         sink_caps<signal_writable>, view_caps<signal_readable>, false);
     TEST_COMPATIBILITY(
@@ -44,9 +40,7 @@ TEST_CASE("signal_capabilities_compatible")
     TEST_COMPATIBILITY(
         sink_caps<signal_writable>, view_caps<signal_movable>, false);
     TEST_COMPATIBILITY(
-        sink_caps<signal_writable>,
-        binding_caps<signal_move_activated>,
-        true);
+        sink_caps<signal_writable>, binding_caps<signal_move_activated>, true);
     TEST_COMPATIBILITY(
         binding_caps<signal_readable>, view_caps<signal_readable>, false);
     TEST_COMPATIBILITY(
@@ -244,9 +238,10 @@ TEST_CASE("signal_with clearable sink")
     CHECK_FALSE(signal_with<view<int>, sink_caps<signal_clearable>>);
     CHECK_FALSE(signal_with<sink<int>, sink_caps<signal_clearable>>);
     CHECK_FALSE(signal_with<binding<int>, sink_caps<signal_clearable>>);
-    CHECK(signal_with<
-          signal_ref<int, binding_caps<signal_readable, signal_clearable>>,
-          sink_caps<signal_clearable>>);
+    CHECK(
+        signal_with<
+            signal_ref<int, binding_caps<signal_readable, signal_clearable>>,
+            sink_caps<signal_clearable>>);
     CHECK_FALSE(signal_with<int, sink_caps<signal_clearable>>);
 }
 
@@ -262,7 +257,7 @@ TEST_CASE("signal_ref")
     CHECK_FALSE(binding_signal<signal_t>);
 
     CHECK(signal_has_value(s));
-    CHECK((s.value_id() == y.value_id()));
+    CHECK((s.value_id() == to_id_view(y.value_id())));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
     write_signal(s, 0);

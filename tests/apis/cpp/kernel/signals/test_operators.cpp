@@ -30,7 +30,7 @@ is_false(Signal const& x)
 namespace {
 
 struct counting_bool
-    : signal<counting_bool, bool, view_caps<signal_readable>>
+    : signal<counting_bool, bool, view_caps<signal_readable>, bool>
 {
     counting_bool(int* count, bool value) : count_(count), value_(value)
     {
@@ -46,10 +46,10 @@ struct counting_bool
         ++*count_;
         return value_;
     }
-    id_view
-    value_id() const override
+    bool
+    value_id() const
     {
-        return make_id(value_);
+        return value_;
     }
 
  private:
@@ -165,7 +165,7 @@ TEST_CASE("conditional")
 
     CHECK(
         (conditional(value(false), value(2), value(2)).value_id()
-         != conditional(value(true), value(2), value(2)).value_id()));
+         == conditional(value(true), value(2), value(2)).value_id()));
 }
 
 TEST_CASE("non-boolean conditional")
@@ -193,7 +193,9 @@ TEST_CASE("conditional with empty condition")
     int x = 0, y = 1;
     auto s = conditional(empty<bool>(), ref(x), ref(y));
     CHECK_FALSE(signal_has_value(s));
-    CHECK((s.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == null_id()));
     CHECK_FALSE(signal_ready_to_write(s));
 }
 
@@ -256,7 +258,8 @@ TEST_CASE("field signal")
     static_assert(view_signal<decltype(y_signal)>);
     static_assert(sink_signal<decltype(y_signal)>);
 
-    CHECK((y_signal.value_id() != x_signal.value_id()));
+    CHECK(
+        (to_id_view(y_signal.value_id()) != to_id_view(x_signal.value_id())));
     CHECK(signal_has_value(y_signal));
     CHECK(read_signal(y_signal) == "1.5");
     CHECK(signal_ready_to_write(y_signal));
@@ -292,7 +295,9 @@ TEST_CASE("empty field signal")
 
     auto s = empty<foo>()->*&foo::x;
     CHECK_FALSE(signal_has_value(s));
-    CHECK((s.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == null_id()));
     CHECK_FALSE(signal_ready_to_write(s));
 }
 
@@ -378,8 +383,7 @@ TEST_CASE("subscript metafunctions")
 
     static_assert(const_subscript_returns_reference<std::vector<int>, int>);
     static_assert(const_subscript_returns_reference<std::map<int, int>, int>);
-    static_assert(
-        !const_subscript_returns_reference<std::vector<bool>, int>);
+    static_assert(!const_subscript_returns_reference<std::vector<bool>, int>);
     static_assert(const_subscript_returns_reference<my_array, int>);
     static_assert(!const_subscript_returns_reference<my_const_array, int>);
 }
@@ -504,7 +508,9 @@ TEST_CASE("empty subscript")
 {
     auto s = empty<std::map<int, int>>()[value(2)];
     CHECK_FALSE(signal_has_value(s));
-    CHECK((s.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == null_id()));
 }
 
 TEST_CASE("subscript with non-identifiable element")

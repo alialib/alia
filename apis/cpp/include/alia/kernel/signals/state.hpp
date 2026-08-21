@@ -99,7 +99,8 @@ struct state_binding
     : signal<
           state_binding<Value>,
           Value,
-          binding_caps<signal_movable, signal_clearable>>
+          binding_caps<signal_movable, signal_clearable>,
+          uint32_t>
 {
     state_binding(state_storage<Value>* data, alia_context* ctx)
         : data_(data), ctx_(ctx)
@@ -112,10 +113,10 @@ struct state_binding
         return data_->has_value();
     }
 
-    id_view
-    value_id() const override
+    uint32_t
+    value_id() const
     {
-        return make_id(data_->version);
+        return data_->version;
     }
 
     Value const&
@@ -142,11 +143,10 @@ struct state_binding
         return true;
     }
 
-    id_view
+    void
     write(Value value) const override
     {
         data_->set(std::move(value), ctx_);
-        return value_id();
     }
 
     void

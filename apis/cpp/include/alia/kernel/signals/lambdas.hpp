@@ -10,7 +10,7 @@
 namespace alia {
 
 // `lambda_constant(get)` creates a read-only signal whose value is constant
-// and is produced by calling `get`. The signal's ID is `unit_id`. `get` is
+// and is produced by calling `get`. The signal's ID is the unit ID. `get` is
 // invoked lazily, when the value is read. It's the caller's responsibility to
 // ensure that `get` always returns the same value.
 template<class Value, class Get>
@@ -18,7 +18,8 @@ struct lambda_constant_signal
     : lazy_signal<
           lambda_constant_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated>>
+          view_caps<signal_move_activated>,
+          constant_value_tag>
 {
     explicit lambda_constant_signal(Get get) : get_(std::move(get))
     {
@@ -28,10 +29,10 @@ struct lambda_constant_signal
     {
         return true;
     }
-    id_view
-    value_id() const override
+    constant_value_tag
+    value_id() const
     {
-        return unit_id();
+        return {};
     }
     Value
     move_out() const override
@@ -60,7 +61,8 @@ struct lambda_view_signal
     : lazy_signal<
           lambda_view_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated>>
+          view_caps<signal_move_activated>,
+          Value>
 {
     explicit lambda_view_signal(Get get) : get_(std::move(get))
     {
@@ -70,10 +72,10 @@ struct lambda_view_signal
     {
         return true;
     }
-    id_view
-    value_id() const override
+    Value const&
+    value_id() const
     {
-        return make_id_by_reference(this->read());
+        return this->read();
     }
     Value
     move_out() const override
@@ -103,7 +105,8 @@ struct lambda_binding_signal
     : lazy_signal<
           lambda_binding_signal<Value, Get, Set>,
           Value,
-          binding_caps<signal_move_activated>>
+          binding_caps<signal_move_activated>,
+          Value>
 {
     lambda_binding_signal(Get get, Set set)
         : get_(std::move(get)), set_(std::move(set))
@@ -114,10 +117,10 @@ struct lambda_binding_signal
     {
         return true;
     }
-    id_view
-    value_id() const override
+    Value const&
+    value_id() const
     {
-        return make_id_by_reference(this->read());
+        return this->read();
     }
     Value
     move_out() const override
@@ -129,11 +132,10 @@ struct lambda_binding_signal
     {
         return true;
     }
-    id_view
+    void
     write(Value value) const override
     {
         set_(std::move(value));
-        return this->value_id();
     }
 
  private:

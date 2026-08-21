@@ -31,7 +31,13 @@ struct field_signal
           Field,
           signal_capabilities_intersection<
               typename StructureSignal::capabilities,
-              binding_caps<signal_movable>>>
+              binding_caps<signal_movable>>,
+          std::conditional_t<
+              identifiable<Field>,
+              Field,
+              std::pair<
+                  typename StructureSignal::value_id_type,
+                  Field StructureSignal::value_type::*>>>
 {
     using structure_type = typename StructureSignal::value_type;
     using field_ptr = Field structure_type::*;
@@ -60,38 +66,30 @@ struct field_signal
     {
         return structure_.destructive_ref().*field_;
     }
-    id_view
-    value_id() const override
+    decltype(auto)
+    value_id() const
     {
         if constexpr (identifiable<Field>)
-        {
-            if (!this->has_value())
-                return null_id();
-            return make_id_by_reference(this->read());
-        }
+            return this->read();
         else
-        {
-            return make_id_pair(
-                pair_, structure_.value_id(), make_id_by_reference(field_));
-        }
+            return std::pair{structure_.value_id(), field_};
     }
     bool
     ready_to_write() const override
     {
         return structure_.has_value() && structure_.ready_to_write();
     }
-    id_view
+    void
     write(Field x) const override
     {
         structure_type s = forward_signal(alia::move(structure_));
         s.*field_ = std::move(x);
-        return structure_.write(std::move(s));
+        structure_.write(std::move(s));
     }
 
  private:
     StructureSignal structure_;
     field_ptr field_;
-    mutable alia_id_pair pair_{};
 };
 
 template<view_signal StructureSignal, class Field>
@@ -114,7 +112,7 @@ operator->*(
     template<view_signal A, view_signal B>                                    \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
-        return lazy_apply([](auto a, auto b) { return a op b; }, a, b);       \
+        return uncached_apply([](auto a, auto b) { return a op b; }, a, b);   \
     }
 
 ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(+)
@@ -141,14 +139,14 @@ ALIA_DEFINE_BINARY_SIGNAL_OPERATOR(>=)
         requires(!signal_type<B>)                                             \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
-        return lazy_apply(                                                    \
+        return uncached_apply(                                                \
             [](auto a, auto b) { return a op b; }, a, value(b));              \
     }                                                                         \
     template<class A, view_signal B>                                          \
         requires(!signal_type<A> && !action_type<A>)                          \
     auto operator op(A const& a, B const& b)                                  \
     {                                                                         \
-        return lazy_apply(                                                    \
+        return uncached_apply(                                                \
             [](auto a, auto b) { return a op b; }, value(a), b);              \
     }
 
@@ -175,7 +173,7 @@ ALIA_DEFINE_LIBERAL_BINARY_SIGNAL_OPERATOR(>=)
     template<view_signal A>                                                   \
     auto operator op(A const& a)                                              \
     {                                                                         \
-        return lazy_apply([](auto a) { return op a; }, a);                    \
+        return uncached_apply([](auto a) { return op a; }, a);                \
     }
 
 ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(-)
@@ -189,16 +187,20 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(*)
 
 template<class Arg0, class Arg1>
 struct logical_or_signal
-    : signal<logical_or_signal<Arg0, Arg1>, bool, view_caps<signal_readable>>
+    : signal<
+          logical_or_signal<Arg0, Arg1>,
+          bool,
+          view_caps<signal_readable>,
+          bool>
 {
     logical_or_signal(Arg0 arg0, Arg1 arg1)
         : arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
     }
-    id_view
-    value_id() const override
+    bool
+    value_id() const
     {
-        return make_id_pair(pair_, arg0_.value_id(), arg1_.value_id());
+        return read();
     }
     bool
     has_value() const override
@@ -220,7 +222,6 @@ struct logical_or_signal
  private:
     Arg0 arg0_;
     Arg1 arg1_;
-    mutable alia_id_pair pair_{};
     mutable bool value_;
 };
 
@@ -249,16 +250,20 @@ operator||(A const& a, B const& b)
 
 template<class Arg0, class Arg1>
 struct logical_and_signal
-    : signal<logical_and_signal<Arg0, Arg1>, bool, view_caps<signal_readable>>
+    : signal<
+          logical_and_signal<Arg0, Arg1>,
+          bool,
+          view_caps<signal_readable>,
+          bool>
 {
     logical_and_signal(Arg0 arg0, Arg1 arg1)
         : arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
     }
-    id_view
-    value_id() const override
+    bool
+    value_id() const
     {
-        return make_id_pair(pair_, arg0_.value_id(), arg1_.value_id());
+        return read();
     }
     bool
     has_value() const override
@@ -281,7 +286,6 @@ struct logical_and_signal
  private:
     Arg0 arg0_;
     Arg1 arg1_;
-    mutable alia_id_pair pair_{};
     mutable bool value_;
 };
 
@@ -325,7 +329,8 @@ struct signal_mux
           typename T::value_type,
           signal_capabilities_intersection<
               typename T::capabilities,
-              typename F::capabilities>>
+              typename F::capabilities>,
+          typename T::value_type>
 {
     signal_mux(Condition condition, T t, F f)
         : condition_(std::move(condition)), t_(std::move(t)), f_(std::move(f))
@@ -352,15 +357,10 @@ struct signal_mux
     {
         return condition_.read() ? t_.destructive_ref() : f_.destructive_ref();
     }
-    id_view
-    value_id() const override
+    typename T::value_type const&
+    value_id() const
     {
-        if (!condition_.has_value())
-            return null_id();
-        return make_id_pair(
-            pair_,
-            make_id(condition_.read() ? true : false),
-            condition_.read() ? t_.value_id() : f_.value_id());
+        return read();
     }
     bool
     ready_to_write() const override
@@ -368,12 +368,13 @@ struct signal_mux
         return condition_.has_value()
             && (condition_.read() ? t_.ready_to_write() : f_.ready_to_write());
     }
-    id_view
+    void
     write(typename T::value_type value) const override
     {
         if (condition_.read())
-            return t_.write(std::move(value));
-        return f_.write(std::move(value));
+            t_.write(std::move(value));
+        else
+            f_.write(std::move(value));
     }
     void
     clear() const override
@@ -402,7 +403,6 @@ struct signal_mux
     Condition condition_;
     T t_;
     F f_;
-    mutable alia_id_pair pair_{};
 };
 
 template<class Condition, class T, class F>
@@ -537,7 +537,17 @@ struct subscript_signal
                       typename ContainerSignal::value_type,
                       typename IndexSignal::value_type>,
                   binding_caps<signal_movable>,
-                  binding_caps<signal_move_activated>>>>
+                  binding_caps<signal_move_activated>>>,
+          std::conditional_t<
+              identifiable<typename subscript_result_type<
+                  typename ContainerSignal::value_type,
+                  typename IndexSignal::value_type>::type>,
+              typename subscript_result_type<
+                  typename ContainerSignal::value_type,
+                  typename IndexSignal::value_type>::type,
+              std::pair<
+                  typename ContainerSignal::value_id_type,
+                  typename IndexSignal::value_id_type>>>
 {
     using value_type = typename subscript_signal::value_type;
 
@@ -579,20 +589,13 @@ struct subscript_signal
             // LCOV_EXCL_STOP
         }
     }
-    id_view
-    value_id() const override
+    decltype(auto)
+    value_id() const
     {
         if constexpr (identifiable<value_type>)
-        {
-            if (!this->has_value())
-                return null_id();
-            return make_id_by_reference(this->read());
-        }
+            return this->read();
         else
-        {
-            return make_id_pair(
-                pair_, container_.value_id(), index_.value_id());
-        }
+            return std::pair{container_.value_id(), index_.value_id()};
     }
     bool
     ready_to_write() const override
@@ -600,18 +603,14 @@ struct subscript_signal
         return container_.has_value() && index_.has_value()
             && container_.ready_to_write();
     }
-    id_view
+    void
     write(value_type x) const override
     {
         if constexpr (sink_signal<ContainerSignal>)
         {
             auto new_container = forward_signal(alia::move(container_));
             new_container[index_.read()] = std::move(x);
-            return container_.write(std::move(new_container));
-        }
-        else
-        {
-            return null_id();
+            container_.write(std::move(new_container));
         }
     }
 
@@ -622,7 +621,6 @@ struct subscript_signal
         typename ContainerSignal::value_type,
         typename IndexSignal::value_type>
         invoker_;
-    mutable alia_id_pair pair_{};
 };
 
 template<class ContainerSignal, class IndexSignal>
@@ -633,10 +631,11 @@ make_subscript_signal(ContainerSignal container, IndexSignal index)
         std::move(container), std::move(index));
 }
 
-template<class Derived, class Value, class Capabilities>
+template<class Derived, class Value, class Capabilities, class ValueId>
 template<class Index>
 auto
-signal_base<Derived, Value, Capabilities>::operator[](Index index) const
+signal_base<Derived, Value, Capabilities, ValueId>::operator[](
+    Index index) const
 {
     return make_subscript_signal(
         static_cast<Derived const&>(*this), signalize(std::move(index)));

@@ -15,12 +15,14 @@ TEST_CASE("state_binding write and clear")
     auto s = make_state_binding(storage, &ctx);
 
     CHECK_FALSE(signal_has_value(s));
-    CHECK((s.value_id() == make_id(0u)));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view()
+         == null_id()));
 
     write_signal(s, 7);
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 7);
-    CHECK((s.value_id() == make_id(storage.version)));
+    CHECK(s.value_id() == storage.version);
     CHECK(storage.version == 3u);
 
     write_signal(s, 9);

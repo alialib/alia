@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string>
 #include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace alia {
 
@@ -25,6 +27,11 @@ unit_id()
 {
     return alia_id_view_unit();
 }
+
+// value ID type tag for signals with a value that doesn't change over time
+struct constant_value_tag
+{
+};
 
 // `make_id(v)` for various common types - This takes care of selecting a
 // compatible `alia_id_view` constructor based on the type.
@@ -77,9 +84,8 @@ make_id(double v)
         reinterpret_cast<char const*>(&v), sizeof(double));
 }
 
-// Construct an ID from a pointer. Use with caution! This should only be used
-// for immutable objects where address is equivalent to identity (e.g., string
-// literals).
+// Construct an ID from a pointer. Use this only for immutable objects where
+// address is equivalent to identity, such as string literals.
 template<class T>
 id_view
 make_pointer_id(T const* ptr)
@@ -146,6 +152,117 @@ make_id_pair(alia_id_pair& storage, id_view left, id_view right)
 {
     return alia_id_view_make_pair(&storage, left, right);
 }
+
+// `erased_id_storage<T>` holds any persistent state needed to erase a typed
+// value ID of type `T` into an `id_view`. Leaf types need no storage. Pair
+// types nest child storage and an `alia_id_pair` node.
+template<class T>
+struct erased_id_storage
+{
+};
+
+template<class A, class B>
+struct erased_id_storage<std::pair<A, B>>
+{
+    // nested storage for the left ID
+    [[no_unique_address]] erased_id_storage<A> left;
+    // nested storage for the right ID
+    [[no_unique_address]] erased_id_storage<B> right;
+    // pair node backing the erased view
+    alia_id_pair pair{};
+};
+
+// `to_id_view(storage, id)` converts a typed value ID into a C-compatible
+// `id_view`. This is the general form that supports types that require storage
+// outside of the id_view.
+//
+// For types that don't require storage, `to_id_view(id)` is also provided as a
+// convenience.
+
+inline id_view
+to_id_view(id_view id)
+{
+    return id;
+}
+
+inline id_view
+to_id_view(constant_value_tag)
+{
+    return unit_id();
+}
+
+inline id_view
+to_id_view(bool v)
+{
+    return make_id(v);
+}
+
+template<class T>
+    requires std::integral<T> && (!std::same_as<T, bool>)
+id_view
+to_id_view(T v)
+{
+    return make_id(v);
+}
+
+inline id_view
+to_id_view(float v)
+{
+    return make_id(v);
+}
+
+inline id_view
+to_id_view(double v)
+{
+    return make_id(v);
+}
+
+// A `char const*` value ID is erased as a pointer identity. (Using a `char
+// const*` as the ID implies that it points to immutable text (e.g., a string
+// literal).)
+inline id_view
+to_id_view(char const* p)
+{
+    return make_pointer_id(p);
+}
+
+template<class T>
+    requires identifiable<T> && (!std::same_as<T, id_view>)
+          && (!std::same_as<T, constant_value_tag>) && (!std::integral<T>)
+          && (!std::floating_point<T>) && (!std::same_as<T, bool>)
+          && (!std::is_pointer_v<std::remove_cvref_t<T>>)
+id_view
+to_id_view(T const& v)
+{
+    return make_id_by_reference(v);
+}
+
+template<class T>
+id_view
+to_id_view(erased_id_storage<T>&, T const& v)
+{
+    return to_id_view(v);
+}
+
+template<class A, class B>
+id_view
+to_id_view(
+    erased_id_storage<std::pair<A, B>>& storage, std::pair<A, B> const& v)
+{
+    return make_id_pair(
+        storage.pair,
+        to_id_view(storage.left, v.first),
+        to_id_view(storage.right, v.second));
+}
+
+// `typed_value_id<T>` is true iff `T` can be used as a concrete signal value
+// ID. The name avoids colliding with the `value_id()` member function.
+template<class T>
+concept typed_value_id
+    = std::copyable<T>
+   && requires(erased_id_storage<T>& storage, T const& id) {
+          { to_id_view(storage, id) } -> std::convertible_to<id_view>;
+      };
 
 } // namespace alia
 

@@ -33,11 +33,11 @@ struct write_action_signal
     {
         return this->wrapped_.ready_to_write() && on_write_.is_ready();
     }
-    id_view
+    void
     write(typename Wrapped::value_type value) const override
     {
         perform_action(on_write_, value);
-        return this->wrapped_.write(std::move(value));
+        this->wrapped_.write(std::move(value));
     }
 
  private:

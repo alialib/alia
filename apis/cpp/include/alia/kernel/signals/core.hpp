@@ -126,15 +126,19 @@ struct untyped_signal_base
 
     // A signal must supply an ID that uniquely identifies its value.
     //
-    // The ID is required to be valid if has_value() returns true.
-    // (It may be valid even if has_value() returns false, which would mean
-    // that the signal can identify its value but doesn't know it yet.)
+    // Concrete signals expose `value_id()`, which returns a concrete value ID.
+    // `value_id_view()` (below) returns a type-erased `id_view` of the same
+    // ID.
+    //
+    // The ID is required to be valid if (and only if) the signal has a value.
+    // If there is no value, `value_id()` is effectively undefined and
+    // `value_id_view()` returns null_id() .
     //
     // The returned ID is a transient view and is only guaranteed to be valid
     // as long as the signal itself is valid.
     //
     virtual id_view
-    value_id() const = 0;
+    value_id_view() const = 0;
 
     // Is the signal currently ready to write?
     virtual bool
@@ -189,26 +193,41 @@ struct signal_interface : untyped_signal_base
     destructive_ref() const = 0;
 
     // Write the signal's value.
-    // The signal can *optionally* return the new value ID of the signal (after
-    // taking on the value that was written in by this call). If this is
-    // impractical, it can just return null_id() instead.
-    virtual id_view
+    // After a successful write, value_id() reflects the published identity.
+    virtual void
     write(Value value) const = 0;
 };
 
-template<class Derived, class Value, class Capabilities>
+template<class Derived, class Value, class Capabilities, class ValueId>
 struct signal_base : signal_interface<Value>
 {
     using capabilities = Capabilities;
+    using value_id_type = ValueId;
 
     // Yield a signal to the element at `index`. `index` may be a signal or a
     // raw value. The definition is in `operators.hpp`.
     template<class Index>
-    auto operator[](Index index) const;
+    auto
+    operator[](Index index) const;
+
+    // Erase this signal's typed value ID into an `id_view`. Concrete signals
+    // define a typed `value_id()` that returns `value_id_type`.
+    id_view
+    value_id_view() const override
+    {
+        Derived const& self = static_cast<Derived const&>(*this);
+        if (!self.has_value())
+            return null_id();
+        return to_id_view(value_id_storage_, self.value_id());
+    }
+
+ protected:
+    // persistent storage for erasing `value_id_type`
+    mutable erased_id_storage<ValueId> value_id_storage_{};
 };
 
-template<class Derived, class Value, class Capabilities>
-struct signal : signal_base<Derived, Value, Capabilities>
+template<class Derived, class Value, class Capabilities, class ValueId>
+struct signal : signal_base<Derived, Value, Capabilities, ValueId>
 {
 };
 
@@ -229,9 +248,8 @@ struct signal : signal_base<Derived, Value, Capabilities>
     {                                                                         \
         return false;                                                         \
     }                                                                         \
-    id_view write(Value) const override                                       \
+    void write(Value) const override                                          \
     {                                                                         \
-        return null_id();                                                     \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
@@ -246,9 +264,9 @@ struct signal : signal_base<Derived, Value, Capabilities>
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                       \
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                           \
-    id_view value_id() const override                                         \
+    ValueId value_id() const                                                  \
     {                                                                         \
-        return null_id();                                                     \
+        return {};                                                            \
     }                                                                         \
     bool has_value() const override                                           \
     {                                                                         \
@@ -259,64 +277,69 @@ struct signal : signal_base<Derived, Value, Capabilities>
         throw nullptr;                                                        \
     }
 
-template<class Derived, class Value>
-struct signal<Derived, Value, view_caps<signal_readable>>
-    : signal_base<Derived, Value, view_caps<signal_readable>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, view_caps<signal_readable>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_readable>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, view_caps<signal_move_activated>>
-    : signal_base<Derived, Value, view_caps<signal_move_activated>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, view_caps<signal_move_activated>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_move_activated>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, view_caps<signal_movable>>
-    : signal_base<Derived, Value, view_caps<signal_movable>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, view_caps<signal_movable>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_movable>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, sink_caps<signal_writable>>
-    : signal_base<Derived, Value, sink_caps<signal_writable>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, sink_caps<signal_writable>, ValueId>
+    : signal_base<Derived, Value, sink_caps<signal_writable>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, binding_caps<signal_readable>>
-    : signal_base<Derived, Value, binding_caps<signal_readable>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, binding_caps<signal_readable>, ValueId>
+    : signal_base<Derived, Value, binding_caps<signal_readable>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, binding_caps<signal_movable>>
-    : signal_base<Derived, Value, binding_caps<signal_movable>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, binding_caps<signal_movable>, ValueId>
+    : signal_base<Derived, Value, binding_caps<signal_movable>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, binding_caps<signal_move_activated>>
-    : signal_base<Derived, Value, binding_caps<signal_move_activated>>
+template<class Derived, class Value, class ValueId>
+struct signal<Derived, Value, binding_caps<signal_move_activated>, ValueId>
+    : signal_base<Derived, Value, binding_caps<signal_move_activated>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
-template<class Derived, class Value>
-struct signal<Derived, Value, binding_caps<signal_readable, signal_clearable>>
+template<class Derived, class Value, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_readable, signal_clearable>,
+    ValueId>
     : signal_base<
           Derived,
           Value,
-          binding_caps<signal_readable, signal_clearable>>
+          binding_caps<signal_readable, signal_clearable>,
+          ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
 };
@@ -326,17 +349,19 @@ struct signal<Derived, Value, binding_caps<signal_readable, signal_clearable>>
 // signal_ref is a reference to a signal that acts as a signal itself.
 template<class Value, class Capabilities>
 struct signal_ref
-    : signal<signal_ref<Value, Capabilities>, Value, Capabilities>
+    : signal<signal_ref<Value, Capabilities>, Value, Capabilities, id_view>
 {
     template<class V, class C>
     friend struct signal_ref;
 
     // Construct from any signal with compatible capabilities.
-    template<class OtherSignal, class OtherCapabilities>
+    template<class OtherSignal, class OtherCapabilities, class OtherValueId>
         requires signal_capabilities_compatible<
             Capabilities,
             OtherCapabilities>
-    signal_ref(signal<OtherSignal, Value, OtherCapabilities> const& signal)
+    signal_ref(
+        signal<OtherSignal, Value, OtherCapabilities, OtherValueId> const&
+            signal)
         : ref_(&signal)
     {
     }
@@ -374,19 +399,19 @@ struct signal_ref
         return ref_->destructive_ref();
     }
     id_view
-    value_id() const override
+    value_id() const
     {
-        return ref_->value_id();
+        return ref_->value_id_view();
     }
     bool
     ready_to_write() const override
     {
         return ref_->ready_to_write();
     }
-    id_view
+    void
     write(Value value) const override
     {
-        return ref_->write(std::move(value));
+        ref_->write(std::move(value));
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -488,14 +513,14 @@ signal_ready_to_write(Signal const& signal)
 // error if the signal's type doesn't support writing.
 // Note that if the signal isn't ready to write, this is a no op.
 template<sink_signal Signal, class Value>
-id_view
+void
 write_signal(Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
         try
         {
-            return signal.write(std::move(value));
+            signal.write(std::move(value));
         }
         catch (validation_error&)
         {
@@ -507,7 +532,6 @@ write_signal(Signal const& signal, Value value)
                 std::rethrow_exception(e);
         }
     }
-    return null_id();
 }
 
 // Move out a signal's value.

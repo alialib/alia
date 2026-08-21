@@ -17,15 +17,16 @@ struct empty_signal
     : signal<
           empty_signal<Value>,
           Value,
-          binding_caps<signal_move_activated, signal_clearable>>
+          binding_caps<signal_move_activated, signal_clearable>,
+          constant_value_tag>
 {
     empty_signal()
     {
     }
-    id_view
-    value_id() const override
+    constant_value_tag
+    value_id() const
     {
-        return null_id();
+        return {};
     }
     bool
     has_value() const override
@@ -64,10 +65,9 @@ struct empty_signal
     }
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
-    id_view
+    void
     write(Value) const override
     {
-        return null_id();
     }
     void
     clear() const override
@@ -89,7 +89,8 @@ struct default_initialized_view
     : signal<
           default_initialized_view<Value>,
           Value,
-          view_caps<signal_move_activated>>
+          view_caps<signal_move_activated>,
+          constant_value_tag>
 {
     default_initialized_view()
     {
@@ -99,10 +100,10 @@ struct default_initialized_view
     {
         return true;
     }
-    id_view
-    value_id() const override
+    constant_value_tag
+    value_id() const
     {
-        return unit_id();
+        return {};
     }
     Value const&
     read() const override
@@ -179,15 +180,16 @@ struct string_literal_view
     : lazy_signal<
           string_literal_view,
           std::string,
-          view_caps<signal_move_activated>>
+          view_caps<signal_move_activated>,
+          char const*>
 {
     string_literal_view(char const* x) : text_(x)
     {
     }
-    id_view
-    value_id() const override
+    char const*
+    value_id() const
     {
-        return make_pointer_id(text_);
+        return text_;
     }
     bool
     has_value() const override
@@ -256,11 +258,10 @@ struct pointer_binding
     {
         return true;
     }
-    id_view
+    void
     write(Value value) const override
     {
         *v_ = std::move(value);
-        return this->value_id();
     }
 
  private:
@@ -316,16 +317,17 @@ struct versioned_pointer_binding
     : signal<
           versioned_pointer_binding<Value, Version>,
           Value,
-          binding_caps<signal_movable>>
+          binding_caps<signal_movable>,
+          Version>
 {
     versioned_pointer_binding(Value* v, Version* version)
         : v_(v), version_(version)
     {
     }
-    id_view
-    value_id() const override
+    Version const&
+    value_id() const
     {
-        return make_id_by_reference(*version_);
+        return *version_;
     }
     bool
     has_value() const override
@@ -355,12 +357,11 @@ struct versioned_pointer_binding
     {
         return true;
     }
-    id_view
+    void
     write(Value value) const override
     {
         *v_ = std::move(value);
         ++*version_;
-        return this->value_id();
     }
 
  private:
@@ -379,16 +380,17 @@ struct versioned_pointer_view
     : signal<
           versioned_pointer_view<Value, Version>,
           Value,
-          view_caps<signal_readable>>
+          view_caps<signal_readable>,
+          Version>
 {
     versioned_pointer_view(Value const* v, Version const* version)
         : v_(v), version_(version)
     {
     }
-    id_view
-    value_id() const override
+    Version const&
+    value_id() const
     {
-        return make_id_by_reference(*version_);
+        return *version_;
     }
     bool
     has_value() const override

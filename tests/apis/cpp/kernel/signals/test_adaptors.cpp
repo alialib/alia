@@ -1,6 +1,7 @@
 #include <alia/kernel/signals/adaptors.hpp>
 
 #include <alia/kernel/actions/operators.hpp>
+#include <alia/kernel/signals/application.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/numeric.hpp>
 #include <alia/kernel/signals/operators.hpp>
@@ -81,10 +82,10 @@ struct transparent_casting_wrapper : casting_signal_wrapper<
     {
         return this->wrapped_.destructive_ref();
     }
-    id_view
+    void
     write(typename Wrapped::value_type value) const override
     {
-        return this->wrapped_.write(std::move(value));
+        this->wrapped_.write(std::move(value));
     }
 };
 
@@ -98,7 +99,8 @@ TEST_CASE("fake_readability")
     static_assert(view_signal<decltype(s)>);
     static_assert(sink_signal<decltype(s)>);
 
-    CHECK((s.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(s).value_id_view() == null_id()));
     CHECK_FALSE(signal_has_value(s));
     CHECK(signal_ready_to_write(s));
     write_signal(s, 1);
@@ -215,7 +217,7 @@ TEST_CASE("add_default")
         CHECK(signal_has_value(s));
         CHECK(signal_has_value(t));
         CHECK(read_signal(s) == read_signal(t));
-        CHECK((s.value_id() != t.value_id()));
+        CHECK((s.value_id_view() != t.value_id_view()));
     }
 
     {
@@ -228,8 +230,10 @@ TEST_CASE("add_default")
 TEST_CASE("simplify_id")
 {
     {
-        auto raw_a = value(1) + value(4);
-        auto raw_b = value(2) + value(3);
+        auto raw_a = lazy_apply(
+            [](int a, int b) { return a + b; }, value(1), value(4));
+        auto raw_b = lazy_apply(
+            [](int a, int b) { return a + b; }, value(2), value(3));
         CHECK(read_signal(raw_a) == read_signal(raw_b));
         CHECK((raw_a.value_id() != raw_b.value_id()));
 
@@ -239,9 +243,12 @@ TEST_CASE("simplify_id")
         static_assert(!sink_signal<decltype(a)>);
         CHECK(read_signal(a) == 5);
         CHECK(read_signal(b) == 5);
-        CHECK((a.value_id() == b.value_id()));
-        CHECK((a.value_id() == make_id_by_reference(read_signal(a))));
-        CHECK((a.value_id() != raw_a.value_id()));
+        CHECK(a.value_id() == 5);
+        CHECK(b.value_id() == 5);
+        CHECK(a.value_id() == b.value_id());
+        CHECK(
+            (to_id_view(a.value_id())
+             != static_cast<untyped_signal_base const&>(raw_a).value_id_view()));
     }
 
     {
@@ -252,7 +259,8 @@ TEST_CASE("simplify_id")
         static_assert(sink_signal<decltype(s)>);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 0.5);
-        CHECK((s.value_id() != scaled.value_id()));
+        // scale already uses the result as its value ID.
+        CHECK(s.value_id() == scaled.value_id());
         CHECK(signal_ready_to_write(s));
         write_signal(s, 2);
         CHECK(x == 4);
@@ -261,15 +269,19 @@ TEST_CASE("simplify_id")
     {
         auto s = simplify_id(empty<int>());
         CHECK_FALSE(signal_has_value(s));
-        CHECK((s.value_id() == null_id()));
+        CHECK(
+            (static_cast<untyped_signal_base const&>(s).value_id_view()
+             == null_id()));
     }
 }
 
 TEST_CASE("override_id")
 {
     {
-        auto raw_a = value(1) + value(4);
-        auto raw_b = value(2) + value(3);
+        auto raw_a = lazy_apply(
+            [](int a, int b) { return a + b; }, value(1), value(4));
+        auto raw_b = lazy_apply(
+            [](int a, int b) { return a + b; }, value(2), value(3));
         CHECK((raw_a.value_id() != raw_b.value_id()));
 
         auto a = override_id(raw_a, [] { return unit_id(); });
@@ -279,7 +291,9 @@ TEST_CASE("override_id")
         CHECK(read_signal(a) == 5);
         CHECK((a.value_id() == unit_id()));
         CHECK((a.value_id() == b.value_id()));
-        CHECK((a.value_id() != raw_a.value_id()));
+        CHECK(
+            (a.value_id()
+             != static_cast<untyped_signal_base const&>(raw_a).value_id_view()));
     }
 
     {
@@ -302,7 +316,9 @@ TEST_CASE("override_id")
     {
         auto s = override_id(empty<int>(), [] { return unit_id(); });
         CHECK_FALSE(signal_has_value(s));
-        CHECK((s.value_id() == unit_id()));
+        CHECK(
+            (static_cast<untyped_signal_base const&>(s).value_id_view()
+             == null_id()));
     }
 }
 
@@ -376,7 +392,9 @@ TEST_CASE("mask a binding")
     auto hidden = mask(ref(x), false);
     CHECK_FALSE(signal_has_value(hidden));
     CHECK_FALSE(signal_ready_to_write(hidden));
-    CHECK((hidden.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(hidden).value_id_view()
+         == null_id()));
 }
 
 TEST_CASE("mask a read-only signal")
@@ -393,7 +411,9 @@ TEST_CASE("mask a read-only signal")
 
     auto hidden = mask(value(1), false);
     CHECK_FALSE(signal_has_value(hidden));
-    CHECK((hidden.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(hidden).value_id_view()
+         == null_id()));
 }
 
 TEST_CASE("mask a raw value")
@@ -505,7 +525,9 @@ TEST_CASE("unwrap a binding")
         auto x = std::optional<int>();
         auto s = unwrap(alia::ref(x));
         CHECK_FALSE(signal_has_value(s));
-        CHECK((s.value_id() == null_id()));
+        CHECK(
+            (static_cast<untyped_signal_base const&>(s).value_id_view()
+             == null_id()));
         CHECK(signal_ready_to_write(s));
         write_signal(s, 0);
         CHECK(x.has_value());
@@ -529,7 +551,9 @@ TEST_CASE("unwrap a read-only signal")
 
     auto empty_optional = unwrap(value(std::optional<int>()));
     CHECK_FALSE(signal_has_value(empty_optional));
-    CHECK((empty_optional.value_id() == null_id()));
+    CHECK(
+        (static_cast<untyped_signal_base const&>(empty_optional).value_id_view()
+         == null_id()));
 }
 
 TEST_CASE("radio signal")

@@ -275,10 +275,10 @@ struct duplex_apply_signal
         // If we stop here, then on the next refresh, we're going to detect
         // that the input signal has changed (to what we just set it to), and
         // then apply the forward mapping to convert that value back to the one
-        // we just received, which is obviously wasted effort. To avoid this,
-        // we need to just record the new value as our ouput and record the
-        // input's new value ID to go along with it. (This is only possible
-        // though if the input signal actually supplies its new value ID.)
+        // we just received. To avoid this, we record the new value as our
+        // ouput and record the input's new value ID to go along with it. (This
+        // is only possible though if the input signal actually supplies its
+        // new value ID.)
         if (new_value_id != null_id)
         {
             data_->input_id.capture(new_value_id);

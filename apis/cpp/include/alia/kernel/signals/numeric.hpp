@@ -18,7 +18,8 @@ struct scaled_signal
           scaled_signal<N, Factor>,
           N,
           typename N::value_type,
-          signal_capabilities<signal_move_activated, N::capabilities::writing>>
+          signal_capabilities<signal_move_activated, N::capabilities::writing>,
+          typename N::value_type>
 {
     scaled_signal(N n, Factor scale_factor)
         : scaled_signal::lazy_signal_wrapper(std::move(n)),
@@ -35,26 +36,24 @@ struct scaled_signal
     {
         return this->wrapped_.read() * scale_factor_.read();
     }
-    id_view
-    value_id() const override
+    typename N::value_type const&
+    value_id() const
     {
-        return make_id_pair(
-            pair_, this->wrapped_.value_id(), scale_factor_.value_id());
+        return this->read();
     }
     bool
     ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
-    id_view
+    void
     write(typename N::value_type value) const override
     {
-        return this->wrapped_.write(value / forward_signal(scale_factor_));
+        this->wrapped_.write(value / forward_signal(scale_factor_));
     }
 
  private:
     Factor scale_factor_;
-    mutable alia_id_pair pair_{};
 };
 template<view_signal N, class Factor>
 auto
@@ -72,7 +71,8 @@ struct offset_signal
           offset_signal<N, Delta>,
           N,
           typename N::value_type,
-          signal_capabilities<signal_move_activated, N::capabilities::writing>>
+          signal_capabilities<signal_move_activated, N::capabilities::writing>,
+          typename N::value_type>
 {
     offset_signal(N n, Delta delta)
         : offset_signal::lazy_signal_wrapper(std::move(n)),
@@ -89,26 +89,24 @@ struct offset_signal
     {
         return this->wrapped_.read() + delta_.read();
     }
-    id_view
-    value_id() const override
+    typename N::value_type const&
+    value_id() const
     {
-        return make_id_pair(
-            pair_, this->wrapped_.value_id(), delta_.value_id());
+        return this->read();
     }
     bool
     ready_to_write() const override
     {
         return this->wrapped_.ready_to_write() && delta_.has_value();
     }
-    id_view
+    void
     write(typename N::value_type value) const override
     {
-        return this->wrapped_.write(value - forward_signal(delta_));
+        this->wrapped_.write(value - forward_signal(delta_));
     }
 
  private:
     Delta delta_;
-    mutable alia_id_pair pair_{};
 };
 template<view_signal N, class Delta>
 auto
@@ -136,11 +134,11 @@ struct rounding_signal_wrapper
     {
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
-    id_view
+    void
     write(typename N::value_type value) const override
     {
         auto step = step_.read();
-        return this->wrapped_.write(
+        this->wrapped_.write(
             std::floor(value / step + typename N::value_type(0.5)) * step);
     }
 
