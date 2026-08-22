@@ -1,0 +1,59 @@
+#pragma once
+
+#include <alia/abi/kernel/signal.h>
+#include <alia/abi/ui/library.h>
+#include <alia/context.h>
+#include <alia/kernel/macros.hpp>
+#include <alia/ui/layout/flags.hpp>
+
+#include <utility>
+
+namespace alia {
+
+// TODO: Use alia::if_ to omit child UI when fully collapsed.
+// TODO: Use C++ signals.
+
+template<class Content>
+void
+collapsible(context& ctx, alia_bool_signal* expanded, Content&& content)
+{
+    bool const do_content
+        = alia_ui_collapsible_begin(&ctx, expanded, 0, 1.f, nullptr);
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
+    alia_ui_collapsible_end(&ctx);
+}
+
+template<class Content>
+void
+collapsible(
+    context& ctx,
+    alia_bool_signal* expanded,
+    layout_flag_set column_flags,
+    Content&& content)
+{
+    bool const do_content = alia_ui_collapsible_begin(
+        &ctx, expanded, raw_code(column_flags), 1.f, nullptr);
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
+    alia_ui_collapsible_end(&ctx);
+}
+
+template<class Content>
+void
+collapsible(
+    context& ctx,
+    alia_bool_signal* expanded,
+    layout_flag_set column_flags,
+    float offset_factor,
+    alia_animated_transition const* transition,
+    Content&& content)
+{
+    bool const do_content = alia_ui_collapsible_begin(
+        &ctx, expanded, raw_code(column_flags), offset_factor, transition);
+    ALIA_IF_ (&ctx, do_content)
+        std::forward<Content>(content)();
+    alia_ui_collapsible_end(&ctx);
+}
+
+} // namespace alia

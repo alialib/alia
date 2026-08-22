@@ -568,35 +568,17 @@ do_button_demo(context& ctx)
     do_subheading(ctx, "Variants");
     row(ctx, ALIGN_LEFT, [&]() {
         button(ctx, "Primary", actions::noop());
-
-        {
-            alia_button_style* style = alia_button_style_active(&ctx);
-            alia_button_style saved = *style;
-            alia_button_style_apply_swatch(
-                style, ALIA_PALETTE_SWATCH_DANGER, ALIA_BUTTON_CHROME_FILLED);
-            button(ctx, "Danger", actions::noop());
-            *style = saved;
-        }
-
-        {
-            alia_button_style* style = alia_button_style_active(&ctx);
-            alia_button_style saved = *style;
-            alia_button_style_apply_swatch(
-                style,
-                ALIA_PALETTE_SWATCH_PRIMARY,
-                ALIA_BUTTON_CHROME_OUTLINE);
-            button(ctx, "Outline", actions::noop());
-            *style = saved;
-        }
-
-        {
-            alia_button_style* style = alia_button_style_active(&ctx);
-            alia_button_style saved = *style;
-            alia_button_style_apply_swatch(
-                style, ALIA_PALETTE_SWATCH_DANGER, ALIA_BUTTON_CHROME_OUTLINE);
-            button(ctx, "Outline Danger", actions::noop());
-            *style = saved;
-        }
+        button(ctx, "Danger", actions::noop(), {swatch::danger});
+        button(
+            ctx,
+            "Outline",
+            actions::noop(),
+            {swatch::primary, button_chrome::outline});
+        button(
+            ctx,
+            "Outline Danger",
+            actions::noop(),
+            {swatch::danger, button_chrome::outline});
     });
 }
 

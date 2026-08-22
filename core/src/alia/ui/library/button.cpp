@@ -29,7 +29,6 @@ static void
 button_pick_base(
     alia_button_style const* style,
     bool disabled,
-    alia_interaction_status_t status,
     alia_palette_color* fill,
     alia_palette_color* label,
     alia_palette_color* border)
@@ -45,21 +44,6 @@ button_pick_base(
     *fill = style->fill;
     *label = style->label;
     *border = style->border;
-
-    // Outline rest uses transparent fill + text-colored label. Hover/active
-    // paint the swatch solid via highlight, so flip the label to on-solid.
-    // `highlight_hovered` is the SOLID part; ON_SOLID is the next part.
-    if (style->fill.alpha == 0
-        && (status
-            & (ALIA_INTERACTION_STATUS_HOVERED
-               | ALIA_INTERACTION_STATUS_ACTIVE)))
-    {
-        *label = alia_palette_color_make(
-            (uint8_t) (style->highlight_hovered.index
-                       + ALIA_PALETTE_SWATCH_PART_ON_SOLID
-                       - ALIA_PALETTE_SWATCH_PART_SOLID),
-            0xff);
-    }
 }
 
 static alia_palette_color
@@ -73,17 +57,6 @@ button_pick_highlight(
     if (status & ALIA_INTERACTION_STATUS_HOVERED)
         return style->highlight_hovered;
     return alia_palette_color_make(0, 0);
-}
-
-static alia_box
-button_union_boxes(alia_layout_box_array const& boxes)
-{
-    if (boxes.count == 0 || boxes.boxes == nullptr)
-        return alia_box{};
-    alia_box out = boxes.boxes[0];
-    for (uint32_t i = 1; i < boxes.count; ++i)
-        out = alia_box_union(out, boxes.boxes[i]);
-    return out;
 }
 
 static void
@@ -116,19 +89,18 @@ button_style_apply_filled(
     // Soft ink wash over the solid fill.
     style->highlight_hovered = alia_palette_color_make(
         alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID),
-        0x28);
+        0x30);
     style->highlight_active = alia_palette_color_make(
         alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID),
-        0x45);
+        0x60);
 }
 
 static void
 button_style_apply_outline(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    // Transparent base; hover fills with the swatch solid.
     style->fill = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SUBTLE),
+        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
         0x00);
     style->fill_disabled = alia_palette_color_make(
         alia_palette_index_foundation_ramp(
@@ -163,10 +135,10 @@ button_style_apply_outline(
 
     style->highlight_hovered = alia_palette_color_make(
         alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0xff);
+        0x20);
     style->highlight_active = alia_palette_color_make(
         alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0xff);
+        0x40);
 }
 
 } // namespace alia
@@ -227,39 +199,32 @@ alia_ui_button_begin(
     // Outer margin matches leaf spacing so buttons sit in the same rhythm as
     // text and other controls. FLUSH zeros it. Inner padding is chrome only;
     // PROVIDE_BOX stays on that layer so hit/draw exclude the margin.
-    float const layout_spacing = (layout_flags & ALIA_FLUSH) != 0
-                                   ? 0.f
-                                   : alia_layout_style_active(ctx)->spacing;
+    float const layout_spacing
+        = (layout_flags & ALIA_FLUSH) != 0
+            ? 0.f
+            : alia_layout_style_active(ctx)->spacing;
     alia_edge_offsets const margin
         = alia_edge_offsets_make_uniform(layout_spacing);
     alia_edge_offsets const padding = alia_edge_offsets_make_xy(
         alia_px(ctx, style->padding_x), alia_px(ctx, style->padding_y));
 
-    if (is_refresh_event(*ctx))
+    alia_layout_edge_offsets_begin(ctx, margin, layout_flags);
+    alia_layout_edge_offsets_begin(ctx, padding, ALIA_PROVIDE_BOX);
+    // Row keeps label/content as one flow fragment so PROVIDE_BOX is a single
+    // box (edge_offsets alone pass children through to the outer flow).
+    alia_layout_row_begin(ctx, 0, 0.f);
+
+    if (!is_refresh_event(*ctx))
     {
-        alia_layout_edge_offsets_begin(ctx, margin, layout_flags);
-        alia_layout_edge_offsets_begin(ctx, padding, ALIA_PROVIDE_BOX);
-    }
-    else
-    {
-        alia_layout_box_array const boxes
-            = alia_layout_consume_box_array(ctx);
-        scope.box = button_union_boxes(boxes);
+        alia_layout_box_array const boxes = alia_layout_consume_box_array(ctx);
+        scope.box = boxes.count > 0 ? boxes.boxes[0] : alia_box{};
 
         alia_interaction_status_t const interaction_status
             = alia_element_get_interaction_status(
-                ctx,
-                id,
-                is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
+                ctx, id, is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
 
         alia_palette_color fill_c, label_c, border_c;
-        button_pick_base(
-            style,
-            is_disabled,
-            interaction_status,
-            &fill_c,
-            &label_c,
-            &border_c);
+        button_pick_base(style, is_disabled, &fill_c, &label_c, &border_c);
         alia_palette_color const highlight_c
             = button_pick_highlight(style, interaction_status);
 
@@ -289,8 +254,7 @@ alia_ui_button_begin(
                     ctx,
                     ctx->geometry->z_base,
                     scope.box,
-                    {.fill_color
-                     = alia_palette_color_resolve(palette, fill_c),
+                    {.fill_color = alia_palette_color_resolve(palette, fill_c),
                      .corner_radius = corner,
                      .border_width = alia_px(ctx, style->border_width),
                      .border_color
@@ -301,8 +265,8 @@ alia_ui_button_begin(
                         ctx,
                         ctx->geometry->z_base,
                         scope.box,
-                        {.fill_color = alia_palette_color_resolve(
-                             palette, highlight_c),
+                        {.fill_color
+                         = alia_palette_color_resolve(palette, highlight_c),
                          .corner_radius = corner,
                          .border_width = 0.f,
                          .border_color = alia_srgba8_make(0, 0, 0, 0)});
@@ -314,11 +278,6 @@ alia_ui_button_begin(
             default:
                 break;
         }
-
-        // Non-refresh edge_offsets begin is a no-op; keep the walk aligned
-        // by still entering the same begin/end pairing.
-        alia_layout_edge_offsets_begin(ctx, margin, 0);
-        alia_layout_edge_offsets_begin(ctx, padding, 0);
     }
 
     return pass_result;
@@ -327,6 +286,7 @@ alia_ui_button_begin(
 void
 alia_ui_button_end(alia_context* ctx)
 {
+    alia_layout_row_end(ctx);
     alia_layout_edge_offsets_end(ctx);
     alia_layout_edge_offsets_end(ctx);
 
