@@ -62,7 +62,8 @@ enum
     X(0b00011000000000000, BASELINE_GROUP_ALIGN_CENTER)                       \
     /* Setting the GROW flag sets the node's growth factor to 1.0. */         \
     X(0b00100000000000000, GROW)                                              \
-    /* For leaf nodes, the FLUSH flag disables spacing around the node. */    \
+    /* For leaf nodes and leaf-like containers (e.g. buttons), the FLUSH flag \
+     * disables spacing around the node. */                                   \
     X(0b01000000000000000, FLUSH)                                             \
     /* For containers, the PROVIDE_BOX flag tells the container to provide */ \
     /* its box back to the component code for consumption. */                 \

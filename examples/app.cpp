@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -30,8 +31,11 @@
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
+#include <alia/kernel/actions/basic.hpp>
+#include <alia/kernel/actions/operators.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
+#include <alia/kernel/signals/basic.hpp>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
@@ -511,10 +515,98 @@ do_collapsible_demo(context& ctx)
 }
 
 void
+do_button_demo(context& ctx)
+{
+    do_heading(ctx, "BUTTONS");
+
+    static int clicks = 0;
+    static int n = 0;
+    static int m = 3;
+
+    {
+        char label[64];
+        std::snprintf(label, sizeof(label), "Clicked %d times", clicks);
+        demo_text(
+            ctx,
+            label,
+            &demo_get_fonts().body_14,
+            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+    }
+
+    row(ctx, ALIGN_LEFT, [&]() {
+        button(ctx, "Click me", callback([&] {
+                   ++clicks;
+                   abort_pass(ctx);
+               }));
+        button(ctx, "Reset", callback([&] {
+                   clicks = 0;
+                   abort_pass(ctx);
+               }));
+        button(ctx, "Disabled", actions::unready());
+    });
+
+    {
+        char label[64];
+        std::snprintf(label, sizeof(label), "n = %d, m = %d", n, m);
+        demo_text(
+            ctx,
+            label,
+            &demo_get_fonts().body_14,
+            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+    }
+
+    row(ctx, ALIGN_LEFT, [&]() {
+        int const n_before = n;
+        int const m_before = m;
+        button(ctx, "n <<= m", ref(n) <<= ref(m));
+        button(ctx, "m <<= n", ref(m) <<= ref(n));
+        button(ctx, "n <<= empty", ref(n) <<= empty<int>());
+        if (n != n_before || m != m_before)
+            abort_pass(ctx);
+    });
+
+    do_subheading(ctx, "Variants");
+    row(ctx, ALIGN_LEFT, [&]() {
+        button(ctx, "Primary", actions::noop());
+
+        {
+            alia_button_style* style = alia_button_style_active(&ctx);
+            alia_button_style saved = *style;
+            alia_button_style_apply_swatch(
+                style, ALIA_PALETTE_SWATCH_DANGER, ALIA_BUTTON_CHROME_FILLED);
+            button(ctx, "Danger", actions::noop());
+            *style = saved;
+        }
+
+        {
+            alia_button_style* style = alia_button_style_active(&ctx);
+            alia_button_style saved = *style;
+            alia_button_style_apply_swatch(
+                style,
+                ALIA_PALETTE_SWATCH_PRIMARY,
+                ALIA_BUTTON_CHROME_OUTLINE);
+            button(ctx, "Outline", actions::noop());
+            *style = saved;
+        }
+
+        {
+            alia_button_style* style = alia_button_style_active(&ctx);
+            alia_button_style saved = *style;
+            alia_button_style_apply_swatch(
+                style, ALIA_PALETTE_SWATCH_DANGER, ALIA_BUTTON_CHROME_OUTLINE);
+            button(ctx, "Outline Danger", actions::noop());
+            *style = saved;
+        }
+    });
+}
+
+void
 do_content(context& ctx)
 {
     column(ctx, [&]() {
         do_switch_demo(ctx);
+        do_heading(ctx, "");
+        do_button_demo(ctx);
         do_heading(ctx, "");
         do_node_expander_demo(ctx);
         do_heading(ctx, "");

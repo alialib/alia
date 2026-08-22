@@ -10,6 +10,8 @@
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/styling.h>
 
+#include <stdint.h>
+
 ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_switch_style
@@ -290,6 +292,97 @@ alia_scrollbar_style_active(alia_context* ctx)
     return (alia_scrollbar_style*) alia_style_active(
         ctx, ALIA_STYLE_SCROLLBAR);
 }
+
+// BUTTON
+
+typedef struct alia_button_style
+{
+    // base chrome (alpha 0 fill is allowed for outline-only)
+    alia_palette_color fill;
+    alia_palette_color fill_disabled;
+    alia_palette_color label;
+    alia_palette_color label_disabled;
+
+    // outline - `border_width` of 0 means filled-only (no stroke)
+    float border_width;
+    alia_palette_color border;
+    alia_palette_color border_disabled;
+
+    // interaction overlays drawn on top of the base (alpha 0 => unused)
+    alia_palette_color highlight_hovered;
+    alia_palette_color highlight_active;
+
+    // geometry, logical px
+    float padding_x;
+    float padding_y;
+    float corner_radius;
+} alia_button_style;
+
+// Fill `out` with the default (primary filled) button style for `seeds`.
+// Seeds can be `NULL` to use the default seeds.
+void
+alia_button_style_generate(
+    alia_button_style* out, alia_style_seeds const* seeds);
+
+typedef uint32_t alia_button_chrome_t;
+
+enum
+{
+    ALIA_BUTTON_CHROME_FILLED = 0,
+    ALIA_BUTTON_CHROME_OUTLINE = 1,
+};
+
+// Rewrite chrome colors for `swatch` and `chrome`. Geometry fields other than
+// `border_width` (for outline) are left unchanged.
+void
+alia_button_style_apply_swatch(
+    alia_button_style* style,
+    enum alia_palette_swatch swatch,
+    alia_button_chrome_t chrome);
+
+static inline alia_button_style*
+alia_button_style_default(alia_ui_system* ui)
+{
+    return (alia_button_style*) alia_style_default(ui, ALIA_STYLE_BUTTON);
+}
+
+static inline alia_button_style*
+alia_button_style_active(alia_context* ctx)
+{
+    return (alia_button_style*) alia_style_active(ctx, ALIA_STYLE_BUTTON);
+}
+
+typedef uint32_t alia_button_flags_t;
+
+enum
+{
+    ALIA_BUTTON_DISABLED = 1u << 0,
+    // reserved: omit from keyboard focus order once focus is wired.
+    ALIA_BUTTON_SKIP_FOCUS = 1u << 1,
+};
+
+typedef uint8_t alia_button_result_t;
+
+enum
+{
+    ALIA_BUTTON_RESULT_NONE = 0,
+    // primary activation (left click; keyboard activate later)
+    ALIA_BUTTON_RESULT_ACTIVATED = 1,
+    // secondary / context activation (right click)
+    ALIA_BUTTON_RESULT_CONTEXT = 2,
+};
+
+// Emit a button container. Content goes between begin/end. Returns what
+// happened on this pass. `begin` temporarily overrides the active text style
+// color to match the button label colors for the current interaction state.
+// Outer layout spacing matches leaves; pass `ALIA_FLUSH` to suppress it.
+alia_button_result_t
+alia_ui_button_begin(
+    alia_context* ctx,
+    alia_button_flags_t flags,
+    alia_layout_flags_t layout_flags);
+void
+alia_ui_button_end(alia_context* ctx);
 
 alia_element_id
 alia_do_slider_d(

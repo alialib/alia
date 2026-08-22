@@ -129,6 +129,14 @@ generate_scrollbar_style(
         static_cast<alia_scrollbar_style*>(out), seeds);
 }
 
+void
+generate_button_style(
+    void* user_data, void* out, alia_style_seeds const* seeds)
+{
+    (void) user_data;
+    alia_button_style_generate(static_cast<alia_button_style*>(out), seeds);
+}
+
 } // namespace
 
 namespace alia {
@@ -210,6 +218,13 @@ style_catalog_init(style_catalog& catalog)
         sizeof(alia_scrollbar_style),
         alignof(alia_scrollbar_style),
         generate_scrollbar_style,
+        nullptr);
+    bind_slot(
+        catalog,
+        ALIA_STYLE_BUTTON,
+        sizeof(alia_button_style),
+        alignof(alia_button_style),
+        generate_button_style,
         nullptr);
 }
 
