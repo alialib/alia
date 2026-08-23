@@ -299,7 +299,9 @@ struct text_block_cache
 
 static void
 text_block_cache_cleanup(
-    alia_substrate_system*, void* payload, alia_substrate_cleanup_mode)
+    alia_substrate_system*,
+    void* payload,
+    alia_substrate_cleanup_mode mode)
 {
     auto* cache = reinterpret_cast<text_block_cache*>(payload);
     if (cache->block && cache->engine)
@@ -308,6 +310,14 @@ text_block_cache_cleanup(
         cache->block = nullptr;
     }
     alia_captured_id_release(&cache->value_id);
+    if (mode == ALIA_SUBSTRATE_CLEAR_CACHE)
+    {
+        // Reset regenerable fields so a later NORMAL visit rebuilds.
+        cache->engine = nullptr;
+        cache->engine_handle = nullptr;
+        cache->physical_size = 0.f;
+        cache->text_length = 0;
+    }
 }
 
 } // namespace alia

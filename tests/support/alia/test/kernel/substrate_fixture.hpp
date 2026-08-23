@@ -88,6 +88,7 @@ struct substrate_fixture
     {
         alia_test_substrate_fixture_reset_traversal(fixture, true);
         alia_stack_reset(stack);
+        alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
     alia_substrate_anchor*
@@ -133,6 +134,7 @@ struct substrate_fixture
         ctx = {};
         ctx.substrate = alia_test_substrate_fixture_traversal(fixture);
         ctx.stack = stack;
+        alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
     void

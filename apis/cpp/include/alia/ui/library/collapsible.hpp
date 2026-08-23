@@ -20,7 +20,10 @@ collapsible(context& ctx, alia_bool_signal* expanded, Content&& content)
     bool const do_content
         = alia_ui_collapsible_begin(&ctx, expanded, 0, 1.f, nullptr);
     ALIA_IF_ (&ctx, do_content)
+    {
         std::forward<Content>(content)();
+    }
+    ALIA_END
     alia_ui_collapsible_end(&ctx);
 }
 
@@ -35,7 +38,10 @@ collapsible(
     bool const do_content = alia_ui_collapsible_begin(
         &ctx, expanded, raw_code(column_flags), 1.f, nullptr);
     ALIA_IF_ (&ctx, do_content)
+    {
         std::forward<Content>(content)();
+    }
+    ALIA_END
     alia_ui_collapsible_end(&ctx);
 }
 
@@ -52,7 +58,10 @@ collapsible(
     bool const do_content = alia_ui_collapsible_begin(
         &ctx, expanded, raw_code(column_flags), offset_factor, transition);
     ALIA_IF_ (&ctx, do_content)
+    {
         std::forward<Content>(content)();
+    }
+    ALIA_END
     alia_ui_collapsible_end(&ctx);
 }
 

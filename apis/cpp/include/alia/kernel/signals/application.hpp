@@ -328,7 +328,7 @@ process_apply_arg(
     bool& args_ready,
     Arg const& arg)
 {
-    auto cache = use_object<captured_id<typename Arg::value_id_type>>(ctx);
+    auto cache = use_cache<captured_id<typename Arg::value_id_type>>(ctx);
     if (!is_refresh_event(*ctx))
         return;
 
@@ -452,7 +452,7 @@ apply(alia_context* ctx, Function&& f, Args const&... args)
 {
     using result_type = decltype(std::declval<Function>()(
         forward_signal(std::declval<Args>())...));
-    auto data = use_object<detail::apply_result_data<result_type>>(ctx);
+    auto data = use_cache<detail::apply_result_data<result_type>>(ctx);
     bool args_ready = true;
     detail::process_apply_args(ctx, *data, args_ready, args...);
     detail::process_apply_body(

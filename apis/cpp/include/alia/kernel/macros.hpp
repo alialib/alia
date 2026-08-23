@@ -20,6 +20,14 @@ get_memoized_block_spec()
 
 #define ALIA_UNIQUE_ID(base) ALIA_CONCAT(base, __COUNTER__)
 
+#ifndef ALIA_UNUSED
+#if defined(__GNUC__) || defined(__clang__)
+#define ALIA_UNUSED __attribute__((unused))
+#else
+#define ALIA_UNUSED
+#endif
+#endif
+
 // `condition_is_strictly_true(x)` and `condition_is_strictly_false(x)`
 // evaluate `x` in a boolean context. Note that due to signal mechanics, these
 // are not necessarily opposites of one another.
@@ -59,132 +67,139 @@ condition_is_strictly_false(T&& x)
 #define ALIA_REENABLE_MACRO_WARNINGS
 #endif
 
-struct if_else_chain_scope
+// `if_block` owns/manages the substrate anchor for a single conditional
+// branch.
+struct if_block
 {
-    alia_substrate_anchor* anchor;
-    bool else_eligible;
-    int branch_counter;
-    int* active_branch;
+    alia_context* ctx = nullptr;
+    // substrate anchor for this branch
+    alia_substrate_anchor* anchor = nullptr;
 
-    template<class Condition>
-    bool
-    eval(alia_context* ctx, Condition&& condition)
+    if_block(alia_context* ctx_arg, bool condition)
+        : ctx(ctx_arg), anchor(use_anchor(ctx_arg))
     {
-        ++branch_counter;
-        bool current_condition_is_true
-            = else_eligible
-           && condition_is_strictly_true(std::forward<Condition>(condition));
-        else_eligible
-            = else_eligible
-           && condition_is_strictly_false(std::forward<Condition>(condition));
-        if (current_condition_is_true && *active_branch != branch_counter)
+        if (!condition)
         {
-            alia_substrate_reset_anchor(
+            alia_substrate_deactivate_anchor(
                 alia_ctx_substrate_system(ctx), anchor);
-            *active_branch = branch_counter;
         }
-        return current_condition_is_true;
     }
+
+    if_block(if_block const&) = delete;
+    if_block&
+    operator=(if_block const&) = delete;
 };
 
-static inline if_else_chain_scope
-get_if_else_chain_scope(alia_context* ctx)
+// TODO: Address thread-safety of memoized specs.
+
+struct scoped_conditional_block
 {
-    // TODO: Merge block and branch storage into a single allocation.
-    alia_substrate_anchor* anchor = use_anchor(ctx);
-    auto branch_storage = use_memory<int>(ctx);
-    if (branch_storage.is_fresh())
-        *branch_storage = -1;
-    return {
-        anchor,
-        true,
-        0,
-        branch_storage.ptr,
-    };
-}
+    alia_context* ctx_ = nullptr;
+    alia_struct_spec* spec_ = nullptr;
 
-// TODO: Support traversing the block twice when discovery is required.
-
-struct inner_if_scope
-{
-    alia_context* ctx_;
-    alia_struct_spec* spec_;
-    int pass_number_;
-
-    inner_if_scope(
+    scoped_conditional_block(
         alia_context* ctx,
         alia_substrate_anchor* anchor,
         alia_struct_spec* spec)
+        : ctx_(ctx), spec_(spec)
     {
-        ctx_ = ctx;
-        spec_ = spec;
-        pass_number_ = 0;
-        alia_substrate_begin_block((ctx), (anchor), (spec));
+        alia_substrate_begin_block(ctx_, anchor, spec_);
     }
 
-    void
-    advance()
+    ~scoped_conditional_block()
     {
-        // TODO: Address thread-safety issues here.
-        *spec_ = alia_substrate_end_block((ctx_));
-        ++pass_number_;
+        *spec_ = alia_substrate_end_block(ctx_);
     }
 
-    bool
-    done() const
-    {
-        return pass_number_ >= 1;
-    }
+    scoped_conditional_block(scoped_conditional_block const&) = delete;
+    scoped_conditional_block&
+    operator=(scoped_conditional_block const&) = delete;
 };
 
 // The following are macros used to annotate control flow.
-
+// They are used like their C equivalents, but require an `alia_end` after the
+// end of their scope.
+//
 // Note that all come in two forms. One form ends in an underscore and takes
 // the context as its first argument. The other form has no trailing underscore
 // and assumes that the context is a variable named 'ctx'.
 
-#define ALIA_INVOKE_CONDITIONAL_BLOCK(ctx, chain)                             \
-    for (auto _alia_inner_if = alia::inner_if_scope(                          \
-             (ctx),                                                           \
-             chain.anchor,                                                    \
-             get_memoized_block_spec<struct ALIA_UNIQUE_ID(                   \
-                 alia_if_block_spec_memo_tag_)>());                           \
-         !_alia_inner_if.done();                                              \
-         _alia_inner_if.advance())
-
 #define ALIA_IF_(ctx, condition)                                              \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    if (auto _alia_chain_scope = alia::get_if_else_chain_scope(ctx);          \
-        _alia_chain_scope.eval((ctx), condition))                             \
-        ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
-    ALIA_REENABLE_MACRO_WARNINGS
+    {                                                                         \
+        bool _alia_else_condition ALIA_UNUSED;                                \
+        {                                                                     \
+            auto const& _alia_condition = (condition);                        \
+            bool _alia_if_condition                                           \
+                = ::alia::condition_is_strictly_true(_alia_condition);        \
+            _alia_else_condition                                              \
+                = ::alia::condition_is_strictly_false(_alia_condition);       \
+            ::alia::if_block _alia_if_block((ctx), _alia_if_condition);       \
+            if (_alia_if_condition)                                           \
+            {                                                                 \
+                ::alia::scoped_conditional_block ALIA_UNUSED _alia_scope(     \
+                    (ctx),                                                    \
+                    _alia_if_block.anchor,                                    \
+                    ::alia::get_memoized_block_spec<struct ALIA_UNIQUE_ID(    \
+                        alia_if_block_spec_memo_tag_)>());                    \
+                ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_IF(condition) ALIA_IF_ (ctx, condition)
 
 #define ALIA_ELSE_IF_(ctx, condition)                                         \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    if (auto _alia_chain_scope = alia::get_if_else_chain_scope(ctx);          \
-        _alia_chain_scope.eval((ctx), condition))                             \
-        ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
-    ALIA_REENABLE_MACRO_WARNINGS
+    }                                                                         \
+    }                                                                         \
+    {                                                                         \
+        auto const& _alia_condition = (condition);                            \
+        bool _alia_else_if_condition                                          \
+            = _alia_else_condition                                            \
+           && ::alia::condition_is_strictly_true(_alia_condition);            \
+        _alia_else_condition                                                  \
+            = _alia_else_condition                                            \
+           && ::alia::condition_is_strictly_false(_alia_condition);           \
+        ::alia::if_block _alia_if_block((ctx), _alia_else_if_condition);      \
+        if (_alia_else_if_condition)                                          \
+        {                                                                     \
+            ::alia::scoped_conditional_block ALIA_UNUSED _alia_scope(         \
+                (ctx),                                                        \
+                _alia_if_block.anchor,                                        \
+                ::alia::get_memoized_block_spec<struct ALIA_UNIQUE_ID(        \
+                    alia_if_block_spec_memo_tag_)>());                        \
+            ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_ELSE_IF(condition) ALIA_ELSE_IF_ (ctx, condition)
 
 #define ALIA_ELSE_(ctx)                                                       \
     ALIA_DISABLE_MACRO_WARNINGS                                               \
-    else if (_alia_chain_scope.eval((ctx), true))                             \
-        ALIA_INVOKE_CONDITIONAL_BLOCK((ctx), _alia_chain_scope)               \
+    }                                                                         \
+    }                                                                         \
+    {                                                                         \
+        ::alia::if_block _alia_if_block((ctx), _alia_else_condition);         \
+        if (_alia_else_condition)                                             \
+        {                                                                     \
+            ::alia::scoped_conditional_block ALIA_UNUSED _alia_scope(         \
+                (ctx),                                                        \
+                _alia_if_block.anchor,                                        \
+                ::alia::get_memoized_block_spec<struct ALIA_UNIQUE_ID(        \
+                    alia_if_block_spec_memo_tag_)>());                        \
             ALIA_REENABLE_MACRO_WARNINGS
 
 #define ALIA_ELSE ALIA_ELSE_ (ctx)
+
+#define ALIA_END                                                              \
+    }                                                                         \
+    }                                                                         \
+    }
 
 #ifndef ALIA_STRICT_MACROS
 #define alia_if_(ctx, condition) ALIA_IF_ (ctx, condition)
 #define alia_if(condition) ALIA_IF (condition)
 #define alia_else_if_(ctx, condition) ALIA_ELSE_IF_ (ctx, condition)
 #define alia_else_if(condition) ALIA_ELSE_IF (condition)
-#define alia_else_(ctx) ALIA_ELSE(ctx)
+#define alia_else_(ctx) ALIA_ELSE_ (ctx)
 #define alia_else ALIA_ELSE
+#define alia_end ALIA_END
 #endif
 
 } // namespace alia
