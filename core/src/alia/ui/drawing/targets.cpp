@@ -83,10 +83,12 @@ alia_draw_target_use(alia_context* ctx)
         alignof(draw_target_slot),
         draw_target_slot_cleanup);
     auto* slot = reinterpret_cast<draw_target_slot*>(result.ptr);
-    bool const fresh = result.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL;
-    if (fresh)
-    {
+    if (result.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL)
         *slot = draw_target_slot{};
+
+    // Recreate after a fresh allocation or after CLEAR_CACHE emptied the slot.
+    if (slot->ui == nullptr || slot->id == ALIA_DRAW_TARGET_PRIMARY)
+    {
         slot->ui = ctx->system;
         slot->id = alia_draw_target_create(ctx->system);
     }
