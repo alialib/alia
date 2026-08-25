@@ -4,6 +4,7 @@
 #include <alia/impl/events.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/ui/system/internal_api.h>
+#include <alia/ui/trace_internal.h>
 #include <alia/ui/system/work_internal.h>
 
 using namespace alia;
@@ -91,6 +92,7 @@ apply_refresh_hook_policy(ui_system& ui, alia_ui_refresh_hook_policy mode)
 void
 run_layout_resolve(ui_system& ui)
 {
+    alia::trace_pass_builder trace(ui, ALIA_TRACE_PASS_LAYOUT);
     alia_layout_system_resolve(
         &ui.layout, alia_vec2i_to_vec2f(ui.surface_size));
 }
@@ -236,7 +238,15 @@ drain_one_queued_event(ui_system& ui)
 
     apply_pointer_state_from_event(ui, ev);
     update_hot_from_pointer(ui);
-    deliver_queued_event(ui, ev);
+    {
+        alia::trace_pass_builder trace(ui, ALIA_TRACE_PASS_EVENT);
+        deliver_queued_event(ui, ev);
+        if (trace.active())
+        {
+            trace.pass.event.type = ev.type;
+            trace.pass.event.target = ev.target;
+        }
+    }
 
     ui.ui_dirty = true;
     return true;

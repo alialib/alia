@@ -2,6 +2,7 @@
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
+#include <alia/ui/trace_internal.h>
 #include <alia/ui/system/work_internal.h>
 
 #include <alia/abi/ui/input/constants.h>
@@ -68,7 +69,15 @@ process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
             alia_timer payload{
                 .target = req.target, .fire_time = req.fire_time};
             alia_event event = alia_make_timer_event(payload);
-            dispatch_event(ui, event);
+            {
+                alia::trace_pass_builder trace(ui, ALIA_TRACE_PASS_EVENT);
+                if (trace.active())
+                {
+                    trace.pass.event.type = event.type;
+                    trace.pass.event.target = req.target;
+                }
+                dispatch_event(ui, event);
+            }
             refresh_system(ui);
         });
 }
@@ -245,7 +254,18 @@ refresh_system(ui_system& sys)
     while (true)
     {
         auto refresh_event = alia_make_refresh_event({.incomplete = false});
-        dispatch_event(sys, refresh_event);
+        {
+            alia::trace_pass_builder trace(sys, ALIA_TRACE_PASS_REFRESH);
+            dispatch_event(sys, refresh_event);
+            if (trace.active())
+            {
+                ALIA_ASSERT(pass_index >= 0 && pass_index < 256);
+                trace.pass.refresh.index
+                    = static_cast<uint8_t>(pass_index);
+                trace.pass.refresh.incomplete
+                    = as_refresh_event(refresh_event).incomplete;
+            }
+        }
         if (!as_refresh_event(refresh_event).incomplete)
             break;
         ++pass_index;

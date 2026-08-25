@@ -20,6 +20,7 @@
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/system/work.h>
+#include <alia/abi/ui/trace.h>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/styling.h>
 
@@ -128,9 +129,8 @@ struct alia_ui_system
     // For now, this is essentially the root flag.
     bool ui_dirty = true;
 
-    // int last_refresh_duration;
-
-    // alia::tooltip_state tooltip;
+    // optional trace sink - This is NULL when tracing is off.
+    alia_ui_trace_sink const* trace_sink = nullptr;
 };
 
 } // extern "C"

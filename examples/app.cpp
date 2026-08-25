@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <chrono>
 #include <cstdio>
 #include <functional>
 #include <iomanip>
@@ -27,6 +26,7 @@
 #include <alia/abi/ui/styling.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
+#include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
@@ -53,6 +53,7 @@ static alia_srgb8 const primary_colors[] = {
 static int primary_index = 0;
 
 alia_ui_system* the_system;
+static alia_ui_tracer the_tracer;
 
 static float demo_spacing = 6.f;
 static float demo_node_expander_triangle_side = 24.f;
@@ -797,43 +798,41 @@ the_demo_controller(void* user_data, alia_context* ctx)
 void
 update()
 {
-    static std::chrono::time_point<std::chrono::high_resolution_clock>
-        last_frame_time = std::chrono::high_resolution_clock::now();
-    auto const start_time = std::chrono::high_resolution_clock::now();
-
     AllocProbeResult result
         = probe_allocations([&]() { alia_app_shell_frame(the_system); });
+    (void) result;
 
-    auto const end_time = std::chrono::high_resolution_clock::now();
-    // auto const refresh_time = std::chrono::duration_cast<
-    //     std::chrono::duration<int64_t, std::micro>>(
-    //     refresh_finished_time - start_time);
-    // auto const layout_time = std::chrono::duration_cast<
-    //     std::chrono::duration<int64_t, std::micro>>(
-    //     layout_finished_time - refresh_finished_time);
-    // auto const render_time = std::chrono::duration_cast<
-    //     std::chrono::duration<int64_t, std::micro>>(
-    //     end_time - layout_finished_time);
-    auto const frame_time = std::chrono::duration_cast<
-        std::chrono::duration<int64_t, std::micro>>(end_time - start_time);
-
-    // auto const external_frame_time = std::chrono::duration_cast<
-    //     std::chrono::duration<int64_t, std::micro>>(
-    //     start_time - last_frame_time);
-    std::cout << "frame_time: " << std::setw(6) << frame_time.count() << "us"
-              << std::endl;
-
-    // std::cout
-    //     << "frame_time: " // << std::setw(6) << external_frame_time <<
-    //     ": "
-    //     << std::setw(6) << frame_time << ": " << std::setw(6) <<
-    //     refresh_time
-    //     << " / " << std::setw(6) << layout_time << " / " << std::setw(6)
-    //     << render_time << std::endl;
-
-    // std::cout << "allocation count: " << result.count << std::endl;
-
-    last_frame_time = start_time;
+    // temporary text dump until the dev overlay lands
+    if (alia_trace_frame const* frame = alia_ui_tracer_latest(&the_tracer))
+    {
+        int64_t const wall_us
+            = alia_trace_ticks_to_ns(frame->wall_end - frame->wall_start)
+            / 1000;
+        std::cout << "frame " << frame->index << ": " << std::setw(6)
+                  << wall_us << "us";
+        for (uint16_t i = 0; i < frame->pass_count; ++i)
+        {
+            alia_trace_pass const& pass = frame->passes[i];
+            int64_t const us
+                = alia_trace_ticks_to_ns(pass.end - pass.start) / 1000;
+            std::cout << " | " << alia_trace_pass_kind_name(pass.kind);
+            if (pass.kind == ALIA_TRACE_PASS_REFRESH)
+            {
+                std::cout << '#' << unsigned(pass.refresh.index);
+                if (pass.refresh.incomplete)
+                    std::cout << '*';
+            }
+            else if (pass.kind == ALIA_TRACE_PASS_EVENT)
+            {
+                std::cout
+                    << "(0x" << std::hex << pass.event.type << std::dec << ')';
+            }
+            std::cout << ' ' << us << "us";
+        }
+        if (frame->dropped_passes != 0)
+            std::cout << " | dropped " << frame->dropped_passes;
+        std::cout << std::endl;
+    }
 }
 
 static void
@@ -867,6 +866,9 @@ main()
 
     static bool light_theme = false;
     the_system = alia_app_ui(&app);
+
+    alia_ui_tracer_init(&the_tracer);
+    alia_ui_tracer_attach(&the_tracer, the_system);
 
     static bool theme_initialized = false;
     if (!theme_initialized)

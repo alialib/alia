@@ -2,6 +2,7 @@
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
+#include <alia/abi/ui/trace.h>
 #include <alia/abi/ui/system/renderer.h>
 
 #include <alia/abi/ui/events.h>
@@ -11,6 +12,7 @@
 #include <alia/ui/drawing/bucket_key.h>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/system/object.h>
+#include <alia/ui/trace_internal.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -127,8 +129,11 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
     };
     alia_bump_allocator_init(&draw_context.arena, &system->draw.command_arena);
 
-    auto draw_event = alia_make_draw_event({.context = &draw_context});
-    alia::dispatch_event(*system, draw_event);
+    {
+        alia::trace_pass_builder trace(*system, ALIA_TRACE_PASS_DRAW_RECORD);
+        auto draw_event = alia_make_draw_event({.context = &draw_context});
+        alia::dispatch_event(*system, draw_event);
+    }
 
     alia_bump_allocator_commit_peak(&draw_context.arena);
 
@@ -162,33 +167,45 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
     std::vector<alia_draw_target_id> const order
         = order_draw_targets(targets, edges);
 
-    alia_renderer_ops const& ops = system->renderer;
-    if (ops.draw_pass_begin)
-        ops.draw_pass_begin(ops.user);
-
-    float const clear_transparent[4] = {0.f, 0.f, 0.f, 0.f};
-    for (alia_draw_target_id const target : order)
     {
-        if (ops.draw_target_bind)
-            ops.draw_target_bind(ops.user, target);
-        if (target != ALIA_DRAW_TARGET_PRIMARY && ops.draw_target_clear)
-            ops.draw_target_clear(ops.user, target, clear_transparent);
-
-        auto it = keys_by_target.find(target);
-        if (it == keys_by_target.end())
-            continue;
-        for (auto const key : it->second)
+        alia::trace_pass_builder trace(*system, ALIA_TRACE_PASS_DRAW_EXECUTE);
+        if (trace.active())
         {
-            alia_draw_bucket* bucket = &bucket_table.buckets[key];
-            alia_draw_material_id const material_id = material_from_key(key);
-            alia_draw_material* material
-                = &system->draw.materials[material_id];
-            material->vtable.draw_bucket(material->user, bucket);
+            trace.pass.draw.target_count
+                = static_cast<uint16_t>(order.size());
+            trace.pass.draw.bucket_count
+                = static_cast<uint16_t>(bucket_table.keys.size());
         }
-    }
 
-    if (ops.draw_pass_end)
-        ops.draw_pass_end(ops.user);
+        alia_renderer_ops const& ops = system->renderer;
+        if (ops.draw_pass_begin)
+            ops.draw_pass_begin(ops.user);
+
+        float const clear_transparent[4] = {0.f, 0.f, 0.f, 0.f};
+        for (alia_draw_target_id const target : order)
+        {
+            if (ops.draw_target_bind)
+                ops.draw_target_bind(ops.user, target);
+            if (target != ALIA_DRAW_TARGET_PRIMARY && ops.draw_target_clear)
+                ops.draw_target_clear(ops.user, target, clear_transparent);
+
+            auto it = keys_by_target.find(target);
+            if (it == keys_by_target.end())
+                continue;
+            for (auto const key : it->second)
+            {
+                alia_draw_bucket* bucket = &bucket_table.buckets[key];
+                alia_draw_material_id const material_id
+                    = material_from_key(key);
+                alia_draw_material* material
+                    = &system->draw.materials[material_id];
+                material->vtable.draw_bucket(material->user, bucket);
+            }
+        }
+
+        if (ops.draw_pass_end)
+            ops.draw_pass_end(ops.user);
+    }
 }
 
 } // extern "C"

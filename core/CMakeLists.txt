@@ -49,8 +49,10 @@ add_library(alia_core STATIC
     src/alia/ui/library/collapsible.cpp
     src/alia/ui/library/button.cpp
     src/alia/ui/viewport.cpp
+    src/alia/ui/trace.cpp
     src/alia/ui/system/api.cpp
     src/alia/ui/system/input_processing.cpp
+    src/alia/ui/system/tracer.cpp
     src/alia/ui/system/work.cpp
     src/alia/ui/palette.cpp
     src/alia/ui/geometry.cpp
