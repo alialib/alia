@@ -808,7 +808,7 @@ test_keyed_block_basic(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -821,7 +821,7 @@ test_keyed_block_basic(void)
     run_keyed_pass(&t, table, &state, keys, 2);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -854,7 +854,7 @@ test_keyed_block_reorder(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -865,7 +865,7 @@ test_keyed_block_reorder(void)
     run_keyed_pass(&t, table, &state, pass1, 2);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -892,7 +892,7 @@ test_keyed_block_sweep_stale(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -903,7 +903,7 @@ test_keyed_block_sweep_stale(void)
     run_keyed_pass(&t, table, &state, pass1, 3);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -931,7 +931,7 @@ test_keyed_scope_requires_explicit_delete(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -942,7 +942,7 @@ test_keyed_scope_requires_explicit_delete(void)
     run_keyed_pass(&t, table, &state, pass1, 3);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -954,7 +954,7 @@ test_keyed_scope_requires_explicit_delete(void)
 
     alia_substrate_delete_key(table, alia_id_view_make_u64(3u));
     (void) alia_substrate_end_block(&t.ctx);
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -981,7 +981,7 @@ test_keyed_block_soft_delete_while_active(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1000,7 +1000,7 @@ test_keyed_block_soft_delete_while_active(void)
     TEST_CHECK(ptr == ptr2);
     TEST_CHECK(state.destroy_state.count == 0);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1030,7 +1030,7 @@ test_keyed_block_nested_scopes(void)
     memset(&outer_state, 0, sizeof(outer_state));
     memset(&inner_state, 0, sizeof(inner_state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1082,7 +1082,7 @@ test_keyed_block_partial_pass(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1103,7 +1103,7 @@ test_keyed_block_partial_pass(void)
     (void) alia_substrate_end_block(&t.ctx);
     TEST_CHECK(state.destroy_state.count == 0);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1129,7 +1129,7 @@ test_keyed_block_partial_preserves_prediction(void)
     keyed_visit_state state;
     memset(&state, 0, sizeof(state));
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1148,7 +1148,7 @@ test_keyed_block_partial_preserves_prediction(void)
     run_keyed_pass(&t, table, &state, scrambled, 3);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1156,7 +1156,7 @@ test_keyed_block_partial_preserves_prediction(void)
     run_keyed_pass(&t, table, &state, pass1, 3);
     (void) alia_substrate_end_block(&t.ctx);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1189,7 +1189,7 @@ test_key_table_cache_clear_on_deactivate(void)
     alia_substrate_key_table* table = NULL;
     void* keyed_ptrs[2];
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1232,7 +1232,7 @@ test_key_table_cache_clear_on_deactivate(void)
     TEST_CHECK(((test_object*) keyed_ptrs[0])->cached_value == 0);
     TEST_CHECK(((test_object*) keyed_ptrs[1])->cached_value == 0);
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
@@ -1298,7 +1298,7 @@ test_key_table_cache_clear_preserves_sibling_block(void)
     void* sibling_obj_ptr = NULL;
     void* keyed_ptr = NULL;
 
-    alia_test_substrate_fixture_advance_frame(t.fixture);
+    alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 

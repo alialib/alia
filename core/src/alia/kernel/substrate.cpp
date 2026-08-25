@@ -88,6 +88,9 @@ anchor_cleanup(
     alia_substrate_system* system, void* ptr, alia_substrate_cleanup_mode mode)
 {
     alia_substrate_anchor* anchor = static_cast<alia_substrate_anchor*>(ptr);
+    // It's possible that the anchor was never used.
+    if (!anchor->block)
+        return;
     invoke_cleanup_records(system, anchor->block, mode);
     if (mode == ALIA_SUBSTRATE_DESTROY)
         block_release(system, anchor->block);
@@ -366,7 +369,7 @@ resolve_key_entry(
             append_to_prediction_list(scope, entry);
     }
 
-    entry->last_seen = ctx->substrate->current_frame;
+    entry->last_seen = ctx->substrate->current_refresh;
     return entry;
 }
 
@@ -427,13 +430,13 @@ substrate_traversal_init(
     alia_substrate_traversal& traversal,
     alia_substrate_system& system,
     alia_bump_allocator* scratch,
-    uint32_t current_frame,
+    uint32_t current_refresh,
     bool allow_prediction_updates)
 {
     memset(&traversal, 0, sizeof(traversal));
     traversal.system = &system;
     traversal.scratch = *scratch;
-    traversal.current_frame = current_frame;
+    traversal.current_refresh = current_refresh;
     traversal.allow_prediction_updates = allow_prediction_updates;
 }
 
@@ -698,7 +701,7 @@ alia_substrate_begin_key_scope(
     scope.table = table;
     scope.predicted = table->first;
     scope.prediction_tail = &table->first;
-    table->last_seen = ctx->substrate->current_frame;
+    table->last_seen = ctx->substrate->current_refresh;
     return &scope;
 }
 

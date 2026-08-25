@@ -56,7 +56,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
         substrate_traversal,
         sys.substrate,
         &substrate_bump_allocator,
-        sys.frame_counter,
+        sys.refresh_counter,
         events.event->type == ALIA_EVENT_REFRESH);
 
     ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);

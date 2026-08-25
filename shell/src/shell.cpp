@@ -195,6 +195,8 @@ shell_controller(void* user_data, alia_context* ctx)
     {
         alia_layout_edge_offsets_begin(ctx, shell->config.surface_padding, 0);
         shell->inner.fn(shell->inner.user_data, ctx);
+        if (ctx->events->aborted)
+            return;
         alia_layout_edge_offsets_end(ctx);
     }
 

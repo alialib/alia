@@ -65,7 +65,7 @@ struct alia_test_substrate_fixture
 {
     alia_substrate_system system;
     alia_substrate_traversal traversal;
-    uint32_t frame_counter = 0;
+    uint32_t refresh_counter = 0;
 
     // scratch arena used by substrate discovery-mode allocations
     alia_arena* arena = nullptr;
@@ -122,7 +122,7 @@ alia_test_substrate_fixture_create(alia_general_allocator allocator)
         fixture->traversal,
         fixture->system,
         &fixture->scratch,
-        fixture->frame_counter,
+        fixture->refresh_counter,
         false);
 
     return fixture;
@@ -199,7 +199,7 @@ alia_test_substrate_fixture_reset_traversal(
         fixture->traversal,
         fixture->system,
         &fixture->scratch,
-        fixture->frame_counter,
+        fixture->refresh_counter,
         allow_prediction_updates);
 }
 
@@ -215,12 +215,13 @@ alia_test_substrate_fixture_cleanup_root_block(
 }
 
 void
-alia_test_substrate_fixture_advance_frame(alia_test_substrate_fixture* fixture)
+alia_test_substrate_fixture_advance_refresh(
+    alia_test_substrate_fixture* fixture)
 {
     if (!fixture)
         return;
 
-    ++fixture->frame_counter;
+    ++fixture->refresh_counter;
 }
 
 } // extern "C"

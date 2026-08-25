@@ -47,9 +47,9 @@ void
 alia_test_substrate_fixture_cleanup_root_block(
     alia_test_substrate_fixture* fixture);
 
-// Advance the frame counter before a full refresh traversal.
+// Advance the refresh counter before a full refresh traversal.
 void
-alia_test_substrate_fixture_advance_frame(
+alia_test_substrate_fixture_advance_refresh(
     alia_test_substrate_fixture* fixture);
 
 ALIA_EXTERN_C_END

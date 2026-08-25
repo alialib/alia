@@ -26,7 +26,7 @@ traverse_until_complete(
         if (!as_refresh_event(*ctx).incomplete)
             break;
     }
-    t.advance_frame();
+    t.advance_refresh();
 }
 
 TEST_CASE("use_object persists across traversals")
@@ -51,7 +51,7 @@ TEST_CASE("use_object persists across traversals")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &spec);
     {
@@ -80,7 +80,7 @@ TEST_CASE("use_memory persists across traversals")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &spec);
     {
@@ -122,7 +122,7 @@ TEST_CASE("use_object clear_cache is a no-op without the member")
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &root_spec);
     CHECK(use_anchor(&t.ctx) == child);
@@ -174,7 +174,7 @@ TEST_CASE("use_object clear_cache runs the member")
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &root_spec);
     CHECK(use_anchor(&t.ctx) == child);
@@ -221,7 +221,7 @@ TEST_CASE("use_cache recreates after deactivate")
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &root_spec);
     CHECK(use_anchor(&t.ctx) == child);
@@ -236,7 +236,7 @@ TEST_CASE("use_cache recreates after deactivate")
     (void) alia_substrate_end_block(&t.ctx);
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &root_spec);
     CHECK(use_anchor(&t.ctx) == child);

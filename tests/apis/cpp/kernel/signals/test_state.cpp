@@ -64,7 +64,7 @@ TEST_CASE("use_state persists across traversals")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     t.reset_traversal();
     alia_substrate_begin_block(&t.ctx, t.root_anchor(), &spec);
     {

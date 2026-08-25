@@ -237,44 +237,24 @@ system_needs_refresh(ui_system& sys)
 void
 refresh_system(ui_system& sys)
 {
-    // TODO
-
-    // sys.refresh_needed = false;
-    // ++sys.refresh_counter;
-
-    // std::chrono::steady_clock::time_point begin
-    //     = std::chrono::steady_clock::now();
-
-    int attempts = 0;
-    ++sys.frame_counter;
+    // A refresh may take multiple passes. Each pass dispatches one REFRESH
+    // event. If that pass marks the event incomplete (e.g. substrate
+    // discovery), another pass is issued until the UI settles.
+    ++sys.refresh_counter;
+    int pass_index = 0;
     while (true)
     {
         auto refresh_event = alia_make_refresh_event({.incomplete = false});
         dispatch_event(sys, refresh_event);
         if (!as_refresh_event(refresh_event).incomplete)
             break;
-        ++attempts;
-        ALIA_ASSERT(attempts < 100);
-        if (attempts >= 100)
+        ++pass_index;
+        ALIA_ASSERT(pass_index < 100);
+        if (pass_index >= 100)
             break;
     }
 
     sys.ui_dirty = false;
-
-    // long long refresh_time;
-    // {
-    //     std::chrono::steady_clock::time_point end
-    //         = std::chrono::steady_clock::now();
-    //     refresh_time =
-    //     std::chrono::duration_cast<std::chrono::microseconds>(
-    //                        end - begin)
-    //                        .count();
-    // }
-
-    // static long long max_refresh_time = 0;
-    // max_refresh_time = (std::max)(refresh_time, max_refresh_time);
-    // std::cout << "refresh: " << refresh_time << "[us]\n";
-    // std::cout << "max_refresh_time: " << max_refresh_time << "[us]\n";
 }
 
 #if 0

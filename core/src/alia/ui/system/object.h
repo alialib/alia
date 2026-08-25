@@ -85,9 +85,11 @@ struct alia_ui_system
     // point and the possibility of wraparound
     alia_nanosecond_count tick_count = 0;
 
-    // incremented once per full refresh
-    // TODO: Integrate into frame API.
-    uint32_t frame_counter = 0;
+    // refresh counter - This is incremented each time the system is refreshed.
+    // Note that a single refresh may take multiple passes when the refresh
+    // event is marked as incomplete. Those passes share a single value for
+    // this counter.
+    uint32_t refresh_counter = 0;
 
     alia_palette palette;
 

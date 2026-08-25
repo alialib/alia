@@ -82,7 +82,7 @@ TEST_CASE("apply caches across refreshes")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto s = apply(&t.ctx, f, value(2), value(3));
@@ -91,7 +91,7 @@ TEST_CASE("apply caches across refreshes")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto s = apply(&t.ctx, f, value(4), value(3));
@@ -144,7 +144,7 @@ TEST_CASE("apply recomputes after move_out")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto s = apply(&t.ctx, f, value(10));
@@ -192,7 +192,7 @@ TEST_CASE("apply with use_state input")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto n = use_state(&t.ctx, 3);
@@ -226,7 +226,7 @@ TEST_CASE("apply with id_view value ID")
     }
     (void) alia_substrate_end_block(&t.ctx);
 
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto input = override_id(value(1), [&] { return make_id_by_reference(key); });
@@ -237,7 +237,7 @@ TEST_CASE("apply with id_view value ID")
     (void) alia_substrate_end_block(&t.ctx);
 
     key = "beta";
-    t.advance_frame();
+    t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto input = override_id(value(1), [&] { return make_id_by_reference(key); });

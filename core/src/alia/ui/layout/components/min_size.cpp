@@ -16,6 +16,11 @@ min_size_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* base_node)
 {
     auto& node = *reinterpret_cast<min_size_node*>(base_node);
+    if (!node.container.first_child)
+    {
+        return alia_horizontal_requirements{
+            .min_size = node.min_size.x, .growth_factor = 0.f};
+    }
     auto const child_x
         = alia_measure_horizontal(ctx, node.container.first_child);
     return alia_horizontal_requirements{
@@ -31,6 +36,15 @@ min_size_measure_vertical(
     float assigned_width)
 {
     auto& node = *reinterpret_cast<min_size_node*>(base_node);
+    if (!node.container.first_child)
+    {
+        float const h = node.min_size.y;
+        return alia_vertical_requirements{
+            .min_size = h,
+            .growth_factor = 0.f,
+            .ascent = h,
+            .descent = 0.f};
+    }
     auto const child_y = alia_measure_vertical(
         ctx, main_axis, node.container.first_child, assigned_width);
     return alia_vertical_requirements{
@@ -49,6 +63,8 @@ min_size_assign_boxes(
     float baseline)
 {
     auto& node = *reinterpret_cast<min_size_node*>(base_node);
+    if (!node.container.first_child)
+        return;
     alia_assign_boxes(
         ctx, main_axis, node.container.first_child, box, baseline);
 }

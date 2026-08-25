@@ -6,8 +6,6 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/work_internal.h>
 
-#include <cstdint>
-
 using namespace alia;
 using namespace alia::operators;
 
@@ -254,14 +252,13 @@ drain_event_queue(ui_system& ui)
 void
 finalize_update(ui_system& ui)
 {
+    // Refresh before hit-testing when the UI may have structurally changed
+    // during input (e.g. abort after a page switch). Otherwise the next
+    // traversal can run new content against the previous layout tree.
+    if (evaluate_refresh_hook_policy(ui, ui.refresh_policy.before_draw))
+        refresh_system(ui);
     run_layout_resolve(ui);
     update_hot_from_pointer(ui);
-    if (evaluate_refresh_hook_policy(ui, ui.refresh_policy.before_draw))
-    {
-        refresh_system(ui);
-        run_layout_resolve(ui);
-        update_hot_from_pointer(ui);
-    }
 }
 
 } // namespace alia

@@ -104,9 +104,9 @@ struct substrate_fixture
     }
 
     void
-    advance_frame()
+    advance_refresh()
     {
-        alia_test_substrate_fixture_advance_frame(fixture);
+        alia_test_substrate_fixture_advance_refresh(fixture);
     }
 
  private:

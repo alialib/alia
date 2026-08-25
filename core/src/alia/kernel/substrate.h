@@ -102,7 +102,7 @@ struct alia_substrate_traversal
     alia_bump_allocator scratch;
     alia_substrate_system* system;
     alia_substrate_block_traversal_state block;
-    uint32_t current_frame;
+    uint32_t current_refresh;
     // When true, keyed lookups update each table's prediction list.
     // This should be disabled on partial passes.
     bool allow_prediction_updates;
@@ -127,7 +127,7 @@ substrate_traversal_init(
     alia_substrate_traversal& traversal,
     alia_substrate_system& system,
     alia_bump_allocator* scratch,
-    uint32_t current_frame,
+    uint32_t current_refresh,
     bool allow_prediction_updates);
 
 void
