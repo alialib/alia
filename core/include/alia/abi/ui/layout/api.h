@@ -38,6 +38,11 @@ void
 alia_layout_row_end(alia_context* ctx);
 
 void
+alia_layout_zstack_begin(alia_context* ctx, alia_layout_flags_t flags);
+void
+alia_layout_zstack_end(alia_context* ctx);
+
+void
 alia_layout_flow_begin(
     alia_context* ctx,
     alia_layout_flags_t flags,

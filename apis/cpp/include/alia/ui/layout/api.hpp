@@ -281,6 +281,18 @@ column(context& ctx, ArgPack&&... args)
 }
 
 template<class... ArgPack>
+    requires impl::ValidSimpleLayoutPack<ArgPack...>
+void
+zstack(context& ctx, ArgPack&&... args)
+{
+    impl::simple_layout_container(
+        ctx,
+        alia_layout_zstack_begin,
+        alia_layout_zstack_end,
+        std::forward<ArgPack>(args)...);
+}
+
+template<class... ArgPack>
     requires impl::ValidFlowLayoutPack<ArgPack...>
 void
 flow(context& ctx, ArgPack&&... args)

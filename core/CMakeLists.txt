@@ -28,6 +28,7 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/grid.cpp
     src/alia/ui/layout/components/block_flow.cpp
     src/alia/ui/layout/components/row.cpp
+    src/alia/ui/layout/components/zstack.cpp
     src/alia/ui/layout/components/alignment_override.cpp
     src/alia/ui/layout/components/growth_override.cpp
     src/alia/ui/layout/components/min_size.cpp

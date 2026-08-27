@@ -299,3 +299,95 @@ TEST_CASE("layout grid row cross alignment")
     CHECK(check_box_eq(
         leaf, alia_vec2f_make(30.f, 0.f), alia_vec2f_make(10.f, 10.f)));
 }
+
+TEST_CASE("layout zstack fills and corners")
+{
+    alia_box background;
+    alia_box overlay;
+    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_context& ctx) {
+        zstack(ctx, FILL, [&]() {
+            test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL, &background);
+            test_leaf(
+                ctx,
+                alia_vec2f_make(20.f, 10.f),
+                ALIGN_RIGHT | ALIGN_TOP,
+                &overlay);
+        });
+    });
+    CHECK(check_box_eq(
+        background, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(100.f, 80.f)));
+    CHECK(check_box_eq(
+        overlay, alia_vec2f_make(80.f, 0.f), alia_vec2f_make(20.f, 10.f)));
+}
+
+TEST_CASE("layout zstack sizes to largest child")
+{
+    alia_box small_leaf;
+    alia_box large_leaf;
+    run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_context& ctx) {
+        zstack(ctx, ALIGN_LEFT | ALIGN_TOP, [&]() {
+            test_leaf(
+                ctx, alia_vec2f_make(30.f, 20.f), ALIGN_LEFT | ALIGN_TOP, &small_leaf);
+            test_leaf(
+                ctx,
+                alia_vec2f_make(50.f, 40.f),
+                ALIGN_LEFT | ALIGN_TOP,
+                &large_leaf);
+        });
+    });
+    // Stack shrink-wraps to 50x40; both children are placed in that region.
+    CHECK(check_box_eq(
+        large_leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(50.f, 40.f)));
+    CHECK(check_box_eq(
+        small_leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(30.f, 20.f)));
+}
+
+TEST_CASE("layout zstack overlay bottom left")
+{
+    alia_box background;
+    alia_box overlay;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        zstack(ctx, FILL, [&]() {
+            test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL, &background);
+            test_leaf(
+                ctx,
+                alia_vec2f_make(25.f, 15.f),
+                ALIGN_LEFT | ALIGN_BOTTOM,
+                &overlay);
+        });
+    });
+    CHECK(check_box_eq(
+        background, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(100.f, 100.f)));
+    CHECK(check_box_eq(
+        overlay, alia_vec2f_make(0.f, 85.f), alia_vec2f_make(25.f, 15.f)));
+}
+
+TEST_CASE("layout zstack does not share baseline across layers")
+{
+    alia_box leaf1;
+    alia_box leaf2;
+    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_context& ctx) {
+        zstack(ctx, FILL, [&]() {
+            test_leaf(
+                ctx,
+                alia_vec2f_make(20.f, 10.f),
+                BASELINE_Y | ALIGN_LEFT,
+                &leaf1,
+                8.f,
+                2.f);
+            test_leaf(
+                ctx,
+                alia_vec2f_make(20.f, 12.f),
+                BASELINE_Y | ALIGN_LEFT,
+                &leaf2,
+                4.f,
+                8.f);
+        });
+    });
+    // Each layer tops out independently (baseline = that child's ascent),
+    // unlike a row where these would sit at different Y to share a baseline.
+    CHECK(check_box_eq(
+        leaf1, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(20.f, 10.f)));
+    CHECK(check_box_eq(
+        leaf2, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(20.f, 12.f)));
+}
