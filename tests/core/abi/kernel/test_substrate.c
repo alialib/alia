@@ -776,7 +776,7 @@ keyed_visit_object(
 static void
 keyed_visit_end(substrate_fixture* t)
 {
-    alia_substrate_end_keyed_block(&t->ctx);
+    (void) alia_substrate_end_keyed_block(&t->ctx);
 }
 
 static void
@@ -1059,7 +1059,7 @@ test_keyed_block_nested_scopes(void)
         outer_obj->id = 1;
         outer_state.ptrs[outer_state.ptr_count++] = outer_use.ptr;
     }
-    alia_substrate_end_keyed_block(&t.ctx);
+    (void) alia_substrate_end_keyed_block(&t.ctx);
     alia_substrate_end_key_scope(&t.ctx, outer);
     (void) alia_substrate_end_block(&t.ctx);
 
@@ -1251,7 +1251,7 @@ test_key_table_cache_clear_on_deactivate(void)
     TEST_ASSERT(reuse1.ptr != NULL);
     TEST_CHECK(reuse1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
     TEST_CHECK(reuse1.ptr == keyed_ptrs[0]);
-    alia_substrate_end_keyed_block(&t.ctx);
+    (void) alia_substrate_end_keyed_block(&t.ctx);
 
     alia_substrate_begin_keyed_block(
         &t.ctx, scope, alia_id_view_make_u64(2u), &keyed_block_spec);
@@ -1263,7 +1263,7 @@ test_key_table_cache_clear_on_deactivate(void)
     TEST_ASSERT(reuse2.ptr != NULL);
     TEST_CHECK(reuse2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
     TEST_CHECK(reuse2.ptr == keyed_ptrs[1]);
-    alia_substrate_end_keyed_block(&t.ctx);
+    (void) alia_substrate_end_keyed_block(&t.ctx);
 
     alia_substrate_end_key_scope(&t.ctx, scope);
     (void) alia_substrate_end_block(&t.ctx);

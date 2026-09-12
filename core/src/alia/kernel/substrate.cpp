@@ -729,10 +729,10 @@ alia_substrate_begin_keyed_block(
     alia_substrate_begin_block(ctx, &entry->anchor, spec);
 }
 
-void
+alia_struct_spec
 alia_substrate_end_keyed_block(alia_context* ctx)
 {
-    alia_substrate_end_block(ctx);
+    return alia_substrate_end_block(ctx);
 }
 
 void

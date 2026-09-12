@@ -244,7 +244,10 @@ alia_substrate_begin_keyed_block(
     alia_id_view key,
     alia_struct_spec* spec);
 
-void
+// End a keyed block and return the layout specification of the block. - If the
+// block was in discovery mode, this should be used to update the memoized
+// spec value.
+alia_struct_spec
 alia_substrate_end_keyed_block(alia_context* ctx);
 
 // Remove stale entries from a key table.
