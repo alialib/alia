@@ -1,6 +1,7 @@
 #include <alia/abi/base/geometry/box.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
+#include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -22,11 +23,19 @@ edge_offsets_measure_horizontal(
     alia_measurement_context* ctx, alia_layout_node* node)
 {
     auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
+    float const padding
+        = edge_offsets.offsets.left + edge_offsets.offsets.right;
+    if (edge_offsets.container.first_child == nullptr)
+    {
+        return alia_horizontal_requirements{
+            .min_size = padding,
+            .growth_factor = alia_resolve_growth_factor(
+                edge_offsets.container.flags)};
+    }
     auto const child_x
         = alia_measure_horizontal(ctx, edge_offsets.container.first_child);
     return alia_horizontal_requirements{
-        .min_size = child_x.min_size + edge_offsets.offsets.left
-                  + edge_offsets.offsets.right,
+        .min_size = child_x.min_size + padding,
         .growth_factor = child_x.growth_factor};
 }
 
@@ -38,15 +47,25 @@ edge_offsets_measure_vertical(
     float assigned_width)
 {
     auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
+    float const padding
+        = edge_offsets.offsets.top + edge_offsets.offsets.bottom;
+    if (edge_offsets.container.first_child == nullptr)
+    {
+        return alia_vertical_requirements{
+            .min_size = padding,
+            .growth_factor = alia_resolve_growth_factor(
+                edge_offsets.container.flags),
+            .ascent = edge_offsets.offsets.top,
+            .descent = edge_offsets.offsets.bottom};
+    }
     auto const child_y = alia_measure_vertical(
         ctx,
         main_axis,
         edge_offsets.container.first_child,
-        assigned_width - edge_offsets.offsets.top
-            - edge_offsets.offsets.bottom);
+        assigned_width - edge_offsets.offsets.left
+            - edge_offsets.offsets.right);
     return alia_vertical_requirements{
-        .min_size = child_y.min_size + edge_offsets.offsets.top
-                  + edge_offsets.offsets.bottom,
+        .min_size = child_y.min_size + padding,
         .growth_factor = child_y.growth_factor,
         .ascent = child_y.ascent + edge_offsets.offsets.top,
         .descent = child_y.descent + edge_offsets.offsets.bottom};
@@ -78,12 +97,15 @@ edge_offsets_assign_boxes(
                   edge_offsets.offsets.left + edge_offsets.offsets.right,
                   edge_offsets.offsets.top + edge_offsets.offsets.bottom}};
 
-    alia_assign_boxes(
-        ctx,
-        main_axis,
-        edge_offsets.container.first_child,
-        child_box,
-        baseline - edge_offsets.offsets.top);
+    if (edge_offsets.container.first_child != nullptr)
+    {
+        alia_assign_boxes(
+            ctx,
+            main_axis,
+            edge_offsets.container.first_child,
+            child_box,
+            baseline - edge_offsets.offsets.top);
+    }
 }
 
 typedef struct edge_offsets_flow_scratch
