@@ -44,4 +44,25 @@ alia_geometry_pop_translation(alia_context* ctx)
     alia_vec2f& saved_offset = alia::stack_pop<alia_vec2f>(ctx);
     ctx->geometry->offset = saved_offset;
 }
+
+void
+alia_geometry_push_z_base(alia_context* ctx, alia_z_index z_base)
+{
+    alia_z_index& saved_z_base = alia::stack_push<alia_z_index>(ctx);
+    saved_z_base = ctx->geometry->z_base;
+    ctx->geometry->z_base = z_base;
+}
+
+void
+alia_geometry_push_z_offset(alia_context* ctx, alia_z_index delta)
+{
+    alia_geometry_push_z_base(ctx, ctx->geometry->z_base + delta);
+}
+
+void
+alia_geometry_pop_z(alia_context* ctx)
+{
+    alia_z_index& saved_z_base = alia::stack_pop<alia_z_index>(ctx);
+    ctx->geometry->z_base = saved_z_base;
+}
 }

@@ -13,7 +13,10 @@ typedef uint16_t alia_z_index;
 
 enum
 {
+    // default `z_base` for a top-level pass
     ALIA_DEFAULT_Z_BASE = 256,
+    // Z spacing between UI layers
+    ALIA_Z_LAYER_SPACING = 4,
 };
 
 typedef struct alia_clip_state
@@ -70,6 +73,17 @@ alia_geometry_push_translation(alia_context* ctx, alia_vec2f offset);
 
 void
 alia_geometry_pop_translation(alia_context* ctx);
+
+// Push a new Z base index.
+void
+alia_geometry_push_z_base(alia_context* ctx, alia_z_index z_base);
+
+// Push a new Z base index, increased by `delta` above the current Z base.
+void
+alia_geometry_push_z_offset(alia_context* ctx, alia_z_index delta);
+
+void
+alia_geometry_pop_z(alia_context* ctx);
 
 ALIA_EXTERN_C_END
 
