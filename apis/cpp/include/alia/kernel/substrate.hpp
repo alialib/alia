@@ -25,7 +25,7 @@ struct use_result
     T* ptr = nullptr;
     alia_substrate_block_traversal_mode mode
         = ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL;
-    // Is `*ptr` newly created? For `use_memory` and `use_object`, this true
+    // Is `*ptr` newly created? For `use_memory` and `use_object`, this is true
     // for any non-NORMAL traversal mode. For `use_cache`, it is also true when
     // the value was re-created after a cache clear (mode may still be NORMAL).
     bool freshly_constructed = false;

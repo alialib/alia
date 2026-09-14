@@ -494,7 +494,7 @@ alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
         }
         case ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL:
         case ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT:
-        default:
+        default: {
             size_t aligned_offset = alia::align_offset(
                 traversal.block.current_offset, alignment);
             traversal.block.current_offset = aligned_offset + size;
@@ -503,6 +503,7 @@ alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
                     + aligned_offset,
                 traversal.block.block->generation,
                 traversal.block.mode};
+        }
     }
 }
 

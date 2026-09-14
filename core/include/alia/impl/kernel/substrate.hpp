@@ -2,7 +2,6 @@
 
 #include <alia/abi/kernel/substrate.h>
 
-// TODO: Consider defining our own `forward` and `move` functions.
 #include <utility>
 
 namespace alia {
@@ -201,5 +200,36 @@ struct scoped_conditional_block
 #define alia_else ALIA_ELSE
 #define alia_end ALIA_END
 #endif
+
+// Run `content` inside a key scope for `table`, then sweep stale keys.
+// `content` is invoked as `content(scope)`.
+template<class Content>
+void
+key_scope(
+    alia_context* ctx, alia_substrate_key_table* table, Content&& content)
+{
+    alia_substrate_key_scope* scope
+        = alia_substrate_begin_key_scope(ctx, table);
+    std::forward<Content>(content)(scope);
+    alia_substrate_end_key_scope(ctx, scope);
+    alia_substrate_sweep_table_keys(ctx, table);
+}
+
+// Run `content` inside a keyed substrate block for `key`.
+// The block's memoized layout spec is keyed by the type of `content`, so each
+// call site (typically a unique lambda type) gets its own discovered size.
+template<class Content>
+void
+keyed_block(
+    alia_context* ctx,
+    alia_substrate_key_scope* scope,
+    alia_id_view key,
+    Content&& content)
+{
+    alia_struct_spec* spec = get_memoized_block_spec<Content>();
+    alia_substrate_begin_keyed_block(ctx, scope, key, spec);
+    std::forward<Content>(content)();
+    *spec = alia_substrate_end_keyed_block(ctx);
+}
 
 } // namespace alia
