@@ -1,11 +1,8 @@
 #include <alia/abi/ui/text.h>
 
-#include <alia/abi/kernel/ids.h>
-#include <alia/abi/kernel/routing.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/protocol.h>
 #include <alia/abi/ui/layout/utilities/emission.h>
@@ -360,8 +357,6 @@ alia_text(
     if (fresh)
         *cache = text_block_cache{};
 
-    alia_element_id const id = alia_make_element_id(ctx, result);
-
     alia_resolved_font const* font
         = effective_style->font != nullptr ? effective_style->font
                                            : alia_active_font(ctx);
@@ -447,12 +442,10 @@ alia_text(
         auto const* frag = arena_alloc<text_placement_fragment>(*arena);
         switch (category)
         {
-            case ALIA_CATEGORY_SPATIAL: {
-                alia_box box = frag->box;
-                alia_element_box_region(
-                    ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+            case ALIA_CATEGORY_SPATIAL:
+                // Plain text does not participate in mouse hit testing.
+                // Selectable/copyable text can opt in when that exists.
                 break;
-            }
             case ALIA_CATEGORY_DRAWING: {
                 alia_srgba8 const color = alia_palette_color_resolve(
                     alia_ctx_palette(ctx), effective_style->color);
