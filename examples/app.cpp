@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <functional>
-#include <iomanip>
-#include <iostream>
 #include <unordered_map>
 #include <utility>
 
@@ -14,6 +12,7 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/input/keyboard.h>
@@ -27,6 +26,9 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/abi/ui/system/tracer.h>
+#if ALIA_ENABLE_DEVTOOLS
+#include <alia/abi/ui/devtools/trace_hud.h>
+#endif
 #include <alia/base/color.hpp>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
@@ -54,6 +56,9 @@ static int primary_index = 0;
 
 alia_ui_system* the_system;
 static alia_ui_tracer the_tracer;
+#if ALIA_ENABLE_DEVTOOLS
+static alia_trace_hud_view_state trace_hud_view_state;
+#endif
 
 static float demo_spacing = 6.f;
 static float demo_node_expander_triangle_side = 24.f;
@@ -742,45 +747,73 @@ the_demo(context& ctx)
 {
     try
     {
-        with_spacing(ctx, 0, [&] {
-            row(ctx, [&]() {
-                concrete_panel(
-                    ctx,
-                    0,
-                    ctx.palette->foundation.background.stronger_2,
-                    FILL,
-                    [&]() {
-                        edge_offsets(
-                            ctx,
-                            {.left = 40, .right = 40, .top = 40, .bottom = 40},
-                            [&]() {
-                                with_spacing(ctx, 6, [&] {
-                                    column(ctx, [&]() { do_controls(ctx); });
-                                });
-                            });
-                    });
-                with_spacing(ctx, demo_spacing, [&] {
+        zstack(ctx, FILL, [&]() {
+            with_spacing(ctx, 0, [&] {
+                row(ctx, FILL, [&]() {
                     concrete_panel(
                         ctx,
                         0,
-                        ctx.palette->foundation.background.base,
-                        GROW,
+                        ctx.palette->foundation.background.stronger_2,
+                        FILL,
                         [&]() {
-                            column(ctx, GROW, [&]() {
-                                alia_ui_scroll_view_begin(
-                                    &ctx, ALIA_GROW, 0x3, 0);
-                                edge_offsets(
-                                    ctx,
-                                    {.left = 40,
-                                     .right = 40,
-                                     .top = 40,
-                                     .bottom = 40},
-                                    [&]() { do_content(ctx); });
-                                alia_ui_scroll_view_end(&ctx);
-                            });
+                            edge_offsets(
+                                ctx,
+                                {.left = 40,
+                                 .right = 40,
+                                 .top = 40,
+                                 .bottom = 40},
+                                [&]() {
+                                    with_spacing(ctx, 6, [&] {
+                                        column(
+                                            ctx, [&]() { do_controls(ctx); });
+                                    });
+                                });
                         });
+                    with_spacing(ctx, demo_spacing, [&] {
+                        concrete_panel(
+                            ctx,
+                            0,
+                            ctx.palette->foundation.background.base,
+                            GROW,
+                            [&]() {
+                                column(ctx, GROW, [&]() {
+                                    alia_ui_scroll_view_begin(
+                                        &ctx, ALIA_GROW, 0x3, 0);
+                                    edge_offsets(
+                                        ctx,
+                                        {.left = 40,
+                                         .right = 40,
+                                         .top = 40,
+                                         .bottom = 40},
+                                        [&]() { do_content(ctx); });
+                                    alia_ui_scroll_view_end(&ctx);
+                                });
+                            });
+                    });
                 });
             });
+
+            edge_offsets(
+                ctx,
+                {.left = 8.f, .right = 8.f, .top = 8.f, .bottom = 8.f},
+                ALIGN_RIGHT | ALIGN_TOP | FLUSH,
+                [&]() {
+#if ALIA_ENABLE_DEVTOOLS
+                    alia_geometry_push_z_offset(&ctx, ALIA_Z_LAYER_SPACING);
+                    alia_trace_hud_style const hud_style{
+                        .font = &demo_get_fonts().body_14,
+                    };
+                    bool const toggled = alia_ui_trace_hud(
+                        &ctx,
+                        &the_tracer,
+                        &trace_hud_view_state,
+                        &hud_style,
+                        nullptr);
+                    alia_geometry_pop_z(&ctx);
+                    if (toggled)
+                        abort_pass(ctx);
+#endif
+                });
         });
     }
     catch (pass_aborted&)
@@ -801,38 +834,6 @@ update()
     AllocProbeResult result
         = probe_allocations([&]() { alia_app_shell_frame(the_system); });
     (void) result;
-
-    // temporary text dump until the dev overlay lands
-    if (alia_trace_frame const* frame = alia_ui_tracer_latest(&the_tracer))
-    {
-        int64_t const wall_us
-            = alia_trace_ticks_to_ns(frame->wall_end - frame->wall_start)
-            / 1000;
-        std::cout << "frame " << frame->index << ": " << std::setw(6)
-                  << wall_us << "us";
-        for (uint16_t i = 0; i < frame->pass_count; ++i)
-        {
-            alia_trace_pass const& pass = frame->passes[i];
-            int64_t const us
-                = alia_trace_ticks_to_ns(pass.end - pass.start) / 1000;
-            std::cout << " | " << alia_trace_pass_kind_name(pass.kind);
-            if (pass.kind == ALIA_TRACE_PASS_REFRESH)
-            {
-                std::cout << '#' << unsigned(pass.refresh.index);
-                if (pass.refresh.incomplete)
-                    std::cout << '*';
-            }
-            else if (pass.kind == ALIA_TRACE_PASS_EVENT)
-            {
-                std::cout
-                    << "(0x" << std::hex << pass.event.type << std::dec << ')';
-            }
-            std::cout << ' ' << us << "us";
-        }
-        if (frame->dropped_passes != 0)
-            std::cout << " | dropped " << frame->dropped_passes;
-        std::cout << std::endl;
-    }
 }
 
 static void
@@ -869,6 +870,9 @@ main()
 
     alia_ui_tracer_init(&the_tracer);
     alia_ui_tracer_attach(&the_tracer, the_system);
+#if ALIA_ENABLE_DEVTOOLS
+    alia_trace_hud_view_state_init(&trace_hud_view_state);
+#endif
 
     static bool theme_initialized = false;
     if (!theme_initialized)

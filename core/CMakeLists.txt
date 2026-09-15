@@ -58,6 +58,14 @@ add_library(alia_core STATIC
     src/alia/ui/palette.cpp
     src/alia/ui/geometry.cpp
     src/alia/ui/styling.cpp)
+
+if(ALIA_ENABLE_DEVTOOLS)
+    target_sources(alia_core PRIVATE
+        src/alia/ui/devtools/trace_summary.cpp
+        src/alia/ui/devtools/trace_hud.cpp)
+    target_compile_definitions(alia_core PUBLIC ALIA_ENABLE_DEVTOOLS=1)
+endif()
+
 target_include_directories(alia_core PUBLIC
     include)
 target_include_directories(alia_core PUBLIC # TODO: PRIVATE

@@ -31,6 +31,11 @@ option(
     ${ALIA_IS_MAIN_PROJECT})
 
 option(
+    ALIA_ENABLE_DEVTOOLS
+    "Enable UI dev tools"
+    ${ALIA_IS_MAIN_PROJECT})
+
+option(
     ALIA_ENABLE_BENCHMARKS
     "Build benchmarks"
     ${ALIA_IS_MAIN_PROJECT})
