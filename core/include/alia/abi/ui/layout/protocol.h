@@ -7,8 +7,8 @@
 
 // Layout resolution consists of three phases:
 // 1. Measure horizontal requirements.
-// 2. Assign widths and measure vertical requirements based on those.
-// 3. Assign boxes.
+// 2. Estimate widths and measure resulting vertical requirements.
+// 3. Assign 2D boxes.
 //
 // All passes start at the root node and recurse through descendants. The
 // scratch space is used to store intermediate results. Each pass starts with
@@ -17,6 +17,14 @@
 // pass is required to walk the tree in the same order as the previous pass.
 // (i.e., Individual nodes must (re-)allocate the same data every pass, in the
 // same order, and they must recursively visit each child in the same order.)
+//
+// Note that nodes may be invoked multiple times in phase #2 if the
+// parent/caller wants to measure the results for different widths. This is
+// rare and the caller is responsible for ensuring that the node sees the same
+// scratch offset each time. Phase #3 is only invoked once on an individual
+// node during a layout resolution, but the width that's assigned may be
+// different from the one that was last used to measure. (This is also
+// unusual.)
 
 ALIA_EXTERN_C_BEGIN
 

@@ -38,7 +38,7 @@ struct grid_scratch
 
 struct grid_row_scratch
 {
-    float height = 0, ascent = 0;
+    float height = 0, ascent = 0, descent = 0;
 };
 
 int
@@ -196,6 +196,7 @@ grid_row_measure_vertical(
     }
     scratch.height = height;
     scratch.ascent = ascent;
+    scratch.descent = descent;
     alia_arena_jump(&ctx->scratch, marker);
     return alia_mask_reported_vertical_requirements(
         grid_row.container.flags,
@@ -232,6 +233,11 @@ grid_row_assign_boxes(
         = (std::max) (0.f, placement.size.x - grid.scratch->total_width);
     float const one_over_total_growth
         = 1.0f / (std::max) (0.00001f, grid.scratch->total_growth);
+    float const baseline_in_row = alia_resolve_baseline(
+        grid_row.container.flags,
+        placement.size.y,
+        scratch.ascent,
+        scratch.descent);
     auto const* column_data = grid.scratch->columns;
     for (alia_layout_node* child = grid_row.container.first_child;
          child != nullptr;
@@ -245,8 +251,8 @@ grid_row_assign_boxes(
             ALIA_MAIN_AXIS_X,
             child,
             {.min = {current_x, box.min.y + placement.min.y},
-             .size = {child_x.min_size + extra_space, box.size.y}},
-            baseline);
+             .size = {child_x.min_size + extra_space, placement.size.y}},
+            baseline_in_row);
         current_x += child_x.min_size + extra_space;
     }
     alia_arena_jump(&ctx->scratch, marker);

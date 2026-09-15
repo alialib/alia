@@ -133,7 +133,7 @@ row_assign_boxes(
             ALIA_MAIN_AXIS_X,
             child,
             {.min = {current_x, box.min.y + placement.min.y},
-             .size = {child_x.min_size + extra_space, box.size.y}},
+             .size = {child_x.min_size + extra_space, placement.size.y}},
             baseline_in_row);
         current_x += child_x.min_size + extra_space + row.gap;
     }

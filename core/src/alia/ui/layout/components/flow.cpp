@@ -423,6 +423,49 @@ flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
         .growth_factor = alia_resolve_growth_factor(flow.flags)};
 }
 
+struct flow_wrapped_size
+{
+    float height = 0.f;
+    float ascent = 0.f;
+};
+
+static flow_wrapped_size
+flow_measure_wrapped_size(
+    alia_flow_fragment const* fragments,
+    int fragment_count,
+    float available_width)
+{
+    flow_line_wrapper_context wrapper_ctx
+        = {.fragments = fragments,
+           .fragment_count = fragment_count,
+           .available_width = available_width};
+
+    flow_line_wrapper_state state;
+    seed_flow_line_wrapper_state(state);
+
+    bool wrapping_has_occurred = false;
+    flow_wrapped_size wrapped;
+    float current_line_gap = 0;
+
+    auto on_wrap = [&](bool is_explicit_break) {
+        (void) is_explicit_break;
+        flow_finalize_line(state, &state.line);
+        wrapped.height += current_line_gap;
+        current_line_gap = state.line_max_line_gap;
+        if (!wrapping_has_occurred)
+        {
+            wrapped.ascent = state.line.ascent;
+            wrapping_has_occurred = true;
+        }
+        wrapped.height += state.line.height;
+    };
+
+    for (int i = 0; i < fragment_count; ++i)
+        process_flow_fragment(wrapper_ctx, state, &fragments[i], i, on_wrap);
+    on_wrap(true);
+    return wrapped;
+}
+
 alia_vertical_requirements
 flow_measure_vertical(
     alia_measurement_context* ctx,
@@ -447,49 +490,20 @@ flow_measure_vertical(
         assigned_width,
         scratch.max_fragment_width);
 
-    int const fragment_count = scratch.fragment_count;
+    auto const wrapped = flow_measure_wrapped_size(
+        fragments, scratch.fragment_count, assignment.size);
 
-    flow_line_wrapper_context wrapper_ctx
-        = {.fragments = fragments,
-           .fragment_count = fragment_count,
-           .available_width = assignment.size};
-
-    flow_line_wrapper_state state;
-    seed_flow_line_wrapper_state(state);
-
-    bool wrapping_has_occurred = false;
-    float overall_height = 0.f, overall_ascent = 0.f;
-    float current_line_gap = 0;
-
-    auto on_wrap = [&](bool is_explicit_break) {
-        (void) is_explicit_break;
-        flow_finalize_line(state, &state.line);
-        overall_height += current_line_gap;
-        current_line_gap = state.line_max_line_gap;
-        if (!wrapping_has_occurred)
-        {
-            overall_ascent = state.line.ascent;
-            wrapping_has_occurred = true;
-        }
-        overall_height += state.line.height;
-    };
-
-    for (int i = 0; i < fragment_count; ++i)
-        process_flow_fragment(wrapper_ctx, state, &fragments[i], i, on_wrap);
-    // Process the final line.
-    on_wrap(true);
-
-    scratch.overall_height = overall_height;
-    scratch.overall_ascent = overall_ascent;
+    scratch.overall_height = wrapped.height;
+    scratch.overall_ascent = wrapped.ascent;
 
     return alia_mask_reported_vertical_requirements(
         flow.flags,
         main_axis,
         alia_vertical_requirements{
-            .min_size = overall_height,
+            .min_size = wrapped.height,
             .growth_factor = alia_resolve_growth_factor(flow.flags),
-            .ascent = overall_ascent,
-            .descent = overall_height - overall_ascent});
+            .ascent = wrapped.ascent,
+            .descent = wrapped.height - wrapped.ascent});
 }
 
 static void
@@ -562,12 +576,19 @@ flow_assign_boxes(
         = arena_alloc_array<alia_flow_fragment_placement>(
             ctx->scratch, scratch.fragment_count);
 
-    auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(flow.flags, main_axis),
-        box.size,
-        baseline,
-        {scratch.max_fragment_width, scratch.overall_height},
-        scratch.overall_ascent);
+    alia_layout_flags_t const flags
+        = alia_fold_in_cross_axis_flags(flow.flags, main_axis);
+    auto const x_placement = alia_resolve_container_x(
+        flags, box.size.x, scratch.max_fragment_width);
+    // Wrap at the assigned width before resolving Y so the flow's own
+    // alignment uses its actual height.
+    auto const wrapped = flow_measure_wrapped_size(
+        fragments, scratch.fragment_count, x_placement.size);
+    auto const y_placement = alia_resolve_container_y(
+        flags, box.size.y, baseline, wrapped.height, wrapped.ascent);
+    alia_box const placement
+        = {{x_placement.offset, y_placement.offset},
+           {x_placement.size, y_placement.size}};
 
     if ((flow.flags & ALIA_PROVIDE_BOX) != 0)
     {

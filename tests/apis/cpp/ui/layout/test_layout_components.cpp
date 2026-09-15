@@ -48,6 +48,18 @@ TEST_CASE("layout row with grow")
         leaf2, alia_vec2f_make(100.f, 0.f), alia_vec2f_make(200.f, 100.f)));
 }
 
+TEST_CASE("layout row CENTER_Y assigns resolved height")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+        row(ctx, CENTER_Y, [&]() {
+            test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FILL, &leaf);
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 20.f), alia_vec2f_make(20.f, 10.f)));
+}
+
 TEST_CASE("layout column with grow")
 {
     alia_box leaf1;
@@ -327,7 +339,10 @@ TEST_CASE("layout zstack sizes to largest child")
     run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_context& ctx) {
         zstack(ctx, ALIGN_LEFT | ALIGN_TOP, [&]() {
             test_leaf(
-                ctx, alia_vec2f_make(30.f, 20.f), ALIGN_LEFT | ALIGN_TOP, &small_leaf);
+                ctx,
+                alia_vec2f_make(30.f, 20.f),
+                ALIGN_LEFT | ALIGN_TOP,
+                &small_leaf);
             test_leaf(
                 ctx,
                 alia_vec2f_make(50.f, 40.f),
@@ -362,7 +377,7 @@ TEST_CASE("layout zstack overlay bottom left")
         overlay, alia_vec2f_make(0.f, 85.f), alia_vec2f_make(25.f, 15.f)));
 }
 
-TEST_CASE("layout zstack does not share baseline across layers")
+TEST_CASE("layout zstack layers share an internal baseline")
 {
     alia_box leaf1;
     alia_box leaf2;
@@ -384,10 +399,10 @@ TEST_CASE("layout zstack does not share baseline across layers")
                 8.f);
         });
     });
-    // Each layer tops out independently (baseline = that child's ascent),
-    // unlike a row where these would sit at different Y to share a baseline.
+    // The stack reports no ascent to its parent, so layers share a baseline
+    // at the vertical center of the stack (y=40).
     CHECK(check_box_eq(
-        leaf1, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(20.f, 10.f)));
+        leaf1, alia_vec2f_make(0.f, 32.f), alia_vec2f_make(20.f, 10.f)));
     CHECK(check_box_eq(
-        leaf2, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(20.f, 12.f)));
+        leaf2, alia_vec2f_make(0.f, 36.f), alia_vec2f_make(20.f, 12.f)));
 }

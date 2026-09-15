@@ -11,7 +11,6 @@ using zstack_layout_node = alia_layout_container;
 
 struct zstack_scratch
 {
-    std::uint32_t child_count = 0;
     float max_width = 0;
     float max_height = 0;
 };
@@ -26,7 +25,6 @@ zstack_measure_horizontal(
     for (alia_layout_node* child = zstack.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        ++scratch.child_count;
         auto const child_x = alia_measure_horizontal(ctx, child);
         scratch.max_width = (std::max) (scratch.max_width, child_x.min_size);
     }
@@ -45,29 +43,23 @@ zstack_measure_vertical(
     auto& zstack = *reinterpret_cast<zstack_layout_node*>(node);
     auto& scratch = use_scratch<zstack_scratch>(ctx->scratch);
 
-    alia_vertical_requirements* y_requirements
-        = arena_alloc_array<alia_vertical_requirements>(
-            ctx->scratch, scratch.child_count);
-
     auto const assignment = alia_resolve_container_x(
         alia_fold_in_cross_axis_flags(zstack.flags, main_axis),
         assigned_width,
         scratch.max_width);
 
     float max_height = 0.f;
-    alia_vertical_requirements* requirement_i = y_requirements;
     for (alia_layout_node* child = zstack.first_child; child != nullptr;
          child = child->next_sibling)
     {
         auto const child_y
             = alia_measure_vertical(ctx, main_axis, child, assignment.size);
-        *requirement_i++ = child_y;
         max_height = (std::max) (max_height, child_y.min_size);
     }
     scratch.max_height = max_height;
 
-    // Layers don't share a baseline, so the stack reports 0 for ascent and
-    // descent.
+    // Layers share a baseline inside the stack, but the stack does not
+    // participate in its parent's baseline group.
     return alia_mask_reported_vertical_requirements(
         zstack.flags,
         main_axis,
@@ -88,9 +80,6 @@ zstack_assign_boxes(
 {
     auto& zstack = *reinterpret_cast<zstack_layout_node*>(node);
     auto& scratch = use_scratch<zstack_scratch>(ctx->scratch);
-    alia_vertical_requirements* y_requirements
-        = arena_alloc_array<alia_vertical_requirements>(
-            ctx->scratch, scratch.child_count);
 
     auto const placement = alia_resolve_container_box(
         alia_fold_in_cross_axis_flags(zstack.flags, main_axis),
@@ -107,12 +96,15 @@ zstack_assign_boxes(
 
     alia_box const child_box
         = {.min = box.min + placement.min, .size = placement.size};
+    // The stack reports no ascent to its parent, so layers share an internal
+    // baseline derived from the stack's own baseline-group flags.
+    float const child_baseline = alia_resolve_baseline(
+        zstack.flags, placement.size.y, 0.f, 0.f);
 
     for (alia_layout_node* child = zstack.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_y = *y_requirements++;
-        alia_assign_boxes(ctx, main_axis, child, child_box, child_y.ascent);
+        alia_assign_boxes(ctx, main_axis, child, child_box, child_baseline);
     }
 }
 

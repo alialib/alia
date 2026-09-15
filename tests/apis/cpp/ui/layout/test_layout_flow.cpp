@@ -257,6 +257,24 @@ TEST_CASE("layout block flow justify center")
         leaf2, alia_vec2f_make(25.f, 0.f), alia_vec2f_make(20.f, 10.f)));
 }
 
+TEST_CASE("layout block flow wraps against resolved width")
+{
+    alia_box leaf1;
+    alia_box leaf2;
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+        block_flow(ctx, CENTER_X, [&]() {
+            test_leaf(ctx, alia_vec2f_make(40.f, 10.f), NO_FLAGS, &leaf1);
+            test_leaf(ctx, alia_vec2f_make(40.f, 10.f), NO_FLAGS, &leaf2);
+        });
+    });
+    // Shrink-wrapped content width is 40, so the children wrap even though
+    // the assigned box is 100 wide.
+    CHECK(check_box_eq(
+        leaf1, alia_vec2f_make(30.f, 0.f), alia_vec2f_make(40.f, 10.f)));
+    CHECK(check_box_eq(
+        leaf2, alia_vec2f_make(30.f, 10.f), alia_vec2f_make(40.f, 10.f)));
+}
+
 TEST_CASE("layout flow incomplete line justify")
 {
     alia_box leaf1;

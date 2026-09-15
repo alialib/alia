@@ -262,9 +262,10 @@ block_flow_assign_boxes(
     alia_line_requirements line = {0};
     float assignment_x_base = box.min.x + placement.min.x,
           assignment_x_offset = 0, assignment_y = box.min.y + placement.min.y;
-    // `wrapping_x_offset` is used to recreate the wrapping behavior that was
-    // done during measurement. (In theory, the assigned widths should yield
-    // the same result, but they are susceptible to floating point errors.)
+    // Redo the wrapping process from measurement using min sizes against the
+    // resolved content width. (In theory, the assigned child widths should
+    // yield the same break positions, but they are more susceptible to
+    // floating point error.)
     float wrapping_x_offset = 0;
     alia_layout_node* line_start_child = block_flow.first_child;
     int child_index = 0, line_start_index = 0;
@@ -277,7 +278,8 @@ block_flow_assign_boxes(
         // TODO: This index check is probably overly defensive w.r.t. floating
         // point errors.
         if (child_index > line_start_index
-            && wrapping_x_offset + current_gap + cs.x.min_size > box.size.x)
+            && wrapping_x_offset + current_gap + cs.x.min_size
+                   > placement.size.x)
         {
             int const line_child_count = child_index - line_start_index;
 
