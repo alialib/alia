@@ -100,6 +100,7 @@ wire_context(layout_fixture& fixture, bool refresh)
         .stack = &fixture.stack,
         .scratch = nullptr,
         .tick_count = 0,
+        .effects = nullptr,
         .system = nullptr,
         .active_styles = &fixture.layout_style,
         .geometry = &fixture.geometry,

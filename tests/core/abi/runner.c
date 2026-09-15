@@ -24,6 +24,8 @@ void
 substrate_tests(void);
 void
 ids_tests(void);
+void
+effect_tests(void);
 
 void
 layout_abi_headers_tests(void);
@@ -41,6 +43,7 @@ TEST_LIST
        {"base/color", color_tests},
        {"base/stack", stack_tests},
        {"kernel/ids", ids_tests},
+       {"kernel/effect", effect_tests},
        {"kernel/substrate", substrate_tests},
        {"ui/layout/abi_headers", layout_abi_headers_tests},
        {"ui/layout/placement", placement_tests},

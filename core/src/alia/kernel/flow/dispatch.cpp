@@ -1,6 +1,7 @@
 #include <alia/kernel/flow/dispatch.h>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/kernel/effect.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/styling.h>
@@ -65,6 +66,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
         = alia_arena_ptr(&scratch, alia_arena_alloc(&scratch, actives_bytes));
     std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
 
+    alia_effect_log effects = {};
+
     alia_context ctx = {
         .kernel = nullptr,
         .substrate = &substrate_traversal,
@@ -72,6 +75,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .stack = &sys.stack,
         .scratch = &scratch,
         .tick_count = sys.tick_count,
+        .effects = &effects,
         .system = &sys,
         .active_styles = active_styles,
         // No active font until something pushes one (see `alia_font_push`).
@@ -90,7 +94,10 @@ invoke_controller(ui_system& sys, event_traversal& events)
     sys.controller.fn(sys.controller.user_data, &ctx);
 
     if (!ctx.events->aborted)
+    {
         sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
+        alia_run_effects(&ctx);
+    }
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;

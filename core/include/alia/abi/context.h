@@ -17,6 +17,7 @@ typedef struct alia_input_state alia_input_state;
 typedef struct alia_layout_context alia_layout_context;
 typedef struct alia_substrate_traversal alia_substrate_traversal;
 typedef struct alia_draw_context alia_draw_context;
+typedef struct alia_effect_log alia_effect_log;
 
 typedef struct alia_context
 {
@@ -27,6 +28,7 @@ typedef struct alia_context
     alia_stack* stack;
     alia_bump_allocator* scratch;
     alia_nanosecond_count tick_count;
+    alia_effect_log* effects;
 
     // UI-level capabilities
     alia_ui_system* system;

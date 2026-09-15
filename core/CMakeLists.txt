@@ -4,6 +4,7 @@ add_library(alia_core STATIC
     src/alia/base/stack.cpp
     src/alia/kernel/ids.cpp
     src/alia/kernel/substrate.cpp
+    src/alia/kernel/effect.cpp
     src/alia/kernel/animation/flares.cpp
     src/alia/kernel/animation/transitions.cpp
     src/alia/kernel/flow/dispatch.cpp
