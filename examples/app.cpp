@@ -11,6 +11,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/effect.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
@@ -118,15 +119,18 @@ char const* lorem_ipsum
       "ex at pulvinar volutpat, ligula nulla pellentesque tellus, vel aliquam "
       "nunc dolor eu risus.";
 
-struct pass_aborted
+static void
+defer_bool(
+    context& ctx, bool* dst, alia_bool_signal const& signal, char const* label)
 {
-};
+    if (signal.flags & ALIA_SIGNAL_WRITTEN)
+        alia_defer_write(&ctx, dst, &signal.value, sizeof(*dst), label);
+}
 
-void
-abort_pass(context& ctx)
+static void
+defer_int(context& ctx, int* dst, int value, char const* label)
 {
-    ctx.events->aborted = true;
-    throw pass_aborted();
+    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
 }
 
 void
@@ -307,11 +311,7 @@ do_switch_demo(context& ctx)
             .value = setting_one,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting One");
-        if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            setting_one = switch_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &setting_one, switch_signal, "setting_one");
     }
 
     {
@@ -321,11 +321,7 @@ do_switch_demo(context& ctx)
             .value = setting_two,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting Two");
-        if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            setting_two = switch_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &setting_two, switch_signal, "setting_two");
     }
 
     {
@@ -335,11 +331,7 @@ do_switch_demo(context& ctx)
             .value = setting_three,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting Three");
-        if (switch_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            setting_three = switch_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &setting_three, switch_signal, "setting_three");
     }
 }
 
@@ -357,10 +349,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option One");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            radio_index = 0;
-            abort_pass(ctx);
-        }
+            defer_int(ctx, &radio_index, 0, "radio");
     }
 
     {
@@ -370,10 +359,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option Two");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            radio_index = 1;
-            abort_pass(ctx);
-        }
+            defer_int(ctx, &radio_index, 1, "radio");
     }
 
     {
@@ -383,10 +369,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option Three");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            radio_index = 2;
-            abort_pass(ctx);
-        }
+            defer_int(ctx, &radio_index, 2, "radio");
     }
 }
 
@@ -402,11 +385,7 @@ do_checkbox_demo(context& ctx)
             .value = setting_one,
         };
         do_checkbox_with_text(ctx, &checkbox_signal, "Initially Unchecked");
-        if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            setting_one = checkbox_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &setting_one, checkbox_signal, "checkbox_one");
     }
 
     {
@@ -416,11 +395,7 @@ do_checkbox_demo(context& ctx)
             .value = setting_two,
         };
         do_checkbox_with_text(ctx, &checkbox_signal, "Initially Checked");
-        if (checkbox_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            setting_two = checkbox_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &setting_two, checkbox_signal, "checkbox_two");
     }
 
     {
@@ -460,11 +435,7 @@ do_node_expander_demo(context& ctx)
             .value = expanded,
         };
         do_node_expander_with_text(ctx, &expanded_signal, "Expandable");
-        if (expanded_signal.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            expanded = expanded_signal.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, &expanded, expanded_signal, "expanded");
     }
 
     {
@@ -498,11 +469,7 @@ do_collapsible_demo(context& ctx)
         .value = collapsed,
     };
     do_node_expander_with_text(ctx, &collapsed_signal, "Collapsible");
-    if (collapsed_signal.flags & ALIA_SIGNAL_WRITTEN)
-    {
-        collapsed = collapsed_signal.value;
-        abort_pass(ctx);
-    }
+    defer_bool(ctx, &collapsed, collapsed_signal, "collapsed");
 
     alia::collapsible(ctx, &collapsed_signal, [&]() {
         flow(ctx, FILL, [&]() {
@@ -536,12 +503,10 @@ do_button_demo(context& ctx)
 
     row(ctx, ALIGN_LEFT, [&]() {
         button(ctx, "Click me", callback([&] {
-                   ++clicks;
-                   abort_pass(ctx);
+                   defer_int(ctx, &clicks, clicks + 1, "clicks");
                }));
         button(ctx, "Reset", callback([&] {
-                   clicks = 0;
-                   abort_pass(ctx);
+                   defer_int(ctx, &clicks, 0, "clicks");
                }));
         button(ctx, "Disabled", actions::unready());
     });
@@ -557,13 +522,9 @@ do_button_demo(context& ctx)
     }
 
     row(ctx, ALIGN_LEFT, [&]() {
-        int const n_before = n;
-        int const m_before = m;
-        button(ctx, "n <<= m", ref(n) <<= ref(m));
-        button(ctx, "m <<= n", ref(m) <<= ref(n));
+        button(ctx, "n <<= m", callback([&] { defer_int(ctx, &n, m, "n"); }));
+        button(ctx, "m <<= n", callback([&] { defer_int(ctx, &m, n, "m"); }));
         button(ctx, "n <<= empty", ref(n) <<= empty<int>());
-        if (n != n_before || m != m_before)
-            abort_pass(ctx);
     });
 
     do_subheading(ctx, "Variants");
@@ -740,52 +701,46 @@ do_content(context& ctx)
 void
 the_demo(context& ctx)
 {
-    try
-    {
-        with_spacing(ctx, 0, [&] {
-            row(ctx, [&]() {
-                concrete_panel(
-                    ctx,
-                    0,
-                    ctx.palette->foundation.background.stronger_2,
-                    FILL,
-                    [&]() {
-                        edge_offsets(
-                            ctx,
-                            {.left = 40, .right = 40, .top = 40, .bottom = 40},
-                            [&]() {
-                                with_spacing(ctx, 6, [&] {
-                                    column(ctx, [&]() { do_controls(ctx); });
-                                });
-                            });
-                    });
-                with_spacing(ctx, demo_spacing, [&] {
-                    concrete_panel(
+    with_spacing(ctx, 0, [&] {
+        row(ctx, [&]() {
+            concrete_panel(
+                ctx,
+                0,
+                ctx.palette->foundation.background.stronger_2,
+                FILL,
+                [&]() {
+                    edge_offsets(
                         ctx,
-                        0,
-                        ctx.palette->foundation.background.base,
-                        GROW,
+                        {.left = 40, .right = 40, .top = 40, .bottom = 40},
                         [&]() {
-                            column(ctx, GROW, [&]() {
-                                alia_ui_scroll_view_begin(
-                                    &ctx, ALIA_GROW, 0x3, 0);
-                                edge_offsets(
-                                    ctx,
-                                    {.left = 40,
-                                     .right = 40,
-                                     .top = 40,
-                                     .bottom = 40},
-                                    [&]() { do_content(ctx); });
-                                alia_ui_scroll_view_end(&ctx);
+                            with_spacing(ctx, 6, [&] {
+                                column(ctx, [&]() { do_controls(ctx); });
                             });
                         });
                 });
+            with_spacing(ctx, demo_spacing, [&] {
+                concrete_panel(
+                    ctx,
+                    0,
+                    ctx.palette->foundation.background.base,
+                    GROW,
+                    [&]() {
+                        column(ctx, GROW, [&]() {
+                            alia_ui_scroll_view_begin(
+                                &ctx, ALIA_GROW, 0x3, 0);
+                            edge_offsets(
+                                ctx,
+                                {.left = 40,
+                                 .right = 40,
+                                 .top = 40,
+                                 .bottom = 40},
+                                [&]() { do_content(ctx); });
+                            alia_ui_scroll_view_end(&ctx);
+                        });
+                    });
             });
         });
-    }
-    catch (pass_aborted&)
-    {
-    }
+    });
 }
 
 static void
