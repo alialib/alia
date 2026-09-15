@@ -9,7 +9,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -34,7 +34,7 @@
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
-#include "alia_notargs_effect.h"
+#include "alia_notargs_shader.h"
 #include "notargs_params.h"
 
 using namespace alia;
@@ -75,7 +75,7 @@ alia_ui_system* the_system = nullptr;
 std::chrono::high_resolution_clock::time_point the_last_anim_time
     = std::chrono::high_resolution_clock::now();
 
-alia_draw_material_id the_notargs_effect_id = 0;
+alia_draw_material_id the_notargs_shader_id = 0;
 
 void
 shader_color_for_seed(int seed_index, float* out_rgb)
@@ -106,10 +106,10 @@ shader_color_for_seed(int seed_index, float* out_rgb)
     }
 }
 
-notargs_effect_params
+notargs_params
 make_notargs_params()
 {
-    notargs_effect_params p{};
+    notargs_params p{};
     p.zoom = float(std::exp(the_controls.zoom));
     p.t = float(the_notargs_t);
     p.curl = float(the_controls.curl);
@@ -404,7 +404,7 @@ shader_gallery_root(context& ctx)
             the_theme_dirty_flag = false;
         }
 
-        notargs_effect_params const effect_params = make_notargs_params();
+        notargs_params const shader_params = make_notargs_params();
 
         with_spacing(ctx, 0, [&] {
             row(ctx, [&]() {
@@ -440,12 +440,12 @@ shader_gallery_root(context& ctx)
                     ctx.palette->foundation.background.base,
                     GROW,
                     [&]() {
-                        alia_do_effect(
+                        alia_do_shader(
                             &ctx,
                             0,
-                            the_notargs_effect_id,
-                            &effect_params,
-                            sizeof(effect_params),
+                            the_notargs_shader_id,
+                            &shader_params,
+                            sizeof(shader_params),
                             ALIA_GROW | ALIA_FILL,
                             alia_vec2f_make(100.f, 100.f));
                     });
@@ -523,14 +523,14 @@ main()
     the_system = alia_app_ui(&app);
     the_theme_dirty_flag = true;
 
-    the_notargs_effect_id = 0;
-    alia_effect_desc const notargs_desc
-        = alia_notargs_effect_desc(sizeof(notargs_effect_params));
-    if (alia_ui_register_effect(
-            the_system, &notargs_desc, &the_notargs_effect_id)
+    the_notargs_shader_id = 0;
+    alia_shader_desc const notargs_desc
+        = alia_notargs_shader_desc(sizeof(notargs_params));
+    if (alia_ui_register_shader(
+            the_system, &notargs_desc, &the_notargs_shader_id)
         != 0)
     {
-        std::cerr << "notargs: effect registration failed\n";
+        std::cerr << "notargs: shader registration failed\n";
         alia_app_destroy(&app);
         return 1;
     }

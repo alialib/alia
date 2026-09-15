@@ -3,7 +3,7 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/geometry.h>
@@ -18,10 +18,10 @@ typedef struct alia_renderer_ops
 {
     void (*upload_msdf_atlas)(void* user, alia_msdf_atlas_image const* image);
 
-    // Register a portable effect. Returns 0 on success.
-    int (*register_effect)(
+    // Register a portable shader. Returns 0 on success.
+    int (*register_shader)(
         void* user,
-        alia_effect_desc const* desc,
+        alia_shader_desc const* desc,
         alia_draw_material_id* out_material_id);
 
     // Create/destroy/resize an offscreen draw target.

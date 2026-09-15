@@ -1,10 +1,10 @@
-// notargs — gallery demo effect (Slang → DXBC / GLSL ES via alia_shader_builder).
-#include "alia_effect_frame.slang"
+// notargs — gallery demo shader (Slang → DXBC / GLSL ES via alia_shader_builder).
+#include "alia_shader_frame.slang"
 #include "notargs_params.h"
 
-cbuffer Effect : register(b1)
+cbuffer AliaShaderParams : register(b1)
 {
-    notargs_effect_params params;
+    notargs_params params;
 };
 
 static const float tau = 6.28318530718;
@@ -34,8 +34,8 @@ float sdf(float3 p)
 [shader("fragment")]
 float4 ps_main(float4 frag_coord : SV_Position) : SV_Target
 {
-    float2 corner = alia_effect_region.xy;
-    float2 size = alia_effect_region.zw;
+    float2 corner = alia_shader_region.xy;
+    float2 size = alia_shader_region.zw;
     float zoom = params.zoom;
     bool normalize_rays = params.normalize_rays > 0.5;
     float step_scaling = params.step_scaling;
@@ -54,7 +54,7 @@ float4 ps_main(float4 frag_coord : SV_Position) : SV_Target
         break;
     case glsl:
         // Map GL bottom-left fragment coords into Alia surface space.
-        frag = float2(frag_coord.x, alia_effect_surface.y - frag_coord.y);
+        frag = float2(frag_coord.x, alia_shader_surface.y - frag_coord.y);
         break;
     }
 

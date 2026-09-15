@@ -1,0 +1,21 @@
+// Alia portable shader frame interface (Slang).
+//
+// Backends bind:
+//   b0 / UBO binding 0: AliaShaderFrame (region + surface, 32 bytes)
+//   b1 / UBO binding 1: user params (declared by the shader)
+//
+// Fragment entry: ps_main(float4 frag_coord : SV_Position) : SV_Target
+//
+// `frag_coord` is in Alia surface pixel space on D3D (top-left origin). On
+// GLSL targets, use alia_shader_surface.y to flip gl_FragCoord as needed
+// (see __target_switch in notargs.slang).
+//
+// Color: `SV_Target` is linear-light RGB with premultiplied alpha (same as the
+// UI primitive pipeline after sRGB decode). Backends encode to sRGB for
+// display after blending.
+
+cbuffer AliaShaderFrame : register(b0)
+{
+    float4 alia_shader_region; // xy = min, zw = size (surface space)
+    float4 alia_shader_surface; // xy = surface size in pixels
+};

@@ -182,8 +182,8 @@ if(ALIA_ENABLE_EXAMPLES)
     set(ALIA_GALLERY_SHADER_DIR
         "${PROJECT_SOURCE_DIR}/examples/shader_gallery")
     set(ALIA_NOTARGS_SLANG "${ALIA_GALLERY_SHADER_DIR}/notargs.slang")
-    set(ALIA_NOTARGS_GEN_H "${ALIA_GEN_DIR}/alia_notargs_effect.h")
-    set(ALIA_NOTARGS_GEN_CPP "${ALIA_GEN_DIR}/alia_notargs_effect.cpp")
+    set(ALIA_NOTARGS_GEN_H "${ALIA_GEN_DIR}/alia_notargs_shader.h")
+    set(ALIA_NOTARGS_GEN_CPP "${ALIA_GEN_DIR}/alia_notargs_shader.cpp")
 
     if(WIN32 AND NOT EMSCRIPTEN)
         set(ALIA_NOTARGS_FORMAT dxbc)
@@ -225,15 +225,15 @@ if(ALIA_ENABLE_EXAMPLES)
             "${ALIA_NOTARGS_GEN_CPP}"
             --format "${ALIA_NOTARGS_FORMAT}"
             --entry ps_main
-            --symbol alia_notargs_effect
+            --symbol alia_notargs_shader
             --slangc "${ALIA_SLANGC_FOR_BUILD}"
             --include-dir "${ALIA_GALLERY_SHADER_DIR}"
         DEPENDS
             ${ALIA_SHADER_BUILDER_DEP}
             "${ALIA_NOTARGS_SLANG}"
-            "${ALIA_GALLERY_SHADER_DIR}/alia_effect_frame.slang"
+            "${ALIA_GALLERY_SHADER_DIR}/alia_shader_frame.slang"
             "${ALIA_GALLERY_SHADER_DIR}/notargs_params.h"
-        COMMENT "Baking notargs effect shader (${ALIA_NOTARGS_FORMAT})"
+        COMMENT "Baking notargs shader (${ALIA_NOTARGS_FORMAT})"
     )
     set_source_files_properties("${ALIA_NOTARGS_GEN_CPP}" PROPERTIES
         GENERATED TRUE)

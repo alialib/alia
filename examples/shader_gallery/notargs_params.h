@@ -1,4 +1,4 @@
-// Shared POD layout for the notargs effect params block.
+// Shared POD layout for the notargs shader params block.
 // Included from Slang (GPU cbuffer) and C++ (CPU upload blob).
 //
 // Packing: consecutive floats in groups of four match HLSL cbuffer / std140
@@ -8,7 +8,7 @@
 #ifndef NOTARGS_PARAMS_H
 #define NOTARGS_PARAMS_H
 
-struct notargs_effect_params
+struct notargs_params
 {
     float zoom;
     float t;

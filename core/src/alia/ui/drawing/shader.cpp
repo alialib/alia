@@ -1,4 +1,4 @@
-#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/shader.h>
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/routing.h>
@@ -17,7 +17,7 @@ using namespace alia::operators;
 
 namespace alia {
 
-struct effect_data
+struct shader_component_data
 {
     uint32_t reserved;
 };
@@ -29,22 +29,22 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 int
-alia_ui_register_effect(
+alia_ui_register_shader(
     alia_ui_system* ui,
-    alia_effect_desc const* desc,
+    alia_shader_desc const* desc,
     alia_draw_material_id* out_material_id)
 {
     ALIA_ASSERT(ui);
     ALIA_ASSERT(desc);
     ALIA_ASSERT(out_material_id);
-    if (!ui->renderer.register_effect)
+    if (!ui->renderer.register_shader)
         return -1;
-    return ui->renderer.register_effect(
+    return ui->renderer.register_shader(
         ui->renderer.user, desc, out_material_id);
 }
 
 void
-alia_draw_effect(
+alia_draw_shader(
     alia_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
@@ -57,12 +57,12 @@ alia_draw_effect(
     ALIA_ASSERT(params_size == 0 || params != nullptr);
     ALIA_ASSERT(params_size <= UINT16_MAX);
 
-    alia_effect_draw_command* command
-        = (alia_effect_draw_command*) alia_draw_command_alloc(
+    alia_shader_draw_command* command
+        = (alia_shader_draw_command*) alia_draw_command_alloc(
             ctx,
             z_index,
             material_id,
-            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_effect_draw_command)));
+            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_shader_draw_command)));
 
     command->region = alia_box_translate(region, ctx->geometry->offset);
     command->params_size = (uint16_t) params_size;
@@ -79,7 +79,7 @@ alia_draw_effect(
 }
 
 alia_element_id
-alia_do_effect(
+alia_do_shader(
     alia_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
@@ -89,8 +89,8 @@ alia_do_effect(
     alia_vec2f min_size)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(effect_data), alignof(effect_data));
-    effect_data* data = (effect_data*) result.ptr;
+        ctx, sizeof(shader_component_data), alignof(shader_component_data));
+    shader_component_data* data = (shader_component_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
@@ -117,12 +117,12 @@ alia_do_effect(
             break;
 
         case ALIA_CATEGORY_DRAWING: {
-            alia_effect_draw_command* command
-                = (alia_effect_draw_command*) alia_draw_command_alloc(
+            alia_shader_draw_command* command
+                = (alia_shader_draw_command*) alia_draw_command_alloc(
                     ctx,
                     z_index,
                     material_id,
-                    ALIA_MIN_ALIGNED_SIZE(sizeof(alia_effect_draw_command)));
+                    ALIA_MIN_ALIGNED_SIZE(sizeof(alia_shader_draw_command)));
             command->region = box;
             command->params_size = (uint16_t) params_size;
             command->params = nullptr;

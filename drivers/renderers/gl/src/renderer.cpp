@@ -5,7 +5,7 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing/effects.h>
+#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/msdf.h>
@@ -273,7 +273,7 @@ renderer_setup_blend()
 }
 
 bool
-ensure_effect_geometry(alia_gl_renderer* renderer);
+ensure_user_shader_geometry(alia_gl_renderer* renderer);
 
 void
 release_linear_target(gl_linear_target& target)
@@ -383,10 +383,10 @@ void main()
 bool
 ensure_present_pipeline(alia_gl_renderer* renderer)
 {
-    if (renderer->present_program != 0 && renderer->effect_vao != 0)
+    if (renderer->present_program != 0 && renderer->user_shader_vao != 0)
         return true;
 
-    if (!ensure_effect_geometry(renderer))
+    if (!ensure_user_shader_geometry(renderer))
         return false;
 
     if (renderer->present_program == 0)
@@ -434,7 +434,7 @@ gl_draw_pass_end(void* user)
 {
     auto* renderer = static_cast<alia_gl_renderer*>(user);
     if (!renderer || renderer->primary_target.fbo == 0
-        || renderer->present_program == 0 || renderer->effect_vao == 0)
+        || renderer->present_program == 0 || renderer->user_shader_vao == 0)
         return;
 
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(renderer->pass_draw_fbo));
@@ -446,7 +446,7 @@ gl_draw_pass_end(void* user)
     glBindTexture(GL_TEXTURE_2D, renderer->primary_target.color_tex);
     if (renderer->present_sampler_location >= 0)
         glUniform1i(renderer->present_sampler_location, 0);
-    glBindVertexArray(renderer->effect_vao);
+    glBindVertexArray(renderer->user_shader_vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -755,7 +755,7 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     }
 }
 
-char const* effect_vertex_shader_source = R"(
+char const* user_shader_vertex_source = R"(
 layout(location = 0) in vec2 position;
 void main()
 {
@@ -764,7 +764,7 @@ void main()
 )";
 
 static size_t
-effect_params_ubo_bytes(size_t params_size)
+user_shader_params_ubo_bytes(size_t params_size)
 {
     if (params_size == 0)
         return 16;
@@ -772,10 +772,10 @@ effect_params_ubo_bytes(size_t params_size)
 }
 
 bool
-ensure_effect_geometry(alia_gl_renderer* renderer)
+ensure_user_shader_geometry(alia_gl_renderer* renderer)
 {
-    if (renderer->effect_vao != 0 && renderer->effect_vbo != 0
-        && renderer->effect_frame_ubo != 0)
+    if (renderer->user_shader_vao != 0 && renderer->user_shader_vbo != 0
+        && renderer->user_shader_frame_ubo != 0)
         return true;
 
     float vertices[] = {
@@ -793,12 +793,12 @@ ensure_effect_geometry(alia_gl_renderer* renderer)
         1.f,
     };
 
-    if (renderer->effect_vao == 0 || renderer->effect_vbo == 0)
+    if (renderer->user_shader_vao == 0 || renderer->user_shader_vbo == 0)
     {
-        glGenVertexArrays(1, &renderer->effect_vao);
-        glGenBuffers(1, &renderer->effect_vbo);
-        glBindVertexArray(renderer->effect_vao);
-        glBindBuffer(GL_ARRAY_BUFFER, renderer->effect_vbo);
+        glGenVertexArrays(1, &renderer->user_shader_vao);
+        glGenBuffers(1, &renderer->user_shader_vbo);
+        glBindVertexArray(renderer->user_shader_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, renderer->user_shader_vbo);
         glBufferData(
             GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -807,21 +807,21 @@ ensure_effect_geometry(alia_gl_renderer* renderer)
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    if (renderer->effect_frame_ubo == 0)
+    if (renderer->user_shader_frame_ubo == 0)
     {
-        glGenBuffers(1, &renderer->effect_frame_ubo);
-        glBindBuffer(GL_UNIFORM_BUFFER, renderer->effect_frame_ubo);
+        glGenBuffers(1, &renderer->user_shader_frame_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, renderer->user_shader_frame_ubo);
         glBufferData(GL_UNIFORM_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    return renderer->effect_vao != 0 && renderer->effect_vbo != 0
-        && renderer->effect_frame_ubo != 0;
+    return renderer->user_shader_vao != 0 && renderer->user_shader_vbo != 0
+        && renderer->user_shader_frame_ubo != 0;
 }
 
 void
-bind_effect_uniform_blocks(
-    GLuint program, size_t params_size, size_t ubo_bytes, gl_effect_slot* slot)
+bind_user_shader_uniform_blocks(
+    GLuint program, size_t params_size, size_t ubo_bytes, gl_user_shader_slot* slot)
 {
     GLint block_count = 0;
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &block_count);
@@ -838,16 +838,16 @@ bind_effect_uniform_blocks(
             slot->params_block_index = GLuint(i);
     }
 
-    // Legacy hand-written GLSL: named `Effect` UBO + frame uniforms.
+    // Legacy hand-written GLSL: named `AliaShaderParams` UBO + frame uniforms.
     if (slot->frame_block_index == GL_INVALID_INDEX)
     {
-        slot->loc_region = glGetUniformLocation(program, "alia_effect_region");
+        slot->loc_region = glGetUniformLocation(program, "alia_shader_region");
         slot->loc_surface
-            = glGetUniformLocation(program, "alia_effect_surface");
+            = glGetUniformLocation(program, "alia_shader_surface");
     }
     if (slot->params_block_index == GL_INVALID_INDEX && params_size > 0)
     {
-        GLuint named = glGetUniformBlockIndex(program, "Effect");
+        GLuint named = glGetUniformBlockIndex(program, "AliaShaderParams");
         if (named != GL_INVALID_INDEX)
             slot->params_block_index = named;
     }
@@ -859,30 +859,30 @@ bind_effect_uniform_blocks(
 }
 
 void
-render_effect_command_list(void* user, alia_draw_bucket const* bucket)
+render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
 {
-    auto* slot = static_cast<gl_effect_slot*>(user);
+    auto* slot = static_cast<gl_user_shader_slot*>(user);
     if (!slot || !slot->renderer || !bucket || bucket->count == 0)
         return;
 
     alia_gl_renderer* renderer = slot->renderer;
-    if (!renderer->system || renderer->effect_vao == 0 || slot->program == 0)
+    if (!renderer->system || renderer->user_shader_vao == 0 || slot->program == 0)
         return;
 
     alia_vec2f const surface_size
         = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
 
     glDisable(GL_BLEND);
-    glBindVertexArray(renderer->effect_vao);
+    glBindVertexArray(renderer->user_shader_vao);
     glUseProgram(slot->program);
 
     for (alia_draw_command const* walk = bucket->head; walk != nullptr;
          walk = walk->next)
     {
-        auto const* effect_cmd
-            = alia::downcast<alia_effect_draw_command>(walk);
+        auto const* shader_cmd
+            = alia::downcast<alia_shader_draw_command>(walk);
 
-        alia_box const& r = effect_cmd->region;
+        alia_box const& r = shader_cmd->region;
         if (r.size.x <= 0.f || r.size.y <= 0.f)
             continue;
 
@@ -891,7 +891,7 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
         glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
         if (slot->frame_block_index != GL_INVALID_INDEX
-            && renderer->effect_frame_ubo != 0)
+            && renderer->user_shader_frame_ubo != 0)
         {
             float frame[8] = {
                 r.min.x,
@@ -902,9 +902,9 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
                 surface_size.y,
                 0.f,
                 0.f};
-            glBindBuffer(GL_UNIFORM_BUFFER, renderer->effect_frame_ubo);
+            glBindBuffer(GL_UNIFORM_BUFFER, renderer->user_shader_frame_ubo);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(frame), frame);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer->effect_frame_ubo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer->user_shader_frame_ubo);
         }
         else
         {
@@ -923,13 +923,13 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
         if (slot->params_ubo != 0 && slot->ubo_bytes > 0)
         {
             std::vector<unsigned char> blob(slot->ubo_bytes, 0);
-            if (effect_cmd->params_size > 0 && effect_cmd->params)
+            if (shader_cmd->params_size > 0 && shader_cmd->params)
             {
                 size_t const copy_n
-                    = effect_cmd->params_size < slot->params_size
-                        ? effect_cmd->params_size
+                    = shader_cmd->params_size < slot->params_size
+                        ? shader_cmd->params_size
                         : slot->params_size;
-                std::memcpy(blob.data(), effect_cmd->params, copy_n);
+                std::memcpy(blob.data(), shader_cmd->params, copy_n);
             }
             glBindBuffer(GL_UNIFORM_BUFFER, slot->params_ubo);
             glBufferSubData(
@@ -952,9 +952,9 @@ render_effect_command_list(void* user, alia_draw_bucket const* bucket)
 }
 
 int
-register_effect_blob(
+register_shader_blob(
     alia_gl_renderer* renderer,
-    alia_effect_desc const* desc,
+    alia_shader_desc const* desc,
     alia_draw_material_id* out_material_id)
 {
     ALIA_ASSERT(renderer);
@@ -967,13 +967,13 @@ register_effect_blob(
     {
         std::fprintf(
             stderr,
-            "[alia gl] effect requires FourCC GLES (ALIA_GL_SHADER_FORMAT)\n");
+            "[alia gl] shader requires FourCC GLES (ALIA_GL_SHADER_FORMAT)\n");
         return -1;
     }
 
-    if (!ensure_effect_geometry(renderer))
+    if (!ensure_user_shader_geometry(renderer))
     {
-        std::fprintf(stderr, "[alia gl] effect geometry init failed\n");
+        std::fprintf(stderr, "[alia gl] user-shader geometry init failed\n");
         return -1;
     }
 
@@ -982,20 +982,20 @@ register_effect_blob(
         static_cast<char const*>(desc->shader.data), desc->shader.size);
 
     GLuint program = alia_gl_create_shader_program(
-        effect_vertex_shader_source, source.c_str());
+        user_shader_vertex_source, source.c_str());
     if (program == 0)
     {
-        std::fprintf(stderr, "[alia gl] effect program creation failed\n");
+        std::fprintf(stderr, "[alia gl] user-shader program creation failed\n");
         return -1;
     }
 
-    auto slot = std::make_unique<gl_effect_slot>();
+    auto slot = std::make_unique<gl_user_shader_slot>();
     slot->renderer = renderer;
     slot->program = program;
     slot->params_size = desc->params_size;
-    slot->ubo_bytes = effect_params_ubo_bytes(desc->params_size);
+    slot->ubo_bytes = user_shader_params_ubo_bytes(desc->params_size);
 
-    bind_effect_uniform_blocks(
+    bind_user_shader_uniform_blocks(
         program, desc->params_size, slot->ubo_bytes, slot.get());
 
     if (desc->params_size > 0)
@@ -1003,7 +1003,7 @@ register_effect_blob(
         if (slot->params_block_index == GL_INVALID_INDEX)
         {
             std::fprintf(
-                stderr, "[alia gl] effect params uniform block missing\n");
+                stderr, "[alia gl] shader params uniform block missing\n");
             glDeleteProgram(program);
             return -1;
         }
@@ -1022,10 +1022,10 @@ register_effect_blob(
     alia_material_register(
         renderer->system,
         material_id,
-        alia_material_vtable{.draw_bucket = render_effect_command_list},
+        alia_material_vtable{.draw_bucket = render_user_shader_command_list},
         slot.get());
 
-    renderer->effects.push_back(std::move(slot));
+    renderer->user_shaders.push_back(std::move(slot));
     *out_material_id = material_id;
     return 0;
 }
@@ -1070,11 +1070,11 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
                 alia_gl_renderer_upload_msdf_atlas(
                     static_cast<alia_gl_renderer*>(user), image);
             },
-        .register_effect =
+        .register_shader =
             [](void* user,
-               alia_effect_desc const* desc,
+               alia_shader_desc const* desc,
                alia_draw_material_id* out_material_id) {
-                return register_effect_blob(
+                return register_shader_blob(
                     static_cast<alia_gl_renderer*>(user),
                     desc,
                     out_material_id);
@@ -1088,9 +1088,9 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
 }
 
 int
-alia_gl_effect_register(
+alia_gl_shader_register(
     alia_gl_renderer* renderer,
-    alia_gl_effect_desc const* desc,
+    alia_gl_shader_desc const* desc,
     alia_draw_material_id* out_material_id)
 {
     ALIA_ASSERT(renderer);
@@ -1098,7 +1098,7 @@ alia_gl_effect_register(
     ALIA_ASSERT(desc->fragment_shader_source);
     ALIA_ASSERT(out_material_id);
 
-    alia_effect_desc const portable = {
+    alia_shader_desc const portable = {
         .shader =
             {
                 .format = ALIA_GL_SHADER_FORMAT,
@@ -1107,7 +1107,7 @@ alia_gl_effect_register(
             },
         .params_size = desc->params_size,
     };
-    return register_effect_blob(renderer, &portable, out_material_id);
+    return register_shader_blob(renderer, &portable, out_material_id);
 }
 
 void
@@ -1149,7 +1149,7 @@ alia_gl_renderer_destroy(alia_gl_renderer* renderer)
 {
     ALIA_ASSERT(renderer);
 
-    for (auto& slot : renderer->effects)
+    for (auto& slot : renderer->user_shaders)
     {
         if (!slot)
             continue;
@@ -1158,21 +1158,21 @@ alia_gl_renderer_destroy(alia_gl_renderer* renderer)
         if (slot->params_ubo != 0)
             glDeleteBuffers(1, &slot->params_ubo);
     }
-    renderer->effects.clear();
-    if (renderer->effect_vbo != 0)
+    renderer->user_shaders.clear();
+    if (renderer->user_shader_vbo != 0)
     {
-        glDeleteBuffers(1, &renderer->effect_vbo);
-        renderer->effect_vbo = 0;
+        glDeleteBuffers(1, &renderer->user_shader_vbo);
+        renderer->user_shader_vbo = 0;
     }
-    if (renderer->effect_vao != 0)
+    if (renderer->user_shader_vao != 0)
     {
-        glDeleteVertexArrays(1, &renderer->effect_vao);
-        renderer->effect_vao = 0;
+        glDeleteVertexArrays(1, &renderer->user_shader_vao);
+        renderer->user_shader_vao = 0;
     }
-    if (renderer->effect_frame_ubo != 0)
+    if (renderer->user_shader_frame_ubo != 0)
     {
-        glDeleteBuffers(1, &renderer->effect_frame_ubo);
-        renderer->effect_frame_ubo = 0;
+        glDeleteBuffers(1, &renderer->user_shader_frame_ubo);
+        renderer->user_shader_frame_ubo = 0;
     }
 
     if (renderer->msdf_atlas_texture != 0)

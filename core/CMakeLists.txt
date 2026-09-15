@@ -13,7 +13,7 @@ add_library(alia_core STATIC
     src/alia/ui/drawing/commands.cpp
     src/alia/ui/drawing/system.cpp
     src/alia/ui/drawing/targets.cpp
-    src/alia/ui/drawing/effects.cpp
+    src/alia/ui/drawing/shader.cpp
     src/alia/ui/msdf.cpp
     src/alia/ui/text/system.cpp
     src/alia/ui/text/layout.cpp

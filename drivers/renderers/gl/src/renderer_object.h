@@ -15,7 +15,7 @@
 
 struct alia_gl_renderer;
 
-struct gl_effect_slot
+struct gl_user_shader_slot
 {
     alia_gl_renderer* renderer = nullptr;
     GLuint program = 0;
@@ -48,12 +48,13 @@ struct alia_gl_renderer
     GLint msdf_sampler_location = 0;
     GLuint msdf_atlas_texture = 0;
     alia_arena rect_instance_arena{};
-    // shared effect geometry - Each registered effect is its own material.
-    GLuint effect_vao = 0;
-    GLuint effect_vbo = 0;
-    // Shared AliaEffectFrame UBO (binding 0) for Slang-baked effects.
-    GLuint effect_frame_ubo = 0;
-    std::vector<std::unique_ptr<gl_effect_slot>> effects;
+    // shared user-shader geometry - Each registered shader is its own
+    // material.
+    GLuint user_shader_vao = 0;
+    GLuint user_shader_vbo = 0;
+    // Shared AliaShaderFrame UBO (binding 0) for Slang-baked shaders.
+    GLuint user_shader_frame_ubo = 0;
+    std::vector<std::unique_ptr<gl_user_shader_slot>> user_shaders;
     // Linear-blend primary surface - Shaders output linear premultiplied color
     // into RGBA8. At draw_pass_end a present pass encodes linear->sRGB into
     // the host framebuffer (WebGL has no sRGB backbuffer like D3D's RTV).
