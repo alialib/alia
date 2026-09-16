@@ -10,18 +10,36 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// Signals carry reactive values between the app and its components. Two shapes
-// coexist here:
-//   - Bidirectional signals such as `alia_bool_signal` carry a value plus
-//     `alia_signal_flags` describing readability/writability. Writing back is
-//     trivial for such values, so a single flags-based type covers both
-//     directions.
-//   - Read-only input signals such as `alia_text_input_signal` carry a payload
-//     plus a `value_id` change token (used for caching). They exist where a
-//     value only flows into components and where a bidirectional form would be
-//     a structurally different type (e.g. editable text). By convention,
-//     `alia_X_signal` is the full bidirectional form and
-//     `alia_X_input_signal` is the read-only input form.
+// This file defines the low-level signal API for the Alia kernel.
+//
+// Signals carry reactive values between the app and its components.
+//
+// These are ephemeral structures that are meant to be constructed at a
+// component call site specifically for the purpose of communicating with that
+// component.
+//
+// Signals types can be bidirectional or input-only. Components choose the type
+// that matches their interface requirements. Bidirectional signal types have
+// the form `alia_X_signal`, and input-only signal types have the form
+// `alia_X_input_signal`.
+//
+// Signals also allow run-time specification of their I/O capabilities. This
+// allows the app to communicate its own data-flow restrictions. e.g.:
+// - A signal value comes from a user input that hasn't been filled yet.
+// - A signal value is still being computed.
+// - A signal is still writing its last update and isn't ready for more.
+// These restrictions are communicated via the `flags` field.
+//
+// When a component wants to write a value back to the app via a signal, it
+// sets the `flags` field to `ALIA_SIGNAL_WRITTEN`. For signals with fixed-size
+// values, the value is then written directly back into the signal structure.
+// Note that since Alia passes are mutation-free, it is then the responsibility
+// of the caller to translate this into a deferred effect.
+//
+// For large values, the signal also carries a `value_id`.
+// These can be used in place of the signal value to track changes in the
+// value. (The `value_id` must change when the value changes.)
+//
 
 typedef uint32_t alia_signal_flags;
 
@@ -34,6 +52,12 @@ typedef struct alia_bool_signal
     alia_signal_flags flags;
     bool value;
 } alia_bool_signal;
+
+typedef struct alia_double_signal
+{
+    alia_signal_flags flags;
+    double value;
+} alia_double_signal;
 
 // TEXT INPUT SIGNAL
 
