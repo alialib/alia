@@ -82,7 +82,6 @@ wire_context(layout_fixture& fixture, bool refresh)
             = alia_make_draw_event(alia_draw{.context = nullptr});
         fixture.event_traversal.event = &fixture.draw_event;
     }
-    fixture.event_traversal.aborted = false;
 
     fixture.layout_context.emission.next_ptr
         = &fixture.layout.root.first_child;

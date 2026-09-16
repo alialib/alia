@@ -313,8 +313,6 @@ alia_do_switch(
                 // TODO: Use signal utilities here.
                 value->value = !value->value;
                 value->flags |= ALIA_SIGNAL_WRITTEN;
-                // TODO
-                // abort_traversal(*ctx);
             }
 
             break;

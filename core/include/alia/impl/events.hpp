@@ -23,7 +23,6 @@ struct alia_event_traversal
 
     alia::event_routing_path* path_to_target = nullptr;
     alia_event* event = {};
-    bool aborted = false;
 };
 
 } // extern "C"
@@ -38,19 +37,6 @@ get_active_component_container(Context& ctx)
 }
 
 using component_identity = std::weak_ptr<component_container>;
-
-struct traversal_aborted
-{
-};
-
-void
-abort_traversal(ephemeral_context& ctx);
-
-inline bool
-traversal_was_aborted(ephemeral_context& ctx)
-{
-    return ctx.events->aborted;
-}
 
 inline alia_event_category
 get_event_category(ephemeral_context& ctx)
@@ -196,7 +182,6 @@ detect_targeted_event(ephemeral_context& ctx, component_id id, Event** event)
 //     ALIA_UNTRACKED_IF(detect_targeted_event(ctx, id, &e))
 //     {
 //         handler(ctx, *e);
-//         abort_traversal(ctx);
 //     }
 //     ALIA_END
 // }

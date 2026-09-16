@@ -93,11 +93,9 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     sys.controller.fn(sys.controller.user_data, &ctx);
 
-    if (!ctx.events->aborted)
-    {
-        sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
-        alia_run_effects(&ctx);
-    }
+    sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
+
+    alia_run_effects(&ctx);
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;
@@ -141,14 +139,8 @@ void
 route_event(
     ui_system& sys, event_traversal& traversal, component_container* target)
 {
-    try
-    {
-        // printf("CODE: %08x\n", traversal.type_code);
-        route_event_(sys, traversal, target);
-    }
-    catch (traversal_aborted&)
-    {
-    }
+    // printf("CODE: %08x\n", traversal.type_code);
+    route_event_(sys, traversal, target);
 }
 
 } // namespace detail

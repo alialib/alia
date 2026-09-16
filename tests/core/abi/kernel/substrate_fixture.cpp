@@ -181,7 +181,6 @@ alia_test_substrate_fixture_prepare_refresh_event(
 
     fixture->refresh_event = alia_make_refresh_event(alia_refresh{false});
     fixture->event_traversal.event = &fixture->refresh_event;
-    fixture->event_traversal.aborted = false;
     ctx->events = &fixture->event_traversal;
 }
 

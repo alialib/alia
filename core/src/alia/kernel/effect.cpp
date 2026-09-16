@@ -2,7 +2,6 @@
 
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/system/work.h>
-#include <alia/impl/events.hpp>
 
 #include <cstring>
 
@@ -82,8 +81,6 @@ alia_run_effects(alia_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->effects);
-    if (ctx->events && ctx->events->aborted)
-        return;
 
     bool any = false;
     for (alia_effect* effect = ctx->effects->head; effect != nullptr;
