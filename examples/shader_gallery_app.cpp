@@ -9,6 +9,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/effect.h>
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/events.h>
@@ -243,7 +244,16 @@ control_slider_d(
             demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
             CENTER_Y);
         flow(ctx, GROW, [&]() {
-            alia_do_slider_d(&ctx, value, min_v, max_v, step, 0, false);
+            alia_double_signal signal{
+                .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+                .value = *value,
+            };
+            alia_do_slider(&ctx, &signal, min_v, max_v, step, 0, false);
+            if (signal.flags & ALIA_SIGNAL_WRITTEN)
+            {
+                alia_defer_write(
+                    &ctx, value, &signal.value, sizeof(*value), label);
+            }
         });
     });
 }

@@ -4,6 +4,8 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/input/constants.h>
+#include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
@@ -12,8 +14,6 @@
 
 #include <cmath>
 #include <cstdint>
-
-using namespace alia::operators;
 
 namespace alia {
 
@@ -222,199 +222,6 @@ render_slider(
     // }
 }
 
-template<typename WriteFn, typename ReadFn>
-static alia_element_id
-do_slider_impl(
-    alia_context* ctx,
-    WriteFn write_value,
-    ReadFn read_value,
-    double minimum,
-    double maximum,
-    double step,
-    alia_layout_flags_t layout_flags,
-    bool vertical)
-{
-    alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(slider_data), alignof(slider_data));
-    slider_data* data = reinterpret_cast<slider_data*>(result.ptr);
-    if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
-    {
-        new (data) slider_data{.reserved = 0};
-    }
-    alia_element_id const base_id = alia_make_element_id(ctx, result);
-    alia_element_id const track_id = base_id;
-    alia_element_id const thumb_id = alia_offset_id(base_id, 1);
-
-    bool const is_disabled = false;
-
-    alia_slider_style const* const style = alia_slider_style_active(ctx);
-
-    unsigned const axis = vertical ? 1u : 0u;
-
-    alia_event_category const category = get_event_category(*ctx);
-    if (category == ALIA_CATEGORY_REFRESH)
-    {
-        alia_layout_leaf_emit(
-            ctx,
-            alia_layout_content_metrics_make(
-                {alia_px(ctx, style->layout_width),
-                 alia_px(ctx, style->layout_height)}),
-            layout_flags);
-        return base_id;
-    }
-
-    alia_box const box = alia_layout_consume_box(ctx);
-
-    switch (category)
-    {
-        case ALIA_CATEGORY_SPATIAL: {
-            alia_element_box_region(
-                ctx,
-                track_id,
-                &box,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
-            double const current = read_value();
-            alia_box const thumb_box = get_thumb_region(
-                box, axis, ctx, style, minimum, maximum, current);
-            alia_element_box_region(
-                ctx,
-                thumb_id,
-                &thumb_box,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
-            break;
-        }
-
-        case ALIA_CATEGORY_INPUT: {
-            if (is_disabled)
-                break;
-
-            // TODO: Implement focus order.
-            // alia_element_add_to_focus_order(ctx, thumb_id);
-
-            if (alia_element_detect_press_or_drag(
-                    ctx, track_id, ALIA_BUTTON_LEFT)
-                || alia_element_detect_press_or_drag(
-                    ctx, thumb_id, ALIA_BUTTON_LEFT))
-            {
-                alia_vec2f const p = alia_input_pointer_position(ctx);
-                double const p_axis = axis ? static_cast<double>(p.y)
-                                           : static_cast<double>(p.x);
-                double const min_axis = axis ? static_cast<double>(box.min.y)
-                                             : static_cast<double>(box.min.x);
-                double new_value
-                    = (p_axis - min_axis
-                       - static_cast<double>(left_pad(ctx, style)))
-                        * get_values_per_pixel(
-                            box, axis, ctx, style, minimum, maximum)
-                    + minimum;
-                write_value(
-                    round_and_clamp(new_value, minimum, maximum, step));
-                // TODO: Set focus!!
-                // set_focus(ctx, thumb_id);
-            }
-
-            // TODO: Handle keyboard input!
-            /*
-            key_event_info info;
-            if (detect_key_press(ctx, &info, thumb_id) && info.mods == 0)
-            {
-                double increment = (maximum - minimum) / 10;
-                switch (info.code)
-                {
-                    case KEY_LEFT:
-                        if (axis == 0)
-                        {
-                            write_signal(
-                                value,
-                                round_and_clamp(
-                                    get(value) - increment,
-                                    minimum,
-                                    maximum,
-                                    step));
-                            acknowledge_input_event(ctx);
-                        }
-                        break;
-                    case KEY_DOWN:
-                        if (axis == 1)
-                        {
-                            set_new_value(
-                                value,
-                                result,
-                                round_and_clamp(
-                                    get(value) - increment,
-                                    minimum,
-                                    maximum,
-                                    step));
-                            acknowledge_input_event(ctx);
-                        }
-                        break;
-                    case KEY_RIGHT:
-                        if (axis == 0)
-                        {
-                            set_new_value(
-                                value,
-                                result,
-                                round_and_clamp(
-                                    get(value) + increment,
-                                    minimum,
-                                    maximum,
-                                    step));
-                            acknowledge_input_event(ctx);
-                        }
-                        break;
-                    case KEY_UP:
-                        if (axis == 1)
-                        {
-                            set_new_value(
-                                value,
-                                result,
-                                round_and_clamp(
-                                    get(value) + increment,
-                                    minimum,
-                                    maximum,
-                                    step));
-                            acknowledge_input_event(ctx);
-                        }
-                        break;
-                    case KEY_HOME:
-                        set_new_value(value, result, minimum);
-                        acknowledge_input_event(ctx);
-                        break;
-                    case KEY_END:
-                        set_new_value(value, result, maximum);
-                        acknowledge_input_event(ctx);
-                        break;
-                }
-            }*/
-            break;
-        }
-
-        case ALIA_CATEGORY_DRAWING: {
-            double const current = read_value();
-            alia_interaction_status_t const thumb_status
-                = alia_element_get_interaction_status(
-                    ctx,
-                    thumb_id,
-                    is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
-            render_slider(
-                ctx,
-                box,
-                axis,
-                style,
-                minimum,
-                maximum,
-                current,
-                thumb_status);
-            break;
-        }
-    }
-
-    (void) data;
-    return base_id;
-}
-
 } // namespace alia
 
 using namespace alia;
@@ -449,45 +256,188 @@ alia_slider_style_generate(
 }
 
 alia_element_id
-alia_do_slider_d(
+alia_do_slider(
     alia_context* ctx,
-    double* value,
+    alia_double_signal* value,
     double minimum,
     double maximum,
     double step,
     alia_layout_flags_t layout_flags,
     bool vertical)
 {
-    return do_slider_impl(
-        ctx,
-        [value](double v) { *value = v; },
-        [value]() { return *value; },
-        minimum,
-        maximum,
-        step,
-        layout_flags,
-        vertical);
-}
+    ALIA_ASSERT(value);
 
-alia_element_id
-alia_do_slider_f(
-    alia_context* ctx,
-    float* value,
-    float minimum,
-    float maximum,
-    float step,
-    alia_layout_flags_t layout_flags,
-    bool vertical)
-{
-    return do_slider_impl(
-        ctx,
-        [value](double v) { *value = static_cast<float>(v); },
-        [value]() { return static_cast<double>(*value); },
-        static_cast<double>(minimum),
-        static_cast<double>(maximum),
-        static_cast<double>(step),
-        layout_flags,
-        vertical);
+    alia_substrate_usage_result result = alia_substrate_use_memory(
+        ctx, sizeof(slider_data), alignof(slider_data));
+    slider_data* data = reinterpret_cast<slider_data*>(result.ptr);
+    if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
+    {
+        new (data) slider_data{.reserved = 0};
+    }
+    alia_element_id const base_id = alia_make_element_id(ctx, result);
+    alia_element_id const track_id = base_id;
+    alia_element_id const thumb_id = alia_offset_id(base_id, 1);
+
+    bool const is_disabled = ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
+    double const current = ((value->flags & ALIA_SIGNAL_READABLE) != 0)
+                             ? value->value
+                             : minimum;
+
+    alia_slider_style const* const style = alia_slider_style_active(ctx);
+
+    unsigned const axis = vertical ? 1u : 0u;
+
+    alia_event_category const category = get_event_category(*ctx);
+    if (category == ALIA_CATEGORY_REFRESH)
+    {
+        alia_layout_leaf_emit(
+            ctx,
+            alia_layout_content_metrics_make(
+                {alia_px(ctx, style->layout_width),
+                 alia_px(ctx, style->layout_height)}),
+            layout_flags);
+        return base_id;
+    }
+
+    alia_box const box = alia_layout_consume_box(ctx);
+
+    switch (category)
+    {
+        case ALIA_CATEGORY_SPATIAL: {
+            alia_element_box_region(
+                ctx,
+                track_id,
+                &box,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
+            alia_box const thumb_box = get_thumb_region(
+                box, axis, ctx, style, minimum, maximum, current);
+            alia_element_box_region(
+                ctx,
+                thumb_id,
+                &thumb_box,
+                ALIA_CURSOR_DEFAULT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
+            break;
+        }
+
+        case ALIA_CATEGORY_INPUT: {
+            if (is_disabled)
+                break;
+
+            // TODO: Focus assignment is still stubbed, so key handling below
+            // stays inert until `alia_element_focus_on_click` / set_focus
+            // work.
+            alia_element_add_to_focus_order(ctx, thumb_id);
+
+            if (alia_element_detect_press_or_drag(
+                    ctx, track_id, ALIA_BUTTON_LEFT)
+                || alia_element_detect_press_or_drag(
+                    ctx, thumb_id, ALIA_BUTTON_LEFT))
+            {
+                alia_vec2f const p = alia_input_pointer_position(ctx);
+                double const p_axis = axis ? static_cast<double>(p.y)
+                                           : static_cast<double>(p.x);
+                double const min_axis = axis ? static_cast<double>(box.min.y)
+                                             : static_cast<double>(box.min.x);
+                double new_value
+                    = (p_axis - min_axis
+                       - static_cast<double>(left_pad(ctx, style)))
+                        * get_values_per_pixel(
+                            box, axis, ctx, style, minimum, maximum)
+                    + minimum;
+                value->value
+                    = round_and_clamp(new_value, minimum, maximum, step);
+                value->flags |= ALIA_SIGNAL_WRITTEN;
+                // TODO: Set focus on drag once set_focus is wired.
+            }
+
+            alia_key_info key{};
+            if (alia_element_detect_key_press(ctx, thumb_id, &key)
+                && key.mods == 0)
+            {
+                double const increment = (maximum - minimum) / 10.0;
+                bool handled = false;
+                if (axis == 0
+                    && alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_LEFT_ARROW, ALIA_KEY_LEFT_ARROW))
+                {
+                    value->value = round_and_clamp(
+                        current - increment, minimum, maximum, step);
+                    handled = true;
+                }
+                else if (
+                    axis == 0
+                    && alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_RIGHT_ARROW, ALIA_KEY_RIGHT_ARROW))
+                {
+                    value->value = round_and_clamp(
+                        current + increment, minimum, maximum, step);
+                    handled = true;
+                }
+                else if (
+                    axis == 1
+                    && alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_DOWN_ARROW, ALIA_KEY_DOWN_ARROW))
+                {
+                    value->value = round_and_clamp(
+                        current - increment, minimum, maximum, step);
+                    handled = true;
+                }
+                else if (
+                    axis == 1
+                    && alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_UP_ARROW, ALIA_KEY_UP_ARROW))
+                {
+                    value->value = round_and_clamp(
+                        current + increment, minimum, maximum, step);
+                    handled = true;
+                }
+                else if (
+                    alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_HOME, ALIA_KEY_HOME))
+                {
+                    value->value = minimum;
+                    handled = true;
+                }
+                else if (
+                    alia_key_info_matches_hid_or_logical(
+                        key, ALIA_HID_END, ALIA_KEY_END))
+                {
+                    value->value = maximum;
+                    handled = true;
+                }
+
+                if (handled)
+                {
+                    value->flags |= ALIA_SIGNAL_WRITTEN;
+                    alia_input_acknowledge_key_event(ctx);
+                }
+            }
+            break;
+        }
+
+        case ALIA_CATEGORY_DRAWING: {
+            alia_interaction_status_t const thumb_status
+                = alia_element_get_interaction_status(
+                    ctx,
+                    thumb_id,
+                    is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
+            render_slider(
+                ctx,
+                box,
+                axis,
+                style,
+                minimum,
+                maximum,
+                current,
+                thumb_status);
+            break;
+        }
+    }
+
+    (void) data;
+    return base_id;
 }
 
 ALIA_EXTERN_C_END

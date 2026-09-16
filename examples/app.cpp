@@ -133,6 +133,69 @@ defer_int(context& ctx, int* dst, int value, char const* label)
     alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
 }
 
+static void
+defer_float(
+    context& ctx,
+    float* dst,
+    alia_double_signal const& signal,
+    char const* label)
+{
+    if ((signal.flags & ALIA_SIGNAL_WRITTEN) == 0)
+        return;
+    float const value = static_cast<float>(signal.value);
+    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
+}
+
+struct set_magnification_effect
+{
+    alia_effect base;
+    alia_ui_system* ui;
+    float value;
+};
+
+static void
+set_magnification_effect_run(alia_effect* self)
+{
+    auto* effect = reinterpret_cast<set_magnification_effect*>(self);
+    alia_ui_set_magnification(effect->ui, effect->value);
+}
+
+static void
+defer_set_magnification(context& ctx, float value)
+{
+    auto* effect = reinterpret_cast<set_magnification_effect*>(alia_arena_ptr(
+        ctx.scratch,
+        alia_arena_alloc(
+            ctx.scratch,
+            ALIA_MIN_ALIGNED_SIZE(sizeof(set_magnification_effect)))));
+    effect->base.run = set_magnification_effect_run;
+    effect->base.label = "magnification";
+    effect->base.next = nullptr;
+    effect->ui = ctx.system;
+    effect->value = value;
+    alia_defer_effect(&ctx, &effect->base);
+}
+
+static void
+do_float_slider(
+    context& ctx,
+    float* dst,
+    float minimum,
+    float maximum,
+    float step,
+    alia_layout_flags_t layout_flags,
+    bool vertical,
+    char const* label)
+{
+    alia_double_signal signal{
+        .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+        .value = *dst,
+    };
+    alia_do_slider(
+        &ctx, &signal, minimum, maximum, step, layout_flags, vertical);
+    defer_float(ctx, dst, signal, label);
+}
+
 void
 do_heading(context& ctx, char const* text)
 {
@@ -283,20 +346,35 @@ do_controls(context& ctx)
     do_heading(ctx, "GEOMETRY");
 
     do_subheading(ctx, "Spacing");
-    alia_do_slider_f(&ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false);
+    do_float_slider(
+        ctx, &demo_spacing, 0.f, 24.f, 1.f, 0, false, "spacing");
 
     do_subheading(ctx, "Magnification");
     {
-        float mag = alia_ui_get_magnification(ctx.system);
-        alia_do_slider_f(&ctx, &mag, 0.25f, 3.0f, 0.001f, 0, false);
-        alia_ui_set_magnification(ctx.system, mag);
+        alia_double_signal mag_signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = alia_ui_get_magnification(ctx.system),
+        };
+        alia_do_slider(&ctx, &mag_signal, 0.25, 3.0, 0.001, 0, false);
+        if (mag_signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            defer_set_magnification(
+                ctx, static_cast<float>(mag_signal.value));
+        }
     }
 
     do_draw_target_demo(ctx);
 
     do_subheading(ctx, "Node Expander");
-    alia_do_slider_f(
-        &ctx, &demo_node_expander_triangle_side, 14.f, 36.f, 0.5f, 0, false);
+    do_float_slider(
+        ctx,
+        &demo_node_expander_triangle_side,
+        14.f,
+        36.f,
+        0.5f,
+        0,
+        false,
+        "node_expander");
 }
 
 void
@@ -455,7 +533,8 @@ do_slider_demo(context& ctx)
     do_heading(ctx, "SLIDERS");
 
     static float slider_value = 5.f;
-    alia_do_slider_f(&ctx, &slider_value, 0.f, 10.f, 1.f, 0, false);
+    do_float_slider(
+        ctx, &slider_value, 0.f, 10.f, 1.f, 0, false, "slider_demo");
 }
 
 void
@@ -565,8 +644,8 @@ do_content(context& ctx)
         do_heading(ctx, "GAPS");
         {
             static float x_gap = 5.f, y_gap = 5.f;
-            alia_do_slider_f(&ctx, &x_gap, 0.f, 200.f, 0.1f, 0, false);
-            alia_do_slider_f(&ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false);
+            do_float_slider(ctx, &x_gap, 0.f, 200.f, 0.1f, 0, false, "x_gap");
+            do_float_slider(ctx, &y_gap, 0.f, 200.f, 0.1f, 0, false, "y_gap");
             column(ctx, alia::gap(y_gap), [&]() {
                 block_flow(ctx, alia::gap(x_gap), [&]() {
                     for (int i = 0; i < 60; ++i)
@@ -635,10 +714,18 @@ do_content(context& ctx)
         do_heading(ctx, "FLOW PANEL");
         {
             static float gap = 5.f, line_gap = 5.f, minimum_line_height = 5.f;
-            alia_do_slider_f(&ctx, &gap, 0.f, 200.f, 0.1f, 0, false);
-            alia_do_slider_f(&ctx, &line_gap, 0.f, 200.f, 0.1f, 0, false);
-            alia_do_slider_f(
-                &ctx, &minimum_line_height, 0.f, 200.f, 0.1f, 0, false);
+            do_float_slider(ctx, &gap, 0.f, 200.f, 0.1f, 0, false, "gap");
+            do_float_slider(
+                ctx, &line_gap, 0.f, 200.f, 0.1f, 0, false, "line_gap");
+            do_float_slider(
+                ctx,
+                &minimum_line_height,
+                0.f,
+                200.f,
+                0.1f,
+                0,
+                false,
+                "minimum_line_height");
             flow(
                 ctx,
                 alia::gap(gap),

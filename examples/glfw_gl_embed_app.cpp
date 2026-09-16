@@ -5,6 +5,7 @@
 
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/base/object.h>
+#include <alia/abi/kernel/effect.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/events.h>
@@ -120,7 +121,19 @@ embed_controller(void* /*user*/, alia_context* ctx)
     alia_layout_edge_offsets_begin(
         ctx, alia_edge_offsets_make_uniform(32.f), 0);
     alia_layout_column_begin(ctx, ALIA_GROW | ALIA_FILL, 24.f);
-    alia_do_slider_f(ctx, &g_value, 0.f, 1.f, 0.001f, ALIA_FILL_X, false);
+    {
+        alia_double_signal signal{
+            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
+            .value = g_value,
+        };
+        alia_do_slider(ctx, &signal, 0.0, 1.0, 0.001, ALIA_FILL_X, false);
+        if (signal.flags & ALIA_SIGNAL_WRITTEN)
+        {
+            float const value = static_cast<float>(signal.value);
+            alia_defer_write(
+                ctx, &g_value, &value, sizeof(g_value), "g_value");
+        }
+    }
     alia_layout_column_end(ctx);
     alia_layout_edge_offsets_end(ctx);
 }

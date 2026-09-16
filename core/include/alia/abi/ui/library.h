@@ -385,22 +385,12 @@ void
 alia_ui_button_end(alia_context* ctx);
 
 alia_element_id
-alia_do_slider_d(
+alia_do_slider(
     alia_context* ctx,
-    double* value,
+    alia_double_signal* value,
     double minimum,
     double maximum,
     double step,
-    alia_layout_flags_t layout_flags,
-    bool vertical);
-
-alia_element_id
-alia_do_slider_f(
-    alia_context* ctx,
-    float* value,
-    float minimum,
-    float maximum,
-    float step,
     alia_layout_flags_t layout_flags,
     bool vertical);
 
