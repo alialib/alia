@@ -135,15 +135,26 @@ make_notargs_params()
     return p;
 }
 
-struct pass_aborted
+static void
+defer_bool(
+    context& ctx, bool* dst, alia_bool_signal const& signal, char const* label)
 {
-};
+    if (signal.flags & ALIA_SIGNAL_WRITTEN)
+        alia_defer_write(&ctx, dst, &signal.value, sizeof(*dst), label);
+}
 
-void
-abort_pass(context& ctx)
+static void
+defer_int(context& ctx, int* dst, int value, char const* label)
 {
-    ctx.events->aborted = true;
-    throw pass_aborted();
+    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
+}
+
+static void
+defer_theme_dirty(context& ctx)
+{
+    bool const dirty = true;
+    alia_defer_write(
+        &ctx, &the_theme_dirty_flag, &dirty, sizeof(dirty), "theme_dirty");
 }
 
 template<class Content>
@@ -267,11 +278,7 @@ control_switch_b(context& ctx, char const* label, bool* value)
             .value = *value,
         };
         do_switch_with_text(ctx, &sig, label);
-        if (sig.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            *value = sig.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, value, sig, label);
     });
 }
 
@@ -284,11 +291,7 @@ control_checkbox_b(context& ctx, char const* label, bool* value)
             .value = *value,
         };
         do_checkbox_with_text(ctx, &sig, label);
-        if (sig.flags & ALIA_SIGNAL_WRITTEN)
-        {
-            *value = sig.value;
-            abort_pass(ctx);
-        }
+        defer_bool(ctx, value, sig, label);
     });
 }
 
@@ -311,9 +314,12 @@ do_theme_controls(context& ctx)
                             do_switch_with_text(ctx, &sig, "Light");
                             if (sig.flags & ALIA_SIGNAL_WRITTEN)
                             {
-                                the_light_theme_flag = sig.value;
-                                the_theme_dirty_flag = true;
-                                abort_pass(ctx);
+                                defer_bool(
+                                    ctx,
+                                    &the_light_theme_flag,
+                                    sig,
+                                    "light");
+                                defer_theme_dirty(ctx);
                             }
                         });
                         demo_text(
@@ -336,9 +342,9 @@ do_theme_controls(context& ctx)
                                 do_radio_with_text(ctx, &radio, labels[i]);
                                 if (radio.flags & ALIA_SIGNAL_WRITTEN)
                                 {
-                                    the_seed_index = i;
-                                    the_theme_dirty_flag = true;
-                                    abort_pass(ctx);
+                                    defer_int(
+                                        ctx, &the_seed_index, i, "seed");
+                                    defer_theme_dirty(ctx);
                                 }
                                 spacer(ctx, {15, 0}, NO_FLAGS);
                             }
@@ -390,81 +396,75 @@ do_notargs_controls(context& ctx)
 void
 shader_gallery_root(context& ctx)
 {
-    try
+    if (the_theme_dirty_flag)
     {
-        if (the_theme_dirty_flag)
-        {
-            alia_theme_accent accent;
-            alia_theme_accent_from_color(
-                &accent, the_seed_primaries[the_seed_index]);
+        alia_theme_accent accent;
+        alia_theme_accent_from_color(
+            &accent, the_seed_primaries[the_seed_index]);
 
-            alia_theme_context theme_ctx
-                = alia_theme_context_default(!the_light_theme_flag);
+        alia_theme_context theme_ctx
+            = alia_theme_context_default(!the_light_theme_flag);
 
-            alia_palette_params palette_params = alia_palette_params_default();
-            palette_params.foundation_step_l = 0.06f;
+        alia_palette_params palette_params = alia_palette_params_default();
+        palette_params.foundation_step_l = 0.06f;
 
-            alia_palette_from_accent(
-                &ctx.system->palette,
-                &accent,
-                &theme_ctx,
-                nullptr,
-                &palette_params,
-                ALIA_LITERAL_HARMONIZE_TO_PRIMARY);
-            the_theme_dirty_flag = false;
-        }
+        alia_palette_from_accent(
+            &ctx.system->palette,
+            &accent,
+            &theme_ctx,
+            nullptr,
+            &palette_params,
+            ALIA_LITERAL_HARMONIZE_TO_PRIMARY);
+        the_theme_dirty_flag = false;
+    }
 
-        notargs_params const shader_params = make_notargs_params();
+    notargs_params const shader_params = make_notargs_params();
 
-        with_spacing(ctx, 0, [&] {
-            row(ctx, [&]() {
-                concrete_panel(
-                    ctx,
-                    0,
-                    ctx.palette->foundation.background.base,
-                    FILL,
-                    [&]() {
-                        column(ctx, GROW, [&]() {
-                            alia_ui_scroll_view_begin(
-                                &ctx, ALIA_GROW, 0x2, 0);
-                            edge_offsets(
-                                ctx,
-                                {.left = 20,
-                                 .right = 20,
-                                 .top = 20,
-                                 .bottom = 20},
-                                [&]() {
-                                    with_spacing(ctx, 6, [&] {
-                                        column(ctx, [&]() {
-                                            do_notargs_controls(ctx);
-                                        });
+    with_spacing(ctx, 0, [&] {
+        row(ctx, [&]() {
+            concrete_panel(
+                ctx,
+                0,
+                ctx.palette->foundation.background.base,
+                FILL,
+                [&]() {
+                    column(ctx, GROW, [&]() {
+                        alia_ui_scroll_view_begin(
+                            &ctx, ALIA_GROW, 0x2, 0);
+                        edge_offsets(
+                            ctx,
+                            {.left = 20,
+                             .right = 20,
+                             .top = 20,
+                             .bottom = 20},
+                            [&]() {
+                                with_spacing(ctx, 6, [&] {
+                                    column(ctx, [&]() {
+                                        do_notargs_controls(ctx);
                                     });
                                 });
-                            alia_ui_scroll_view_end(&ctx);
-                            do_theme_controls(ctx);
-                        });
+                            });
+                        alia_ui_scroll_view_end(&ctx);
+                        do_theme_controls(ctx);
                     });
-                concrete_panel(
-                    ctx,
-                    0,
-                    ctx.palette->foundation.background.base,
-                    GROW,
-                    [&]() {
-                        alia_do_shader(
-                            &ctx,
-                            0,
-                            the_notargs_shader_id,
-                            &shader_params,
-                            sizeof(shader_params),
-                            ALIA_GROW | ALIA_FILL,
-                            alia_vec2f_make(100.f, 100.f));
-                    });
-            });
+                });
+            concrete_panel(
+                ctx,
+                0,
+                ctx.palette->foundation.background.base,
+                GROW,
+                [&]() {
+                    alia_do_shader(
+                        &ctx,
+                        0,
+                        the_notargs_shader_id,
+                        &shader_params,
+                        sizeof(shader_params),
+                        ALIA_GROW | ALIA_FILL,
+                        alia_vec2f_make(100.f, 100.f));
+                });
         });
-    }
-    catch (pass_aborted&)
-    {
-    }
+    });
 }
 
 static void
