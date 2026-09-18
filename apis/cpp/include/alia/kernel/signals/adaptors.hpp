@@ -297,7 +297,7 @@ struct simplified_id_wrapper
     post_mutation_commit(alia_context* ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
-        return this->read();
+        return std::nullopt;
     }
 };
 template<view_signal Wrapped>

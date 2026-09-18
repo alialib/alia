@@ -68,7 +68,7 @@ struct scaled_signal
     post_mutation_commit(alia_context* ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
-        return this->read();
+        return std::nullopt;
     }
 
  private:
@@ -139,7 +139,7 @@ struct offset_signal
     post_mutation_commit(alia_context* ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
-        return this->read();
+        return std::nullopt;
     }
 
  private:
