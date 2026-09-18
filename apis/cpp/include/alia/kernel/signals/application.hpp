@@ -6,13 +6,150 @@
 #include <alia/kernel/substrate.hpp>
 
 #include <exception>
+#include <optional>
 #include <stdint.h>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
 // This file defines function application over signals.
 
 namespace alia {
+
+namespace detail {
+
+// Detect non-generic call signatures so we can feed signal args as references
+// or values according to the parameter types.
+template<class MemFn>
+struct call_arg_types
+{
+    static constexpr bool detectable = false;
+};
+
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...)>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...) const>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...) &>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...) const&>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...) &&>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class C, class... Args>
+struct call_arg_types<R (C::*)(Args...) const&&>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+template<class R, class... Args>
+struct call_arg_types<R (*)(Args...)>
+{
+    static constexpr bool detectable = true;
+    using type = std::tuple<Args...>;
+};
+
+template<class F>
+concept detectable_call_args = requires {
+    &std::remove_cvref_t<F>::operator();
+} && call_arg_types<decltype(&std::remove_cvref_t<F>::operator())>::detectable;
+
+template<class F>
+concept detectable_fn_ptr
+    = std::is_function_v<std::remove_pointer_t<std::remove_cvref_t<F>>>
+   && call_arg_types<std::remove_cvref_t<F>>::detectable;
+
+// Feed one signal argument according to the corresponding parameter type:
+// references use `read()`, by-value parameters use `read_into()`.
+template<class Param, view_signal Signal>
+decltype(auto)
+feed_signal_arg(Signal const& signal)
+{
+    if constexpr (std::is_reference_v<Param>)
+    {
+        return signal.read();
+    }
+    else
+    {
+        typename Signal::value_type value{};
+        signal.read_into(&value);
+        return value;
+    }
+}
+
+template<view_signal Signal>
+decltype(auto)
+feed_signal_arg_fallback(Signal const& signal)
+{
+    // Generic callables (e.g. `[](auto x)`, [](auto const& x)) aren't
+    // detectable, so we fall back to passing a const reference.
+    return signal.read();
+}
+
+template<class Function, class ArgTypes, std::size_t... I, class... Signals>
+decltype(auto)
+invoke_on_signals_detected(
+    Function&& f, std::index_sequence<I...>, Signals const&... signals)
+{
+    return std::forward<Function>(f)(
+        feed_signal_arg<std::tuple_element_t<I, ArgTypes>>(signals)...);
+}
+
+template<class Function, class... Signals>
+decltype(auto)
+invoke_on_signals(Function&& f, Signals const&... signals)
+{
+    using function_type = std::remove_cvref_t<Function>;
+    if constexpr (detectable_call_args<function_type>)
+    {
+        using arg_types = typename call_arg_types<
+            decltype(&function_type::operator())>::type;
+        static_assert(
+            sizeof...(Signals) == std::tuple_size_v<arg_types>,
+            "signal apply argument count must match the function");
+        return invoke_on_signals_detected<Function, arg_types>(
+            std::forward<Function>(f),
+            std::index_sequence_for<Signals...>{},
+            signals...);
+    }
+    else if constexpr (detectable_fn_ptr<function_type>)
+    {
+        using arg_types = typename call_arg_types<function_type>::type;
+        static_assert(
+            sizeof...(Signals) == std::tuple_size_v<arg_types>,
+            "signal apply argument count must match the function");
+        return invoke_on_signals_detected<Function, arg_types>(
+            std::forward<Function>(f),
+            std::index_sequence_for<Signals...>{},
+            signals...);
+    }
+    else
+    {
+        return std::forward<Function>(f)(feed_signal_arg_fallback(signals)...);
+    }
+}
+
+} // namespace detail
 
 // `lazy_apply(f, args...)` yields a signal to the result of lazily applying
 // `f` to the values of `args`. The value ID is taken from the inputs, meaning
@@ -24,7 +161,7 @@ struct lazy_apply1_signal
     : lazy_signal<
           lazy_apply1_signal<Result, Function, Arg>,
           Result,
-          view_caps<signal_move_activated, Arg::capabilities::presence>,
+          view_caps<signal_readable, Arg::capabilities::presence>,
           typename Arg::value_id_type>
 {
     lazy_apply1_signal(Function f, Arg arg)
@@ -41,10 +178,10 @@ struct lazy_apply1_signal
     {
         return arg_.has_value();
     }
-    Result
-    move_out() const override
+    void
+    read_into(Result* dst) const override
     {
-        return f_(forward_signal(arg_));
+        *dst = detail::invoke_on_signals(f_, arg_);
     }
 
  private:
@@ -56,8 +193,10 @@ template<class Function, view_signal Arg>
 auto
 lazy_apply(Function f, Arg arg)
 {
-    return lazy_apply1_signal<decltype(f(forward_signal(arg))), Function, Arg>(
-        std::move(f), std::move(arg));
+    return lazy_apply1_signal<
+        std::decay_t<decltype(detail::invoke_on_signals(f, arg))>,
+        Function,
+        Arg>(std::move(f), std::move(arg));
 }
 
 template<class Result, class Function, class Arg0, class Arg1>
@@ -66,7 +205,7 @@ struct lazy_apply2_signal
           lazy_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
           view_caps<
-              signal_move_activated,
+              signal_readable,
               signal_capability_level_intersection<
                   Arg0::capabilities::presence,
                   Arg1::capabilities::presence>>,
@@ -87,10 +226,10 @@ struct lazy_apply2_signal
     {
         return arg0_.has_value() && arg1_.has_value();
     }
-    Result
-    move_out() const override
+    void
+    read_into(Result* dst) const override
     {
-        return f_(forward_signal(arg0_), forward_signal(arg1_));
+        *dst = detail::invoke_on_signals(f_, arg0_, arg1_);
     }
 
  private:
@@ -104,7 +243,7 @@ auto
 lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
 {
     return lazy_apply2_signal<
-        decltype(f(forward_signal(arg0), forward_signal(arg1))),
+        std::decay_t<decltype(detail::invoke_on_signals(f, arg0, arg1))>,
         Function,
         Arg0,
         Arg1>(std::move(f), std::move(arg0), std::move(arg1));
@@ -118,30 +257,24 @@ lazy_apply(Function f, Arg0 arg0, Arg1 arg1)
 template<class Result, class Function, class Arg>
     requires identifiable<Result>
 struct uncached_apply1_signal
-    : lazy_signal<
+    : regular_lazy_signal<
           uncached_apply1_signal<Result, Function, Arg>,
           Result,
-          view_caps<signal_move_activated, Arg::capabilities::presence>,
-          Result>
+          view_caps<signal_readable, Arg::capabilities::presence>>
 {
     uncached_apply1_signal(Function f, Arg arg)
         : f_(std::move(f)), arg_(std::move(arg))
     {
-    }
-    Result
-    value_id() const
-    {
-        return this->move_out();
     }
     bool
     has_value() const override
     {
         return arg_.has_value();
     }
-    Result
-    move_out() const override
+    void
+    read_into(Result* dst) const override
     {
-        return f_(forward_signal(arg_));
+        *dst = detail::invoke_on_signals(f_, arg_);
     }
 
  private:
@@ -150,13 +283,13 @@ struct uncached_apply1_signal
 };
 
 template<class Function, view_signal Arg>
-    requires identifiable<decltype(std::declval<Function>()(
-        forward_signal(std::declval<Arg>())))>
+    requires identifiable<std::decay_t<decltype(detail::invoke_on_signals(
+        std::declval<Function>(), std::declval<Arg>()))>>
 auto
 uncached_apply(Function f, Arg arg)
 {
     return uncached_apply1_signal<
-        decltype(f(forward_signal(arg))),
+        std::decay_t<decltype(detail::invoke_on_signals(f, arg))>,
         Function,
         Arg>(std::move(f), std::move(arg));
 }
@@ -164,34 +297,28 @@ uncached_apply(Function f, Arg arg)
 template<class Result, class Function, class Arg0, class Arg1>
     requires identifiable<Result>
 struct uncached_apply2_signal
-    : lazy_signal<
+    : regular_lazy_signal<
           uncached_apply2_signal<Result, Function, Arg0, Arg1>,
           Result,
           view_caps<
-              signal_move_activated,
+              signal_readable,
               signal_capability_level_intersection<
                   Arg0::capabilities::presence,
-                  Arg1::capabilities::presence>>,
-          Result>
+                  Arg1::capabilities::presence>>>
 {
     uncached_apply2_signal(Function f, Arg0 arg0, Arg1 arg1)
         : f_(std::move(f)), arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
-    }
-    Result
-    value_id() const
-    {
-        return this->move_out();
     }
     bool
     has_value() const override
     {
         return arg0_.has_value() && arg1_.has_value();
     }
-    Result
-    move_out() const override
+    void
+    read_into(Result* dst) const override
     {
-        return f_(forward_signal(arg0_), forward_signal(arg1_));
+        *dst = detail::invoke_on_signals(f_, arg0_, arg1_);
     }
 
  private:
@@ -201,14 +328,15 @@ struct uncached_apply2_signal
 };
 
 template<class Function, view_signal Arg0, view_signal Arg1>
-    requires identifiable<decltype(std::declval<Function>()(
-        forward_signal(std::declval<Arg0>()),
-        forward_signal(std::declval<Arg1>())))>
+    requires identifiable<std::decay_t<decltype(detail::invoke_on_signals(
+        std::declval<Function>(),
+        std::declval<Arg0>(),
+        std::declval<Arg1>()))>>
 auto
 uncached_apply(Function f, Arg0 arg0, Arg1 arg1)
 {
     return uncached_apply2_signal<
-        decltype(f(forward_signal(arg0), forward_signal(arg1))),
+        std::decay_t<decltype(detail::invoke_on_signals(f, arg0, arg1))>,
         Function,
         Arg0,
         Arg1>(std::move(f), std::move(arg0), std::move(arg1));
@@ -226,7 +354,7 @@ struct lazy_bidirectional_apply_signal
           lazy_bidirectional_apply_signal<Result, Forward, Reverse, Arg>,
           Result,
           binding_caps<
-              signal_move_activated,
+              signal_readable,
               signal_writable,
               Arg::capabilities::presence>,
           typename Arg::value_id_type>
@@ -247,20 +375,20 @@ struct lazy_bidirectional_apply_signal
     {
         return arg_.has_value();
     }
-    Result
-    move_out() const override
+    void
+    read_into(Result* dst) const override
     {
-        return forward_(forward_signal(arg_));
+        *dst = detail::invoke_on_signals(forward_, arg_);
     }
     bool
     ready_to_write() const override
     {
         return arg_.ready_to_write();
     }
-    void
-    write(Result value) const override
+    std::optional<typename Arg::value_id_type>
+    post_write(alia_context* ctx, Result value) const override
     {
-        arg_.write(reverse_(std::move(value)));
+        return arg_.post_write(ctx, reverse_(std::move(value)));
     }
 
  private:
@@ -274,7 +402,7 @@ auto
 lazy_bidirectional_apply(Forward forward, Reverse reverse, Arg arg)
 {
     return lazy_bidirectional_apply_signal<
-        decltype(forward(forward_signal(arg))),
+        std::decay_t<decltype(detail::invoke_on_signals(forward, arg))>,
         Forward,
         Reverse,
         Arg>(std::move(forward), std::move(reverse), std::move(arg));
@@ -385,7 +513,7 @@ process_apply_body(
     {
         try
         {
-            data.value = std::forward<Function>(f)(forward_signal(args)...);
+            data.value = invoke_on_signals(std::forward<Function>(f), args...);
             data.status = apply_status::READY;
             data.error = nullptr;
         }
@@ -402,10 +530,10 @@ process_apply_body(
 
 template<class Value>
 struct apply_signal
-    : signal<
+    : stored_signal<
           apply_signal<Value>,
           Value,
-          view_caps<signal_move_activated>,
+          view_caps<signal_movable>,
           uint32_t>
 {
     explicit apply_signal(detail::apply_result_data<Value>& data)
@@ -428,15 +556,8 @@ struct apply_signal
     {
         return data_->value;
     }
-    Value
-    move_out() const override
-    {
-        auto moved_out = std::move(data_->value);
-        data_->status = detail::apply_status::MOVED;
-        return moved_out;
-    }
     Value&
-    destructive_ref() const override
+    durable_ref() const override
     {
         data_->status = detail::apply_status::MOVED;
         return data_->value;
@@ -450,8 +571,8 @@ template<class Function, view_signal... Args>
 auto
 apply(alia_context* ctx, Function&& f, Args const&... args)
 {
-    using result_type = decltype(std::declval<Function>()(
-        forward_signal(std::declval<Args>())...));
+    using result_type = std::decay_t<decltype(detail::invoke_on_signals(
+        std::forward<Function>(f), args...))>;
     auto data = use_cache<detail::apply_result_data<result_type>>(ctx);
     bool args_ready = true;
     detail::process_apply_args(ctx, *data, args_ready, args...);

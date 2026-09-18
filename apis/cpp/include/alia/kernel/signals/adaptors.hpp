@@ -5,6 +5,7 @@
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
 
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -73,10 +74,18 @@ struct writability_faker
     {
         return false;
     }
-    // Since this is only faking writability, write() should never be called.
+    // Since this is only faking writability, `post_write()` should never be
+    // called.
     // LCOV_EXCL_START
-    void write(typename Wrapped::value_type) const override
+    std::optional<typename Wrapped::value_id_type>
+    post_write(alia_context*, typename Wrapped::value_type) const override
     {
+        return std::nullopt;
+    }
+    std::optional<typename Wrapped::value_id_type>
+    post_mutation_commit(alia_context*) const override
+    {
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 };
@@ -99,7 +108,7 @@ struct casting_signal
           To,
           signal_capabilities_intersection<
               typename Wrapped::capabilities,
-              binding_caps<signal_move_activated, signal_clearable>>>
+              binding_caps<signal_readable, signal_clearable>>>
 {
     casting_signal(Wrapped wrapped)
         : casting_signal::casting_signal_wrapper(std::move(wrapped))
@@ -108,24 +117,19 @@ struct casting_signal
     To const&
     read() const override
     {
-        value_ = this->move_out();
-        return value_;
-    }
-    To
-    move_out() const override
-    {
-        return static_cast<To>(forward_signal(this->wrapped_));
-    }
-    To&
-    destructive_ref() const override
-    {
-        value_ = this->move_out();
+        this->read_into(&value_);
         return value_;
     }
     void
-    write(To value) const override
+    read_into(To* dst) const override
     {
-        this->wrapped_.write(static_cast<typename Wrapped::value_type>(value));
+        *dst = static_cast<To>(this->wrapped_.read());
+    }
+    std::optional<typename Wrapped::value_id_type>
+    post_write(alia_context* ctx, To value) const override
+    {
+        return this->wrapped_.post_write(
+            ctx, static_cast<typename Wrapped::value_type>(value));
     }
 
  private:
@@ -147,7 +151,7 @@ signal_cast(Wrapped wrapped)
 // raw value.
 template<class Primary, class Default>
 struct default_value_signal
-    : signal_wrapper<
+    : custom_id_signal_wrapper<
           default_value_signal<Primary, Default>,
           Primary,
           typename Primary::value_type,
@@ -160,7 +164,7 @@ struct default_value_signal
           std::pair<bool, id_view>>
 {
     default_value_signal(Primary primary, Default default_value)
-        : default_value_signal::signal_wrapper(std::move(primary)),
+        : default_value_signal::custom_id_signal_wrapper(std::move(primary)),
           default_(std::move(default_value))
     {
     }
@@ -175,17 +179,19 @@ struct default_value_signal
         return this->wrapped_.has_value() ? this->wrapped_.read()
                                           : default_.read();
     }
-    typename Primary::value_type
-    move_out() const override
+    void
+    read_into(typename Primary::value_type* dst) const override
     {
-        return this->wrapped_.has_value() ? this->wrapped_.move_out()
-                                          : default_.move_out();
+        if (this->wrapped_.has_value())
+            this->wrapped_.read_into(dst);
+        else
+            default_.read_into(dst);
     }
     typename Primary::value_type&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return this->wrapped_.has_value() ? this->wrapped_.destructive_ref()
-                                          : default_.destructive_ref();
+        return this->wrapped_.has_value() ? this->wrapped_.durable_ref()
+                                          : default_.durable_ref();
     }
     std::pair<bool, id_view>
     value_id() const
@@ -195,9 +201,41 @@ struct default_value_signal
             using_primary,
             using_primary
                 ? static_cast<untyped_signal_base const&>(this->wrapped_)
-                      .value_id_view()
+                      .value_id_erased()
                 : static_cast<untyped_signal_base const&>(default_)
-                      .value_id_view()};
+                      .value_id_erased()};
+    }
+    std::optional<std::pair<bool, id_view>>
+    post_write(
+        alia_context* ctx, typename Primary::value_type value) const override
+    {
+        auto inner = this->wrapped_.post_write(ctx, std::move(value));
+        if (!inner)
+            return std::nullopt;
+        return std::pair{true, detail::erase_value_id(ctx, *inner)};
+    }
+    std::optional<std::pair<bool, id_view>>
+    post_clear(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_clear(ctx);
+        // After clearing the primary, the signal falls back to the default
+        // when one is present.
+        if (default_.has_value())
+        {
+            return std::pair{
+                false,
+                static_cast<untyped_signal_base const&>(default_)
+                    .value_id_erased()};
+        }
+        return std::nullopt;
+    }
+    std::optional<std::pair<bool, id_view>>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        auto inner = this->wrapped_.post_mutation_commit(ctx);
+        if (!inner)
+            return std::nullopt;
+        return std::pair{true, detail::erase_value_id(ctx, *inner)};
     }
 
  private:
@@ -225,7 +263,7 @@ add_default(Primary primary, Default default_)
 template<class Wrapped>
     requires identifiable<typename Wrapped::value_type>
 struct simplified_id_wrapper
-    : signal_wrapper<
+    : custom_id_signal_wrapper<
           simplified_id_wrapper<Wrapped>,
           Wrapped,
           typename Wrapped::value_type,
@@ -233,12 +271,32 @@ struct simplified_id_wrapper
           typename Wrapped::value_type>
 {
     simplified_id_wrapper(Wrapped wrapped)
-        : simplified_id_wrapper::signal_wrapper(std::move(wrapped))
+        : simplified_id_wrapper::custom_id_signal_wrapper(std::move(wrapped))
     {
     }
     typename Wrapped::value_type const&
     value_id() const
     {
+        return this->read();
+    }
+    std::optional<typename Wrapped::value_type>
+    post_write(
+        alia_context* ctx, typename Wrapped::value_type value) const override
+    {
+        typename Wrapped::value_type id = value;
+        (void) this->wrapped_.post_write(ctx, std::move(value));
+        return id;
+    }
+    std::optional<typename Wrapped::value_type>
+    post_clear(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_clear(ctx);
+        return std::nullopt;
+    }
+    std::optional<typename Wrapped::value_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_mutation_commit(ctx);
         return this->read();
     }
 };
@@ -255,22 +313,40 @@ simplify_id(Wrapped wrapped)
 // `generate_id`.
 template<class Wrapped, class GenerateId>
 struct override_id_wrapper
-    : signal_wrapper<
+    : custom_id_signal_wrapper<
           override_id_wrapper<Wrapped, GenerateId>,
           Wrapped,
           typename Wrapped::value_type,
           typename Wrapped::capabilities,
           std::invoke_result_t<GenerateId const&>>
 {
-
     override_id_wrapper(Wrapped wrapped, GenerateId generate_id)
-        : override_id_wrapper::signal_wrapper(std::move(wrapped)),
+        : override_id_wrapper::custom_id_signal_wrapper(std::move(wrapped)),
           generate_id_(std::move(generate_id))
     {
     }
     std::invoke_result_t<GenerateId const&>
     value_id() const
     {
+        return generate_id_();
+    }
+    std::optional<std::invoke_result_t<GenerateId const&>>
+    post_write(
+        alia_context* ctx, typename Wrapped::value_type value) const override
+    {
+        (void) this->wrapped_.post_write(ctx, std::move(value));
+        return generate_id_();
+    }
+    std::optional<std::invoke_result_t<GenerateId const&>>
+    post_clear(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_clear(ctx);
+        return generate_id_();
+    }
+    std::optional<std::invoke_result_t<GenerateId const&>>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_mutation_commit(ctx);
         return generate_id_();
     }
 
@@ -289,7 +365,7 @@ override_id(Wrapped wrapped, GenerateId generate_id)
 // currently has a value. The returned signal always has a value.
 template<class Wrapped>
 struct has_value_view_signal
-    : regular_signal<
+    : regular_stored_signal<
           has_value_view_signal<Wrapped>,
           bool,
           view_caps<signal_readable, signal_nonempty>>
@@ -324,7 +400,7 @@ has_value_view(Wrapped wrapped)
 // currently ready to write. The returned signal always has a value.
 template<class Wrapped>
 struct ready_to_write_view_signal
-    : regular_signal<
+    : regular_stored_signal<
           ready_to_write_view_signal<Wrapped>,
           bool,
           view_caps<signal_readable, signal_nonempty>>
@@ -499,25 +575,33 @@ struct unwrapper_signal
     {
         return this->wrapped_.read().value();
     }
-    typename Wrapped::value_type::value_type
-    move_out() const override
+    void
+    read_into(typename Wrapped::value_type::value_type* dst) const override
     {
-        return *this->wrapped_.move_out();
+        *dst = this->wrapped_.read().value();
     }
     typename Wrapped::value_type::value_type&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return *this->wrapped_.destructive_ref();
+        return *this->wrapped_.durable_ref();
     }
-    void
-    write(typename Wrapped::value_type::value_type value) const override
+    std::optional<typename Wrapped::value_id_type>
+    post_write(
+        alia_context* ctx,
+        typename Wrapped::value_type::value_type value) const override
     {
-        this->wrapped_.write(std::move(value));
+        return this->wrapped_.post_write(
+            ctx, typename Wrapped::value_type(std::move(value)));
     }
-    void
-    clear() const override
+    std::optional<typename Wrapped::value_id_type>
+    post_clear(alia_context* ctx) const override
     {
-        this->wrapped_.write(typename Wrapped::value_type());
+        return this->wrapped_.post_write(ctx, typename Wrapped::value_type());
+    }
+    std::optional<typename Wrapped::value_id_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        return this->wrapped_.post_mutation_commit(ctx);
     }
 };
 template<view_signal Signal>
@@ -529,10 +613,13 @@ unwrap(Signal signal)
 
 // `move(signal)` returns a signal with movement activated (if possible).
 //
-// If the input signal supports movement, the returned signal's value can be
-// moved out with `move_from_signal()` or `forward_signal()`.
+// If the input signal is movable, the returned signal's value can be accessed
+// via `durable_ref()` for steal-out. (The ref should be recorded in an effect
+// and only accessed when the effect is run; call `post_mutation_commit` on writable
+// durable signals after stealing.)
 //
-// If the input signal doesn't support movement, it's returned unchanged.
+// If the input signal isn't movable, it's returned unchanged.
+//
 template<class Wrapped>
 struct signal_movement_activator
     : signal_wrapper<
@@ -589,10 +676,10 @@ struct radio_signal
     {
         return signal_has_value(selected_) && signal_has_value(index_);
     }
-    bool
-    move_out() const override
+    void
+    read_into(bool* dst) const override
     {
-        return read_signal(selected_) == read_signal(index_);
+        *dst = read_signal(selected_) == read_signal(index_);
     }
     bool
     value_id() const
@@ -604,10 +691,11 @@ struct radio_signal
     {
         return signal_ready_to_write(selected_) && signal_has_value(index_);
     }
-    void
-    write(bool) const override
+    std::optional<bool>
+    post_write(alia_context* ctx, bool) const override
     {
-        write_signal(selected_, read_signal(index_));
+        write_signal(ctx, selected_, read_signal(index_));
+        return true;
     }
 
  private:

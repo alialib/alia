@@ -1,14 +1,20 @@
 #pragma once
 
+#include <alia/abi/context.h>
 #include <alia/kernel/id.hpp>
 
 #include <cassert>
 #include <concepts>
 #include <exception>
+#include <new>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
+
+#include <alia/abi/base/arena.h>
+#include <alia/abi/prelude.h>
 
 // This file defines the core types and functions of the signals module.
 
@@ -27,13 +33,17 @@ namespace alia {
 
 // The signal has no reading capabilities.
 constexpr unsigned signal_unreadable = 0b0000;
-// The signal can return a const reference to its value.
+// The signal can return a const reference to its value and can copy the value
+// into a destination provided by the caller.
 constexpr unsigned signal_readable = 0b0001;
-// The signal is capable of moving out its value, but there may be side
-// effects, so it requires explicit activation.
-constexpr unsigned signal_movable = 0b0011;
-// The signal can move out its value.
-constexpr unsigned signal_move_activated = 0b0111;
+// The signal exposes a `durable_ref()` to resident storage that remains valid
+// outside the current pass. Writable durable signals also support
+// `post_mutation_commit()`.
+constexpr unsigned signal_durable = 0b0011;
+// The signal may be opened for move-out via `alia::move`.
+constexpr unsigned signal_movable = 0b0111;
+// Movement is activated on this signal. Its value may be stolen via an effect.
+constexpr unsigned signal_move_activated = 0b1111;
 
 // The following are the same, but for writing.
 constexpr unsigned signal_unwritable = 0b00;
@@ -143,26 +153,22 @@ struct untyped_signal_base
     // A signal must supply an ID that uniquely identifies its value.
     //
     // Concrete signals expose `value_id()`, which returns a concrete value ID.
-    // `value_id_view()` (below) returns a type-erased `id_view` of the same
+    // `value_id_erased()` (below) returns a type-erased `id_view` of the same
     // ID.
     //
     // The ID is required to be valid if (and only if) the signal has a value.
     // If there is no value, `value_id()` is effectively undefined and
-    // `value_id_view()` returns null_id() .
+    // `value_id_erased()` returns null_id() .
     //
     // The returned ID is a transient view and is only guaranteed to be valid
     // as long as the signal itself is valid.
     //
     virtual id_view
-    value_id_view() const = 0;
+    value_id_erased() const = 0;
 
     // Is the signal currently ready to write?
     virtual bool
     ready_to_write() const = 0;
-
-    // Clear the signal.
-    virtual void
-    clear() const = 0;
 
     // WARNING: EXPERIMENTAL VALIDATION STUFF FOLLOWS...
 
@@ -197,22 +203,79 @@ struct signal_interface : untyped_signal_base
     virtual Value const&
     read() const = 0;
 
-    // Move out the signal's value.
-    // This is expected to be implemented by movable signals.
-    virtual Value
-    move_out() const = 0;
-
-    // Get a reference to the signal's value that the caller can manipulate
-    // as it pleases.
-    // This is expected to be implemented by movable signals.
-    virtual Value&
-    destructive_ref() const = 0;
-
-    // Write the signal's value.
-    // After a successful write, value_id() reflects the published identity.
+    // Read the signal's value into `*dst`. Signals that lazily generate their
+    // value may construct directly into `*dst`. Others typically assign from
+    // their stored value.
     virtual void
-    write(Value value) const = 0;
+    read_into(Value* dst) const = 0;
+
+    // Get a reference to the signal's resident value. The reference remains
+    // valid outside the current pass.
+    //
+    // If the signal is also writable, this reference may be used to post
+    // mutations to the signal value. In that case, `post_mutation_commit` must
+    // be called after the mutation is posted.
+    //
+    // This reference can also be used for move-outs if the signal is
+    // move-activated.
+    //
+    virtual Value&
+    durable_ref() const = 0;
+
+    // Post a write of `value` into the signal and return a type-erased version
+    // of the value ID that will be presented after the write runs. The ID view
+    // returned here is only valid until the pass scratch is reset, and it can
+    // be `null_id()` if the new value ID is unknown.
+    virtual id_view
+    post_write_erased(alia_context* ctx, Value value) const = 0;
+
+    // Post a clear of the signal and return a type-erased version of the value
+    // ID that will be presented after the clear runs. The ID view returned
+    // here is only valid until the pass scratch is reset, and it can be
+    // `null_id()` if the new value ID is unknown.
+    virtual id_view
+    post_clear_erased(alia_context* ctx) const = 0;
+
+    // Post bookkeeping for an in-place mutation (or steal) performed through
+    // `durable_ref()`. Return a type-erased predicted value ID. The ID view
+    // is only valid until the pass scratch is reset, and it can be `null_id()`
+    // if the new value ID is unknown.
+    virtual id_view
+    post_mutation_commit_erased(alia_context* ctx) const = 0;
 };
+
+namespace detail {
+
+// Erase a typed value ID into an `id_view`. For ID types that require external
+// storage (e.g. ID pairs), the storage is allocated from the pass scratch so
+// the returned view remains valid for the rest of the pass.
+template<class ValueId>
+id_view
+erase_value_id(alia_context* ctx, ValueId const& id)
+{
+    using storage_type = erased_id_storage<ValueId>;
+    if constexpr (std::is_empty_v<storage_type>)
+    {
+        storage_type storage{};
+        return to_id_view(storage, id);
+    }
+    else
+    {
+        ALIA_ASSERT(ctx);
+        ALIA_ASSERT(ctx->scratch);
+        size_t const bytes = alia_min_aligned_size(sizeof(storage_type));
+        size_t const align = alignof(storage_type) < ALIA_MIN_ALIGN
+                               ? ALIA_MIN_ALIGN
+                               : alignof(storage_type);
+        void* mem = alia_arena_ptr(
+            ctx->scratch,
+            alia_arena_alloc_aligned(ctx->scratch, bytes, align));
+        auto* storage = new (mem) storage_type{};
+        return to_id_view(*storage, id);
+    }
+}
+
+} // namespace detail
 
 template<class Derived, class Value, class Capabilities, class ValueId>
 struct signal_base : signal_interface<Value>
@@ -229,12 +292,57 @@ struct signal_base : signal_interface<Value>
     // Erase this signal's typed value ID into an `id_view`. Concrete signals
     // define a typed `value_id()` that returns `value_id_type`.
     id_view
-    value_id_view() const override
+    value_id_erased() const override
     {
         Derived const& self = static_cast<Derived const&>(*this);
         if (!self.has_value())
             return null_id();
         return to_id_view(value_id_storage_, self.value_id());
+    }
+
+    // Post a write of `value` and return the value ID that will be presented
+    // after the write runs. (If that ID is unknown, `std::nullopt` can be
+    // returned.)
+    virtual std::optional<ValueId>
+    post_write(alia_context* ctx, Value value) const = 0;
+
+    // Post a clear and return the value ID that will be presented after the
+    // clear runs. (If that ID is unknown, `std::nullopt` can be returned.)
+    virtual std::optional<ValueId>
+    post_clear(alia_context* ctx) const = 0;
+
+    // Post bookkeeping for an in-place mutation (or steal) performed through
+    // `durable_ref()`. Return the value ID that will be presented afterward.
+    // (If that ID is unknown, `std::nullopt` can be returned.)
+    // Requires the signal to currently have a value and be ready to write.
+    virtual std::optional<ValueId>
+    post_mutation_commit(alia_context* ctx) const = 0;
+
+    id_view
+    post_write_erased(alia_context* ctx, Value value) const override
+    {
+        auto id = post_write(ctx, std::move(value));
+        if (!id)
+            return null_id();
+        return detail::erase_value_id(ctx, *id);
+    }
+
+    id_view
+    post_clear_erased(alia_context* ctx) const override
+    {
+        auto id = post_clear(ctx);
+        if (!id)
+            return null_id();
+        return detail::erase_value_id(ctx, *id);
+    }
+
+    id_view
+    post_mutation_commit_erased(alia_context* ctx) const override
+    {
+        auto id = post_mutation_commit(ctx);
+        if (!id)
+            return null_id();
+        return detail::erase_value_id(ctx, *id);
     }
 
  protected:
@@ -254,32 +362,38 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
 // LCOV_EXCL_START
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
-    void clear() const override                                               \
+    std::optional<ValueId> post_clear(alia_context*) const override           \
     {                                                                         \
+        return std::nullopt;                                                  \
+    }
+
+#define ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()                 \
+    std::optional<ValueId> post_mutation_commit(alia_context*) const override \
+    {                                                                         \
+        return std::nullopt;                                                  \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)                      \
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                               \
+    ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()                     \
     bool ready_to_write() const override                                      \
     {                                                                         \
         return false;                                                         \
     }                                                                         \
-    void write(Value) const override                                          \
+    std::optional<ValueId> post_write(alia_context*, Value) const override    \
     {                                                                         \
+        return std::nullopt;                                                  \
     }
 
-#define ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                       \
-    Value move_out() const override                                           \
-    {                                                                         \
-        throw nullptr;                                                        \
-    }                                                                         \
-    Value& destructive_ref() const override                                   \
+#define ALIA_DEFINE_UNUSED_SIGNAL_DURABLE_REF_INTERFACE(Value)                \
+    Value& durable_ref() const override                                       \
     {                                                                         \
         throw nullptr;                                                        \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_READ_INTERFACE(Value)                       \
-    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)                           \
+    ALIA_DEFINE_UNUSED_SIGNAL_DURABLE_REF_INTERFACE(Value)                    \
+    ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()                     \
     ValueId value_id() const                                                  \
     {                                                                         \
         return {};                                                            \
@@ -289,6 +403,10 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
         return false;                                                         \
     }                                                                         \
     Value const& read() const override                                        \
+    {                                                                         \
+        throw nullptr;                                                        \
+    }                                                                         \
+    void read_into(Value*) const override                                     \
     {                                                                         \
         throw nullptr;                                                        \
     }
@@ -302,7 +420,21 @@ struct signal<Derived, Value, view_caps<signal_readable, Presence>, ValueId>
           ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
-    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_DURABLE_REF_INTERFACE(Value)
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<Derived, Value, view_caps<signal_durable, Presence>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_durable, Presence>, ValueId>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
+    : signal_base<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
+{
+    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
 
 template<class Derived, class Value, unsigned Presence, class ValueId>
@@ -316,13 +448,6 @@ struct signal<
           Value,
           view_caps<signal_move_activated, Presence>,
           ValueId>
-{
-    ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
-};
-
-template<class Derived, class Value, unsigned Presence, class ValueId>
-struct signal<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
-    : signal_base<Derived, Value, view_caps<signal_movable, Presence>, ValueId>
 {
     ALIA_DEFINE_UNUSED_SIGNAL_WRITE_INTERFACE(Value)
 };
@@ -351,7 +476,23 @@ struct signal<
           binding_caps<signal_readable, signal_writable, Presence>,
           ValueId>
 {
-    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_DURABLE_REF_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()
+    ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_durable, signal_writable, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          binding_caps<signal_durable, signal_writable, Presence>,
+          ValueId>
+{
     ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()
 };
 
@@ -397,7 +538,22 @@ struct signal<
           binding_caps<signal_readable, signal_clearable, Presence>,
           ValueId>
 {
-    ALIA_DEFINE_UNUSED_SIGNAL_MOVE_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_DURABLE_REF_INTERFACE(Value)
+    ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()
+};
+
+template<class Derived, class Value, unsigned Presence, class ValueId>
+struct signal<
+    Derived,
+    Value,
+    binding_caps<signal_durable, signal_clearable, Presence>,
+    ValueId>
+    : signal_base<
+          Derived,
+          Value,
+          binding_caps<signal_durable, signal_clearable, Presence>,
+          ValueId>
+{
 };
 
 // LCOV_EXCL_STOP
@@ -416,9 +572,8 @@ struct signal_ref
             Capabilities,
             OtherCapabilities>
     signal_ref(
-        signal<OtherSignal, Value, OtherCapabilities, OtherValueId> const&
-            signal)
-        : ref_(&signal)
+        signal<OtherSignal, Value, OtherCapabilities, OtherValueId> const& s)
+        : ref_(&s)
     {
     }
     // Construct from another signal_ref. - This is meant to prevent
@@ -444,35 +599,64 @@ struct signal_ref
     {
         return ref_->read();
     }
-    Value
-    move_out() const override
+    void
+    read_into(Value* dst) const override
     {
-        return ref_->move_out();
+        ref_->read_into(dst);
     }
     Value&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return ref_->destructive_ref();
+        return ref_->durable_ref();
     }
     id_view
     value_id() const
     {
-        return ref_->value_id_view();
+        return ref_->value_id_erased();
     }
     bool
     ready_to_write() const override
     {
         return ref_->ready_to_write();
     }
-    void
-    write(Value value) const override
+    id_view
+    post_write_erased(alia_context* ctx, Value value) const override
     {
-        ref_->write(std::move(value));
+        return ref_->post_write_erased(ctx, std::move(value));
     }
-    void
-    clear() const override
+    id_view
+    post_clear_erased(alia_context* ctx) const override
     {
-        ref_->clear();
+        return ref_->post_clear_erased(ctx);
+    }
+    id_view
+    post_mutation_commit_erased(alia_context* ctx) const override
+    {
+        return ref_->post_mutation_commit_erased(ctx);
+    }
+    std::optional<id_view>
+    post_write(alia_context* ctx, Value value) const override
+    {
+        id_view const id = post_write_erased(ctx, std::move(value));
+        if (alia_id_view_is_null(id))
+            return std::nullopt;
+        return id;
+    }
+    std::optional<id_view>
+    post_clear(alia_context* ctx) const override
+    {
+        id_view const id = post_clear_erased(ctx);
+        if (alia_id_view_is_null(id))
+            return std::nullopt;
+        return id;
+    }
+    std::optional<id_view>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        id_view const id = post_mutation_commit_erased(ctx);
+        if (alia_id_view_is_null(id))
+            return std::nullopt;
+        return id;
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -521,10 +705,10 @@ concept signal_of = signal_with<Signal, Caps>
 // Define the types and concepts for the three main signal roles.
 ALIA_DEFINE_SIGNAL_SUGAR(view, view_caps<signal_readable>)
 ALIA_DEFINE_SIGNAL_SUGAR(sink, sink_caps<signal_writable>)
-ALIA_DEFINE_SIGNAL_SUGAR(binding, binding_caps<signal_movable>)
+ALIA_DEFINE_SIGNAL_SUGAR(binding, binding_caps<signal_readable>)
 using nonempty_view_caps = view_caps<signal_readable, signal_nonempty>;
 using nonempty_binding_caps
-    = binding_caps<signal_movable, signal_writable, signal_nonempty>;
+    = binding_caps<signal_readable, signal_writable, signal_nonempty>;
 ALIA_DEFINE_SIGNAL_SUGAR(nonempty_view, nonempty_view_caps)
 ALIA_DEFINE_SIGNAL_SUGAR(nonempty_binding, nonempty_binding_caps)
 
@@ -576,19 +760,20 @@ signal_ready_to_write(Signal const& signal)
     return signal.ready_to_write();
 }
 
-// Write a signal's value.
-// Unlike calling signal.write() directly, this will generate a compile-time
-// error if the signal's type doesn't support writing.
-// Note that if the signal isn't ready to write, this is a no op.
+// Post a write of `value` into `signal`.
+// Unlike calling signal.post_write() directly, this will generate a
+// compile-time error if the signal's type doesn't support writing.
+// If the signal isn't ready to write, this is a no-op and returns
+// `std::nullopt`.
 template<sink_signal Signal, class Value>
-void
-write_signal(Signal const& signal, Value value)
+std::optional<typename Signal::value_id_type>
+write_signal(alia_context* ctx, Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
         try
         {
-            signal.write(std::move(value));
+            return signal.post_write(ctx, std::move(value));
         }
         catch (validation_error&)
         {
@@ -600,49 +785,126 @@ write_signal(Signal const& signal, Value value)
                 std::rethrow_exception(e);
         }
     }
+    return std::nullopt;
 }
 
-// Move out a signal's value.
-template<signal_with<view_caps<signal_move_activated>> Signal>
-Signal::value_type
-move_from_signal(Signal const& signal)
+// `by_value_signal_capture` stores a captured signal value as a copy.
+template<class T>
+struct by_value_signal_capture
 {
-    if constexpr (!nonempty_view_signal<Signal>)
-        assert(signal.has_value());
-    return signal.move_out();
+    explicit by_value_signal_capture(T value) : value_(std::move(value))
+    {
+    }
+
+    T
+    take()
+    {
+        return std::move(value_);
+    }
+
+ private:
+    T value_;
+};
+
+// `by_ref_signal_capture` stores a signal value that has been captured via
+// a durable reference.
+template<class T>
+struct by_ref_signal_capture
+{
+    explicit by_ref_signal_capture(T* ptr) : ptr_(ptr)
+    {
+        ALIA_ASSERT(ptr_);
+    }
+
+    T
+    take()
+    {
+        return std::move(*ptr_);
+    }
+
+ private:
+    T* ptr_;
+};
+
+// capture_signal_value() captures a signal's value for use in an effect.
+// It chooses the most efficient mechanism for storing the value so that it
+// can be retained until the effect is run and then forwarded elsewhere.
+//
+// If the capture is used to post mutating effects, you must then call
+// `commit_signal_capture_mutation()` to post any required mutation
+// bookkeeping.
+
+template<view_signal Signal>
+    requires signal_with<Signal, view_caps<signal_move_activated>>
+by_ref_signal_capture<typename Signal::value_type>
+capture_signal_value(Signal const& signal)
+{
+    return by_ref_signal_capture<typename Signal::value_type>(
+        &signal.durable_ref());
 }
 
-// Forward along a signal's value.
-// This will move out the value if movement is activated or return a reference
-// otherwise.
-template<signal_with<view_caps<signal_move_activated>> Signal>
-Signal::value_type
-forward_signal(Signal const& signal)
-{
-    if constexpr (!nonempty_view_signal<Signal>)
-        assert(signal.has_value());
-    return signal.move_out();
-}
 template<view_signal Signal>
     requires(!signal_with<Signal, view_caps<signal_move_activated>>)
-Signal::value_type const&
-forward_signal(Signal const& signal)
+by_value_signal_capture<typename Signal::value_type>
+capture_signal_value(Signal const& signal)
 {
-    if constexpr (!nonempty_view_signal<Signal>)
-        assert(signal.has_value());
-    return signal.read();
+    typename Signal::value_type value{};
+    signal.read_into(&value);
+    return by_value_signal_capture<typename Signal::value_type>(
+        std::move(value));
 }
 
-// Clear a signal's value.
-// Unlike calling signal.clear() directly, this will generate a compile-time
-// error if the signal's type doesn't support clearing.
-// Note that if the signal isn't ready to write, this is a no op.
-template<signal_with<sink_caps<signal_clearable>> Signal>
+// Post bookkeeping for an in-place mutation of `signal` through a captured
+// reference.
+template<class T, class Signal>
 void
-clear_signal(Signal const& signal)
+commit_signal_capture_mutation(
+    alia_context* ctx,
+    by_ref_signal_capture<T> const& captured,
+    Signal const& signal)
+{
+    (void) captured;
+    signal.post_mutation_commit(ctx);
+}
+
+// `commit_signal_capture_mutation()` is a no-op for a by-value capture.
+// The source signal is not mutated.
+template<class T, class Signal>
+void
+commit_signal_capture_mutation(
+    alia_context* ctx,
+    by_value_signal_capture<T> const& captured,
+    Signal const& signal)
+{
+    (void) ctx;
+    (void) captured;
+    (void) signal;
+}
+
+// Post bookkeeping for an in-place mutation of `signal` through
+// `durable_ref()`. If the signal has no value or isn't ready to write, this
+// is a no-op and returns `std::nullopt`.
+template<signal_with<binding_caps<signal_durable, signal_writable>> Signal>
+std::optional<typename Signal::value_id_type>
+commit_signal_mutation(alia_context* ctx, Signal const& signal)
+{
+    if (signal.has_value() && signal.ready_to_write())
+        return signal.post_mutation_commit(ctx);
+    return std::nullopt;
+}
+
+// Post a clear of `signal`.
+// Unlike calling signal.post_clear() directly, this will generate a
+// compile-time error if the signal's type doesn't support clearing.
+// If the signal isn't ready to write, this is a no-op and returns
+// `std::nullopt`.
+template<signal_with<sink_caps<signal_clearable>> Signal>
+std::optional<typename Signal::value_id_type>
+clear_signal(alia_context* ctx, Signal const& signal)
 {
     if (signal.ready_to_write())
-        signal.clear();
+        return signal.post_clear(ctx);
+    return std::nullopt;
 }
 
 } // namespace alia

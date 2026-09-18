@@ -34,7 +34,7 @@ ALIA_EXTERN_C_BEGIN
 // sets the `flags` field to `ALIA_SIGNAL_WRITTEN`. For signals with fixed-size
 // values, the value is then written directly back into the signal structure.
 // Note that since Alia passes are mutation-free, it is then the responsibility
-// of the caller to translate this into a deferred effect.
+// of the caller to translate this into an effect and post it.
 //
 // For large values, the signal also carries a `value_id`.
 // These can be used in place of the signal value to track changes in the

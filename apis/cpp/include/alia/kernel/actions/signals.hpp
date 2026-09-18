@@ -33,11 +33,12 @@ struct write_action_signal
     {
         return this->wrapped_.ready_to_write() && on_write_.is_ready();
     }
-    void
-    write(typename Wrapped::value_type value) const override
+    std::optional<typename Wrapped::value_id_type>
+    post_write(
+        alia_context* ctx, typename Wrapped::value_type value) const override
     {
-        perform_action(on_write_, value);
-        this->wrapped_.write(std::move(value));
+        post_action(ctx, on_write_, value);
+        return this->wrapped_.post_write(ctx, std::move(value));
     }
 
  private:

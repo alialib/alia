@@ -1,13 +1,15 @@
 #pragma once
 
 #include <alia/kernel/actions/core.hpp>
+#include <alia/kernel/effects.hpp>
 
 #include <cassert>
+#include <tuple>
 #include <utility>
 
 namespace alia {
 
-// The noop action is always ready to perform but does nothing.
+// The noop action is always ready to post but does nothing.
 
 template<class... Args>
 struct noop_action : action_interface<Args...>
@@ -23,9 +25,8 @@ struct noop_action : action_interface<Args...>
     }
 
     void
-    perform(function_view<void()> const& intermediary, Args...) const override
+    post(alia_context*, Args...) const override
     {
-        intermediary();
     }
 };
 
@@ -40,7 +41,7 @@ noop()
 
 } // namespace actions
 
-// The unready action is never ready to perform.
+// The unready action is never ready to post.
 
 template<class... Args>
 struct unready_action : action_interface<Args...>
@@ -57,9 +58,9 @@ struct unready_action : action_interface<Args...>
 
     // LCOV_EXCL_START
     void
-    perform(function_view<void()> const&, Args...) const override
+    post(alia_context*, Args...) const override
     {
-        // This action is never supposed to be performed!
+        // This action is never supposed to be posted!
         assert(0);
     }
     // LCOV_EXCL_STOP
@@ -76,14 +77,14 @@ unready()
 
 } // namespace actions
 
-// callback(is_ready, perform) creates an action whose behavior is defined by
-// two function objects.
+// callback(is_ready, fn) creates an action whose behavior is defined by two
+// function objects.
 //
 // :is_ready takes no arguments and simply returns true or false to indicate if
-// the action is ready to be performed.
+// the action is ready to be posted.
 //
-// :perform can take any number/type of arguments and defines the signature
-// of the action.
+// :fn can take any number/type of arguments and defines the signature of the
+// action. It runs at commit time when the posted effect is applied.
 
 namespace detail {
 
@@ -106,15 +107,15 @@ struct callback_action_signature
 
 } // namespace detail
 
-template<class IsReady, class Perform, class Interface>
+template<class IsReady, class Fn, class Interface>
 struct callback_action;
 
-template<class IsReady, class Perform, class... Args>
-struct callback_action<IsReady, Perform, action_interface<Args...>>
+template<class IsReady, class Fn, class... Args>
+struct callback_action<IsReady, Fn, action_interface<Args...>>
     : action_interface<Args...>
 {
-    callback_action(IsReady is_ready, Perform perform)
-        : is_ready_(is_ready), perform_(perform)
+    callback_action(IsReady is_ready, Fn fn)
+        : is_ready_(is_ready), fn_(std::move(fn))
     {
     }
 
@@ -125,36 +126,38 @@ struct callback_action<IsReady, Perform, action_interface<Args...>>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
-        intermediary();
-        perform_(args...);
+        post_call(
+            ctx,
+            [fn = fn_, args = std::make_tuple(std::move(args)...)]() mutable {
+                std::apply(fn, std::move(args));
+            });
     }
 
  private:
     IsReady is_ready_;
-    Perform perform_;
+    Fn fn_;
 };
 
-template<class IsReady, class Perform>
+template<class IsReady, class Fn>
 auto
-callback(IsReady is_ready, Perform perform)
+callback(IsReady is_ready, Fn fn)
 {
     return callback_action<
         IsReady,
-        Perform,
-        typename detail::callback_action_signature<Perform>::type>(
-        is_ready, perform);
+        Fn,
+        typename detail::callback_action_signature<Fn>::type>(
+        is_ready, std::move(fn));
 }
 
 // The single-argument version of callback() creates an action that's always
-// ready to perform.
-template<class Perform>
+// ready to post.
+template<class Fn>
 auto
-callback(Perform perform)
+callback(Fn fn)
 {
-    return callback([]() { return true; }, perform);
+    return callback([]() { return true; }, std::move(fn));
 }
 
 } // namespace alia

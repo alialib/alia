@@ -12,7 +12,7 @@ namespace alia {
 // comma operator
 //
 // Using the comma operator between two actions creates a combined action that
-// performs the two actions in sequence.
+// posts the two actions in sequence.
 
 template<class First, class Second, class Interface>
 struct action_pair;
@@ -33,11 +33,10 @@ struct action_pair<First, Second, action_interface<Args...>>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
-        second_.perform(
-            [&]() { first_.perform(intermediary, args...); }, args...);
+        first_.post(ctx, args...);
+        second_.post(ctx, args...);
     }
 
  private:
@@ -76,11 +75,11 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
-        action_.perform(
-            intermediary, forward_signal(signal_), std::move(args)...);
+        auto captured = capture_signal_value(signal_);
+        action_.post(ctx, captured.take(), std::move(args)...);
+        commit_signal_capture_mutation(ctx, captured, signal_);
     }
 
  private:
@@ -126,11 +125,11 @@ struct copy_action : action_interface<>
     }
 
     void
-    perform(function_view<void()> const& intermediary) const override
+    post(alia_context* ctx) const override
     {
-        typename Source::value_type source_value = forward_signal(source_);
-        intermediary();
-        sink_.write(std::move(source_value));
+        auto captured = capture_signal_value(source_);
+        sink_.post_write(ctx, captured.take());
+        commit_signal_capture_mutation(ctx, captured, source_);
     }
 
  private:

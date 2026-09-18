@@ -6,7 +6,7 @@
 #define TEST_NO_MAIN
 #include <doctest/doctest.h>
 
-TEST_CASE("alia_run_effects applies deferred writes in FIFO order")
+TEST_CASE("alia_run_effects applies posted writes in FIFO order")
 {
     alia_struct_spec const arena_spec = alia_arena_object_spec();
     void* storage = alia_object_alloc(arena_spec);
@@ -29,8 +29,8 @@ TEST_CASE("alia_run_effects applies deferred writes in FIFO order")
     int dst = 0;
     int const first = 3;
     int const second = 9;
-    alia_defer_write(&ctx, &dst, &first, sizeof(first), "first");
-    alia_defer_write(&ctx, &dst, &second, sizeof(second), "second");
+    alia_post_write(&ctx, &dst, &first, sizeof(first), "first");
+    alia_post_write(&ctx, &dst, &second, sizeof(second), "second");
     REQUIRE(ctx.effects->head != nullptr);
     CHECK(dst == 0);
 

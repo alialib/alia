@@ -2,11 +2,14 @@
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/operators.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 #include <string>
 
 using namespace alia;
+using namespace alia::test;
 using namespace alia::operators;
 
 TEST_CASE("signal_capabilities_compatible")
@@ -22,6 +25,14 @@ TEST_CASE("signal_capabilities_compatible")
         view_caps<signal_readable>, binding_caps<signal_readable>, true);
     TEST_COMPATIBILITY(
         view_caps<signal_readable>, view_caps<signal_movable>, true);
+    TEST_COMPATIBILITY(
+        view_caps<signal_readable>, view_caps<signal_durable>, true);
+    TEST_COMPATIBILITY(
+        view_caps<signal_durable>, view_caps<signal_readable>, false);
+    TEST_COMPATIBILITY(
+        view_caps<signal_durable>, view_caps<signal_movable>, true);
+    TEST_COMPATIBILITY(
+        view_caps<signal_movable>, view_caps<signal_durable>, false);
     TEST_COMPATIBILITY(
         view_caps<signal_readable>, binding_caps<signal_move_activated>, true);
     TEST_COMPATIBILITY(
@@ -200,6 +211,7 @@ TEST_CASE("signal_capabilities_union")
 
 TEST_CASE("nonempty sugar and propagation")
 {
+    effect_fixture fx;
     static_assert(nonempty_view_signal<decltype(value(1))>);
     static_assert(nonempty_binding_signal<decltype(ref(*(int*) nullptr))>);
     static_assert(nonempty_view_signal<decltype(value(1) + value(2))>);
@@ -213,7 +225,8 @@ TEST_CASE("nonempty sugar and propagation")
     int x = 2;
     auto r = ref(x);
     nonempty_binding<int> nb = r;
-    write_signal(nb, 3);
+    write_signal(&fx.ctx, nb, 3);
+    fx.run();
     CHECK(x == 3);
 }
 
@@ -250,8 +263,7 @@ TEST_CASE("binding_signal")
     CHECK_FALSE(binding_signal<sink<int>>);
     CHECK(binding_signal<binding<int>>);
     CHECK(binding_signal<signal_ref<int, binding_caps<signal_movable>>>);
-    CHECK_FALSE(
-        binding_signal<signal_ref<int, binding_caps<signal_readable>>>);
+    CHECK(binding_signal<signal_ref<int, binding_caps<signal_readable>>>);
     CHECK_FALSE(binding_signal<int>);
     CHECK_FALSE(binding_signal<std::string>);
 }
@@ -278,6 +290,7 @@ TEST_CASE("signal_with clearable sink")
 
 TEST_CASE("signal_ref")
 {
+    effect_fixture fx;
     int x = 1;
     auto y = ref(x);
     signal_ref<int, binding_caps<signal_readable>> s = y;
@@ -285,13 +298,14 @@ TEST_CASE("signal_ref")
     using signal_t = decltype(s);
     CHECK(view_signal<signal_t>);
     CHECK(sink_signal<signal_t>);
-    CHECK_FALSE(binding_signal<signal_t>);
+    CHECK(binding_signal<signal_t>);
 
     CHECK(signal_has_value(s));
     CHECK((s.value_id() == to_id_view(y.value_id())));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(s, 0);
+    write_signal(&fx.ctx, s, 0);
+    fx.run();
     CHECK(x == 0);
     CHECK(read_signal(s) == 0);
 }

@@ -5,8 +5,10 @@
 #include <alia/kernel/signals/application.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/core.hpp>
+#include <alia/kernel/signals/utilities.hpp>
 
 #include <concepts>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -18,20 +20,24 @@ namespace alia {
 // field. (`field` is a pointer-to-member.)
 //
 // The field signal's capabilities are the intersection of the structure's
-// capabilities with a movable binding. Writes move (or copy) the structure,
-// assign the field, and write the structure back.
+// capabilities with a durable binding. The field is durable when the parent
+// is, but not movable. (Move-out of a single field is not supported.)
+//
+// When the parent is a writable durable signal, writes assign through
+// `durable_ref` and call `post_mutation_commit`. Otherwise writes copy the
+// structure, assign the field, and write the structure back.
 //
 // If the field type is `identifiable`, the value ID is the field value.
 // Otherwise it is the structure ID paired with an ID for the field pointer.
 //
 template<class StructureSignal, class Field>
 struct field_signal
-    : signal<
+    : stored_signal<
           field_signal<StructureSignal, Field>,
           Field,
           signal_capabilities_intersection<
               typename StructureSignal::capabilities,
-              binding_caps<signal_movable, signal_writable, signal_nonempty>>,
+              binding_caps<signal_durable, signal_writable, signal_nonempty>>,
           std::conditional_t<
               identifiable<Field>,
               Field,
@@ -41,6 +47,12 @@ struct field_signal
 {
     using structure_type = typename StructureSignal::value_type;
     using field_ptr = Field structure_type::*;
+    using value_id_type = std::conditional_t<
+        identifiable<Field>,
+        Field,
+        std::pair<
+            typename StructureSignal::value_id_type,
+            Field StructureSignal::value_type::*>>;
 
     field_signal(StructureSignal structure, field_ptr field)
         : structure_(std::move(structure)), field_(field)
@@ -56,15 +68,10 @@ struct field_signal
     {
         return structure_.read().*field_;
     }
-    Field
-    move_out() const override
-    {
-        return std::move(structure_.destructive_ref().*field_);
-    }
     Field&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return structure_.destructive_ref().*field_;
+        return structure_.durable_ref().*field_;
     }
     decltype(auto)
     value_id() const
@@ -79,12 +86,77 @@ struct field_signal
     {
         return structure_.has_value() && structure_.ready_to_write();
     }
-    void
-    write(Field x) const override
+    std::optional<value_id_type>
+    post_write(alia_context* ctx, Field x) const override
     {
-        structure_type s = forward_signal(alia::move(structure_));
-        s.*field_ = std::move(x);
-        structure_.write(std::move(s));
+        if constexpr (
+            signal_with<
+                StructureSignal,
+                binding_caps<signal_durable, signal_writable>>)
+        {
+            Field* field_ptr_addr = &(structure_.durable_ref().*field_);
+            if constexpr (identifiable<Field>)
+            {
+                Field id = x;
+                post_assignment(ctx, field_ptr_addr, std::move(x));
+                (void) structure_.post_mutation_commit(ctx);
+                return id;
+            }
+            else
+            {
+                post_assignment(ctx, field_ptr_addr, std::move(x));
+                auto structure_id = structure_.post_mutation_commit(ctx);
+                if (!structure_id)
+                    return std::nullopt;
+                return value_id_type{std::move(*structure_id), field_};
+            }
+        }
+        else
+        {
+            if constexpr (identifiable<Field>)
+            {
+                Field id = x;
+                structure_type s(read_signal(structure_));
+                s.*field_ = std::move(x);
+                structure_.post_write(ctx, std::move(s));
+                return id;
+            }
+            else
+            {
+                structure_type s(read_signal(structure_));
+                s.*field_ = std::move(x);
+                auto structure_id = structure_.post_write(ctx, std::move(s));
+                if (!structure_id)
+                    return std::nullopt;
+                return value_id_type{std::move(*structure_id), field_};
+            }
+        }
+    }
+    std::optional<value_id_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        if constexpr (
+            signal_with<
+                StructureSignal,
+                binding_caps<signal_durable, signal_writable>>)
+        {
+            auto structure_id = structure_.post_mutation_commit(ctx);
+            if constexpr (identifiable<Field>)
+            {
+                (void) structure_id;
+                return std::nullopt;
+            }
+            else
+            {
+                if (!structure_id)
+                    return std::nullopt;
+                return value_id_type{std::move(*structure_id), field_};
+            }
+        }
+        else
+        {
+            return std::nullopt;
+        }
     }
 
  private:
@@ -187,20 +259,14 @@ ALIA_DEFINE_UNARY_SIGNAL_OPERATOR(*)
 
 template<class Arg0, class Arg1>
 struct logical_or_signal
-    : signal<
+    : regular_stored_signal<
           logical_or_signal<Arg0, Arg1>,
           bool,
-          view_caps<signal_readable>,
-          bool>
+          view_caps<signal_readable>>
 {
     logical_or_signal(Arg0 arg0, Arg1 arg1)
         : arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
-    }
-    bool
-    value_id() const
-    {
-        return read();
     }
     bool
     has_value() const override
@@ -250,20 +316,14 @@ operator||(A const& a, B const& b)
 
 template<class Arg0, class Arg1>
 struct logical_and_signal
-    : signal<
+    : regular_stored_signal<
           logical_and_signal<Arg0, Arg1>,
           bool,
-          view_caps<signal_readable>,
-          bool>
+          view_caps<signal_readable>>
 {
     logical_and_signal(Arg0 arg0, Arg1 arg1)
         : arg0_(std::move(arg0)), arg1_(std::move(arg1))
     {
-    }
-    bool
-    value_id() const
-    {
-        return read();
     }
     bool
     has_value() const override
@@ -323,8 +383,9 @@ operator&&(A const& a, B const& b)
 // only be touched if it is selected by the condition.)
 //
 template<class Condition, class T, class F>
+    requires identifiable<typename T::value_type>
 struct signal_mux
-    : signal<
+    : regular_stored_signal<
           signal_mux<Condition, T, F>,
           typename T::value_type,
           signal_capabilities<
@@ -338,8 +399,7 @@ struct signal_mux
                   signal_capability_level_intersection<
                       T::capabilities::presence,
                       F::capabilities::presence>,
-                  Condition::capabilities::presence>>,
-          typename T::value_type>
+                  Condition::capabilities::presence>>>
 {
     signal_mux(Condition condition, T t, F f)
         : condition_(std::move(condition)), t_(std::move(t)), f_(std::move(f))
@@ -356,20 +416,10 @@ struct signal_mux
     {
         return condition_.read() ? t_.read() : f_.read();
     }
-    typename T::value_type
-    move_out() const override
-    {
-        return condition_.read() ? t_.move_out() : f_.move_out();
-    }
     typename T::value_type&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return condition_.read() ? t_.destructive_ref() : f_.destructive_ref();
-    }
-    typename T::value_type const&
-    value_id() const
-    {
-        return read();
+        return condition_.read() ? t_.durable_ref() : f_.durable_ref();
     }
     bool
     ready_to_write() const override
@@ -377,21 +427,33 @@ struct signal_mux
         return condition_.has_value()
             && (condition_.read() ? t_.ready_to_write() : f_.ready_to_write());
     }
-    void
-    write(typename T::value_type value) const override
+    std::optional<typename T::value_type>
+    post_write(alia_context* ctx, typename T::value_type value) const override
     {
+        typename T::value_type id = value;
         if (condition_.read())
-            t_.write(std::move(value));
+            t_.post_write(ctx, std::move(value));
         else
-            f_.write(std::move(value));
+            f_.post_write(ctx, std::move(value));
+        return id;
     }
-    void
-    clear() const override
+    std::optional<typename T::value_type>
+    post_clear(alia_context* ctx) const override
     {
         if (condition_.read())
-            t_.clear();
+            (void) t_.post_clear(ctx);
         else
-            f_.clear();
+            (void) f_.post_clear(ctx);
+        return std::nullopt;
+    }
+    std::optional<typename T::value_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        if (condition_.read())
+            (void) t_.post_mutation_commit(ctx);
+        else
+            (void) f_.post_mutation_commit(ctx);
+        return std::nullopt;
     }
     bool
     invalidate(std::exception_ptr error) const override
@@ -528,13 +590,13 @@ struct const_subscript_invoker
 // If the element type is `identifiable`, the value ID is the element value.
 // Otherwise it is the container ID paired with the index ID.
 //
-// If `operator[]` returns a reference, the result is movable. Otherwise
-// (proxies such as `std::vector<bool>`), movement is activated and
-// `destructive_ref` is unavailable.
+// If `operator[]` returns a reference, the result is durable when the
+// container is. Otherwise (proxies such as `std::vector<bool>`), the result
+// is not durable and `durable_ref` is unavailable.
 //
 template<class ContainerSignal, class IndexSignal>
 struct subscript_signal
-    : signal<
+    : stored_signal<
           subscript_signal<ContainerSignal, IndexSignal>,
           typename subscript_result_type<
               typename ContainerSignal::value_type,
@@ -546,7 +608,7 @@ struct subscript_signal
               signal_capabilities<
                   signal_capability_level_intersection<
                       ContainerSignal::capabilities::reading,
-                      signal_movable>,
+                      signal_durable>,
                   signal_capability_level_intersection<
                       ContainerSignal::capabilities::writing,
                       signal_writable>,
@@ -556,7 +618,7 @@ struct subscript_signal
               signal_capabilities<
                   signal_capability_level_intersection<
                       ContainerSignal::capabilities::reading,
-                      signal_move_activated>,
+                      signal_readable>,
                   signal_capability_level_intersection<
                       ContainerSignal::capabilities::writing,
                       signal_writable>,
@@ -575,6 +637,12 @@ struct subscript_signal
                   typename IndexSignal::value_id_type>>>
 {
     using value_type = typename subscript_signal::value_type;
+    using value_id_type = std::conditional_t<
+        identifiable<value_type>,
+        value_type,
+        std::pair<
+            typename ContainerSignal::value_id_type,
+            typename IndexSignal::value_id_type>>;
 
     subscript_signal(ContainerSignal container, IndexSignal index)
         : container_(std::move(container)), index_(std::move(index))
@@ -590,20 +658,15 @@ struct subscript_signal
     {
         return invoker_(container_.read(), index_.read());
     }
-    value_type
-    move_out() const override
-    {
-        return std::move(container_.destructive_ref()[index_.read()]);
-    }
     value_type&
-    destructive_ref() const override
+    durable_ref() const override
     {
         if constexpr (
             subscript_returns_reference<
                 typename ContainerSignal::value_type,
                 typename IndexSignal::value_type>)
         {
-            return container_.destructive_ref()[index_.read()];
+            return container_.durable_ref()[index_.read()];
         }
         else
         {
@@ -628,14 +691,91 @@ struct subscript_signal
         return container_.has_value() && index_.has_value()
             && container_.ready_to_write();
     }
-    void
-    write(value_type x) const override
+    std::optional<value_id_type>
+    post_write(alia_context* ctx, value_type x) const override
     {
-        if constexpr (sink_signal<ContainerSignal>)
+        if constexpr (!sink_signal<ContainerSignal>)
+            return std::nullopt;
+        else if constexpr (
+            subscript_returns_reference<
+                typename ContainerSignal::value_type,
+                typename IndexSignal::value_type>
+            && signal_with<
+                ContainerSignal,
+                binding_caps<signal_durable, signal_writable>>)
         {
-            auto new_container = forward_signal(alia::move(container_));
-            new_container[index_.read()] = std::move(x);
-            container_.write(std::move(new_container));
+            auto index = index_.read();
+            value_type* element = &container_.durable_ref()[index];
+            if constexpr (identifiable<value_type>)
+            {
+                value_type id = x;
+                post_assignment(ctx, element, std::move(x));
+                (void) container_.post_mutation_commit(ctx);
+                return id;
+            }
+            else
+            {
+                post_assignment(ctx, element, std::move(x));
+                auto container_id = container_.post_mutation_commit(ctx);
+                if (!container_id)
+                    return std::nullopt;
+                return value_id_type{
+                    std::move(*container_id), index_.value_id()};
+            }
+        }
+        else
+        {
+            if constexpr (identifiable<value_type>)
+            {
+                value_type id = x;
+                auto new_container = typename ContainerSignal::value_type(
+                    read_signal(container_));
+                new_container[index_.read()] = std::move(x);
+                container_.post_write(ctx, std::move(new_container));
+                return id;
+            }
+            else
+            {
+                auto new_container = typename ContainerSignal::value_type(
+                    read_signal(container_));
+                new_container[index_.read()] = std::move(x);
+                auto container_id
+                    = container_.post_write(ctx, std::move(new_container));
+                if (!container_id)
+                    return std::nullopt;
+                return value_id_type{
+                    std::move(*container_id), index_.value_id()};
+            }
+        }
+    }
+    std::optional<value_id_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        if constexpr (
+            subscript_returns_reference<
+                typename ContainerSignal::value_type,
+                typename IndexSignal::value_type>
+            && signal_with<
+                ContainerSignal,
+                binding_caps<signal_durable, signal_writable>>)
+        {
+            auto container_id = container_.post_mutation_commit(ctx);
+            if constexpr (identifiable<value_type>)
+            {
+                (void) container_id;
+                return std::nullopt;
+            }
+            else
+            {
+                if (!container_id)
+                    return std::nullopt;
+                return value_id_type{
+                    std::move(*container_id), index_.value_id()};
+            }
+        }
+        else
+        {
+            return std::nullopt;
         }
     }
 

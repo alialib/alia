@@ -46,13 +46,12 @@ struct push_back_action : action_interface<Item>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Item item) const override
+    post(alia_context* ctx, Item item) const override
     {
-        auto new_container = forward_signal(alia::move(container_));
+        auto new_container
+            = typename Container::value_type(read_signal(container_));
         new_container.push_back(std::move(item));
-        intermediary();
-        container_.write(std::move(new_container));
+        container_.post_write(ctx, std::move(new_container));
     }
 
  private:
@@ -94,12 +93,12 @@ struct erase_index_action : action_interface<>
     }
 
     void
-    perform(function_view<void()> const& intermediary) const override
+    post(alia_context* ctx) const override
     {
-        auto new_container = forward_signal(alia::move(container_));
+        auto new_container
+            = typename Container::value_type(read_signal(container_));
         new_container.erase(new_container.begin() + read_signal(index_));
-        intermediary();
-        container_.write(std::move(new_container));
+        container_.post_write(ctx, std::move(new_container));
     }
 
  private:
@@ -142,12 +141,12 @@ struct erase_key_action : action_interface<>
     }
 
     void
-    perform(function_view<void()> const& intermediary) const override
+    post(alia_context* ctx) const override
     {
-        auto new_container = forward_signal(alia::move(container_));
+        auto new_container
+            = typename Container::value_type(read_signal(container_));
         new_container.erase(read_signal(key_));
-        intermediary();
-        container_.write(std::move(new_container));
+        container_.post_write(ctx, std::move(new_container));
     }
 
  private:
@@ -180,9 +179,7 @@ auto
 apply(Function&& f, PrimaryState state, Args... args)
 {
     return state <<= lazy_apply(
-               std::forward<Function>(f),
-               alia::move(state),
-               std::move(args)...);
+               std::forward<Function>(f), state, std::move(args)...);
 }
 
 } // namespace actions

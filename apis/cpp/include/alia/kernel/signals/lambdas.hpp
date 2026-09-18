@@ -1,8 +1,10 @@
 #pragma once
 
+#include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
 
+#include <optional>
 #include <utility>
 
 // This file defines utilities for constructing signals from callables.
@@ -18,7 +20,7 @@ struct lambda_constant_signal
     : lazy_signal<
           lambda_constant_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated, signal_nonempty>,
+          view_caps<signal_readable, signal_nonempty>,
           constant_value_tag>
 {
     explicit lambda_constant_signal(Get get) : get_(std::move(get))
@@ -34,10 +36,10 @@ struct lambda_constant_signal
     {
         return {};
     }
-    Value
-    move_out() const override
+    void
+    read_into(Value* dst) const override
     {
-        return get_();
+        *dst = get_();
     }
 
  private:
@@ -61,7 +63,7 @@ struct lambda_view_signal
     : lazy_signal<
           lambda_view_signal<Value, Get>,
           Value,
-          view_caps<signal_move_activated, signal_nonempty>,
+          view_caps<signal_readable, signal_nonempty>,
           Value>
 {
     explicit lambda_view_signal(Get get) : get_(std::move(get))
@@ -77,10 +79,10 @@ struct lambda_view_signal
     {
         return this->read();
     }
-    Value
-    move_out() const override
+    void
+    read_into(Value* dst) const override
     {
-        return get_();
+        *dst = get_();
     }
 
  private:
@@ -99,16 +101,15 @@ lambda_view(Get get)
 // `lambda_binding(get, set)` creates a binding whose value is produced by
 // calling `get` and written by calling `set`. The signal always has a value
 // and is always ready to write. Its ID is the value itself.
+// Note that `set` is called within an effect, so unlike the other lambdas, it
+// must be valid to copy and invoke it outside of the current pass.
 template<class Value, class Get, class Set>
     requires identifiable<Value>
 struct lambda_binding_signal
     : lazy_signal<
           lambda_binding_signal<Value, Get, Set>,
           Value,
-          binding_caps<
-              signal_move_activated,
-              signal_writable,
-              signal_nonempty>,
+          binding_caps<signal_readable, signal_writable, signal_nonempty>,
           Value>
 {
     lambda_binding_signal(Get get, Set set)
@@ -125,20 +126,24 @@ struct lambda_binding_signal
     {
         return this->read();
     }
-    Value
-    move_out() const override
+    void
+    read_into(Value* dst) const override
     {
-        return get_();
+        *dst = get_();
     }
     bool
     ready_to_write() const override
     {
         return true;
     }
-    void
-    write(Value value) const override
+    std::optional<Value>
+    post_write(alia_context* ctx, Value value) const override
     {
-        set_(std::move(value));
+        Value id = value;
+        post_call(ctx, [set = set_, value = std::move(value)]() mutable {
+            set(std::move(value));
+        });
+        return id;
     }
 
  private:

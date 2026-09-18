@@ -8,9 +8,9 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// a deferred pass-local operation - Alia requires that component traversals
-// are mutation-free, so effects are recorded during a pass and run after the
-// controller returns.
+// a pass-local effect posted during traversal - Alia requires that passes
+// through component code are mutation-free, so instead of in-place mutations,
+// components post effect objects that are run after the pass completes.
 typedef struct alia_effect alia_effect;
 struct alia_effect
 {
@@ -22,7 +22,7 @@ struct alia_effect
     alia_effect* next;
 };
 
-// FIFO of deferred pass-local operations
+// FIFO of posted pass-local operations
 typedef struct alia_effect_log
 {
     alia_effect* head;
@@ -33,11 +33,11 @@ typedef struct alia_effect_log
 // from the pass's scratch arena. Any referenced data should either be copied
 // there or should remain valid until the end of the pass.
 void
-alia_defer_effect(alia_context* ctx, alia_effect* effect);
+alia_post_effect(alia_context* ctx, alia_effect* effect);
 
 // Post a memcpy of `size` bytes from `src` to `dst`. `label` is optional.
 void
-alia_defer_write(
+alia_post_write(
     alia_context* ctx,
     void* dst,
     void const* src,

@@ -5,6 +5,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/context.h>
+#include <alia/abi/kernel/effect.h>
 
 #include "substrate_fixture.h"
 
@@ -66,6 +67,16 @@ struct substrate_fixture
     alia_stack* stack = nullptr;
     void* stack_obj_storage = nullptr;
     void* stack_buffer = nullptr;
+    // scratch arena object storage
+    void* scratch_storage = nullptr;
+    // scratch arena buffer
+    void* scratch_buffer = nullptr;
+    // scratch arena
+    alia_arena* scratch_arena = nullptr;
+    // bump allocator over the scratch arena
+    alia_bump_allocator scratch{};
+    // pass-local effect log
+    alia_effect_log effects{};
     alia_context ctx{};
 
     substrate_fixture()
@@ -88,7 +99,21 @@ struct substrate_fixture
     {
         alia_test_substrate_fixture_reset_traversal(fixture, true);
         alia_stack_reset(stack);
+        alia_arena_reset(&scratch);
+        effects = {};
+        ctx.effects = &effects;
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
+    }
+
+    // Run posted effects and reset the scratch arena for the next posting
+    // sequence.
+    void
+    run_effects()
+    {
+        alia_run_effects(&ctx);
+        alia_arena_reset(&scratch);
+        effects = {};
+        ctx.effects = &effects;
     }
 
     alia_substrate_anchor*
@@ -131,15 +156,43 @@ struct substrate_fixture
         REQUIRE(stack);
         alia_stack_reset(stack);
 
+        alia_struct_spec arena_spec = alia_arena_object_spec();
+        scratch_storage
+            = aligned_alloc_portable(arena_spec.align, arena_spec.size);
+        REQUIRE(scratch_storage);
+        scratch_buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, 64u * 1024u);
+        REQUIRE(scratch_buffer);
+        scratch_arena = alia_arena_init(
+            scratch_storage,
+            scratch_buffer,
+            64u * 1024u,
+            alia_arena_no_controller());
+        REQUIRE(scratch_arena);
+        alia_bump_allocator_init(&scratch, scratch_arena);
+
         ctx = {};
         ctx.substrate = alia_test_substrate_fixture_traversal(fixture);
         ctx.stack = stack;
+        ctx.scratch = &scratch;
+        ctx.effects = &effects;
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
     void
     destroy()
     {
+        if (scratch_arena)
+            alia_arena_destroy(scratch_arena);
+        scratch_arena = nullptr;
+
+        if (scratch_buffer)
+            aligned_free_portable(scratch_buffer);
+        scratch_buffer = nullptr;
+
+        if (scratch_storage)
+            aligned_free_portable(scratch_storage);
+        scratch_storage = nullptr;
+
         if (stack)
             alia_stack_destroy(stack);
         stack = nullptr;

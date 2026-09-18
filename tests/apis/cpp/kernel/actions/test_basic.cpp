@@ -1,8 +1,11 @@
 #include <alia/kernel/actions/basic.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 using namespace alia;
+using namespace alia::test;
 
 TEST_CASE("unready action")
 {
@@ -12,17 +15,22 @@ TEST_CASE("unready action")
 
 TEST_CASE("noop action")
 {
+    effect_fixture fx;
     CHECK(actions::noop().is_ready());
-    perform_action(actions::noop());
+    post_action(&fx.ctx, actions::noop());
+    fx.run();
     CHECK(actions::noop<int>().is_ready());
-    perform_action(actions::noop<int>(), 1);
+    post_action(&fx.ctx, actions::noop<int>(), 1);
+    fx.run();
 }
 
 TEST_CASE("callbacks")
 {
+    effect_fixture fx;
     int x = 0;
     auto a = callback([&](int y, int z) { x = y + z; });
-    perform_action(a, 1, 2);
+    post_action(&fx.ctx, a, 1, 2);
+    fx.run();
     CHECK(x == 3);
 
     bool ready = false;
@@ -30,6 +38,7 @@ TEST_CASE("callbacks")
     CHECK_FALSE(b.is_ready());
     ready = true;
     CHECK(b.is_ready());
-    perform_action(b, 1);
+    post_action(&fx.ctx, b, 1);
+    fx.run();
     CHECK(x == 4);
 }

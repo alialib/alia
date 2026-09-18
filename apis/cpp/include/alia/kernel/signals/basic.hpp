@@ -1,8 +1,10 @@
 #pragma once
 
+#include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
 
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -14,10 +16,10 @@ namespace alia {
 // `empty<Value>()` gives a signal that never has a value.
 template<class Value>
 struct empty_signal
-    : signal<
+    : stored_signal<
           empty_signal<Value>,
           Value,
-          binding_caps<signal_move_activated, signal_clearable>,
+          binding_caps<signal_readable, signal_clearable>,
           constant_value_tag>
 {
     empty_signal()
@@ -44,16 +46,6 @@ struct empty_signal
     {
         throw nullptr;
     }
-    Value
-    move_out() const override
-    {
-        throw nullptr;
-    }
-    Value&
-    destructive_ref() const override
-    {
-        throw nullptr;
-    }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -65,13 +57,15 @@ struct empty_signal
     }
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
-    void
-    write(Value) const override
+    std::optional<constant_value_tag>
+    post_write(alia_context*, Value) const override
     {
+        return std::nullopt;
     }
-    void
-    clear() const override
+    std::optional<constant_value_tag>
+    post_clear(alia_context*) const override
     {
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 };
@@ -86,10 +80,10 @@ empty()
 // default-initialized value of type `Value`.
 template<class Value>
 struct default_initialized_view
-    : signal<
+    : stored_signal<
           default_initialized_view<Value>,
           Value,
-          view_caps<signal_move_activated, signal_nonempty>,
+          view_caps<signal_readable, signal_nonempty>,
           constant_value_tag>
 {
     default_initialized_view()
@@ -110,16 +104,6 @@ struct default_initialized_view
     {
         return value_;
     }
-    Value
-    move_out() const override
-    {
-        return Value();
-    }
-    Value&
-    destructive_ref() const override
-    {
-        return value_;
-    }
 
  private:
     mutable Value value_{};
@@ -134,10 +118,10 @@ default_initialized()
 // `value(v)` creates a read-only signal that carries the value `v`.
 template<class Value>
 struct value_view
-    : regular_signal<
+    : regular_stored_signal<
           value_view<Value>,
           Value,
-          view_caps<signal_move_activated, signal_nonempty>>
+          view_caps<signal_readable, signal_nonempty>>
 {
     explicit value_view(Value v) : v_(std::move(v))
     {
@@ -152,20 +136,9 @@ struct value_view
     {
         return v_;
     }
-    Value
-    move_out() const override
-    {
-        Value moved = std::move(v_);
-        return moved;
-    }
-    Value&
-    destructive_ref() const override
-    {
-        return v_;
-    }
 
  private:
-    mutable Value v_;
+    Value v_;
 };
 template<class Value>
 value_view<Value>
@@ -180,7 +153,7 @@ struct string_literal_view
     : lazy_signal<
           string_literal_view,
           std::string,
-          view_caps<signal_move_activated, signal_nonempty>,
+          view_caps<signal_readable, signal_nonempty>,
           char const*>
 {
     string_literal_view(char const* x) : text_(x)
@@ -196,10 +169,10 @@ struct string_literal_view
     {
         return true;
     }
-    std::string
-    move_out() const override
+    void
+    read_into(std::string* dst) const override
     {
-        return std::string(text_);
+        *dst = std::string(text_);
     }
 
  private:
@@ -224,7 +197,7 @@ operator""_a(char const* s, size_t)
 // directly exposes the value of x.
 template<class Value>
 struct pointer_binding
-    : regular_signal<
+    : regular_stored_signal<
           pointer_binding<Value>,
           Value,
           binding_caps<signal_movable, signal_writable, signal_nonempty>>
@@ -242,14 +215,8 @@ struct pointer_binding
     {
         return *v_;
     }
-    Value
-    move_out() const override
-    {
-        Value moved = std::move(*v_);
-        return moved;
-    }
     Value&
-    destructive_ref() const override
+    durable_ref() const override
     {
         return *v_;
     }
@@ -258,10 +225,19 @@ struct pointer_binding
     {
         return true;
     }
-    void
-    write(Value value) const override
+    std::optional<Value>
+    post_write(alia_context* ctx, Value value) const override
     {
-        *v_ = std::move(value);
+        Value id = value;
+        post_assignment(ctx, v_, std::move(value));
+        return id;
+    }
+    std::optional<Value>
+    post_mutation_commit(alia_context*) const override
+    {
+        // Value-as-ID signals cannot predict the ID of an arbitrary in-place
+        // mutation.
+        return std::nullopt;
     }
 
  private:
@@ -278,7 +254,7 @@ ref(Value& x)
 // exposes the value of `x`.
 template<class Value>
 struct pointer_view
-    : regular_signal<
+    : regular_stored_signal<
           pointer_view<Value>,
           Value,
           view_caps<signal_readable, signal_nonempty>>
@@ -317,7 +293,7 @@ ref(Value const& x)
 
 template<class Value, std::unsigned_integral Version>
 struct versioned_pointer_binding
-    : signal<
+    : stored_signal<
           versioned_pointer_binding<Value, Version>,
           Value,
           binding_caps<signal_movable, signal_writable, signal_nonempty>,
@@ -342,17 +318,9 @@ struct versioned_pointer_binding
     {
         return *v_;
     }
-    Value
-    move_out() const override
-    {
-        ++*version_;
-        Value moved = std::move(*v_);
-        return moved;
-    }
     Value&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        ++*version_;
         return *v_;
     }
     bool
@@ -360,11 +328,24 @@ struct versioned_pointer_binding
     {
         return true;
     }
-    void
-    write(Value value) const override
+    std::optional<Version>
+    post_write(alia_context* ctx, Value value) const override
     {
-        *v_ = std::move(value);
-        ++*version_;
+        Version const expected = *version_ + 1;
+        post_call(
+            ctx,
+            [v = v_, version = version_, value = std::move(value)]() mutable {
+                *v = std::move(value);
+                ++*version;
+            });
+        return expected;
+    }
+    std::optional<Version>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        Version const expected = *version_ + 1;
+        post_call(ctx, [version = version_]() { ++*version; });
+        return expected;
     }
 
  private:
@@ -380,7 +361,7 @@ versioned_ref(Value& x, Version& version)
 
 template<class Value, std::unsigned_integral Version>
 struct versioned_pointer_view
-    : signal<
+    : stored_signal<
           versioned_pointer_view<Value, Version>,
           Value,
           view_caps<signal_readable, signal_nonempty>,

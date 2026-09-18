@@ -130,7 +130,7 @@ embed_controller(void* /*user*/, alia_context* ctx)
         if (signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             float const value = static_cast<float>(signal.value);
-            alia_defer_write(
+            alia_post_write(
                 ctx, &g_value, &value, sizeof(g_value), "g_value");
         }
     }

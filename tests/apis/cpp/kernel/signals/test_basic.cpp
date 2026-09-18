@@ -1,5 +1,7 @@
 #include <alia/kernel/signals/basic.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 #include <stdint.h>
@@ -7,6 +9,7 @@
 #include <vector>
 
 using namespace alia;
+using namespace alia::test;
 using namespace alia::operators;
 
 TEST_CASE("value and read")
@@ -23,7 +26,7 @@ TEST_CASE("empty signal")
     auto s = empty<int>();
     CHECK_FALSE(signal_has_value(s));
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_view()
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
          == null_id()));
     static_assert(!nonempty_view_signal<decltype(s)>);
     static_assert(view_signal<decltype(s)>);
@@ -31,11 +34,13 @@ TEST_CASE("empty signal")
 
 TEST_CASE("ref binding write")
 {
+    effect_fixture fx;
     int x = 1;
     auto s = ref(x);
     static_assert(nonempty_binding_signal<decltype(s)>);
     CHECK(read_signal(s) == 1);
-    write_signal(s, 7);
+    write_signal(&fx.ctx, s, 7);
+    fx.run();
     CHECK(x == 7);
     CHECK(read_signal(s) == 7);
 }
@@ -54,7 +59,7 @@ TEST_CASE("string literal value")
     auto s = value("hello");
     CHECK(read_signal(s) == std::string("hello"));
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_view()
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
          == make_pointer_id("hello")));
 }
 
@@ -69,6 +74,7 @@ TEST_CASE("signalize")
 
 TEST_CASE("erased view and binding")
 {
+    effect_fixture fx;
     auto owned = value(11);
     view<int> v = owned;
     CHECK(read_signal(v) == 11);
@@ -76,7 +82,8 @@ TEST_CASE("erased view and binding")
     int x = 2;
     auto r = ref(x);
     binding<int> b = r;
-    write_signal(b, 4);
+    write_signal(&fx.ctx, b, 4);
+    fx.run();
     CHECK(x == 4);
 }
 
@@ -90,6 +97,7 @@ TEST_CASE("default_initialized")
 
 TEST_CASE("versioned_ref binding")
 {
+    effect_fixture fx;
     std::vector<int> items{1, 2};
     uint32_t version = 0;
     auto s = versioned_ref(items, version);
@@ -102,7 +110,8 @@ TEST_CASE("versioned_ref binding")
     CHECK((read_signal(s) == std::vector<int>{1, 2}));
     CHECK(s.value_id() == 0u);
 
-    write_signal(s, std::vector<int>{3, 4, 5});
+    write_signal(&fx.ctx, s, std::vector<int>{3, 4, 5});
+    fx.run();
     CHECK((items == std::vector<int>{3, 4, 5}));
     CHECK(version == 1);
     CHECK(s.value_id() == 1u);

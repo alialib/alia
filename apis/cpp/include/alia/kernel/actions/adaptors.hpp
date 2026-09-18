@@ -8,11 +8,12 @@
 namespace alia {
 
 // only_if_ready(a), where :a is an action, returns an equivalent action that
-// claims to always be ready to perform but will only actually perform :a if :a
-// is ready.
+// claims to always be ready to post but will only actually post `a` if `a` is
+// ready.
 //
 // This is useful when you want to fold in an action if it's ready but don't
-// want it to block the larger action that it's part of.
+// want it to block the larger action that it's part of. (i.e., "I want to
+// include `a` but only if it's ready.")
 
 namespace detail {
 
@@ -34,13 +35,10 @@ struct only_if_ready_adaptor<Wrapped, action_interface<Args...>>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
         if (wrapped_.is_ready())
-            wrapped_.perform(intermediary, std::move(args)...);
-        else
-            intermediary();
+            wrapped_.post(ctx, std::move(args)...);
     }
 
  private:
@@ -101,10 +99,9 @@ struct action_masking_adaptor<
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
-        wrapped_.perform(intermediary, std::move(args)...);
+        wrapped_.post(ctx, std::move(args)...);
     }
 
  private:

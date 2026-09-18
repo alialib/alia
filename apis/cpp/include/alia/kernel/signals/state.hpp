@@ -2,9 +2,11 @@
 
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/system/work.h>
+#include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/substrate.hpp>
 
+#include <optional>
 #include <utility>
 
 // This file implements component-local persistent state.
@@ -58,6 +60,13 @@ struct state_storage
         return value;
     }
 
+    // Record that the resident value was mutated in place (or stolen).
+    void
+    record_mutation(alia_context* ctx)
+    {
+        handle_tracked_change(ctx);
+    }
+
     void
     untracked_clear()
     {
@@ -96,7 +105,7 @@ struct state_storage
 
 template<class Value>
 struct state_binding
-    : signal<
+    : stored_signal<
           state_binding<Value>,
           Value,
           binding_caps<signal_movable, signal_clearable>,
@@ -125,16 +134,10 @@ struct state_binding
         return data_->value;
     }
 
-    Value
-    move_out() const override
-    {
-        return std::move(data_->untracked_nonconst_ref());
-    }
-
     Value&
-    destructive_ref() const override
+    durable_ref() const override
     {
-        return data_->untracked_nonconst_ref();
+        return data_->value;
     }
 
     bool
@@ -143,16 +146,37 @@ struct state_binding
         return true;
     }
 
-    void
-    write(Value value) const override
+    std::optional<uint32_t>
+    post_write(alia_context* ctx, Value value) const override
     {
-        data_->set(std::move(value), ctx_);
+        uint32_t const expected = (data_->version | 1u) + 2u;
+        post_call(
+            ctx,
+            [data = data_,
+             sys_ctx = ctx_,
+             value = std::move(value)]() mutable {
+                data->set(std::move(value), sys_ctx);
+            });
+        return expected;
     }
 
-    void
-    clear() const override
+    std::optional<uint32_t>
+    post_clear(alia_context* ctx) const override
     {
-        data_->clear(ctx_);
+        uint32_t const expected = (data_->version & ~1u) + 2u;
+        post_call(
+            ctx, [data = data_, sys_ctx = ctx_]() { data->clear(sys_ctx); });
+        return expected;
+    }
+
+    std::optional<uint32_t>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        uint32_t const expected = (data_->version | 1u) + 2u;
+        post_call(ctx, [data = data_, sys_ctx = ctx_]() {
+            data->record_mutation(sys_ctx);
+        });
+        return expected;
     }
 
  private:
@@ -181,7 +205,7 @@ use_state(alia_context* ctx, Initial&& initial)
     auto storage = use_object<state_storage<Value>>(ctx);
     if (storage.is_init() && signal_has_value(initial_signal))
     {
-        storage->untracked_nonconst_ref() = forward_signal(initial_signal);
+        initial_signal.read_into(&storage->untracked_nonconst_ref());
     }
 
     return make_state_binding(*storage, ctx);

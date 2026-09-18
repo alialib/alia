@@ -4,6 +4,7 @@
 #include <alia/kernel/signals/utilities.hpp>
 
 #include <cmath>
+#include <optional>
 #include <utility>
 
 // This file defines numerical adaptors for signals.
@@ -14,12 +15,12 @@ namespace alia {
 // signal or a raw value. Writes divide by `factor` and go to `n`.
 template<class N, class Factor>
 struct scaled_signal
-    : lazy_signal_wrapper<
+    : lazy_custom_id_signal_wrapper<
           scaled_signal<N, Factor>,
           N,
           typename N::value_type,
           signal_capabilities<
-              signal_move_activated,
+              signal_readable,
               N::capabilities::writing,
               signal_capability_level_intersection<
                   N::capabilities::presence,
@@ -27,7 +28,7 @@ struct scaled_signal
           typename N::value_type>
 {
     scaled_signal(N n, Factor scale_factor)
-        : scaled_signal::lazy_signal_wrapper(std::move(n)),
+        : scaled_signal::lazy_custom_id_signal_wrapper(std::move(n)),
           scale_factor_(std::move(scale_factor))
     {
     }
@@ -36,10 +37,10 @@ struct scaled_signal
     {
         return this->wrapped_.has_value() && scale_factor_.has_value();
     }
-    typename N::value_type
-    move_out() const override
+    void
+    read_into(typename N::value_type* dst) const override
     {
-        return this->wrapped_.read() * scale_factor_.read();
+        *dst = this->wrapped_.read() * scale_factor_.read();
     }
     typename N::value_type const&
     value_id() const
@@ -51,10 +52,23 @@ struct scaled_signal
     {
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
-    void
-    write(typename N::value_type value) const override
+    std::optional<typename N::value_type>
+    post_write(alia_context* ctx, typename N::value_type value) const override
     {
-        this->wrapped_.write(value / forward_signal(scale_factor_));
+        this->wrapped_.post_write(ctx, value / scale_factor_.read());
+        return value;
+    }
+    std::optional<typename N::value_type>
+    post_clear(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_clear(ctx);
+        return std::nullopt;
+    }
+    std::optional<typename N::value_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_mutation_commit(ctx);
+        return this->read();
     }
 
  private:
@@ -72,12 +86,12 @@ scale(N n, Factor scale_factor)
 // either be a signal or a raw value. Writes subtract `delta` and go to `n`.
 template<class N, class Delta>
 struct offset_signal
-    : lazy_signal_wrapper<
+    : lazy_custom_id_signal_wrapper<
           offset_signal<N, Delta>,
           N,
           typename N::value_type,
           signal_capabilities<
-              signal_move_activated,
+              signal_readable,
               N::capabilities::writing,
               signal_capability_level_intersection<
                   N::capabilities::presence,
@@ -85,7 +99,7 @@ struct offset_signal
           typename N::value_type>
 {
     offset_signal(N n, Delta delta)
-        : offset_signal::lazy_signal_wrapper(std::move(n)),
+        : offset_signal::lazy_custom_id_signal_wrapper(std::move(n)),
           delta_(std::move(delta))
     {
     }
@@ -94,10 +108,10 @@ struct offset_signal
     {
         return this->wrapped_.has_value() && delta_.has_value();
     }
-    typename N::value_type
-    move_out() const override
+    void
+    read_into(typename N::value_type* dst) const override
     {
-        return this->wrapped_.read() + delta_.read();
+        *dst = this->wrapped_.read() + delta_.read();
     }
     typename N::value_type const&
     value_id() const
@@ -109,10 +123,23 @@ struct offset_signal
     {
         return this->wrapped_.ready_to_write() && delta_.has_value();
     }
-    void
-    write(typename N::value_type value) const override
+    std::optional<typename N::value_type>
+    post_write(alia_context* ctx, typename N::value_type value) const override
     {
-        this->wrapped_.write(value - forward_signal(delta_));
+        this->wrapped_.post_write(ctx, value - delta_.read());
+        return value;
+    }
+    std::optional<typename N::value_type>
+    post_clear(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_clear(ctx);
+        return std::nullopt;
+    }
+    std::optional<typename N::value_type>
+    post_mutation_commit(alia_context* ctx) const override
+    {
+        (void) this->wrapped_.post_mutation_commit(ctx);
+        return this->read();
     }
 
  private:
@@ -144,11 +171,12 @@ struct rounding_signal_wrapper
     {
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
-    void
-    write(typename N::value_type value) const override
+    std::optional<typename N::value_id_type>
+    post_write(alia_context* ctx, typename N::value_type value) const override
     {
         auto step = step_.read();
-        this->wrapped_.write(
+        return this->wrapped_.post_write(
+            ctx,
             std::floor(value / step + typename N::value_type(0.5)) * step);
     }
 

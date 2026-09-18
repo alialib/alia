@@ -136,24 +136,24 @@ make_notargs_params()
 }
 
 static void
-defer_bool(
+post_bool(
     context& ctx, bool* dst, alia_bool_signal const& signal, char const* label)
 {
     if (signal.flags & ALIA_SIGNAL_WRITTEN)
-        alia_defer_write(&ctx, dst, &signal.value, sizeof(*dst), label);
+        alia_post_write(&ctx, dst, &signal.value, sizeof(*dst), label);
 }
 
 static void
-defer_int(context& ctx, int* dst, int value, char const* label)
+post_int(context& ctx, int* dst, int value, char const* label)
 {
-    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
+    alia_post_write(&ctx, dst, &value, sizeof(*dst), label);
 }
 
 static void
-defer_theme_dirty(context& ctx)
+post_theme_dirty(context& ctx)
 {
     bool const dirty = true;
-    alia_defer_write(
+    alia_post_write(
         &ctx, &the_theme_dirty_flag, &dirty, sizeof(dirty), "theme_dirty");
 }
 
@@ -262,7 +262,7 @@ control_slider_d(
             alia_do_slider(&ctx, &signal, min_v, max_v, step, 0, false);
             if (signal.flags & ALIA_SIGNAL_WRITTEN)
             {
-                alia_defer_write(
+                alia_post_write(
                     &ctx, value, &signal.value, sizeof(*value), label);
             }
         });
@@ -278,7 +278,7 @@ control_switch_b(context& ctx, char const* label, bool* value)
             .value = *value,
         };
         do_switch_with_text(ctx, &sig, label);
-        defer_bool(ctx, value, sig, label);
+        post_bool(ctx, value, sig, label);
     });
 }
 
@@ -291,7 +291,7 @@ control_checkbox_b(context& ctx, char const* label, bool* value)
             .value = *value,
         };
         do_checkbox_with_text(ctx, &sig, label);
-        defer_bool(ctx, value, sig, label);
+        post_bool(ctx, value, sig, label);
     });
 }
 
@@ -314,12 +314,12 @@ do_theme_controls(context& ctx)
                             do_switch_with_text(ctx, &sig, "Light");
                             if (sig.flags & ALIA_SIGNAL_WRITTEN)
                             {
-                                defer_bool(
+                                post_bool(
                                     ctx,
                                     &the_light_theme_flag,
                                     sig,
                                     "light");
-                                defer_theme_dirty(ctx);
+                                post_theme_dirty(ctx);
                             }
                         });
                         demo_text(
@@ -342,9 +342,9 @@ do_theme_controls(context& ctx)
                                 do_radio_with_text(ctx, &radio, labels[i]);
                                 if (radio.flags & ALIA_SIGNAL_WRITTEN)
                                 {
-                                    defer_int(
+                                    post_int(
                                         ctx, &the_seed_index, i, "seed");
-                                    defer_theme_dirty(ctx);
+                                    post_theme_dirty(ctx);
                                 }
                                 spacer(ctx, {15, 0}, NO_FLAGS);
                             }

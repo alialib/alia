@@ -4,12 +4,15 @@
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/state.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 #include <map>
 #include <vector>
 
 using namespace alia;
+using namespace alia::test;
 
 namespace {
 
@@ -68,18 +71,19 @@ make_id_by_reference(movable_object const& v)
 template<class Value>
 struct test_state
 {
+    effect_fixture* fx;
     state_storage<Value> storage;
-    alia_context ctx{};
 
-    explicit test_state(Value initial)
+    test_state(effect_fixture& fixture, Value initial) : fx(&fixture)
     {
-        write_signal(binding(), std::move(initial));
+        write_signal(&fx->ctx, binding(), std::move(initial));
+        fx->run();
     }
 
     auto
     binding()
     {
-        return make_state_binding(storage, &ctx);
+        return make_state_binding(storage, &fx->ctx);
     }
 };
 
@@ -87,17 +91,20 @@ struct test_state
 
 TEST_CASE("toggle action")
 {
+    effect_fixture fx;
     bool x = false;
     {
         auto a = actions::toggle(ref(x));
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(x);
     }
     {
         auto a = actions::toggle(ref(x));
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK_FALSE(x);
     }
 
@@ -109,17 +116,20 @@ TEST_CASE("toggle action")
 
 TEST_CASE("push_back action")
 {
-    test_state x{std::vector<int>{1, 2}};
+    effect_fixture fx;
+    test_state x{fx, std::vector<int>{1, 2}};
     {
         auto a = actions::push_back(x.binding());
         CHECK(a.is_ready());
-        perform_action(a, 3);
+        post_action(&fx.ctx, a, 3);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::vector<int>{1, 2, 3}));
     }
     {
         auto a = actions::push_back(x.binding()) << 4;
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::vector<int>{1, 2, 3, 4}));
     }
 
@@ -131,14 +141,15 @@ TEST_CASE("push_back action")
 
 TEST_CASE("push_back movable")
 {
+    effect_fixture fx;
     test_state x{
+        fx,
         std::vector<movable_object>{movable_object(1), movable_object(2)}};
     {
         auto a = actions::push_back(x.binding()) << value(movable_object(3));
         CHECK(a.is_ready());
-        copy_count = 0;
-        perform_action(a);
-        CHECK(copy_count == 0);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(
             read_signal(x.binding())
             == (std::vector<movable_object>{
@@ -148,17 +159,20 @@ TEST_CASE("push_back movable")
 
 TEST_CASE("erase_index action")
 {
-    test_state x{std::vector<int>{1, 2, 3, 4}};
+    effect_fixture fx;
+    test_state x{fx, std::vector<int>{1, 2, 3, 4}};
     {
         auto a = actions::erase_index(x.binding(), 2);
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::vector<int>{1, 2, 4}));
     }
     {
         auto a = actions::erase_index(x.binding(), value(0));
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::vector<int>{2, 4}));
     }
 
@@ -171,7 +185,7 @@ TEST_CASE("erase_index action")
         CHECK_FALSE(a.is_ready());
     }
     {
-        test_state unreadwritable{std::vector<int>{1, 2}};
+        test_state unreadwritable{fx, std::vector<int>{1, 2}};
         auto a = actions::erase_index(
             fake_writability(unreadwritable.binding()), value(0));
         CHECK_FALSE(a.is_ready());
@@ -180,14 +194,16 @@ TEST_CASE("erase_index action")
 
 TEST_CASE("erase_index movement")
 {
-    test_state x{std::vector<movable_object>{
-        movable_object(1), movable_object(2), movable_object(3)}};
+    effect_fixture fx;
+    test_state x{
+        fx,
+        std::vector<movable_object>{
+            movable_object(1), movable_object(2), movable_object(3)}};
     {
         auto a = actions::erase_index(x.binding(), 1);
         CHECK(a.is_ready());
-        copy_count = 0;
-        perform_action(a);
-        CHECK(copy_count == 0);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(
             read_signal(x.binding())
             == (std::vector<movable_object>{
@@ -197,17 +213,20 @@ TEST_CASE("erase_index movement")
 
 TEST_CASE("erase_key action")
 {
-    test_state x{std::map<int, int>{{1, 2}, {2, 4}, {3, 6}}};
+    effect_fixture fx;
+    test_state x{fx, std::map<int, int>{{1, 2}, {2, 4}, {3, 6}}};
     {
         auto a = actions::erase_key(x.binding(), 2);
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::map<int, int>{{1, 2}, {3, 6}}));
     }
     {
         auto a = actions::erase_key(x.binding(), value(1));
         CHECK(a.is_ready());
-        perform_action(a);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(read_signal(x.binding()) == (std::map<int, int>{{3, 6}}));
     }
     {
@@ -219,7 +238,7 @@ TEST_CASE("erase_key action")
         CHECK_FALSE(a.is_ready());
     }
     {
-        test_state unreadwritable{std::map<int, int>{{1, 2}}};
+        test_state unreadwritable{fx, std::map<int, int>{{1, 2}}};
         auto a = actions::erase_key(
             fake_writability(unreadwritable.binding()), value(0));
         CHECK_FALSE(a.is_ready());
@@ -228,16 +247,18 @@ TEST_CASE("erase_key action")
 
 TEST_CASE("erase_key movement")
 {
-    test_state x{std::map<int, movable_object>{
-        {1, movable_object(1)},
-        {2, movable_object(2)},
-        {3, movable_object(3)}}};
+    effect_fixture fx;
+    test_state x{
+        fx,
+        std::map<int, movable_object>{
+            {1, movable_object(1)},
+            {2, movable_object(2)},
+            {3, movable_object(3)}}};
     {
         auto a = actions::erase_key(x.binding(), 1);
         CHECK(a.is_ready());
-        copy_count = 0;
-        perform_action(a);
-        CHECK(copy_count == 0);
+        post_action(&fx.ctx, a);
+        fx.run();
         CHECK(
             read_signal(x.binding())
             == (std::map<int, movable_object>{
@@ -247,10 +268,12 @@ TEST_CASE("erase_key movement")
 
 TEST_CASE("actions::apply")
 {
+    effect_fixture fx;
     auto add = [](int x, int y) { return x + y; };
     int x = 0;
     auto a = actions::apply(add, ref(x), value(1));
     CHECK(a.is_ready());
-    perform_action(a);
+    post_action(&fx.ctx, a);
+    fx.run();
     CHECK(x == 1);
 }

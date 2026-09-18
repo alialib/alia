@@ -83,15 +83,12 @@ struct button_variant_scope
     context& ctx;
     alia_button_style saved{};
 
-    button_variant_scope(context& ctx_, button_variant variant)
-        : ctx(ctx_)
+    button_variant_scope(context& ctx_, button_variant variant) : ctx(ctx_)
     {
         alia_button_style* style = alia_button_style_active(&ctx);
         saved = *style;
         alia_button_style_apply_swatch(
-            style,
-            to_c_swatch(variant.swatch),
-            to_c_chrome(variant.chrome));
+            style, to_c_swatch(variant.swatch), to_c_chrome(variant.chrome));
     }
 
     ~button_variant_scope()
@@ -101,8 +98,7 @@ struct button_variant_scope
 
     button_variant_scope(button_variant_scope const&) = delete;
     button_variant_scope&
-    operator=(button_variant_scope const&)
-        = delete;
+    operator=(button_variant_scope const&) = delete;
 };
 
 } // namespace detail
@@ -143,14 +139,14 @@ button(
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
     with_button_variant(ctx, variant, [&] {
-        result = button(
-            ctx, flags, layout_flags, std::forward<Content>(content));
+        result
+            = button(ctx, flags, layout_flags, std::forward<Content>(content));
     });
     return result;
 }
 
-// Emit a button container that performs `on_click` when activated. The button
-// is disabled while the action is not ready.
+// Emit a button container that posts `on_click` when activated. The button is
+// disabled while the action is not ready.
 template<class Content>
 void
 button(
@@ -164,7 +160,7 @@ button(
         flags |= ALIA_BUTTON_DISABLED;
     if (button(ctx, flags, layout_flags, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
-        perform_action(on_click);
+        post_action(&ctx, on_click);
 }
 
 template<class Content>
@@ -181,7 +177,7 @@ button(
     });
 }
 
-// Emit a labeled button that performs `on_click` when activated.
+// Emit a labeled button that posts `on_click` when activated.
 inline void
 button(
     context& ctx,

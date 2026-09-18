@@ -1,6 +1,7 @@
 #pragma once
 
-#include <alia/base/function_view.hpp>
+#include <alia/abi/context.h>
+#include <alia/kernel/effects.hpp>
 
 #include <concepts>
 #include <type_traits>
@@ -8,11 +9,10 @@
 
 // This file defines the core action interface.
 //
-// An action is essentially a response to an event that's dispatched by alia.
-// When specifying a component that can generate events, the application
-// supplies the action that should be performed when the corresponding event is
-// generated. Using this style allows event handling to be written in a safer
-// and more declarative manner.
+// In Alia, an action is a declarative description of effects that will be
+// posted in response to an event. When invoking a component that can generate
+// an event, the application supplies a corresponding action. When that event
+// occurs, the component invokes the action to post the desired effect(s).
 //
 // Actions are very similar to signals in the way that they are used in an
 // application. Like signals, they're typically created directly at the call
@@ -25,10 +25,9 @@ namespace alia {
 // irrespective of the type of arguments that the action takes.
 struct untyped_action_interface
 {
-    // Is this action ready to be performed?
+    // Is this action ready to be posted?
     virtual bool
-    is_ready() const
-        = 0;
+    is_ready() const = 0;
 };
 
 template<class... Args>
@@ -36,14 +35,9 @@ struct action_interface : untyped_action_interface
 {
     using action_type = action_interface;
 
-    // Perform this action.
-    //
-    // `intermediary` is used to implement the latch-like semantics of
-    // actions. It should be invoked AFTER reading any signals you need to
-    // read but BEFORE invoking any side effects.
+    // Read any inputs and post the desired effects.
     virtual void
-    perform(function_view<void()> const& intermediary, Args... args) const
-        = 0;
+    post(alia_context* ctx, Args... args) const = 0;
 };
 
 // `action_type<T>` is true iff `T` is an Alia action type.
@@ -63,13 +57,14 @@ action_is_ready(action_interface<Args...> const& action)
     return action.is_ready();
 }
 
-// Perform an action.
+// Post an action's effects.
 template<class... Args>
 void
-perform_action(action_interface<Args...> const& action, Args... args)
+post_action(
+    alia_context* ctx, action_interface<Args...> const& action, Args... args)
 {
     if (action.is_ready())
-        action.perform([]() {}, std::move(args)...);
+        action.post(ctx, std::move(args)...);
 }
 
 // `action_ref` is a reference to an action that implements the action
@@ -94,10 +89,9 @@ struct action_ref : action_interface<Args...>
     }
 
     void
-    perform(
-        function_view<void()> const& intermediary, Args... args) const override
+    post(alia_context* ctx, Args... args) const override
     {
-        action_->perform(intermediary, std::move(args)...);
+        action_->post(ctx, std::move(args)...);
     }
 
  private:

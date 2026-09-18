@@ -31,7 +31,7 @@ write_effect_run(alia_effect* self)
 extern "C" {
 
 void
-alia_defer_effect(alia_context* ctx, alia_effect* effect)
+alia_post_effect(alia_context* ctx, alia_effect* effect)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->effects);
@@ -46,7 +46,7 @@ alia_defer_effect(alia_context* ctx, alia_effect* effect)
 }
 
 void
-alia_defer_write(
+alia_post_write(
     alia_context* ctx,
     void* dst,
     void const* src,
@@ -73,7 +73,7 @@ alia_defer_write(
             src,
             size);
     }
-    alia_defer_effect(ctx, &write->base);
+    alia_post_effect(ctx, &write->base);
 }
 
 void

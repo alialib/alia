@@ -3,12 +3,16 @@
 #include <alia/kernel/actions/basic.hpp>
 #include <alia/kernel/signals/basic.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 using namespace alia;
+using namespace alia::test;
 
 TEST_CASE("add_write_action")
 {
+    effect_fixture fx;
     int x = 0;
     bool written = false;
     auto s
@@ -19,7 +23,8 @@ TEST_CASE("add_write_action")
 
     CHECK_FALSE(written);
     CHECK(signal_ready_to_write(s));
-    write_signal(s, 1);
+    write_signal(&fx.ctx, s, 1);
+    fx.run();
     CHECK(x == 1);
     CHECK(written);
 }

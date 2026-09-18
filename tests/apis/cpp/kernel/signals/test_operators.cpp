@@ -3,6 +3,8 @@
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/state.hpp>
 
+#include <alia/test/kernel/effect_fixture.hpp>
+
 #include <doctest/doctest.h>
 
 #include <map>
@@ -11,6 +13,7 @@
 #include <vector>
 
 using namespace alia;
+using namespace alia::test;
 using namespace alia::operators;
 
 template<class Signal>
@@ -45,6 +48,12 @@ struct counting_bool
     {
         ++*count_;
         return value_;
+    }
+    void
+    read_into(bool* dst) const override
+    {
+        ++*count_;
+        *dst = value_;
     }
     bool
     value_id() const
@@ -194,13 +203,14 @@ TEST_CASE("conditional with empty condition")
     auto s = conditional(empty<bool>(), ref(x), ref(y));
     CHECK_FALSE(signal_has_value(s));
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_view()
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
          == null_id()));
     CHECK_FALSE(signal_ready_to_write(s));
 }
 
 TEST_CASE("writable conditional")
 {
+    effect_fixture fx;
     bool condition = false;
     int x = 1;
     int y = 2;
@@ -213,12 +223,14 @@ TEST_CASE("writable conditional")
     CHECK(read_signal(s) == 2);
     condition = true;
     CHECK(read_signal(s) == 1);
-    write_signal(s, 4);
+    write_signal(&fx.ctx, s, 4);
+    fx.run();
     CHECK(x == 4);
     CHECK(y == 2);
     CHECK(read_signal(s) == 4);
     condition = false;
-    write_signal(s, 3);
+    write_signal(&fx.ctx, s, 3);
+    fx.run();
     CHECK(x == 4);
     CHECK(y == 3);
     CHECK(read_signal(s) == 3);
@@ -226,6 +238,7 @@ TEST_CASE("writable conditional")
 
 TEST_CASE("field signal")
 {
+    effect_fixture fx;
     struct foo
     {
         int x;
@@ -233,9 +246,10 @@ TEST_CASE("field signal")
     };
 
     state_storage<foo> storage;
-    alia_context ctx{};
-    auto f_signal = make_state_binding(storage, &ctx);
-    write_signal(f_signal, foo{2, "1.5"});
+    
+    auto f_signal = make_state_binding(storage, &fx.ctx);
+    write_signal(&fx.ctx, f_signal, foo{2, "1.5"});
+    fx.run();
 
     auto x_signal = f_signal->*&foo::x;
 
@@ -247,7 +261,8 @@ TEST_CASE("field signal")
     CHECK(read_signal(x_signal) == 2);
     CHECK(signal_ready_to_write(x_signal));
     auto original_x_id = x_signal.value_id();
-    write_signal(x_signal, 1);
+    write_signal(&fx.ctx, x_signal, 1);
+    fx.run();
     CHECK(storage.value.x == 1);
     CHECK(read_signal(x_signal) == 1);
     CHECK((x_signal.value_id() != original_x_id));
@@ -263,7 +278,8 @@ TEST_CASE("field signal")
     CHECK(signal_has_value(y_signal));
     CHECK(read_signal(y_signal) == "1.5");
     CHECK(signal_ready_to_write(y_signal));
-    write_signal(y_signal, "0.5");
+    write_signal(&fx.ctx, y_signal, "0.5");
+    fx.run();
     CHECK(storage.value.y == "0.5");
     CHECK(read_signal(y_signal) == "0.5");
 }
@@ -296,13 +312,14 @@ TEST_CASE("empty field signal")
     auto s = empty<foo>()->*&foo::x;
     CHECK_FALSE(signal_has_value(s));
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_view()
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
          == null_id()));
     CHECK_FALSE(signal_ready_to_write(s));
 }
 
 TEST_CASE("field signal with non-identifiable field")
 {
+    effect_fixture fx;
     struct inner
     {
         std::string name;
@@ -317,9 +334,10 @@ TEST_CASE("field signal with non-identifiable field")
     static_assert(!identifiable<inner>);
 
     state_storage<outer> storage;
-    alia_context ctx{};
-    auto s = make_state_binding(storage, &ctx);
-    write_signal(s, outer{{"a", 1}, {"b", 2}});
+    
+    auto s = make_state_binding(storage, &fx.ctx);
+    write_signal(&fx.ctx, s, outer{{"a", 1}, {"b", 2}});
+    fx.run();
 
     auto first = s->*&outer::first;
     auto second = alia_field(s, second);
@@ -328,7 +346,8 @@ TEST_CASE("field signal with non-identifiable field")
     CHECK(read_signal(first).n == 1);
     CHECK((first.value_id() != second.value_id()));
 
-    write_signal(first, inner{"c", 3});
+    write_signal(&fx.ctx, first, inner{"c", 3});
+    fx.run();
     CHECK(storage.value.first.name == "c");
     CHECK(storage.value.first.n == 3);
     CHECK(read_signal(second).n == 2);
@@ -390,6 +409,7 @@ TEST_CASE("subscript metafunctions")
 
 TEST_CASE("vector subscript")
 {
+    effect_fixture fx;
     std::vector<int> c{2, 0, 3};
     uint32_t version = 0;
     auto c_signal = versioned_ref(c, version);
@@ -403,7 +423,8 @@ TEST_CASE("vector subscript")
     CHECK(read_signal(s) == 0);
     CHECK(signal_ready_to_write(s));
     auto original_id = s.value_id();
-    write_signal(s, 1);
+    write_signal(&fx.ctx, s, 1);
+    fx.run();
     CHECK((c == std::vector<int>{2, 1, 3}));
     CHECK((s.value_id() != original_id));
 
@@ -441,6 +462,7 @@ TEST_CASE("subscript with raw index")
 
 TEST_CASE("vector<bool> subscript")
 {
+    effect_fixture fx;
     std::vector<bool> c{true, false, false};
     uint32_t version = 0;
     auto s = versioned_ref(c, version)[value(1)];
@@ -452,12 +474,14 @@ TEST_CASE("vector<bool> subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == false);
     CHECK(signal_ready_to_write(s));
-    write_signal(s, true);
+    write_signal(&fx.ctx, s, true);
+    fx.run();
     CHECK((c == std::vector<bool>{true, true, false}));
 }
 
 TEST_CASE("map subscript")
 {
+    effect_fixture fx;
     std::map<int, int> c{{2, 1}, {0, 3}};
     uint32_t version = 0;
     auto s = versioned_ref(c, version)[value(2)];
@@ -469,12 +493,14 @@ TEST_CASE("map subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(s, 7);
+    write_signal(&fx.ctx, s, 7);
+    fx.run();
     CHECK((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
 
 TEST_CASE("custom ref subscript")
 {
+    effect_fixture fx;
     my_array c;
     uint32_t version = 0;
     auto s = versioned_ref(c, version)[value(2)];
@@ -486,7 +512,8 @@ TEST_CASE("custom ref subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 3);
     CHECK(signal_ready_to_write(s));
-    write_signal(s, 4);
+    write_signal(&fx.ctx, s, 4);
+    fx.run();
     CHECK(c[2] == 4);
 }
 
@@ -509,12 +536,13 @@ TEST_CASE("empty subscript")
     auto s = empty<std::map<int, int>>()[value(2)];
     CHECK_FALSE(signal_has_value(s));
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_view()
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
          == null_id()));
 }
 
 TEST_CASE("subscript with non-identifiable element")
 {
+    effect_fixture fx;
     struct inner
     {
         std::string name;
@@ -533,7 +561,8 @@ TEST_CASE("subscript with non-identifiable element")
     CHECK(read_signal(first).n == 1);
     CHECK((first.value_id() != second.value_id()));
 
-    write_signal(first, inner{"c", 3});
+    write_signal(&fx.ctx, first, inner{"c", 3});
+    fx.run();
     CHECK(c[0].name == "c");
     CHECK(c[0].n == 3);
     CHECK(read_signal(second).n == 2);

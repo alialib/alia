@@ -97,7 +97,7 @@ test_write_applies_after_run(void)
 
     int dst = 0;
     int const src = 42;
-    alia_defer_write(&rig.ctx, &dst, &src, sizeof(src), "int");
+    alia_post_write(&rig.ctx, &dst, &src, sizeof(src), "int");
     TEST_CHECK(dst == 0);
     TEST_CHECK(rig.ctx.effects->head != NULL);
     TEST_CHECK(rig.ctx.effects->head->label != NULL);
@@ -119,7 +119,7 @@ test_fifo_order(void)
 
     int value = 10;
     int const first = 1;
-    alia_defer_write(&rig.ctx, &value, &first, sizeof(first), "first");
+    alia_post_write(&rig.ctx, &value, &first, sizeof(first), "first");
 
     increment_effect* inc = (increment_effect*) alia_arena_ptr(
         &rig.alloc,
@@ -128,10 +128,10 @@ test_fifo_order(void)
     inc->base.run = increment_effect_run;
     inc->base.label = "inc";
     inc->counter = &value;
-    alia_defer_effect(&rig.ctx, &inc->base);
+    alia_post_effect(&rig.ctx, &inc->base);
 
     int const third = 99;
-    alia_defer_write(&rig.ctx, &value, &third, sizeof(third), "third");
+    alia_post_write(&rig.ctx, &value, &third, sizeof(third), "third");
 
     TEST_CHECK(value == 10);
     g_custom_runs = 0;

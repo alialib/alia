@@ -120,21 +120,21 @@ char const* lorem_ipsum
       "nunc dolor eu risus.";
 
 static void
-defer_bool(
+post_bool(
     context& ctx, bool* dst, alia_bool_signal const& signal, char const* label)
 {
     if (signal.flags & ALIA_SIGNAL_WRITTEN)
-        alia_defer_write(&ctx, dst, &signal.value, sizeof(*dst), label);
+        alia_post_write(&ctx, dst, &signal.value, sizeof(*dst), label);
 }
 
 static void
-defer_int(context& ctx, int* dst, int value, char const* label)
+post_int(context& ctx, int* dst, int value, char const* label)
 {
-    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
+    alia_post_write(&ctx, dst, &value, sizeof(*dst), label);
 }
 
 static void
-defer_float(
+post_float(
     context& ctx,
     float* dst,
     alia_double_signal const& signal,
@@ -143,7 +143,7 @@ defer_float(
     if ((signal.flags & ALIA_SIGNAL_WRITTEN) == 0)
         return;
     float const value = static_cast<float>(signal.value);
-    alia_defer_write(&ctx, dst, &value, sizeof(*dst), label);
+    alia_post_write(&ctx, dst, &value, sizeof(*dst), label);
 }
 
 struct set_magnification_effect
@@ -161,7 +161,7 @@ set_magnification_effect_run(alia_effect* self)
 }
 
 static void
-defer_set_magnification(context& ctx, float value)
+post_set_magnification(context& ctx, float value)
 {
     auto* effect = reinterpret_cast<set_magnification_effect*>(alia_arena_ptr(
         ctx.scratch,
@@ -173,7 +173,7 @@ defer_set_magnification(context& ctx, float value)
     effect->base.next = nullptr;
     effect->ui = ctx.system;
     effect->value = value;
-    alia_defer_effect(&ctx, &effect->base);
+    alia_post_effect(&ctx, &effect->base);
 }
 
 static void
@@ -193,7 +193,7 @@ do_float_slider(
     };
     alia_do_slider(
         &ctx, &signal, minimum, maximum, step, layout_flags, vertical);
-    defer_float(ctx, dst, signal, label);
+    post_float(ctx, dst, signal, label);
 }
 
 void
@@ -358,7 +358,7 @@ do_controls(context& ctx)
         alia_do_slider(&ctx, &mag_signal, 0.25, 3.0, 0.001, 0, false);
         if (mag_signal.flags & ALIA_SIGNAL_WRITTEN)
         {
-            defer_set_magnification(
+            post_set_magnification(
                 ctx, static_cast<float>(mag_signal.value));
         }
     }
@@ -389,7 +389,7 @@ do_switch_demo(context& ctx)
             .value = setting_one,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting One");
-        defer_bool(ctx, &setting_one, switch_signal, "setting_one");
+        post_bool(ctx, &setting_one, switch_signal, "setting_one");
     }
 
     {
@@ -399,7 +399,7 @@ do_switch_demo(context& ctx)
             .value = setting_two,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting Two");
-        defer_bool(ctx, &setting_two, switch_signal, "setting_two");
+        post_bool(ctx, &setting_two, switch_signal, "setting_two");
     }
 
     {
@@ -409,7 +409,7 @@ do_switch_demo(context& ctx)
             .value = setting_three,
         };
         do_switch_with_text(ctx, &switch_signal, "Setting Three");
-        defer_bool(ctx, &setting_three, switch_signal, "setting_three");
+        post_bool(ctx, &setting_three, switch_signal, "setting_three");
     }
 }
 
@@ -427,7 +427,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option One");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-            defer_int(ctx, &radio_index, 0, "radio");
+            post_int(ctx, &radio_index, 0, "radio");
     }
 
     {
@@ -437,7 +437,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option Two");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-            defer_int(ctx, &radio_index, 1, "radio");
+            post_int(ctx, &radio_index, 1, "radio");
     }
 
     {
@@ -447,7 +447,7 @@ do_radio_demo(context& ctx)
         };
         do_radio_with_text(ctx, &radio_signal, "Option Three");
         if (radio_signal.flags & ALIA_SIGNAL_WRITTEN)
-            defer_int(ctx, &radio_index, 2, "radio");
+            post_int(ctx, &radio_index, 2, "radio");
     }
 }
 
@@ -463,7 +463,7 @@ do_checkbox_demo(context& ctx)
             .value = setting_one,
         };
         do_checkbox_with_text(ctx, &checkbox_signal, "Initially Unchecked");
-        defer_bool(ctx, &setting_one, checkbox_signal, "checkbox_one");
+        post_bool(ctx, &setting_one, checkbox_signal, "checkbox_one");
     }
 
     {
@@ -473,7 +473,7 @@ do_checkbox_demo(context& ctx)
             .value = setting_two,
         };
         do_checkbox_with_text(ctx, &checkbox_signal, "Initially Checked");
-        defer_bool(ctx, &setting_two, checkbox_signal, "checkbox_two");
+        post_bool(ctx, &setting_two, checkbox_signal, "checkbox_two");
     }
 
     {
@@ -513,7 +513,7 @@ do_node_expander_demo(context& ctx)
             .value = expanded,
         };
         do_node_expander_with_text(ctx, &expanded_signal, "Expandable");
-        defer_bool(ctx, &expanded, expanded_signal, "expanded");
+        post_bool(ctx, &expanded, expanded_signal, "expanded");
     }
 
     {
@@ -548,7 +548,7 @@ do_collapsible_demo(context& ctx)
         .value = collapsed,
     };
     do_node_expander_with_text(ctx, &collapsed_signal, "Collapsible");
-    defer_bool(ctx, &collapsed, collapsed_signal, "collapsed");
+    post_bool(ctx, &collapsed, collapsed_signal, "collapsed");
 
     alia::collapsible(ctx, &collapsed_signal, [&]() {
         flow(ctx, FILL, [&]() {
@@ -581,12 +581,8 @@ do_button_demo(context& ctx)
     }
 
     row(ctx, ALIGN_LEFT, [&]() {
-        button(ctx, "Click me", callback([&] {
-                   defer_int(ctx, &clicks, clicks + 1, "clicks");
-               }));
-        button(ctx, "Reset", callback([&] {
-                   defer_int(ctx, &clicks, 0, "clicks");
-               }));
+        button(ctx, "Click me", ++ref(clicks));
+        button(ctx, "Reset", ref(clicks) <<= 0);
         button(ctx, "Disabled", actions::unready());
     });
 
@@ -601,8 +597,8 @@ do_button_demo(context& ctx)
     }
 
     row(ctx, ALIGN_LEFT, [&]() {
-        button(ctx, "n <<= m", callback([&] { defer_int(ctx, &n, m, "n"); }));
-        button(ctx, "m <<= n", callback([&] { defer_int(ctx, &m, n, "m"); }));
+        button(ctx, "n <<= m", ref(n) <<= ref(m));
+        button(ctx, "m <<= n", ref(m) <<= ref(n));
         button(ctx, "n <<= empty", ref(n) <<= empty<int>());
     });
 
