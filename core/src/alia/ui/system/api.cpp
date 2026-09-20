@@ -2,8 +2,8 @@
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
-#include <alia/ui/trace_internal.h>
 #include <alia/ui/system/work_internal.h>
+#include <alia/ui/trace_internal.h>
 
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
@@ -260,8 +260,7 @@ refresh_system(ui_system& sys)
             if (trace.active())
             {
                 ALIA_ASSERT(pass_index >= 0 && pass_index < 256);
-                trace.pass.refresh.index
-                    = static_cast<uint8_t>(pass_index);
+                trace.pass.refresh.index = static_cast<uint8_t>(pass_index);
                 trace.pass.refresh.incomplete
                     = as_refresh_event(refresh_event).incomplete;
             }
@@ -489,21 +488,6 @@ measure_initial_ui(
     return get_minimum_size(tmp.layout);
 }
 
-void render_ui(ui_system& system)
-{
-    {
-        render_event e;
-        issue_event(system, e);
-    }
-    if (is_valid(system.overlay_id))
-    {
-        render_event e;
-        e.category = OVERLAY_CATEGORY;
-        e.type = OVERLAY_RENDER_EVENT;
-        issue_targeted_event(system, e, system.overlay_id);
-    }
-}
-
 void issue_event(ui_system& system, ui_event& event)
 {
     issue_event(system, event, false);
@@ -513,46 +497,6 @@ void issue_targeted_event(ui_system& system, ui_event& event,
     routable_widget_id const& target)
 {
     issue_event(system, event, true, target.region);
-}
-
-void refresh_ui(ui_system& ui)
-{
-    // Capture the start time.
-    // Only supporting Windows at the moment.
-#ifdef WIN32
-    // First get the frequency of the counter.
-    // This doesn't change, so we only have to do it once.
-    static LARGE_INTEGER frequency;
-    static bool queried_frequency = false;
-    if (!queried_frequency)
-    {
-        QueryPerformanceFrequency(&frequency);
-        queried_frequency = true;
-    }
-
-    LARGE_INTEGER start_time;
-    QueryPerformanceCounter(&start_time);
-#endif
-
-    refresh_event e;
-    // Continue refreshing as long as the refresh event is being aborted.
-    // This is a workaround for code that wants to handle events on refresh
-    // passes.
-    while (issue_event(ui, e, false))
-        ;
-
-    // Record the duration of the refresh.
-#ifdef WIN32
-    LARGE_INTEGER end_time;
-    QueryPerformanceCounter(&end_time);
-    ui.last_refresh_duration =
-        int((end_time.QuadPart - start_time.QuadPart) * 1'000'000 /
-            frequency.QuadPart);
-#else
-    ui.last_refresh_duration = 0;
-#endif
-
-    resolve_layout(ui.layout, layout_vector(ui.surface_size));
 }
 
 void static

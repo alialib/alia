@@ -160,7 +160,9 @@ button(
         flags |= ALIA_BUTTON_DISABLED;
     if (button(ctx, flags, layout_flags, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
+    {
         post_action(&ctx, on_click);
+    }
 }
 
 template<class Content>

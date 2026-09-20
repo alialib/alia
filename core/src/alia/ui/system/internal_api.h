@@ -13,22 +13,6 @@ namespace alia {
 struct os_interface;
 struct window_interface;
 
-#if 0
-
-// Get the number of milliseconds until the UI expects to update next.
-// The system can safely idle for this many milliseconds if no external events
-// occur.
-// If the return value is none, it means that there are no future updates
-// scheduled, so the system can simply sleep until the next external event.
-std::optional<millisecond_count>
-get_time_until_next_update(ui_system& system, millisecond_count now);
-
-// Render the UI to the associated surface.
-void
-render_ui(ui_system& system);
-
-#endif
-
 // Move the keyboard focus forward and backwards through the focus order.
 void
 advance_focus(ui_system& ui);
