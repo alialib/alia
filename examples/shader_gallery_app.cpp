@@ -334,18 +334,21 @@ shader_gallery_root(context& ctx)
             concrete_panel(
                 ctx, 0, ctx.palette->foundation.background.base, FILL, [&]() {
                     column(ctx, GROW, [&]() {
-                        alia_scroll_view_begin(&ctx, ALIA_GROW, 0x2, 0);
-                        edge_offsets(
-                            ctx,
-                            {.left = 20, .right = 20, .top = 20, .bottom = 20},
-                            [&]() {
-                                with_spacing(ctx, 6, [&] {
-                                    column(ctx, [&]() {
-                                        do_notargs_controls(ctx);
+                        scroll_view(ctx, SCROLL_VIEW_Y, GROW, [&]() {
+                            edge_offsets(
+                                ctx,
+                                {.left = 20,
+                                 .right = 20,
+                                 .top = 20,
+                                 .bottom = 20},
+                                [&]() {
+                                    with_spacing(ctx, 6, [&] {
+                                        column(ctx, [&]() {
+                                            do_notargs_controls(ctx);
+                                        });
                                     });
                                 });
-                            });
-                        alia_scroll_view_end(&ctx);
+                        });
                         do_theme_controls(ctx);
                     });
                 });

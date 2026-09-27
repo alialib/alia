@@ -235,9 +235,12 @@ do_radio_button_demo(context& ctx)
 
     do_heading(ctx, "RADIO BUTTONS");
 
-    radio_button(ctx, make_radio_signal(ref(radio_index), value(0)), "Option One");
-    radio_button(ctx, make_radio_signal(ref(radio_index), value(1)), "Option Two");
-    radio_button(ctx, make_radio_signal(ref(radio_index), value(2)), "Option Three");
+    radio_button(
+        ctx, make_radio_signal(ref(radio_index), value(0)), "Option One");
+    radio_button(
+        ctx, make_radio_signal(ref(radio_index), value(1)), "Option Two");
+    radio_button(
+        ctx, make_radio_signal(ref(radio_index), value(2)), "Option Three");
 }
 
 void
@@ -547,16 +550,15 @@ the_demo(context& ctx)
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {
-                            alia_scroll_view_begin(
-                                &ctx, ALIA_GROW, 0x3, 0);
-                            edge_offsets(
-                                ctx,
-                                {.left = 40,
-                                 .right = 40,
-                                 .top = 40,
-                                 .bottom = 40},
-                                [&]() { do_content(ctx); });
-                            alia_scroll_view_end(&ctx);
+                            scroll_view(ctx, GROW, [&]() {
+                                edge_offsets(
+                                    ctx,
+                                    {.left = 40,
+                                     .right = 40,
+                                     .top = 40,
+                                     .bottom = 40},
+                                    [&]() { do_content(ctx); });
+                            });
                         });
                     });
             });

@@ -118,8 +118,8 @@ template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
     context& ctx,
-    Layout layout,
     alia_button_flags_t flags,
+    Layout layout,
     Content&& content)
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
@@ -135,15 +135,15 @@ template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
     context& ctx,
-    Layout layout,
     alia_button_flags_t flags,
+    Layout layout,
     button_variant variant,
     Content&& content)
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
     with_button_variant(ctx, variant, [&] {
         result = button(
-            ctx, layout, flags, std::forward<Content>(content));
+            ctx, flags, layout, std::forward<Content>(content));
     });
     return result;
 }
@@ -161,7 +161,7 @@ button(
     alia_button_flags_t flags = 0;
     if (!action_is_ready(on_click))
         flags |= ALIA_BUTTON_DISABLED;
-    if (button(ctx, layout, flags, std::forward<Content>(content))
+    if (button(ctx, flags, layout, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
     {
         post_action(&ctx, on_click);

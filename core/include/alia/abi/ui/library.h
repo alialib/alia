@@ -430,13 +430,32 @@ alia_node_expander(
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags);
 
-// Begin a scroll view container.
+// scrollable view flags
+typedef uint32_t alia_scroll_view_flags_t;
+#define ALIA_SCROLL_VIEW_FLAGS(X)                                             \
+    /* which axes are scrollable */                                           \
+    X(0x1, SCROLL_VIEW_X)                                                     \
+    X(0x2, SCROLL_VIEW_Y)                                                     \
+    /* which axes have reserved space for a scrollbar */                      \
+    X(0x4, SCROLL_VIEW_RESERVE_X)                                             \
+    X(0x8, SCROLL_VIEW_RESERVE_Y)
+enum
+{
+#define ALIA_DEFINE_SCROLL_VIEW_FLAG(value, name) ALIA_##name = value,
+    ALIA_SCROLL_VIEW_FLAGS(ALIA_DEFINE_SCROLL_VIEW_FLAG)
+#undef ALIA_DEFINE_SCROLL_VIEW_FLAG
+};
+
+// Begin a scrollable view container.
+// Note that if neither `SCROLL_VIEW_X` nor `SCROLL_VIEW_Y` is set in `flags`,
+// both axes are scrollable.
 void
 alia_scroll_view_begin(
     alia_context* ctx,
     alia_layout_flags_t layout_flags,
-    uint8_t scrollable_axes,
-    uint8_t reserved_axes);
+    alia_scroll_view_flags_t flags);
+
+// End a scrollable view container.
 void
 alia_scroll_view_end(alia_context* ctx);
 

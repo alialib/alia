@@ -25,9 +25,6 @@ using namespace alia::operators;
 
 namespace alia {
 
-static constexpr uint8_t ALIA_SCROLL_AXIS_X = 1u << 0;
-static constexpr uint8_t ALIA_SCROLL_AXIS_Y = 1u << 1;
-
 struct scroll_view_state;
 
 struct scroll_view_layout_node
@@ -58,8 +55,7 @@ struct scrollbar_data
 struct scroll_view_state
 {
     scrollbar_data bar[2];
-    uint8_t scrollable_axes = ALIA_SCROLL_AXIS_X | ALIA_SCROLL_AXIS_Y;
-    uint8_t reserved_axes = 0;
+    alia_scroll_view_flags_t flags = ALIA_SCROLL_VIEW_X | ALIA_SCROLL_VIEW_Y;
     alia_layout_flags_t layout_flags = 0;
     alia_scrollbar_style style = {};
     alia_vec2f content_size = {0.f, 0.f};
@@ -507,9 +503,9 @@ scroll_view_measure_horizontal(
         child = alia_measure_horizontal(ctx, n.base.first_child);
 
     float required = child.min_size;
-    if (d.scrollable_axes & ALIA_SCROLL_AXIS_X)
+    if (d.flags & ALIA_SCROLL_VIEW_X)
         required = d.style.minimum_thumb_length;
-    if (d.reserved_axes & ALIA_SCROLL_AXIS_Y)
+    if (d.flags & ALIA_SCROLL_VIEW_RESERVE_Y)
         required += d.style.width;
 
     d.content_size.x = child.min_size;
@@ -528,7 +524,7 @@ scroll_view_measure_vertical(
     auto& n = *reinterpret_cast<scroll_view_layout_node*>(node);
     auto& d = *n.data;
     float viewport_width = assigned_width;
-    if (d.scrollbars_on[1] || (d.reserved_axes & ALIA_SCROLL_AXIS_Y))
+    if (d.scrollbars_on[1] || (d.flags & ALIA_SCROLL_VIEW_RESERVE_Y))
         viewport_width = (std::max) (0.f, viewport_width - d.style.width);
     float const child_width = (std::max) (viewport_width, d.content_size.x);
     alia_vertical_requirements child = {0.f, 0.f, 0.f, 0.f};
@@ -537,7 +533,7 @@ scroll_view_measure_vertical(
             ctx, main_axis, n.base.first_child, child_width);
 
     float required = child.min_size;
-    if (d.scrollable_axes & ALIA_SCROLL_AXIS_Y)
+    if (d.flags & ALIA_SCROLL_VIEW_Y)
         required = d.style.minimum_thumb_length;
 
     d.content_size.y = child.min_size;
@@ -559,8 +555,8 @@ scroll_view_assign_boxes(
     auto& n = *reinterpret_cast<scroll_view_layout_node*>(node);
     auto& d = *n.data;
 
-    bool vertical_on = (d.reserved_axes & ALIA_SCROLL_AXIS_Y) != 0;
-    bool horizontal_on = (d.reserved_axes & ALIA_SCROLL_AXIS_X) != 0;
+    bool vertical_on = (d.flags & ALIA_SCROLL_VIEW_RESERVE_Y) != 0;
+    bool horizontal_on = (d.flags & ALIA_SCROLL_VIEW_RESERVE_X) != 0;
     alia_vec2f view_size = box.size;
 
     if (vertical_on)
@@ -574,7 +570,7 @@ scroll_view_assign_boxes(
         changed = false;
 
         bool const needs_vertical
-            = (d.scrollable_axes & ALIA_SCROLL_AXIS_Y) != 0
+            = (d.flags & ALIA_SCROLL_VIEW_Y) != 0
            && d.content_size.y > view_size.y;
         if (needs_vertical != vertical_on)
         {
@@ -583,7 +579,7 @@ scroll_view_assign_boxes(
         }
 
         bool const needs_horizontal
-            = (d.scrollable_axes & ALIA_SCROLL_AXIS_X) != 0
+            = (d.flags & ALIA_SCROLL_VIEW_X) != 0
            && d.content_size.x > view_size.x;
         if (needs_horizontal != horizontal_on)
         {
@@ -699,8 +695,7 @@ void
 alia_scroll_view_begin(
     alia_context* ctx,
     alia_layout_flags_t layout_flags,
-    uint8_t scrollable_axes,
-    uint8_t reserved_axes)
+    alia_scroll_view_flags_t flags)
 {
     auto& scope = stack_push<scroll_view_scope>(ctx);
 
@@ -714,8 +709,11 @@ alia_scroll_view_begin(
     scope.data = data;
     scope.id = alia_make_element_id(ctx, result);
 
-    data->scrollable_axes = scrollable_axes;
-    data->reserved_axes = reserved_axes;
+    static alia_scroll_view_flags_t const scroll_axes
+        = ALIA_SCROLL_VIEW_X | ALIA_SCROLL_VIEW_Y;
+    data->flags = flags;
+    if ((data->flags & scroll_axes) == 0)
+        data->flags |= scroll_axes;
     data->layout_flags = layout_flags;
     data->style = *alia_scrollbar_style_active(ctx);
 
