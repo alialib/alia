@@ -17,21 +17,21 @@ using namespace alia::operators;
 
 namespace alia {
 
-struct switch_bit_layout
+struct toggle_switch_bit_layout
 {
     click_flare_bit_layout click_flare;
     impl::transition_bitfield state_smoothing;
 };
 
-struct switch_data
+struct toggle_switch_data
 {
-    bitpack<switch_bit_layout> bits;
+    bitpack<toggle_switch_bit_layout> bits;
     alia_keyboard_click_state keyboard_click_state_;
 };
 
 static inline alia_vec2f
-switch_content_origin(
-    alia_context* ctx, alia_box placement, alia_switch_style const* s)
+toggle_switch_content_origin(
+    alia_context* ctx, alia_box placement, alia_toggle_switch_style const* s)
 {
     alia_vec2f const center = placement.min + placement.size * 0.5f;
     return center
@@ -41,24 +41,24 @@ switch_content_origin(
 }
 
 void
-render_switch(
+render_toggle_switch(
     alia_context* ctx,
     alia_box placement,
-    switch_data& data,
+    toggle_switch_data& data,
     bool state,
     alia_interaction_status_t interaction_status,
-    alia_switch_style const* style)
+    alia_toggle_switch_style const* style)
 {
     alia_palette const* p = alia_ctx_palette(ctx);
 
-    alia_vec2f const switch_min = switch_content_origin(ctx, placement, style);
+    alia_vec2f const toggle_switch_min = toggle_switch_content_origin(ctx, placement, style);
     float const layout_w = alia_px(ctx, style->layout_width);
     float const layout_h = alia_px(ctx, style->layout_height);
     float const track_w = alia_px(ctx, style->track_width);
     float const track_h = alia_px(ctx, style->track_height);
     float const track_corner = alia_px(
         ctx, style->track_corner_radius_fraction * style->track_height);
-    float const dot_y = switch_min.y + layout_h * 0.5f;
+    float const dot_y = toggle_switch_min.y + layout_h * 0.5f;
 
     if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
     {
@@ -70,8 +70,8 @@ render_switch(
                     : alia_palette_srgb_at(p, style->off_dot_disabled.index);
 
         alia_vec2f const track_min{
-            switch_min.x + (layout_w - track_w) * 0.5f,
-            switch_min.y + (layout_h - track_h) * 0.5f};
+            toggle_switch_min.x + (layout_w - track_w) * 0.5f,
+            toggle_switch_min.y + (layout_h - track_h) * 0.5f};
         alia_draw_rounded_box(
             ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
@@ -88,7 +88,7 @@ render_switch(
         alia_draw_circle(
             ctx,
             ctx->geometry->z_base + 2, // TODO: Proper z offset.
-            {switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
+            {toggle_switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
             alia_px(ctx, dot_radius_logical),
             alia_srgba8_from_srgb8(dot_srgb));
 
@@ -97,7 +97,7 @@ render_switch(
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
-    float switch_position = alia_transition_float(
+    float toggle_position = alia_transition_float(
         ctx,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
@@ -106,25 +106,25 @@ render_switch(
         0.f);
 
     float const dot_radius_logical = alia_lerp(
-        style->dot_radius_off, style->dot_radius_on, switch_position);
+        style->dot_radius_off, style->dot_radius_on, toggle_position);
     float dot_radius = alia_px(ctx, dot_radius_logical);
     float const dot_x_logical = alia_lerp(
-        style->dot_center_x_off, style->dot_center_x_on, switch_position);
+        style->dot_center_x_off, style->dot_center_x_on, toggle_position);
 
     alia_srgb8 const off_dot = alia_palette_srgb_at(p, style->off_dot.index);
     alia_srgb8 const on_dot = alia_palette_srgb_at(p, style->on_dot.index);
     alia_srgb8 const dot_color
-        = alia_lerp_srgb8_via_oklch(off_dot, on_dot, switch_position);
+        = alia_lerp_srgb8_via_oklch(off_dot, on_dot, toggle_position);
 
     alia_srgb8 const off_track
         = alia_palette_srgb_at(p, style->off_track.index);
     alia_srgb8 const on_track = alia_palette_srgb_at(p, style->on_track.index);
     alia_srgb8 const track_color
-        = alia_lerp_srgb8_via_oklch(off_track, on_track, switch_position);
+        = alia_lerp_srgb8_via_oklch(off_track, on_track, toggle_position);
 
     alia_vec2f const track_min{
-        switch_min.x + (layout_w - track_w) * 0.5f,
-        switch_min.y + (layout_h - track_h) * 0.5f};
+        toggle_switch_min.x + (layout_w - track_w) * 0.5f,
+        toggle_switch_min.y + (layout_h - track_h) * 0.5f};
     alia_draw_rounded_box(
         ctx,
         ctx->geometry->z_base + 2, // TODO: Proper z offset.
@@ -132,7 +132,7 @@ render_switch(
         alia_srgba8_from_srgb8(track_color),
         track_corner);
 
-    float const dot_center_x = switch_min.x + alia_px(ctx, dot_x_logical);
+    float const dot_center_x = toggle_switch_min.x + alia_px(ctx, dot_x_logical);
     alia_vec2f const dot_center{dot_center_x, dot_y};
 
     // TODO: Add blur.
@@ -183,11 +183,11 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 void
-alia_switch_style_generate(
-    alia_switch_style* out, alia_style_seeds const* seeds)
+alia_toggle_switch_style_generate(
+    alia_toggle_switch_style* out, alia_style_seeds const* seeds)
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_switch_style{
+    *out = alia_toggle_switch_style{
         .off_track = alia_palette_color_make(
             alia_palette_index_foundation_ramp(
                 ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
@@ -246,25 +246,25 @@ alia_switch_style_generate(
 }
 
 alia_element_id
-alia_do_switch(
+alia_toggle_switch(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
 {
     // TODO: Use C++ API for this.
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(switch_data), alignof(switch_data));
-    switch_data* data = (switch_data*) result.ptr;
+        ctx, sizeof(toggle_switch_data), alignof(toggle_switch_data));
+    toggle_switch_data* data = (toggle_switch_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
-        new (data) switch_data{
+        new (data) toggle_switch_data{
             .bits = {0},
             .keyboard_click_state_ = {0},
         };
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_switch_style const* const style = alia_switch_style_active(ctx);
+    alia_toggle_switch_style const* const style = alia_toggle_switch_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -328,7 +328,7 @@ alia_do_switch(
                         | (data->keyboard_click_state_.state
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
-            render_switch(
+            render_toggle_switch(
                 ctx, box, *data, selected, interaction_status, style);
 
             break;

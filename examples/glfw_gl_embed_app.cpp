@@ -126,7 +126,7 @@ embed_controller(void* /*user*/, alia_context* ctx)
             .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
             .value = g_value,
         };
-        alia_do_slider(ctx, &signal, 0.0, 1.0, 0.001, ALIA_FILL_X, false);
+        alia_slider(ctx, &signal, 0.0, 1.0, 0.001, ALIA_FILL_X, false);
         if (signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             float const value = static_cast<float>(signal.value);

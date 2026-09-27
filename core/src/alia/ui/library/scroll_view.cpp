@@ -696,7 +696,7 @@ alia_scrollbar_style_generate(
 }
 
 void
-alia_ui_scroll_view_begin(
+alia_scroll_view_begin(
     alia_context* ctx,
     alia_layout_flags_t layout_flags,
     uint8_t scrollable_axes,
@@ -801,7 +801,7 @@ alia_ui_scroll_view_begin(
 }
 
 void
-alia_ui_scroll_view_end(alia_context* ctx)
+alia_scroll_view_end(alia_context* ctx)
 {
     // `scroll_view_begin` pushes, in order: scroll_view_scope, then
     // (non-refresh only) clip, then translation — all on `ctx->stack`.

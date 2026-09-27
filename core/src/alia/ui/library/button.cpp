@@ -174,7 +174,7 @@ alia_button_style_apply_swatch(
 }
 
 alia_button_result_t
-alia_ui_button_begin(
+alia_button_begin(
     alia_context* ctx,
     alia_button_flags_t flags,
     alia_layout_flags_t layout_flags)
@@ -284,7 +284,7 @@ alia_ui_button_begin(
 }
 
 void
-alia_ui_button_end(alia_context* ctx)
+alia_button_end(alia_context* ctx)
 {
     alia_layout_row_end(ctx);
     alia_layout_edge_offsets_end(ctx);

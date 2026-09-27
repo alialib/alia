@@ -135,9 +135,9 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 bool
-alia_ui_collapsible_begin(
+alia_collapsible_begin(
     alia_context* ctx,
-    alia_bool_signal* expanded,
+    bool expanded,
     alia_layout_flags_t column_flags,
     float offset_factor,
     alia_animated_transition const* transition)
@@ -158,12 +158,6 @@ alia_ui_collapsible_begin(
     scope.offset_factor = offset_factor;
     scope.id = alia_make_element_id(ctx, result);
 
-    bool const expanded_state
-        = (expanded != nullptr
-           && (expanded->flags & ALIA_SIGNAL_READABLE) != 0)
-            ? expanded->value
-            : false;
-
     alia_animated_transition const* transition_eff
         = transition != nullptr ? transition : &default_collapsible_transition;
 
@@ -171,7 +165,7 @@ alia_ui_collapsible_begin(
         ctx,
         transition_eff,
         ALIA_BITREF(data->bits, expansion_smoothing),
-        expanded_state,
+        expanded,
         1.f,
         0.f);
 
@@ -235,7 +229,7 @@ alia_ui_collapsible_begin(
 }
 
 void
-alia_ui_collapsible_end(alia_context* ctx)
+alia_collapsible_end(alia_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {

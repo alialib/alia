@@ -14,7 +14,8 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct alia_switch_style
+// toggle switch style (catalog slot ALIA_STYLE_TOGGLE_SWITCH)
+typedef struct alia_toggle_switch_style
 {
     alia_palette_color off_track;
     alia_palette_color on_track;
@@ -32,7 +33,8 @@ typedef struct alia_switch_style
     float track_width;
     float track_height;
 
-    // corner radius as a fraction of track_height (e.g. 0.5 = pill)
+    // corner radius as a fraction of track_height - For example, 0.5 yields a
+    // pill shape.
     float track_corner_radius_fraction;
 
     // dot center X from left edge of switch content, logical px
@@ -44,32 +46,36 @@ typedef struct alia_switch_style
 
     float highlight_radius;
     float flare_radius;
-} alia_switch_style;
+} alia_toggle_switch_style;
 
-// Fill `out` with the switch style for `seeds`.
+// Fill `out` with the toggle switch style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
 void
-alia_switch_style_generate(
-    alia_switch_style* out, alia_style_seeds const* seeds);
+alia_toggle_switch_style_generate(
+    alia_toggle_switch_style* out, alia_style_seeds const* seeds);
 
-static inline alia_switch_style*
-alia_switch_style_default(alia_ui_system* ui)
+static inline alia_toggle_switch_style*
+alia_toggle_switch_style_default(alia_ui_system* ui)
 {
-    return (alia_switch_style*) alia_style_default(ui, ALIA_STYLE_SWITCH);
+    return (alia_toggle_switch_style*) alia_style_default(
+        ui, ALIA_STYLE_TOGGLE_SWITCH);
 }
 
-static inline alia_switch_style*
-alia_switch_style_active(alia_context* ctx)
+static inline alia_toggle_switch_style*
+alia_toggle_switch_style_active(alia_context* ctx)
 {
-    return (alia_switch_style*) alia_style_active(ctx, ALIA_STYLE_SWITCH);
+    return (alia_toggle_switch_style*) alia_style_active(
+        ctx, ALIA_STYLE_TOGGLE_SWITCH);
 }
 
+// Emit a toggle switch bound to `value`.
 alia_element_id
-alia_do_switch(
+alia_toggle_switch(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
+// slider style (catalog slot ALIA_STYLE_SLIDER)
 typedef struct alia_slider_style
 {
     alia_palette_color track_color;
@@ -105,7 +111,8 @@ alia_slider_style_active(alia_context* ctx)
     return (alia_slider_style*) alia_style_active(ctx, ALIA_STYLE_SLIDER);
 }
 
-typedef struct alia_radio_style
+// radio button style (catalog slot ALIA_STYLE_RADIO_BUTTON)
+typedef struct alia_radio_button_style
 {
     alia_palette_color outline;
     alia_palette_color dot;
@@ -129,32 +136,36 @@ typedef struct alia_radio_style
 
     // click flare radius, logical px
     float flare_radius;
-} alia_radio_style;
+} alia_radio_button_style;
 
-// Fill `out` with the radio style for `seeds`.
+// Fill `out` with the radio button style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
 void
-alia_radio_style_generate(
-    alia_radio_style* out, alia_style_seeds const* seeds);
+alia_radio_button_style_generate(
+    alia_radio_button_style* out, alia_style_seeds const* seeds);
 
-static inline alia_radio_style*
-alia_radio_style_default(alia_ui_system* ui)
+static inline alia_radio_button_style*
+alia_radio_button_style_default(alia_ui_system* ui)
 {
-    return (alia_radio_style*) alia_style_default(ui, ALIA_STYLE_RADIO);
+    return (alia_radio_button_style*) alia_style_default(
+        ui, ALIA_STYLE_RADIO_BUTTON);
 }
 
-static inline alia_radio_style*
-alia_radio_style_active(alia_context* ctx)
+static inline alia_radio_button_style*
+alia_radio_button_style_active(alia_context* ctx)
 {
-    return (alia_radio_style*) alia_style_active(ctx, ALIA_STYLE_RADIO);
+    return (alia_radio_button_style*) alia_style_active(
+        ctx, ALIA_STYLE_RADIO_BUTTON);
 }
 
+// checkbox colors for a single interaction state
 typedef struct alia_checkbox_state_style
 {
     alia_palette_color outline;
     alia_palette_color fill;
 } alia_checkbox_state_style;
 
+// checkbox style (catalog slot ALIA_STYLE_CHECKBOX)
 typedef struct alia_checkbox_style
 {
     alia_checkbox_state_style unchecked;
@@ -212,6 +223,7 @@ alia_checkbox_style_active(alia_context* ctx)
     return (alia_checkbox_style*) alia_style_active(ctx, ALIA_STYLE_CHECKBOX);
 }
 
+// node expander style (catalog slot ALIA_STYLE_NODE_EXPANDER)
 typedef struct alia_node_expander_style
 {
     alia_palette_color triangle;
@@ -226,8 +238,8 @@ typedef struct alia_node_expander_style
     // glyph sizing, logical px
     float triangle_side;
 
-    // rotation in degrees (clockwise in screen space), animated from
-    // collapsed to expanded
+    // rotation in degrees (clockwise in screen space) - Values are animated
+    // from collapsed to expanded.
     float collapsed_rotation_degrees;
     float expanded_rotation_degrees;
 
@@ -236,8 +248,8 @@ typedef struct alia_node_expander_style
     float flare_radius;
 } alia_node_expander_style;
 
-// Fill `out` with the node expander style for `seeds`. NULL seeds uses the
-// default seeds.
+// Fill `out` with the node expander style for `seeds`.
+// Seeds can be `NULL` to use the default seeds.
 void
 alia_node_expander_style_generate(
     alia_node_expander_style* out, alia_style_seeds const* seeds);
@@ -256,6 +268,7 @@ alia_node_expander_style_active(alia_context* ctx)
         ctx, ALIA_STYLE_NODE_EXPANDER);
 }
 
+// scrollbar style (catalog slot ALIA_STYLE_SCROLLBAR)
 typedef struct alia_scrollbar_style
 {
     alia_palette_color track_color;
@@ -269,7 +282,7 @@ typedef struct alia_scrollbar_style
     float minimum_thumb_length;
     float thumb_corner_radius;
     float line_size;
-    // multiplier applied to canonical scroll deltas (default 1)
+    // multiplier applied to canonical scroll deltas - The default is 1.
     float scroll_sensitivity;
 } alia_scrollbar_style;
 
@@ -293,22 +306,21 @@ alia_scrollbar_style_active(alia_context* ctx)
         ctx, ALIA_STYLE_SCROLLBAR);
 }
 
-// BUTTON
-
+// button style (catalog slot ALIA_STYLE_BUTTON)
 typedef struct alia_button_style
 {
-    // base chrome (alpha 0 fill is allowed for outline-only)
+    // base chrome - An alpha-0 fill is allowed for outline-only buttons.
     alia_palette_color fill;
     alia_palette_color fill_disabled;
     alia_palette_color label;
     alia_palette_color label_disabled;
 
-    // outline - `border_width` of 0 means filled-only (no stroke)
+    // outline - A `border_width` of 0 means filled-only (no stroke).
     float border_width;
     alia_palette_color border;
     alia_palette_color border_disabled;
 
-    // interaction overlays drawn on top of the base (alpha 0 => unused)
+    // interaction overlays drawn on top of the base - Alpha 0 means unused.
     alia_palette_color highlight_hovered;
     alia_palette_color highlight_active;
 
@@ -357,7 +369,8 @@ typedef uint32_t alia_button_flags_t;
 enum
 {
     ALIA_BUTTON_DISABLED = 1u << 0,
-    // reserved: omit from keyboard focus order once focus is wired.
+    // reserved skip-focus flag - Omit from keyboard focus order once focus is
+    // wired.
     ALIA_BUTTON_SKIP_FOCUS = 1u << 1,
 };
 
@@ -372,20 +385,22 @@ enum
     ALIA_BUTTON_RESULT_CONTEXT = 2,
 };
 
-// Emit a button container. Content goes between begin/end. Returns what
-// happened on this pass. `begin` temporarily overrides the active text style
-// color to match the button label colors for the current interaction state.
-// Outer layout spacing matches leaves; pass `ALIA_FLUSH` to suppress it.
+// Emit a button container. Content goes between begin/end.
+// Return what happened on this pass. `begin` temporarily overrides the active
+// text style color to match the button label colors for the current
+// interaction state. Outer layout spacing matches leaves; pass `ALIA_FLUSH` to
+// suppress it.
 alia_button_result_t
-alia_ui_button_begin(
+alia_button_begin(
     alia_context* ctx,
     alia_button_flags_t flags,
     alia_layout_flags_t layout_flags);
 void
-alia_ui_button_end(alia_context* ctx);
+alia_button_end(alia_context* ctx);
 
+// Emit a slider bound to `value`.
 alia_element_id
-alia_do_slider(
+alia_slider(
     alia_context* ctx,
     alia_double_signal* value,
     double minimum,
@@ -394,43 +409,48 @@ alia_do_slider(
     alia_layout_flags_t layout_flags,
     bool vertical);
 
+// Emit a radio button bound to `value`.
 alia_element_id
-alia_do_radio(
+alia_radio_button(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
+// Emit a checkbox bound to `value`.
 alia_element_id
-alia_do_checkbox(
+alia_checkbox(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
+// Emit a node expander bound to `expanded`.
 alia_element_id
-alia_do_node_expander(
+alia_node_expander(
     alia_context* ctx,
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags);
 
+// Begin a scroll view container.
 void
-alia_ui_scroll_view_begin(
+alia_scroll_view_begin(
     alia_context* ctx,
     alia_layout_flags_t layout_flags,
     uint8_t scrollable_axes,
     uint8_t reserved_axes);
 void
-alia_ui_scroll_view_end(alia_context* ctx);
+alia_scroll_view_end(alia_context* ctx);
 
+// Begin a collapsible container.
 // TODO: Decide on a more general return value for this.
 bool
-alia_ui_collapsible_begin(
+alia_collapsible_begin(
     alia_context* ctx,
-    alia_bool_signal* expanded,
+    bool expanded,
     alia_layout_flags_t column_flags,
     float offset_factor,
     alia_animated_transition const* transition);
 void
-alia_ui_collapsible_end(alia_context* ctx);
+alia_collapsible_end(alia_context* ctx);
 
 ALIA_EXTERN_C_END
 

@@ -256,7 +256,7 @@ alia_slider_style_generate(
 }
 
 alia_element_id
-alia_do_slider(
+alia_slider(
     alia_context* ctx,
     alia_double_signal* value,
     double minimum,

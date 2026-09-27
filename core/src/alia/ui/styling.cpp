@@ -80,11 +80,12 @@ generate_focus_style(void* user_data, void* out, alia_style_seeds const* seeds)
 }
 
 void
-generate_switch_style(
+generate_toggle_switch_style(
     void* user_data, void* out, alia_style_seeds const* seeds)
 {
     (void) user_data;
-    alia_switch_style_generate(static_cast<alia_switch_style*>(out), seeds);
+    alia_toggle_switch_style_generate(
+        static_cast<alia_toggle_switch_style*>(out), seeds);
 }
 
 void
@@ -96,10 +97,12 @@ generate_slider_style(
 }
 
 void
-generate_radio_style(void* user_data, void* out, alia_style_seeds const* seeds)
+generate_radio_button_style(
+    void* user_data, void* out, alia_style_seeds const* seeds)
 {
     (void) user_data;
-    alia_radio_style_generate(static_cast<alia_radio_style*>(out), seeds);
+    alia_radio_button_style_generate(
+        static_cast<alia_radio_button_style*>(out), seeds);
 }
 
 void
@@ -179,10 +182,10 @@ style_catalog_init(style_catalog& catalog)
         nullptr);
     bind_slot(
         catalog,
-        ALIA_STYLE_SWITCH,
-        sizeof(alia_switch_style),
-        alignof(alia_switch_style),
-        generate_switch_style,
+        ALIA_STYLE_TOGGLE_SWITCH,
+        sizeof(alia_toggle_switch_style),
+        alignof(alia_toggle_switch_style),
+        generate_toggle_switch_style,
         nullptr);
     bind_slot(
         catalog,
@@ -193,10 +196,10 @@ style_catalog_init(style_catalog& catalog)
         nullptr);
     bind_slot(
         catalog,
-        ALIA_STYLE_RADIO,
-        sizeof(alia_radio_style),
-        alignof(alia_radio_style),
-        generate_radio_style,
+        ALIA_STYLE_RADIO_BUTTON,
+        sizeof(alia_radio_button_style),
+        alignof(alia_radio_button_style),
+        generate_radio_button_style,
         nullptr);
     bind_slot(
         catalog,

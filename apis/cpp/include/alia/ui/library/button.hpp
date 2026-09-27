@@ -5,13 +5,13 @@
 #include <alia/abi/ui/text.h>
 #include <alia/context.h>
 #include <alia/kernel/actions/core.hpp>
-#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/options.hpp>
 
 #include <utility>
 
 namespace alia {
 
-// Semantic palette swatch for button chrome variants.
+// semantic palette swatch for button chrome variants
 enum class swatch
 {
     focus,
@@ -24,14 +24,14 @@ enum class swatch
     info,
 };
 
-// Button chrome style.
+// button chrome style
 enum class button_chrome
 {
     filled,
     outline,
 };
 
-// swatch and chrome pair describing a button variant.
+// swatch and chrome pair describing a button variant
 struct button_variant
 {
     swatch swatch{};
@@ -112,82 +112,100 @@ with_button_variant(context& ctx, button_variant variant, Content&& content)
     std::forward<Content>(content)();
 }
 
-// Emit a button container. Returns what happened on this pass.
-template<class Content>
+// Emit a button container.
+// Return what happened on this pass.
+template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
     context& ctx,
+    Layout layout,
     alia_button_flags_t flags,
-    layout_flag_set layout_flags,
     Content&& content)
 {
-    alia_button_result_t const result
-        = alia_ui_button_begin(&ctx, flags, raw_code(layout_flags));
-    std::forward<Content>(content)();
-    alia_ui_button_end(&ctx);
+    alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
+    apply_layout(ctx, layout, [&](layout_flag_set layout_flags) {
+        result = alia_button_begin(&ctx, flags, raw_code(layout_flags));
+        std::forward<Content>(content)();
+        alia_button_end(&ctx);
+    });
     return result;
 }
 
-template<class Content>
+template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
     context& ctx,
+    Layout layout,
     alia_button_flags_t flags,
-    layout_flag_set layout_flags,
     button_variant variant,
     Content&& content)
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
     with_button_variant(ctx, variant, [&] {
-        result
-            = button(ctx, flags, layout_flags, std::forward<Content>(content));
+        result = button(
+            ctx, layout, flags, std::forward<Content>(content));
     });
     return result;
 }
 
-// Emit a button container that posts `on_click` when activated. The button is
-// disabled while the action is not ready.
-template<class Content>
+// Emit a button container that posts `on_click` when activated.
+// Disable the button while the action is not ready.
+template<layout_like Layout = layout_options, class Content>
 void
 button(
     context& ctx,
     action<> const& on_click,
-    layout_flag_set layout_flags,
+    Layout layout,
     Content&& content)
 {
     alia_button_flags_t flags = 0;
     if (!action_is_ready(on_click))
         flags |= ALIA_BUTTON_DISABLED;
-    if (button(ctx, flags, layout_flags, std::forward<Content>(content))
+    if (button(ctx, layout, flags, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
     {
         post_action(&ctx, on_click);
     }
 }
 
-template<class Content>
+template<layout_like Layout = layout_options, class Content>
 void
 button(
     context& ctx,
     action<> const& on_click,
-    layout_flag_set layout_flags,
+    Layout layout,
     button_variant variant,
     Content&& content)
 {
     with_button_variant(ctx, variant, [&] {
-        button(ctx, on_click, layout_flags, std::forward<Content>(content));
+        button(ctx, on_click, layout, std::forward<Content>(content));
     });
 }
 
 // Emit a labeled button that posts `on_click` when activated.
-inline void
+template<layout_like Layout = layout_options>
+void
 button(
     context& ctx,
     char const* label,
     action<> const& on_click,
-    layout_flag_set layout_flags = NO_FLAGS)
+    Layout layout = {})
 {
-    button(ctx, on_click, layout_flags, [&] {
+    button(ctx, on_click, layout, [&] {
+        alia_text(&ctx, 0, alia_text_literal(label), nullptr);
+    });
+}
+
+template<layout_like Layout = layout_options>
+void
+button(
+    context& ctx,
+    char const* label,
+    action<> const& on_click,
+    Layout layout,
+    button_variant variant)
+{
+    button(ctx, on_click, layout, variant, [&] {
         alia_text(&ctx, 0, alia_text_literal(label), nullptr);
     });
 }
@@ -197,22 +215,9 @@ button(
     context& ctx,
     char const* label,
     action<> const& on_click,
-    layout_flag_set layout_flags,
     button_variant variant)
 {
-    button(ctx, on_click, layout_flags, variant, [&] {
-        alia_text(&ctx, 0, alia_text_literal(label), nullptr);
-    });
-}
-
-inline void
-button(
-    context& ctx,
-    char const* label,
-    action<> const& on_click,
-    button_variant variant)
-{
-    button(ctx, label, on_click, NO_FLAGS, variant);
+    button(ctx, label, on_click, default_layout, variant);
 }
 
 } // namespace alia

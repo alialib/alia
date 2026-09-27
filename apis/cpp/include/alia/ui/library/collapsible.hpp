@@ -1,68 +1,69 @@
 #pragma once
 
-#include <alia/abi/kernel/signal.h>
 #include <alia/abi/ui/library.h>
 #include <alia/context.h>
 #include <alia/kernel/macros.hpp>
-#include <alia/ui/layout/flags.hpp>
+#include <alia/kernel/signals/core.hpp>
+#include <alia/ui/layout/options.hpp>
 
 #include <utility>
 
 namespace alia {
 
-// TODO: Use alia::if_ to omit child UI when fully collapsed.
-// TODO: Use C++ signals.
-
-template<class Content>
+// Emit a collapsible container driven by `expanded`.
+// An empty signal is treated as collapsed.
+template<view_of<bool> Signal, layout_like Layout = layout_options, class Content>
 void
-collapsible(context& ctx, alia_bool_signal* expanded, Content&& content)
+collapsible(
+    context& ctx, Signal const& expanded, Layout layout, Content&& content)
 {
-    bool const do_content
-        = alia_ui_collapsible_begin(&ctx, expanded, 0, 1.f, nullptr);
-    ALIA_IF_ (&ctx, do_content)
-    {
-        std::forward<Content>(content)();
-    }
-    ALIA_END
-    alia_ui_collapsible_end(&ctx);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        bool const do_content = alia_collapsible_begin(
+            &ctx,
+            signal_has_value(expanded) && read_signal(expanded),
+            raw_code(flags),
+            1.f,
+            nullptr);
+        ALIA_IF_ (&ctx, do_content)
+        {
+            std::forward<Content>(content)();
+        }
+        ALIA_END
+        alia_collapsible_end(&ctx);
+    });
 }
 
-template<class Content>
+template<view_of<bool> Signal, class Content>
+void
+collapsible(context& ctx, Signal const& expanded, Content&& content)
+{
+    collapsible(ctx, expanded, default_layout, std::forward<Content>(content));
+}
+
+template<view_of<bool> Signal, layout_like Layout = layout_options, class Content>
 void
 collapsible(
     context& ctx,
-    alia_bool_signal* expanded,
-    layout_flag_set column_flags,
-    Content&& content)
-{
-    bool const do_content = alia_ui_collapsible_begin(
-        &ctx, expanded, raw_code(column_flags), 1.f, nullptr);
-    ALIA_IF_ (&ctx, do_content)
-    {
-        std::forward<Content>(content)();
-    }
-    ALIA_END
-    alia_ui_collapsible_end(&ctx);
-}
-
-template<class Content>
-void
-collapsible(
-    context& ctx,
-    alia_bool_signal* expanded,
-    layout_flag_set column_flags,
+    Signal const& expanded,
+    Layout layout,
     float offset_factor,
     alia_animated_transition const* transition,
     Content&& content)
 {
-    bool const do_content = alia_ui_collapsible_begin(
-        &ctx, expanded, raw_code(column_flags), offset_factor, transition);
-    ALIA_IF_ (&ctx, do_content)
-    {
-        std::forward<Content>(content)();
-    }
-    ALIA_END
-    alia_ui_collapsible_end(&ctx);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        bool const do_content = alia_collapsible_begin(
+            &ctx,
+            signal_has_value(expanded) && read_signal(expanded),
+            raw_code(flags),
+            offset_factor,
+            transition);
+        ALIA_IF_ (&ctx, do_content)
+        {
+            std::forward<Content>(content)();
+        }
+        ALIA_END
+        alia_collapsible_end(&ctx);
+    });
 }
 
 } // namespace alia

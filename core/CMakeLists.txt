@@ -42,10 +42,10 @@ add_library(alia_core STATIC
     src/alia/ui/layout/utilities/emission.cpp
     src/alia/ui/layout/utilities/line.cpp
     src/alia/ui/layout/utilities/placement.cpp
-    src/alia/ui/library/radio.cpp
+    src/alia/ui/library/radio_button.cpp
     src/alia/ui/library/checkbox.cpp
     src/alia/ui/library/slider.cpp
-    src/alia/ui/library/switch.cpp
+    src/alia/ui/library/toggle_switch.cpp
     src/alia/ui/library/node_expander.cpp
     src/alia/ui/library/scroll_view.cpp
     src/alia/ui/library/collapsible.cpp

@@ -16,26 +16,26 @@ using namespace alia::operators;
 
 namespace alia {
 
-struct radio_bit_layout
+struct radio_button_bit_layout
 {
     click_flare_bit_layout click_flare;
     impl::transition_bitfield state_smoothing;
 };
 
-struct radio_data
+struct radio_button_data
 {
-    bitpack<radio_bit_layout> bits;
+    bitpack<radio_button_bit_layout> bits;
     alia_keyboard_click_state keyboard_click_state_;
 };
 
 static inline alia_vec2f
-radio_center(alia_box placement)
+radio_button_center(alia_box placement)
 {
     return placement.min + placement.size * 0.5f;
 }
 
 static void
-draw_radio_ring(
+draw_radio_button_ring(
     alia_context* ctx,
     alia_vec2f center,
     float radius_px,
@@ -59,17 +59,17 @@ draw_radio_ring(
 }
 
 static void
-render_radio(
+render_radio_button(
     alia_context* ctx,
     alia_box placement,
-    radio_data& data,
+    radio_button_data& data,
     bool selected,
     alia_interaction_status_t interaction_status,
-    alia_radio_style const* style)
+    alia_radio_button_style const* style)
 {
     alia_palette const* p = alia_ctx_palette(ctx);
 
-    alia_vec2f const center = radio_center(placement);
+    alia_vec2f const center = radio_button_center(placement);
     float const ring_radius_px = alia_px(ctx, style->ring_radius);
     float const dot_radius_max_px = alia_px(ctx, style->dot_radius);
     float const border_width_px = alia_px(ctx, style->border_width);
@@ -81,7 +81,7 @@ render_radio(
         alia_srgb8 const dot_srgb
             = alia_palette_srgb_at(p, style->dot_disabled.index);
 
-        draw_radio_ring(
+        draw_radio_button_ring(
             ctx, center, ring_radius_px, border_width_px, outline_srgb);
 
         if (selected)
@@ -131,7 +131,7 @@ render_radio(
         dot_srgb,
         alia_px(ctx, style->flare_radius));
 
-    draw_radio_ring(
+    draw_radio_button_ring(
         ctx, center, ring_radius_px, border_width_px, outline_srgb);
 
     float const dot_radius_px = dot_radius_max_px * smoothed_state;
@@ -153,10 +153,11 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 void
-alia_radio_style_generate(alia_radio_style* out, alia_style_seeds const* seeds)
+alia_radio_button_style_generate(
+    alia_radio_button_style* out, alia_style_seeds const* seeds)
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_radio_style{
+    *out = alia_radio_button_style{
         .outline = alia_palette_color_make(
             alia_palette_index_foundation_ramp(
                 ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
@@ -191,24 +192,25 @@ alia_radio_style_generate(alia_radio_style* out, alia_style_seeds const* seeds)
 }
 
 alia_element_id
-alia_do_radio(
+alia_radio_button(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(radio_data), alignof(radio_data));
-    radio_data* data = (radio_data*) result.ptr;
+        ctx, sizeof(radio_button_data), alignof(radio_button_data));
+    radio_button_data* data = (radio_button_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
-        new (data) radio_data{
+        new (data) radio_button_data{
             .bits = {0},
             .keyboard_click_state_ = {0},
         };
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_radio_style const* const style = alia_radio_style_active(ctx);
+    alia_radio_button_style const* const style
+        = alia_radio_button_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -276,7 +278,8 @@ alia_do_radio(
                         | (data->keyboard_click_state_.state
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
-            render_radio(ctx, box, *data, selected, interaction_status, style);
+            render_radio_button(
+                ctx, box, *data, selected, interaction_status, style);
             break;
         }
     }

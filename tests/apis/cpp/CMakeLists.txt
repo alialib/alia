@@ -11,6 +11,7 @@ add_executable(test_apis_cpp
     kernel/signals/test_containers.cpp
     kernel/signals/test_numeric.cpp
     kernel/signals/test_lambdas.cpp
+    kernel/signals/test_c_abi.cpp
     kernel/actions/test_core.cpp
     kernel/actions/test_basic.cpp
     kernel/actions/test_operators.cpp
@@ -22,7 +23,8 @@ add_executable(test_apis_cpp
     ui/layout/test_layout_wrappers.cpp
     ui/layout/test_layout_flow.cpp
     ui/layout/test_layout_provide_box.cpp
-    ui/layout/test_layout_baseline.cpp)
+    ui/layout/test_layout_baseline.cpp
+    ui/layout/test_layout_options.cpp)
 target_link_libraries(test_apis_cpp PRIVATE alia_cpp alia_layout_fixture)
 target_include_directories(test_apis_cpp PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support

@@ -10,8 +10,8 @@
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/kernel/effect.h>
-#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -28,6 +28,9 @@
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/kernel/macros.hpp>
+#include <alia/kernel/signals/adaptors.hpp>
+#include <alia/kernel/signals/basic.hpp>
+#include <alia/kernel/signals/lambdas.hpp>
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/api.hpp>
@@ -135,28 +138,6 @@ make_notargs_params()
     return p;
 }
 
-static void
-post_bool(
-    context& ctx, bool* dst, alia_bool_signal const& signal, char const* label)
-{
-    if (signal.flags & ALIA_SIGNAL_WRITTEN)
-        alia_post_write(&ctx, dst, &signal.value, sizeof(*dst), label);
-}
-
-static void
-post_int(context& ctx, int* dst, int value, char const* label)
-{
-    alia_post_write(&ctx, dst, &value, sizeof(*dst), label);
-}
-
-static void
-post_theme_dirty(context& ctx)
-{
-    bool const dirty = true;
-    alia_post_write(
-        &ctx, &the_theme_dirty_flag, &dirty, sizeof(dirty), "theme_dirty");
-}
-
 template<class Content>
 void
 with_spacing(context& ctx, float spacing, Content&& content)
@@ -178,64 +159,34 @@ do_heading(context& ctx, char const* text)
         demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
 }
 
-void
-do_radio_with_text(context& ctx, alia_bool_signal* value, char const* text)
+// Emit a slider with a single-line `label` to its left.
+// `layout` applies to the outer row; the slider grows to fill remaining space.
+template<binding_signal Signal, layout_like Layout = layout_options>
+    requires std::convertible_to<typename Signal::value_type, double>
+          && std::convertible_to<double, typename Signal::value_type>
+alia_element_id
+slider(
+    context& ctx,
+    Signal const& value,
+    double minimum,
+    double maximum,
+    double step,
+    char const* label,
+    Layout layout = {},
+    bool vertical = false)
 {
-    alia_box row_box;
-    row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id = alia_do_radio(&ctx, value, ALIA_CENTER_Y);
-        demo_text(
-            ctx,
-            text,
-            &demo_get_fonts().body_14,
-            demo_text_color(
-                (value->flags & ALIA_SIGNAL_WRITABLE)
-                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
-                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-            CENTER_Y);
-        alia_element_box_region(
-            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+    alia_element_id id{};
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        row(ctx, add_default_x_alignment(flags, ALIGN_LEFT), [&]() {
+            alia_text(
+                &ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
+            flow(ctx, GROW, [&]() {
+                id = slider(
+                    ctx, value, minimum, maximum, step, CENTER_Y, vertical);
+            });
+        });
     });
-}
-
-void
-do_switch_with_text(context& ctx, alia_bool_signal* value, char const* text)
-{
-    alia_box row_box;
-    row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id = alia_do_switch(&ctx, value, ALIA_CENTER_Y);
-        demo_text(
-            ctx,
-            text,
-            &demo_get_fonts().body_14,
-            demo_text_color(
-                (value->flags & ALIA_SIGNAL_WRITABLE)
-                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
-                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-            CENTER_Y);
-        alia_element_box_region(
-            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
-    });
-}
-
-void
-do_checkbox_with_text(context& ctx, alia_bool_signal* value, char const* text)
-{
-    alia_box row_box;
-    row(ctx, ALIGN_LEFT, &row_box, [&]() {
-        alia_element_id id = alia_do_checkbox(&ctx, value, ALIA_CENTER_Y);
-        demo_text(
-            ctx,
-            text,
-            &demo_get_fonts().body_14,
-            demo_text_color(
-                (value->flags & ALIA_SIGNAL_WRITABLE)
-                    ? ALIA_PALETTE_RAMP_LEVEL_BASE
-                    : ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-            CENTER_Y);
-        alia_element_box_region(
-            &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
-    });
+    return id;
 }
 
 void
@@ -247,52 +198,19 @@ control_slider_d(
     double max_v,
     double step)
 {
-    row(ctx, [&]() {
-        demo_text(
-            ctx,
-            label,
-            &demo_get_fonts().body_14,
-            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
-            CENTER_Y);
-        flow(ctx, GROW, [&]() {
-            alia_double_signal signal{
-                .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-                .value = *value,
-            };
-            alia_do_slider(&ctx, &signal, min_v, max_v, step, 0, false);
-            if (signal.flags & ALIA_SIGNAL_WRITTEN)
-            {
-                alia_post_write(
-                    &ctx, value, &signal.value, sizeof(*value), label);
-            }
-        });
-    });
+    slider(ctx, ref(*value), min_v, max_v, step, label);
 }
 
 void
 control_switch_b(context& ctx, char const* label, bool* value)
 {
-    row(ctx, [&]() {
-        alia_bool_signal sig{
-            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-            .value = *value,
-        };
-        do_switch_with_text(ctx, &sig, label);
-        post_bool(ctx, value, sig, label);
-    });
+    toggle_switch(ctx, ref(*value), label);
 }
 
 void
 control_checkbox_b(context& ctx, char const* label, bool* value)
 {
-    row(ctx, [&]() {
-        alia_bool_signal sig{
-            .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-            .value = *value,
-        };
-        do_checkbox_with_text(ctx, &sig, label);
-        post_bool(ctx, value, sig, label);
-    });
+    checkbox(ctx, ref(*value), label);
 }
 
 void
@@ -306,21 +224,15 @@ do_theme_controls(context& ctx)
                 [&]() {
                     row(ctx, [&]() {
                         with_spacing(ctx, 6, [&] {
-                            alia_bool_signal sig{
-                                .flags
-                                = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITABLE,
-                                .value = the_light_theme_flag,
-                            };
-                            do_switch_with_text(ctx, &sig, "Light");
-                            if (sig.flags & ALIA_SIGNAL_WRITTEN)
-                            {
-                                post_bool(
-                                    ctx,
-                                    &the_light_theme_flag,
-                                    sig,
-                                    "light");
-                                post_theme_dirty(ctx);
-                            }
+                            toggle_switch(
+                                ctx,
+                                lambda_binding(
+                                    [] { return the_light_theme_flag; },
+                                    [](bool value) {
+                                        the_light_theme_flag = value;
+                                        the_theme_dirty_flag = true;
+                                    }),
+                                "Light");
                         });
                         demo_text(
                             ctx,
@@ -330,22 +242,19 @@ do_theme_controls(context& ctx)
                             CENTER_Y);
                         spacer(ctx, {0, 0}, GROW);
                         with_spacing(ctx, 0, [&] {
+                            auto seed = lambda_binding(
+                                [] { return the_seed_index; },
+                                [](int value) {
+                                    the_seed_index = value;
+                                    the_theme_dirty_flag = true;
+                                });
+                            char const* labels[] = {"Blue", "Violet", "Red"};
                             for (int i = 0; i < 3; ++i)
                             {
-                                alia_bool_signal radio{
-                                    .flags = ALIA_SIGNAL_READABLE
-                                           | ALIA_SIGNAL_WRITABLE,
-                                    .value = (the_seed_index == i),
-                                };
-                                char const* labels[]
-                                    = {"Blue", "Violet", "Red"};
-                                do_radio_with_text(ctx, &radio, labels[i]);
-                                if (radio.flags & ALIA_SIGNAL_WRITTEN)
-                                {
-                                    post_int(
-                                        ctx, &the_seed_index, i, "seed");
-                                    post_theme_dirty(ctx);
-                                }
+                                radio_button(
+                                    ctx,
+                                    make_radio_signal(seed, value(i)),
+                                    labels[i]);
                                 spacer(ctx, {15, 0}, NO_FLAGS);
                             }
                         });
@@ -423,20 +332,12 @@ shader_gallery_root(context& ctx)
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
             concrete_panel(
-                ctx,
-                0,
-                ctx.palette->foundation.background.base,
-                FILL,
-                [&]() {
+                ctx, 0, ctx.palette->foundation.background.base, FILL, [&]() {
                     column(ctx, GROW, [&]() {
-                        alia_ui_scroll_view_begin(
-                            &ctx, ALIA_GROW, 0x2, 0);
+                        alia_scroll_view_begin(&ctx, ALIA_GROW, 0x2, 0);
                         edge_offsets(
                             ctx,
-                            {.left = 20,
-                             .right = 20,
-                             .top = 20,
-                             .bottom = 20},
+                            {.left = 20, .right = 20, .top = 20, .bottom = 20},
                             [&]() {
                                 with_spacing(ctx, 6, [&] {
                                     column(ctx, [&]() {
@@ -444,16 +345,12 @@ shader_gallery_root(context& ctx)
                                     });
                                 });
                             });
-                        alia_ui_scroll_view_end(&ctx);
+                        alia_scroll_view_end(&ctx);
                         do_theme_controls(ctx);
                     });
                 });
             concrete_panel(
-                ctx,
-                0,
-                ctx.palette->foundation.background.base,
-                GROW,
-                [&]() {
+                ctx, 0, ctx.palette->foundation.background.base, GROW, [&]() {
                     alia_do_shader(
                         &ctx,
                         0,

@@ -156,7 +156,7 @@ alia_node_expander_style_generate(
 }
 
 alia_element_id
-alia_do_node_expander(
+alia_node_expander(
     alia_context* ctx,
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags)

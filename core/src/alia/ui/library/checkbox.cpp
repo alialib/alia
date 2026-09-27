@@ -254,7 +254,7 @@ alia_checkbox_style_generate(
 }
 
 alia_element_id
-alia_do_checkbox(
+alia_checkbox(
     alia_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
