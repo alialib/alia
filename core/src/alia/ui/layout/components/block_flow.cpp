@@ -40,8 +40,11 @@ struct block_flow_scratch
 
 alia_horizontal_requirements
 block_flow_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) main_axis;
     auto& block_flow = *reinterpret_cast<block_flow_layout_node*>(node);
     auto& scratch = claim_scratch<block_flow_scratch>(ctx->scratch);
 
@@ -58,7 +61,8 @@ block_flow_measure_horizontal(
     for (alia_layout_node* child = block_flow.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = alia_measure_horizontal(ctx, child);
+        auto const child_x
+            = alia_measure_horizontal(ctx, ALIA_MAIN_AXIS_X, child);
         max_child_width = (std::max) (max_child_width, child_x.min_size);
         child_scratch->x = child_x;
         ++child_scratch;

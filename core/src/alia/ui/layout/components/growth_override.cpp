@@ -14,11 +14,13 @@ struct growth_override_node
 
 alia_horizontal_requirements
 growth_override_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& override = *reinterpret_cast<growth_override_node*>(node);
-    auto const child_x
-        = alia_measure_horizontal(ctx, override.container.first_child);
+    auto const child_x = alia_measure_horizontal(
+        ctx, main_axis, override.container.first_child);
     return alia_horizontal_requirements{
         .min_size = child_x.min_size, .growth_factor = override.growth};
 }

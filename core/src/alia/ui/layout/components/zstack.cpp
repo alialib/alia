@@ -17,7 +17,9 @@ struct zstack_scratch
 
 alia_horizontal_requirements
 zstack_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& zstack = *reinterpret_cast<zstack_layout_node*>(node);
     auto& scratch = claim_scratch<zstack_scratch>(ctx->scratch);
@@ -25,7 +27,7 @@ zstack_measure_horizontal(
     for (alia_layout_node* child = zstack.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = alia_measure_horizontal(ctx, child);
+        auto const child_x = alia_measure_horizontal(ctx, main_axis, child);
         scratch.max_width = (std::max) (scratch.max_width, child_x.min_size);
     }
     return alia_horizontal_requirements{

@@ -13,7 +13,9 @@ struct min_size_node
 
 alia_horizontal_requirements
 min_size_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* base_node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* base_node)
 {
     auto& node = *reinterpret_cast<min_size_node*>(base_node);
     if (!node.container.first_child)
@@ -22,7 +24,7 @@ min_size_measure_horizontal(
             .min_size = node.min_size.x, .growth_factor = 0.f};
     }
     auto const child_x
-        = alia_measure_horizontal(ctx, node.container.first_child);
+        = alia_measure_horizontal(ctx, main_axis, node.container.first_child);
     return alia_horizontal_requirements{
         .min_size = std::max(node.min_size.x, child_x.min_size),
         .growth_factor = child_x.growth_factor};
@@ -40,10 +42,7 @@ min_size_measure_vertical(
     {
         float const h = node.min_size.y;
         return alia_vertical_requirements{
-            .min_size = h,
-            .growth_factor = 0.f,
-            .ascent = h,
-            .descent = 0.f};
+            .min_size = h, .growth_factor = 0.f, .ascent = h, .descent = 0.f};
     }
     auto const child_y = alia_measure_vertical(
         ctx, main_axis, node.container.first_child, assigned_width);

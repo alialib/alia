@@ -20,7 +20,9 @@ struct edge_offsets_layout_node
 
 alia_horizontal_requirements
 edge_offsets_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& edge_offsets = *reinterpret_cast<edge_offsets_layout_node*>(node);
     float const padding
@@ -29,11 +31,11 @@ edge_offsets_measure_horizontal(
     {
         return alia_horizontal_requirements{
             .min_size = padding,
-            .growth_factor = alia_resolve_growth_factor(
-                edge_offsets.container.flags)};
+            .growth_factor
+            = alia_resolve_growth_factor(edge_offsets.container.flags)};
     }
-    auto const child_x
-        = alia_measure_horizontal(ctx, edge_offsets.container.first_child);
+    auto const child_x = alia_measure_horizontal(
+        ctx, main_axis, edge_offsets.container.first_child);
     return alia_horizontal_requirements{
         .min_size = child_x.min_size + padding,
         .growth_factor = child_x.growth_factor};
@@ -53,8 +55,8 @@ edge_offsets_measure_vertical(
     {
         return alia_vertical_requirements{
             .min_size = padding,
-            .growth_factor = alia_resolve_growth_factor(
-                edge_offsets.container.flags),
+            .growth_factor
+            = alia_resolve_growth_factor(edge_offsets.container.flags),
             .ascent = edge_offsets.offsets.top,
             .descent = edge_offsets.offsets.bottom};
     }

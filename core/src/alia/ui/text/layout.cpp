@@ -84,9 +84,13 @@ text_effective_spacing(text_layout_node const& node)
 // LEAF / WHOLE-STRING PROTOCOL
 
 static alia_horizontal_requirements
-text_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+text_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     (void) ctx;
+    (void) main_axis;
     auto& text = *reinterpret_cast<text_layout_node*>(node);
     float const spacing = text_effective_spacing(text);
     return alia_horizontal_requirements{

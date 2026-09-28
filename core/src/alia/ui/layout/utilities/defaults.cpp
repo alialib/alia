@@ -22,7 +22,7 @@ alia_default_emit_flow_fragments(
     alia_flow_fragment_emitter* emitter)
 {
     auto const marker = alia_arena_mark(&ctx->scratch);
-    auto horizontal = alia_measure_horizontal(ctx, node);
+    auto horizontal = alia_measure_horizontal(ctx, ALIA_MAIN_AXIS_X, node);
     alia_arena_jump(&ctx->scratch, marker);
     auto vertical = alia_measure_vertical(
         ctx, ALIA_MAIN_AXIS_X, node, horizontal.min_size);

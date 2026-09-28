@@ -56,11 +56,12 @@ collapsible_node_from(alia_layout_node* node)
 
 alia_horizontal_requirements
 collapsible_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
-    (void) ctx;
     auto& n = *collapsible_node_from(node);
-    return alia_measure_horizontal(ctx, n.base.first_child);
+    return alia_measure_horizontal(ctx, main_axis, n.base.first_child);
 }
 
 alia_vertical_requirements

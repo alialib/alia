@@ -32,7 +32,7 @@ alia_layout_system_resolve(
     {
         alia_measurement_context ctx;
         alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
-        alia_measure_horizontal(&ctx, root_node);
+        alia_measure_horizontal(&ctx, ALIA_MAIN_AXIS_X, root_node);
         alia_arena_reset(&ctx.scratch);
         vertical = alia_measure_vertical(
             &ctx, ALIA_MAIN_AXIS_X, root_node, available_space.x);

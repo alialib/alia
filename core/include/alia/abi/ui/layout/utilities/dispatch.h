@@ -7,9 +7,12 @@
 ALIA_EXTERN_C_BEGIN
 
 static inline alia_horizontal_requirements
-alia_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+alia_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
-    return node->vtable->measure_horizontal(ctx, node);
+    return node->vtable->measure_horizontal(ctx, main_axis, node);
 }
 
 static inline alia_vertical_requirements

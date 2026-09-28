@@ -16,9 +16,12 @@ struct layout_flow_spring_node
 
 alia_horizontal_requirements
 flow_spring_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     (void) ctx;
+    (void) main_axis;
     auto& spring = *reinterpret_cast<layout_flow_spring_node*>(node);
     return alia_horizontal_requirements{
         .min_size = spring.min_width, .growth_factor = 0.f};

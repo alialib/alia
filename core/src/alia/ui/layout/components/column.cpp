@@ -17,8 +17,11 @@ struct column_scratch
 
 alia_horizontal_requirements
 column_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) main_axis;
     auto& column = *reinterpret_cast<column_layout_node*>(node);
     auto& scratch = claim_scratch<column_scratch>(ctx->scratch);
 
@@ -34,7 +37,8 @@ column_measure_horizontal(
     for (alia_layout_node* child = column.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = alia_measure_horizontal(ctx, child);
+        auto const child_x
+            = alia_measure_horizontal(ctx, ALIA_MAIN_AXIS_Y, child);
         scratch.max_width = (std::max) (scratch.max_width, child_x.min_size);
     }
     return alia_horizontal_requirements{

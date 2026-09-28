@@ -347,8 +347,12 @@ process_flow_fragment(
 }
 
 alia_horizontal_requirements
-flow_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+flow_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) main_axis;
     auto& flow = *flow_from_node(node);
     auto& scratch = claim_scratch<flow_scratch>(ctx->scratch);
 

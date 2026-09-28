@@ -494,13 +494,15 @@ handle_make_widget_visible(
 
 alia_horizontal_requirements
 scroll_view_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& n = *reinterpret_cast<scroll_view_layout_node*>(node);
     auto& d = *n.data;
     alia_horizontal_requirements child = {0.f, 0.f};
     if (n.base.first_child)
-        child = alia_measure_horizontal(ctx, n.base.first_child);
+        child = alia_measure_horizontal(ctx, main_axis, n.base.first_child);
 
     float required = child.min_size;
     if (d.flags & ALIA_SCROLL_VIEW_X)

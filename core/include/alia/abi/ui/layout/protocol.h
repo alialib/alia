@@ -222,7 +222,9 @@ typedef uint8_t alia_main_axis_index;
 typedef struct alia_layout_node_vtable
 {
     alia_horizontal_requirements (*measure_horizontal)(
-        alia_measurement_context* ctx, alia_layout_node* node);
+        alia_measurement_context* ctx,
+        alia_main_axis_index main_axis,
+        alia_layout_node* node);
 
     alia_vertical_requirements (*measure_vertical)(
         alia_measurement_context* ctx,

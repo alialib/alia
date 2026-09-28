@@ -11,7 +11,9 @@ extern alia_layout_node_vtable column_vtable;
 
 alia_horizontal_requirements
 column_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node);
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node);
 
 alia_vertical_requirements
 column_measure_vertical(

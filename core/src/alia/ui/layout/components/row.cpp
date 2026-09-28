@@ -15,8 +15,12 @@ struct row_scratch
 };
 
 alia_horizontal_requirements
-row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+row_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) main_axis;
     auto& row = *reinterpret_cast<row_layout_node*>(node);
     auto& scratch = claim_scratch<row_scratch>(ctx->scratch);
     for (alia_layout_node* child = row.first_child; child != nullptr;
@@ -30,7 +34,8 @@ row_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     for (alia_layout_node* child = row.first_child; child != nullptr;
          child = child->next_sibling)
     {
-        auto const child_x = alia_measure_horizontal(ctx, child);
+        auto const child_x
+            = alia_measure_horizontal(ctx, ALIA_MAIN_AXIS_X, child);
         *x_requirements++ = child_x;
         scratch.total_width += child_x.min_size;
         scratch.total_growth += child_x.growth_factor;

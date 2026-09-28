@@ -23,12 +23,14 @@ struct alignment_override_scratch
 
 alia_horizontal_requirements
 alignment_override_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
     auto& scratch = claim_scratch<alignment_override_scratch>(ctx->scratch);
-    scratch.horizontal
-        = alia_measure_horizontal(ctx, override.container.first_child);
+    scratch.horizontal = alia_measure_horizontal(
+        ctx, main_axis, override.container.first_child);
     return scratch.horizontal;
 }
 

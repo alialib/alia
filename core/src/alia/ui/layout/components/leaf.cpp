@@ -23,8 +23,13 @@ leaf_effective_spacing(layout_leaf_node const& leaf)
 }
 
 alia_horizontal_requirements
-leaf_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+leaf_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) ctx;
+    (void) main_axis;
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     float const spacing = leaf_effective_spacing(leaf);
     return alia_horizontal_requirements{

@@ -60,7 +60,10 @@ count_columns(grid_layout_node* grid)
 }
 
 alia_horizontal_requirements
-grid_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
+grid_measure_horizontal(
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
     auto& grid = *reinterpret_cast<grid_layout_node*>(node);
     grid.scratch = &claim_scratch<grid_scratch>(ctx->scratch);
@@ -80,7 +83,8 @@ grid_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
              child != nullptr;
              child = child->next_sibling, ++column_index)
         {
-            auto const child_x = alia_measure_horizontal(ctx, child);
+            auto const child_x
+                = alia_measure_horizontal(ctx, ALIA_MAIN_AXIS_X, child);
             grid.scratch->columns[column_index].growth_factor
                 = (std::max) (grid.scratch->columns[column_index]
                                   .growth_factor,
@@ -103,7 +107,7 @@ grid_measure_horizontal(alia_measurement_context* ctx, alia_layout_node* node)
     // affect the results.
     grid.scratch_marker = alia_arena_mark(&ctx->scratch);
     return column_measure_horizontal(
-        ctx, upcast<alia_layout_node>(&grid.column));
+        ctx, main_axis, upcast<alia_layout_node>(&grid.column));
 }
 
 alia_vertical_requirements
@@ -146,8 +150,11 @@ alia_layout_node_vtable grid_vtable
 
 alia_horizontal_requirements
 grid_row_measure_horizontal(
-    alia_measurement_context* ctx, alia_layout_node* node)
+    alia_measurement_context* ctx,
+    alia_main_axis_index main_axis,
+    alia_layout_node* node)
 {
+    (void) main_axis;
     auto& grid_row = *reinterpret_cast<grid_row_layout_node*>(node);
     auto const marker = alia_arena_mark(&ctx->scratch);
     alia_arena_jump(&ctx->scratch, grid_row.scratch_marker);
