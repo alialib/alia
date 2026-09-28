@@ -51,7 +51,10 @@ enum
     /* SPACED enables spacing around a node that's flush by default. */       \
     X(0b101000000000000000, SPACING_MASK)                                     \
     X(0b01000000000000000, FLUSH)                                             \
-    X(0b100000000000000000, SPACED)
+    X(0b100000000000000000, SPACED)                                           \
+    /* AXIS_RELATIVE_SIZE means content.size is (length, breadth) along */    \
+    /* the parent's main/cross axes, not absolute (x, y). */                  \
+    X(0b1000000000000000000, AXIS_RELATIVE_SIZE)
 
 // Container-policy flags - How a container arranges its children.
 #define ALIA_LAYOUT_CONTAINER_FLAGS(X)                                        \

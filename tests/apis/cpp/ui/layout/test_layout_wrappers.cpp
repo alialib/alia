@@ -166,3 +166,73 @@ TEST_CASE("layout spacer grow with zero size")
     CHECK(check_box_eq(
         leaf, alia_vec2f_make(80.f, 0.f), alia_vec2f_make(20.f, 10.f)));
 }
+
+TEST_CASE("layout spacer length follows parent main axis")
+{
+    alia_box after_row;
+    alia_box after_column;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            row(ctx, [&]() {
+                spacer(ctx, length(20.f));
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_row);
+            });
+            column(ctx, [&]() {
+                spacer(ctx, length(20.f));
+                test_leaf(
+                    ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_column);
+            });
+        });
+    });
+    CHECK(check_box_eq(
+        after_row, alia_vec2f_make(20.f, 0.f), alia_vec2f_make(10.f, 10.f)));
+    CHECK(check_box_eq(
+        after_column,
+        alia_vec2f_make(0.f, 30.f),
+        alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout spacer breadth follows parent cross axis")
+{
+    alia_box tall;
+    alia_box wide;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            row(ctx, [&]() {
+                spacer(ctx, length(10.f) | breadth(30.f));
+                test_leaf(ctx, alia_vec2f_make(5.f, 5.f), FLUSH, &tall);
+            });
+            column(ctx, [&]() {
+                spacer(ctx, length(10.f) | breadth(30.f));
+                test_leaf(ctx, alia_vec2f_make(5.f, 5.f), FLUSH, &wide);
+            });
+        });
+    });
+    // In a row, `length` is x (10) and `breadth` is y (30), so the following
+    // leaf is at x = 10 and the row is 30 tall. (The leaf stays top-aligned at
+    // y = 0.)
+    CHECK(check_box_eq(
+        tall, alia_vec2f_make(10.f, 0.f), alia_vec2f_make(5.f, 5.f)));
+    // In a column, `length` is y (10) and `breadth` is x (30), so the
+    // following leaf is at y = 10 within this nested column. (`y = 40` is
+    // absolute; prior row height is 30.)
+    CHECK(check_box_eq(
+        wide, alia_vec2f_make(0.f, 40.f), alia_vec2f_make(5.f, 5.f)));
+}
+
+TEST_CASE("layout leaf AXIS_RELATIVE_SIZE remaps under column")
+{
+    alia_box box;
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            test_leaf(
+                ctx,
+                alia_vec2f_make(20.f, 8.f),
+                FLUSH | AXIS_RELATIVE_SIZE,
+                &box);
+        });
+    });
+    // (`length` = 20, `breadth` = 8) in a column equates to a size of (8, 20).
+    CHECK(check_box_eq(
+        box, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(8.f, 20.f)));
+}

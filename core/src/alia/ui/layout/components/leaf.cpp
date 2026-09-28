@@ -22,6 +22,19 @@ leaf_effective_spacing(layout_leaf_node const& leaf)
     return (leaf.flags & ALIA_FLUSH) != 0 ? 0.f : leaf.spacing;
 }
 
+// Resolve leaf content size to absolute (x, y). When AXIS_RELATIVE_SIZE is
+// set, content.size stores (length, breadth) relative to `main_axis`.
+static alia_vec2f
+leaf_absolute_size(
+    layout_leaf_node const& leaf, alia_main_axis_index main_axis)
+{
+    if ((leaf.flags & ALIA_AXIS_RELATIVE_SIZE) == 0)
+        return leaf.content.size;
+    if (main_axis == ALIA_MAIN_AXIS_X)
+        return leaf.content.size;
+    return alia_vec2f_make(leaf.content.size.y, leaf.content.size.x);
+}
+
 alia_horizontal_requirements
 leaf_measure_horizontal(
     alia_measurement_context* ctx,
@@ -29,11 +42,11 @@ leaf_measure_horizontal(
     alia_layout_node* node)
 {
     (void) ctx;
-    (void) main_axis;
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     float const spacing = leaf_effective_spacing(leaf);
+    alia_vec2f const size = leaf_absolute_size(leaf, main_axis);
     return alia_horizontal_requirements{
-        .min_size = leaf.content.size.x + spacing * 2,
+        .min_size = size.x + spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags)};
 }
 
@@ -44,10 +57,13 @@ leaf_measure_vertical(
     alia_layout_node* node,
     float assigned_width)
 {
+    (void) ctx;
+    (void) assigned_width;
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     float const spacing = leaf_effective_spacing(leaf);
+    alia_vec2f const size = leaf_absolute_size(leaf, main_axis);
     return alia_vertical_requirements{
-        .min_size = leaf.content.size.y + spacing * 2,
+        .min_size = size.y + spacing * 2,
         .growth_factor = alia_resolve_growth_factor(leaf.flags),
         .ascent = leaf.content.ascent,
         .descent = leaf.content.descent};
@@ -63,12 +79,13 @@ leaf_assign_boxes(
 {
     auto& leaf = *reinterpret_cast<layout_leaf_node*>(node);
     float const spacing = leaf_effective_spacing(leaf);
+    alia_vec2f const size = leaf_absolute_size(leaf, main_axis);
     alia_box* placement = arena_alloc<alia_box>(ctx->arena);
     auto const padded_placement = alia_resolve_leaf_box(
         alia_fold_in_cross_axis_flags(leaf.flags, main_axis),
         box.size,
         baseline,
-        leaf.content.size,
+        size,
         leaf.content.ascent,
         {spacing, spacing});
     placement->min = box.min + padded_placement.min;

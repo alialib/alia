@@ -403,9 +403,10 @@ flow_spring(context& ctx, float min_width = 0.f)
 }
 
 // Emit an empty leaf that reserves space.
-// While the sizer always takes up a slot in its container, its size is 0x0 by
-// default. It can be sized using `width` and `height` like all other layout
-// nodes. By default, it is FLUSH.
+// While the spacer always takes up a slot in its container, its size is 0x0 by
+// default. Like all widgets, it can be explicitly sized using `width`/`height`
+// (for sizing along X/Y axes) or `length`/`breadth` (for sizing relative to
+// the parent container's axes). By default, it is FLUSH.
 template<layout_like Layout = layout_options>
 void
 spacer(context& ctx, Layout layout = {})

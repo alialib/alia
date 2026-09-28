@@ -48,6 +48,18 @@ struct growth_spec
     float value;
 };
 
+// minimum length along the parent main axis, in logical pixels
+struct length_spec
+{
+    float value;
+};
+
+// minimum breadth along the parent cross axis, in logical pixels
+struct breadth_spec
+{
+    float value;
+};
+
 // Specify uniform padding around a control, in logical pixels.
 inline pad_spec
 pad(float uniform)
@@ -81,6 +93,20 @@ inline growth_spec
 growth(float value)
 {
     return growth_spec{value};
+}
+
+// Specify a minimum length along the parent main axis, in logical pixels.
+inline length_spec
+length(float value)
+{
+    return length_spec{value};
+}
+
+// Specify a minimum breadth along the parent cross axis, in logical pixels.
+inline breadth_spec
+breadth(float value)
+{
+    return breadth_spec{value};
 }
 
 // typed layout pack - Absent slots use `empty_layout_piece` so apply can drop
@@ -189,6 +215,19 @@ template<class T>
 constexpr bool is_empty_layout_piece_v
     = std::is_same_v<std::decay_t<T>, empty_layout_piece>;
 
+template<class T>
+constexpr bool is_width_spec_v = std::is_same_v<std::decay_t<T>, width_spec>;
+
+template<class T>
+constexpr bool is_height_spec_v = std::is_same_v<std::decay_t<T>, height_spec>;
+
+template<class T>
+constexpr bool is_length_spec_v = std::is_same_v<std::decay_t<T>, length_spec>;
+
+template<class T>
+constexpr bool is_breadth_spec_v
+    = std::is_same_v<std::decay_t<T>, breadth_spec>;
+
 inline pad_spec
 add_pad(pad_spec a, pad_spec const& b)
 {
@@ -242,7 +281,10 @@ with_width(
 {
     static_assert(
         is_empty_layout_piece_v<Width>,
-        "layout pack already specifies width()");
+        "layout pack already specifies width() or length()");
+    static_assert(
+        is_empty_layout_piece_v<Height> || is_height_spec_v<Height>,
+        "cannot combine width() with breadth()");
     return layout_spec<Flags, Pad, width_spec, Height, Growth>{
         spec.flags, spec.pad, width, spec.height, spec.growth};
 }
@@ -254,9 +296,66 @@ with_height(
 {
     static_assert(
         is_empty_layout_piece_v<Height>,
-        "layout pack already specifies height()");
+        "layout pack already specifies height() or breadth()");
+    static_assert(
+        is_empty_layout_piece_v<Width> || is_width_spec_v<Width>,
+        "cannot combine height() with length()");
     return layout_spec<Flags, Pad, Width, height_spec, Growth>{
         spec.flags, spec.pad, spec.width, height, spec.growth};
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+with_length(
+    layout_spec<Flags, Pad, Width, Height, Growth> spec, length_spec length)
+{
+    static_assert(
+        is_empty_layout_piece_v<Width>,
+        "layout pack already specifies length() or width()");
+    static_assert(
+        is_empty_layout_piece_v<Height> || is_breadth_spec_v<Height>,
+        "cannot combine length() with height()");
+    if constexpr (is_empty_layout_piece_v<Flags>)
+    {
+        return layout_spec<layout_flag_set, Pad, length_spec, Height, Growth>{
+            AXIS_RELATIVE_SIZE, spec.pad, length, spec.height, spec.growth};
+    }
+    else
+    {
+        return layout_spec<Flags, Pad, length_spec, Height, Growth>{
+            spec.flags | AXIS_RELATIVE_SIZE,
+            spec.pad,
+            length,
+            spec.height,
+            spec.growth};
+    }
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+with_breadth(
+    layout_spec<Flags, Pad, Width, Height, Growth> spec, breadth_spec breadth)
+{
+    static_assert(
+        is_empty_layout_piece_v<Height>,
+        "layout pack already specifies breadth() or height()");
+    static_assert(
+        is_empty_layout_piece_v<Width> || is_length_spec_v<Width>,
+        "cannot combine breadth() with width()");
+    if constexpr (is_empty_layout_piece_v<Flags>)
+    {
+        return layout_spec<layout_flag_set, Pad, Width, breadth_spec, Growth>{
+            AXIS_RELATIVE_SIZE, spec.pad, spec.width, breadth, spec.growth};
+    }
+    else
+    {
+        return layout_spec<Flags, Pad, Width, breadth_spec, Growth>{
+            spec.flags | AXIS_RELATIVE_SIZE,
+            spec.pad,
+            spec.width,
+            breadth,
+            spec.growth};
+    }
 }
 
 template<class Flags, class Pad, class Width, class Height, class Growth>
@@ -334,6 +433,28 @@ as_layout_options(growth_spec const& g)
     return layout;
 }
 
+// Convert a main-axis length to erased layout options.
+inline layout_options
+as_layout_options(length_spec const& l)
+{
+    layout_options layout;
+    layout.flags = AXIS_RELATIVE_SIZE;
+    layout.present = layout_options::width_bit;
+    layout.width_value = l.value;
+    return layout;
+}
+
+// Convert a cross-axis breadth to erased layout options.
+inline layout_options
+as_layout_options(breadth_spec const& b)
+{
+    layout_options layout;
+    layout.flags = AXIS_RELATIVE_SIZE;
+    layout.present = layout_options::height_bit;
+    layout.height_value = b.value;
+    return layout;
+}
+
 // Convert a typed layout pack to erased layout options.
 template<class Flags, class Pad, class Width, class Height, class Growth>
 layout_options
@@ -347,15 +468,22 @@ as_layout_options(layout_spec<Flags, Pad, Width, Height, Growth> const& spec)
         out.present |= layout_options::pad_bit;
         out.pad_offsets = spec.pad.offsets;
     }
-    if constexpr (!detail::is_empty_layout_piece_v<Width>)
+    if constexpr (
+        detail::is_width_spec_v<Width> || detail::is_length_spec_v<Width>)
     {
         out.present |= layout_options::width_bit;
         out.width_value = spec.width.value;
     }
-    if constexpr (!detail::is_empty_layout_piece_v<Height>)
+    if constexpr (
+        detail::is_height_spec_v<Height> || detail::is_breadth_spec_v<Height>)
     {
         out.present |= layout_options::height_bit;
         out.height_value = spec.height.value;
+    }
+    if constexpr (
+        detail::is_length_spec_v<Width> || detail::is_breadth_spec_v<Height>)
+    {
+        out.flags = out.flags | AXIS_RELATIVE_SIZE;
     }
     if constexpr (!detail::is_empty_layout_piece_v<Growth>)
     {
@@ -395,6 +523,7 @@ operator|=(layout_options& layout, pad_spec const& p)
 inline layout_options&
 operator|=(layout_options& layout, width_spec const& w)
 {
+    layout.flags = layout.flags & ~AXIS_RELATIVE_SIZE;
     layout.present |= layout_options::width_bit;
     layout.width_value = w.value;
     return layout;
@@ -403,6 +532,7 @@ operator|=(layout_options& layout, width_spec const& w)
 inline layout_options&
 operator|=(layout_options& layout, height_spec const& h)
 {
+    layout.flags = layout.flags & ~AXIS_RELATIVE_SIZE;
     layout.present |= layout_options::height_bit;
     layout.height_value = h.value;
     return layout;
@@ -413,6 +543,24 @@ operator|=(layout_options& layout, growth_spec const& g)
 {
     layout.present |= layout_options::growth_bit;
     layout.growth_value = g.value;
+    return layout;
+}
+
+inline layout_options&
+operator|=(layout_options& layout, length_spec const& l)
+{
+    layout.flags = layout.flags | AXIS_RELATIVE_SIZE;
+    layout.present |= layout_options::width_bit;
+    layout.width_value = l.value;
+    return layout;
+}
+
+inline layout_options&
+operator|=(layout_options& layout, breadth_spec const& b)
+{
+    layout.flags = layout.flags | AXIS_RELATIVE_SIZE;
+    layout.present |= layout_options::height_bit;
+    layout.height_value = b.value;
     return layout;
 }
 
@@ -480,6 +628,18 @@ operator|(layout_options layout, growth_spec const& g)
 }
 
 inline layout_options
+operator|(layout_options layout, length_spec const& l)
+{
+    return layout |= l;
+}
+
+inline layout_options
+operator|(layout_options layout, breadth_spec const& b)
+{
+    return layout |= b;
+}
+
+inline layout_options
 operator|(layout_options layout, layout_options const& other)
 {
     return layout |= other;
@@ -513,6 +673,18 @@ inline layout_options
 operator|(growth_spec const& g, layout_options const& layout)
 {
     return as_layout_options(g) | layout;
+}
+
+inline layout_options
+operator|(length_spec const& l, layout_options const& layout)
+{
+    return as_layout_options(l) | layout;
+}
+
+inline layout_options
+operator|(breadth_spec const& b, layout_options const& layout)
+{
+    return as_layout_options(b) | layout;
 }
 
 inline layout_spec<layout_flag_set, pad_spec>
@@ -593,6 +765,38 @@ operator|(growth_spec const& g, layout_flag_set flags)
     return {flags, {}, {}, {}, g};
 }
 
+inline layout_spec<layout_flag_set, empty_layout_piece, length_spec>
+operator|(layout_flag_set flags, length_spec const& l)
+{
+    return {flags | AXIS_RELATIVE_SIZE, {}, l, {}, {}};
+}
+
+inline layout_spec<layout_flag_set, empty_layout_piece, length_spec>
+operator|(length_spec const& l, layout_flag_set flags)
+{
+    return {flags | AXIS_RELATIVE_SIZE, {}, l, {}, {}};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    empty_layout_piece,
+    breadth_spec>
+operator|(layout_flag_set flags, breadth_spec const& b)
+{
+    return {flags | AXIS_RELATIVE_SIZE, {}, {}, b, {}};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    empty_layout_piece,
+    breadth_spec>
+operator|(breadth_spec const& b, layout_flag_set flags)
+{
+    return {flags | AXIS_RELATIVE_SIZE, {}, {}, b, {}};
+}
+
 inline layout_spec<empty_layout_piece, pad_spec, width_spec>
 operator|(pad_spec const& p, width_spec const& w)
 {
@@ -645,6 +849,30 @@ inline layout_spec<
 operator|(growth_spec const& g, pad_spec const& p)
 {
     return {{}, p, {}, {}, g};
+}
+
+inline layout_spec<layout_flag_set, pad_spec, length_spec>
+operator|(pad_spec const& p, length_spec const& l)
+{
+    return {AXIS_RELATIVE_SIZE, p, l, {}, {}};
+}
+
+inline layout_spec<layout_flag_set, pad_spec, length_spec>
+operator|(length_spec const& l, pad_spec const& p)
+{
+    return {AXIS_RELATIVE_SIZE, p, l, {}, {}};
+}
+
+inline layout_spec<layout_flag_set, pad_spec, empty_layout_piece, breadth_spec>
+operator|(pad_spec const& p, breadth_spec const& b)
+{
+    return {AXIS_RELATIVE_SIZE, p, {}, b, {}};
+}
+
+inline layout_spec<layout_flag_set, pad_spec, empty_layout_piece, breadth_spec>
+operator|(breadth_spec const& b, pad_spec const& p)
+{
+    return {AXIS_RELATIVE_SIZE, p, {}, b, {}};
 }
 
 inline layout_spec<
@@ -711,6 +939,70 @@ operator|(growth_spec const& g, height_spec const& h)
     return {{}, {}, {}, h, g};
 }
 
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    length_spec,
+    breadth_spec>
+operator|(length_spec const& l, breadth_spec const& b)
+{
+    return {AXIS_RELATIVE_SIZE, {}, l, b, {}};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    length_spec,
+    breadth_spec>
+operator|(breadth_spec const& b, length_spec const& l)
+{
+    return {AXIS_RELATIVE_SIZE, {}, l, b, {}};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    length_spec,
+    empty_layout_piece,
+    growth_spec>
+operator|(length_spec const& l, growth_spec const& g)
+{
+    return {AXIS_RELATIVE_SIZE, {}, l, {}, g};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    length_spec,
+    empty_layout_piece,
+    growth_spec>
+operator|(growth_spec const& g, length_spec const& l)
+{
+    return {AXIS_RELATIVE_SIZE, {}, l, {}, g};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    empty_layout_piece,
+    breadth_spec,
+    growth_spec>
+operator|(breadth_spec const& b, growth_spec const& g)
+{
+    return {AXIS_RELATIVE_SIZE, {}, {}, b, g};
+}
+
+inline layout_spec<
+    layout_flag_set,
+    empty_layout_piece,
+    empty_layout_piece,
+    breadth_spec,
+    growth_spec>
+operator|(growth_spec const& g, breadth_spec const& b)
+{
+    return {AXIS_RELATIVE_SIZE, {}, {}, b, g};
+}
+
 inline pad_spec
 operator|(pad_spec a, pad_spec const& b)
 {
@@ -725,6 +1017,30 @@ operator|(height_spec, height_spec) = delete;
 
 growth_spec
 operator|(growth_spec, growth_spec) = delete;
+
+length_spec
+operator|(length_spec, length_spec) = delete;
+
+breadth_spec
+operator|(breadth_spec, breadth_spec) = delete;
+
+// Absolute and axis-relative size bags are exclusive.
+width_spec
+operator|(width_spec, length_spec) = delete;
+length_spec
+operator|(length_spec, width_spec) = delete;
+height_spec
+operator|(height_spec, breadth_spec) = delete;
+breadth_spec
+operator|(breadth_spec, height_spec) = delete;
+width_spec
+operator|(width_spec, breadth_spec) = delete;
+breadth_spec
+operator|(breadth_spec, width_spec) = delete;
+height_spec
+operator|(height_spec, length_spec) = delete;
+length_spec
+operator|(length_spec, height_spec) = delete;
 
 template<class Flags, class Pad, class Width, class Height, class Growth>
 auto
@@ -788,6 +1104,38 @@ operator|(
     height_spec const& h, layout_spec<Flags, Pad, Width, Height, Growth> spec)
 {
     return detail::with_height(spec, h);
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+operator|(
+    layout_spec<Flags, Pad, Width, Height, Growth> spec, length_spec const& l)
+{
+    return detail::with_length(spec, l);
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+operator|(
+    length_spec const& l, layout_spec<Flags, Pad, Width, Height, Growth> spec)
+{
+    return detail::with_length(spec, l);
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+operator|(
+    layout_spec<Flags, Pad, Width, Height, Growth> spec, breadth_spec const& b)
+{
+    return detail::with_breadth(spec, b);
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+operator|(
+    breadth_spec const& b, layout_spec<Flags, Pad, Width, Height, Growth> spec)
+{
+    return detail::with_breadth(spec, b);
 }
 
 template<class Flags, class Pad, class Width, class Height, class Growth>
@@ -970,16 +1318,34 @@ layout_content_size(height_spec const& h)
     return alia_vec2f_make(0.f, h.value);
 }
 
+inline alia_vec2f
+layout_content_size(length_spec const& l)
+{
+    return alia_vec2f_make(l.value, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(breadth_spec const& b)
+{
+    return alia_vec2f_make(0.f, b.value);
+}
+
 template<class Flags, class Pad, class Width, class Height, class Growth>
 alia_vec2f
 layout_content_size(layout_spec<Flags, Pad, Width, Height, Growth> const& spec)
 {
     float w = 0.f;
     float h = 0.f;
-    if constexpr (!detail::is_empty_layout_piece_v<Width>)
+    if constexpr (
+        detail::is_width_spec_v<Width> || detail::is_length_spec_v<Width>)
+    {
         w = spec.width.value;
-    if constexpr (!detail::is_empty_layout_piece_v<Height>)
+    }
+    if constexpr (
+        detail::is_height_spec_v<Height> || detail::is_breadth_spec_v<Height>)
+    {
         h = spec.height.value;
+    }
     return alia_vec2f_make(w, h);
 }
 
@@ -1032,6 +1398,19 @@ inline layout_flag_set
 without_size(height_spec)
 {
     return NO_FLAGS;
+}
+
+// Relative size pieces still need AXIS_RELATIVE_SIZE on the leaf.
+inline layout_flag_set
+without_size(length_spec)
+{
+    return AXIS_RELATIVE_SIZE;
+}
+
+inline layout_flag_set
+without_size(breadth_spec)
+{
+    return AXIS_RELATIVE_SIZE;
 }
 
 template<class Flags, class Pad, class Width, class Height, class Growth>
@@ -1101,6 +1480,24 @@ apply_layout(context& ctx, height_spec const& h, Fn&& fn)
     alia_layout_min_size_end(&ctx);
 }
 
+// Axis-relative sizes are recorded on the leaf; they are not absolute
+// wrappers.
+template<class Fn>
+void
+apply_layout(context& ctx, length_spec const&, Fn&& fn)
+{
+    (void) ctx;
+    std::forward<Fn>(fn)(AXIS_RELATIVE_SIZE);
+}
+
+template<class Fn>
+void
+apply_layout(context& ctx, breadth_spec const&, Fn&& fn)
+{
+    (void) ctx;
+    std::forward<Fn>(fn)(AXIS_RELATIVE_SIZE);
+}
+
 template<class Fn>
 void
 apply_layout(context& ctx, growth_spec const& g, Fn&& fn)
@@ -1126,10 +1523,15 @@ apply_layout(
     layout_flag_set flags = NO_FLAGS;
     if constexpr (!detail::is_empty_layout_piece_v<Flags>)
         flags = spec.flags;
+    if constexpr (
+        detail::is_length_spec_v<Width> || detail::is_breadth_spec_v<Height>)
+    {
+        flags = flags | AXIS_RELATIVE_SIZE;
+    }
 
-    constexpr bool has_width = !detail::is_empty_layout_piece_v<Width>;
-    constexpr bool has_height = !detail::is_empty_layout_piece_v<Height>;
-    constexpr bool has_min_size = has_width || has_height;
+    constexpr bool has_absolute_width = detail::is_width_spec_v<Width>;
+    constexpr bool has_absolute_height = detail::is_height_spec_v<Height>;
+    constexpr bool has_min_size = has_absolute_width || has_absolute_height;
 
     if constexpr (!detail::is_empty_layout_piece_v<Pad>)
         alia_layout_edge_offsets_begin(&ctx, spec.pad.offsets, 0);
@@ -1137,8 +1539,8 @@ apply_layout(
         alia_layout_growth_override_begin(&ctx, spec.growth.value);
     if constexpr (has_min_size)
     {
-        float const w = has_width ? spec.width.value : 0.f;
-        float const h = has_height ? spec.height.value : 0.f;
+        float const w = has_absolute_width ? spec.width.value : 0.f;
+        float const h = has_absolute_height ? spec.height.value : 0.f;
         alia_layout_min_size_begin(&ctx, detail::min_size_vec(w, h));
     }
 
@@ -1160,7 +1562,10 @@ apply_layout(context& ctx, layout_options const& layout, Fn&& fn)
         alia_layout_edge_offsets_begin(&ctx, layout.pad_offsets, 0);
     if (layout.has_growth())
         alia_layout_growth_override_begin(&ctx, layout.growth_value);
-    if (layout.has_width() || layout.has_height())
+    bool const absolute_size
+        = (layout.has_width() || layout.has_height())
+       && (raw_code(layout.flags) & raw_code(AXIS_RELATIVE_SIZE)) == 0;
+    if (absolute_size)
     {
         alia_layout_min_size_begin(
             &ctx,
@@ -1171,7 +1576,7 @@ apply_layout(context& ctx, layout_options const& layout, Fn&& fn)
 
     std::forward<Fn>(fn)(layout.flags);
 
-    if (layout.has_width() || layout.has_height())
+    if (absolute_size)
         alia_layout_min_size_end(&ctx);
     if (layout.has_growth())
         alia_layout_growth_override_end(&ctx);

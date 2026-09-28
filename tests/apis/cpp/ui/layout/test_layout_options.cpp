@@ -81,7 +81,8 @@ TEST_CASE("layout options combine width, height, and growth with |")
 TEST_CASE("add_default_flush and SPACED")
 {
     CHECK(raw_code(add_default_flush(GROW)) == raw_code(GROW | FLUSH));
-    CHECK(raw_code(add_default_flush(GROW | SPACED)) == raw_code(GROW | SPACED));
+    CHECK(
+        raw_code(add_default_flush(GROW | SPACED)) == raw_code(GROW | SPACED));
     CHECK(raw_code(add_default_flush(FLUSH)) == raw_code(FLUSH));
     CHECK(raw_code(add_default_flush(NO_FLAGS)) == raw_code(FLUSH));
 
@@ -123,11 +124,47 @@ TEST_CASE("layout_content_size and without_size preserve piece types")
     CHECK(raw_code(stripped_width) == raw_code(layout_flag_set{NO_FLAGS}));
 
     static_assert(std::is_same_v<
-                   decltype(without_size(GROW | pad(4.f))),
-                   layout_spec<layout_flag_set, pad_spec>>);
+                  decltype(without_size(GROW | pad(4.f))),
+                  layout_spec<layout_flag_set, pad_spec>>);
     auto const kept = without_size(GROW | pad(4.f));
     CHECK(kept.pad.offsets.left == 4.f);
     CHECK(raw_code(kept.flags) == raw_code(GROW));
+}
+
+TEST_CASE("length and breadth are exclusive of width and height")
+{
+    auto const relative = length(20.f) | breadth(8.f) | GROW;
+    CHECK(layout_content_size(relative).x == 20.f);
+    CHECK(layout_content_size(relative).y == 8.f);
+    CHECK(
+        (raw_code(relative.flags) & raw_code(AXIS_RELATIVE_SIZE))
+        == raw_code(AXIS_RELATIVE_SIZE));
+    CHECK((raw_code(relative.flags) & raw_code(GROW)) == raw_code(GROW));
+
+    layout_options const erased = as_layout_options(relative);
+    CHECK(erased.has_width());
+    CHECK(erased.width_value == 20.f);
+    CHECK(erased.has_height());
+    CHECK(erased.height_value == 8.f);
+    CHECK(
+        (raw_code(erased.flags) & raw_code(AXIS_RELATIVE_SIZE))
+        == raw_code(AXIS_RELATIVE_SIZE));
+
+    auto const unsized = without_size(relative);
+    CHECK(layout_content_size(unsized).x == 0.f);
+    CHECK(layout_content_size(unsized).y == 0.f);
+    CHECK(
+        (raw_code(unsized.flags) & raw_code(AXIS_RELATIVE_SIZE))
+        == raw_code(AXIS_RELATIVE_SIZE));
+
+    static_assert(
+        std::is_same_v<decltype(without_size(length(5.f))), layout_flag_set>);
+    CHECK(raw_code(without_size(length(5.f))) == raw_code(AXIS_RELATIVE_SIZE));
+    CHECK(
+        raw_code(without_size(breadth(5.f))) == raw_code(AXIS_RELATIVE_SIZE));
+
+    CHECK(layout_content_size(length(12.f)).x == 12.f);
+    CHECK(layout_content_size(breadth(9.f)).y == 9.f);
 }
 
 TEST_CASE("add_default alignment fills only unset groups")
