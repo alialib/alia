@@ -281,7 +281,7 @@ TEST_CASE("layout flow incomplete line justify")
     alia_box leaf2;
     alia_box leaf3;
     run_layout_case(alia_vec2f_make(45.f, 40.f), [&](alia_context& ctx) {
-        flow(ctx, FILL | JUSTIFY_SPACE_BETWEEN, [&]() {
+        flow(ctx, JUSTIFY_SPACE_BETWEEN, FILL, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf3);
@@ -419,7 +419,7 @@ TEST_CASE("layout flow edge offsets provide box single line")
                 alia_layout_edge_offsets_begin(
                     &ctx,
                     alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f),
-                    raw_code(PROVIDE_BOX));
+                    ALIA_PROVIDE_BOX);
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
                 alia_layout_edge_offsets_end(&ctx);
             }
@@ -449,7 +449,7 @@ TEST_CASE("layout flow edge offsets provide box wrapped lines")
                 alia_layout_edge_offsets_begin(
                     &ctx,
                     alia_edge_offsets_make_trbl(0.f, 4.f, 0.f, 4.f),
-                    raw_code(PROVIDE_BOX));
+                    ALIA_PROVIDE_BOX);
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
                 alia_layout_edge_offsets_end(&ctx);

@@ -10,7 +10,7 @@ concrete_panel(
     Content&& content)
 {
     alia_box panel_box;
-    column(ctx, flags, &panel_box, [&]() {
+    column(ctx, provide_box(panel_box), flags, [&]() {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             alia_draw_rounded_box(

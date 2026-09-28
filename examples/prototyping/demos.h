@@ -175,7 +175,7 @@ mixed_flow_demo(alia_context& ctx)
 void
 block_flow_demo(alia_context& ctx)
 {
-    alia::layout_flag_set const justification_flags[6] = {
+    alia::container_layout_flag_set const justification_flags[6] = {
         JUSTIFY_START,
         JUSTIFY_END,
         JUSTIFY_CENTER,

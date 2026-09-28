@@ -15,7 +15,9 @@ enum
     ALIA_BASELINE_GROUP_ALIGNMENT_BIT_OFFSET = 12
 };
 
-#define ALIA_LAYOUT_FLAGS(X)                                                  \
+// layout placement flags - These control how a node sits in its parent (and
+// related leaf concerns).
+#define ALIA_LAYOUT_PLACEMENT_FLAGS(X)                                        \
     /* alignment flags - Omitting alignment flags invokes "default" */        \
     /* alignment, which is FILL for containers and LEFT/TOP for leaves. */    \
     /* X alignment flags */                                                   \
@@ -43,6 +45,16 @@ enum
     /* combined alignment flags */                                            \
     X(0b00000000001001001, CENTER)                                            \
     X(0b00000000100100100, FILL)                                              \
+    /* Setting the GROW flag sets the node's growth factor to 1.0. */         \
+    X(0b00100000000000000, GROW)                                              \
+    /* FLUSH disables spacing around a node that has spacing by default. */   \
+    /* SPACED enables spacing around a node that's flush by default. */       \
+    X(0b101000000000000000, SPACING_MASK)                                     \
+    X(0b01000000000000000, FLUSH)                                             \
+    X(0b100000000000000000, SPACED)
+
+// Container-policy flags - How a container arranges its children.
+#define ALIA_LAYOUT_CONTAINER_FLAGS(X)                                        \
     /* justification flags - Apply to flow and block_flow line layouts. */    \
     X(0b00000111000000000, JUSTIFY_MASK)                                      \
     X(0b00000000000000000, JUSTIFY_START)                                     \
@@ -59,12 +71,11 @@ enum
     X(0b00011000000000000, BASELINE_GROUP_ALIGNMENT_MASK)                     \
     X(0b00001000000000000, BASELINE_GROUP_ALIGN_TOP)                          \
     X(0b00010000000000000, BASELINE_GROUP_ALIGN_BOTTOM)                       \
-    X(0b00011000000000000, BASELINE_GROUP_ALIGN_CENTER)                       \
-    /* Setting the GROW flag sets the node's growth factor to 1.0. */         \
-    X(0b00100000000000000, GROW)                                              \
-    /* For leaf nodes and leaf-like containers (e.g. buttons), the FLUSH flag \
-     * disables spacing around the node. */                                   \
-    X(0b01000000000000000, FLUSH)                                             \
+    X(0b00011000000000000, BASELINE_GROUP_ALIGN_CENTER)
+
+#define ALIA_LAYOUT_FLAGS(X)                                                  \
+    ALIA_LAYOUT_PLACEMENT_FLAGS(X)                                            \
+    ALIA_LAYOUT_CONTAINER_FLAGS(X)                                            \
     /* For containers, the PROVIDE_BOX flag tells the container to provide */ \
     /* its box back to the component code for consumption. */                 \
     X(0b10000000000000000, PROVIDE_BOX)

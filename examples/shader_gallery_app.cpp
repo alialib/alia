@@ -240,7 +240,7 @@ do_theme_controls(context& ctx)
                             &demo_get_fonts().body_14,
                             demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
                             CENTER_Y);
-                        spacer(ctx, {0, 0}, GROW);
+                        spacer(ctx, GROW);
                         with_spacing(ctx, 0, [&] {
                             auto seed = lambda_binding(
                                 [] { return the_seed_index; },
@@ -255,7 +255,7 @@ do_theme_controls(context& ctx)
                                     ctx,
                                     make_radio_signal(seed, value(i)),
                                     labels[i]);
-                                spacer(ctx, {15, 0}, NO_FLAGS);
+                                spacer(ctx, width(15.f));
                             }
                         });
                     });
@@ -271,7 +271,7 @@ do_notargs_controls(context& ctx)
     control_switch_b(ctx, "Animate", &the_controls.animate);
     control_slider_d(ctx, "Speed", &the_controls.speed, -2.0, 7.0, 0.1);
 
-    spacer(ctx, alia_vec2f_make(1.f, 28.f));
+    spacer(ctx, height(28.f));
 
     do_heading(ctx, "RAY MARCHING");
     control_switch_b(ctx, "Normalize Rays", &the_controls.normalize_rays);
@@ -280,7 +280,7 @@ do_notargs_controls(context& ctx)
     control_slider_d(
         ctx, "Iterations", &the_controls.iterations, 0.0, 120.0, 1.0);
 
-    spacer(ctx, alia_vec2f_make(1.f, 28.f));
+    spacer(ctx, height(28.f));
 
     do_heading(ctx, "SHAPE");
     control_slider_d(ctx, "Curl", &the_controls.curl, 0.0, 1.0, 0.001);
@@ -291,7 +291,7 @@ do_notargs_controls(context& ctx)
     control_checkbox_b(ctx, "Include SinY", &the_controls.include_siny);
     control_checkbox_b(ctx, "Include SinZ", &the_controls.include_sinz);
 
-    spacer(ctx, alia_vec2f_make(1.f, 28.f));
+    spacer(ctx, height(28.f));
 
     do_heading(ctx, "COLORING");
     control_slider_d(

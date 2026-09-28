@@ -22,15 +22,16 @@ labeled_bool_control(
 {
     alia_box row_box;
     alia_element_id id{};
-    apply_layout(ctx, layout, [&](layout_flag_set flags) {
-        row(ctx, add_default_x_alignment(flags, ALIGN_LEFT), &row_box, [&]() {
+    row(ctx,
+        provide_box(row_box),
+        add_default_x_alignment(layout, ALIGN_LEFT),
+        [&]() {
             id = std::forward<Control>(control)();
             alia_text(
                 &ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
             alia_element_box_region(
                 &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
         });
-    });
     return id;
 }
 

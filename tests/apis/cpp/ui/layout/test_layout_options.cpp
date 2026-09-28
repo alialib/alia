@@ -2,7 +2,28 @@
 
 #include <doctest/doctest.h>
 
+#include <type_traits>
+
 using namespace alia;
+
+TEST_CASE("layout options construct from layout_like packs")
+{
+    layout_options from_pad = pad(8.f);
+    CHECK(from_pad.has_pad());
+    CHECK(from_pad.pad_offsets.left == 8.f);
+
+    layout_options from_spec = GROW | pad(4.f) | width(10.f);
+    CHECK(raw_code(from_spec.flags) == raw_code(GROW));
+    CHECK(from_spec.has_pad());
+    CHECK(from_spec.pad_offsets.left == 4.f);
+    CHECK(from_spec.has_width());
+    CHECK(from_spec.width_value == 10.f);
+
+    layout_options from_spaced = height(12.f) | SPACED;
+    CHECK(from_spaced.has_height());
+    CHECK(from_spaced.height_value == 12.f);
+    CHECK(raw_code(from_spaced.flags) == raw_code(SPACED));
+}
 
 TEST_CASE("layout options combine flags and pad with |")
 {
@@ -55,6 +76,58 @@ TEST_CASE("layout options combine width, height, and growth with |")
     CHECK(padded_size.pad.offsets.left == 4.f);
     CHECK(padded_size.width.value == 8.f);
     CHECK(padded_size.height.value == 8.f);
+}
+
+TEST_CASE("add_default_flush and SPACED")
+{
+    CHECK(raw_code(add_default_flush(GROW)) == raw_code(GROW | FLUSH));
+    CHECK(raw_code(add_default_flush(GROW | SPACED)) == raw_code(GROW | SPACED));
+    CHECK(raw_code(add_default_flush(FLUSH)) == raw_code(FLUSH));
+    CHECK(raw_code(add_default_flush(NO_FLAGS)) == raw_code(FLUSH));
+
+    auto const sized = width(10.f) | height(20.f) | SPACED;
+    CHECK(layout_content_size(sized).x == 10.f);
+    CHECK(layout_content_size(sized).y == 20.f);
+
+    auto const unsized = without_size(sized);
+    CHECK(layout_content_size(unsized).x == 0.f);
+    CHECK(layout_content_size(unsized).y == 0.f);
+    CHECK(raw_code(unsized.flags) == raw_code(SPACED));
+}
+
+TEST_CASE("layout_content_size and without_size preserve piece types")
+{
+    CHECK(layout_content_size(pad(8.f)).x == 0.f);
+    CHECK(layout_content_size(pad(8.f)).y == 0.f);
+    CHECK(layout_content_size(width(12.f)).x == 12.f);
+    CHECK(layout_content_size(width(12.f)).y == 0.f);
+    CHECK(layout_content_size(height(9.f)).x == 0.f);
+    CHECK(layout_content_size(height(9.f)).y == 9.f);
+    CHECK(layout_content_size(growth(2.f)).x == 0.f);
+    CHECK(layout_content_size(GROW).x == 0.f);
+
+    static_assert(std::is_same_v<decltype(without_size(pad(8.f))), pad_spec>);
+    static_assert(
+        std::is_same_v<decltype(without_size(growth(1.f))), growth_spec>);
+    static_assert(
+        std::is_same_v<decltype(without_size(GROW)), layout_flag_set>);
+    static_assert(
+        std::is_same_v<decltype(without_size(width(1.f))), layout_flag_set>);
+    static_assert(
+        std::is_same_v<decltype(without_size(height(1.f))), layout_flag_set>);
+
+    auto const padded = without_size(pad(8.f));
+    CHECK(padded.offsets.left == 8.f);
+
+    auto const stripped_width = without_size(width(10.f));
+    CHECK(raw_code(stripped_width) == raw_code(layout_flag_set{NO_FLAGS}));
+
+    static_assert(std::is_same_v<
+                   decltype(without_size(GROW | pad(4.f))),
+                   layout_spec<layout_flag_set, pad_spec>>);
+    auto const kept = without_size(GROW | pad(4.f));
+    CHECK(kept.pad.offsets.left == 4.f);
+    CHECK(raw_code(kept.flags) == raw_code(GROW));
 }
 
 TEST_CASE("add_default alignment fills only unset groups")

@@ -104,7 +104,7 @@ TEST_CASE("layout spacer applies theme scale")
     run_layout_case_with_scale(
         2.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
             column(ctx, [&]() {
-                spacer(ctx, alia_vec2f_make(10.f, 20.f));
+                spacer(ctx, width(10.f) | height(20.f));
                 test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf);
             });
         });
@@ -118,10 +118,51 @@ TEST_CASE("layout spacer is flush against style spacing")
     run_layout_case_with_spacing(
         8.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
             column(ctx, [&]() {
-                spacer(ctx, alia_vec2f_make(10.f, 20.f));
+                spacer(ctx, width(10.f) | height(20.f));
                 test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &leaf);
             });
         });
     CHECK(check_box_eq(
         leaf, alia_vec2f_make(0.f, 20.f), alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout spacer width and height layout pieces")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            spacer(ctx, height(30.f));
+            test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &leaf);
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 30.f), alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout spacer SPACED opts out of default flush")
+{
+    alia_box leaf;
+    run_layout_case_with_spacing(
+        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+            column(ctx, [&]() {
+                spacer(ctx, height(20.f) | SPACED);
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &leaf);
+            });
+        });
+    // spacer content 20 + theme spacing 8 on each side
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 36.f), alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout spacer grow with zero size")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+        row(ctx, [&]() {
+            spacer(ctx, GROW);
+            test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FLUSH, &leaf);
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(80.f, 0.f), alia_vec2f_make(20.f, 10.f)));
 }

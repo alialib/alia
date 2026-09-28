@@ -370,9 +370,9 @@ do_button_demo(context& ctx)
 }
 
 void
-do_content(context& ctx)
+do_content(context& ctx, layout_options layout = {})
 {
-    column(ctx, [&]() {
+    column(ctx, layout, [&]() {
         do_toggle_switch_demo(ctx);
         do_heading(ctx, "");
         do_button_demo(ctx);
@@ -392,7 +392,7 @@ do_content(context& ctx)
             static float x_gap = 5.f, y_gap = 5.f;
             slider(ctx, ref(x_gap), 0.0, 200.0, 0.1);
             slider(ctx, ref(y_gap), 0.0, 200.0, 0.1);
-            column(ctx, alia::gap(y_gap), [&]() {
+            column(ctx, alia::gap(y_gap), pad(8.f), [&]() {
                 block_flow(ctx, alia::gap(x_gap), [&]() {
                     for (int i = 0; i < 60; ++i)
                     {
@@ -465,9 +465,8 @@ do_content(context& ctx)
             slider(ctx, ref(minimum_line_height), 0.0, 200.0, 0.1);
             flow(
                 ctx,
-                alia::gap(gap),
-                alia::line_gap(line_gap),
-                alia::minimum_line_height(minimum_line_height),
+                alia::gap(gap) | alia::line_gap(line_gap)
+                    | alia::minimum_line_height(minimum_line_height),
                 [&]() {
                     demo_text(
                         ctx,
@@ -481,8 +480,8 @@ do_content(context& ctx)
                         demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
                     flow(
                         ctx,
-                        alia::line_gap(40.f),
-                        alia::minimum_line_height(40.f),
+                        alia::line_gap(40.f)
+                            | alia::minimum_line_height(40.f),
                         [&]() {
                             demo_text(
                                 ctx,
@@ -533,14 +532,9 @@ the_demo(context& ctx)
                 ctx.palette->foundation.background.stronger_2,
                 FILL,
                 [&]() {
-                    edge_offsets(
-                        ctx,
-                        {.left = 40, .right = 40, .top = 40, .bottom = 40},
-                        [&]() {
-                            with_spacing(ctx, 6, [&] {
-                                column(ctx, [&]() { do_controls(ctx); });
-                            });
-                        });
+                    with_spacing(ctx, 6, [&] {
+                        column(ctx, pad(40), [&]() { do_controls(ctx); });
+                    });
                 });
             with_spacing(ctx, demo_spacing, [&] {
                 concrete_panel(
@@ -551,13 +545,7 @@ the_demo(context& ctx)
                     [&]() {
                         column(ctx, GROW, [&]() {
                             scroll_view(ctx, GROW, [&]() {
-                                edge_offsets(
-                                    ctx,
-                                    {.left = 40,
-                                     .right = 40,
-                                     .top = 40,
-                                     .bottom = 40},
-                                    [&]() { do_content(ctx); });
+                                do_content(ctx, pad(40));
                             });
                         });
                     });

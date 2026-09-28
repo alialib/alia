@@ -135,6 +135,20 @@ struct layout_options
     {
     }
 
+    // Allow construction from any layout_like value (e.g. `pad(8)`, `GROW |
+    // pad(8)`) so type-erased `layout_options` parameters accept the same
+    // packs as templated `layout_like` ones.
+    template<class T>
+    layout_options(T const& t)
+        requires(
+            !std::same_as<std::decay_t<T>, layout_options> && requires(
+                T const& u) {
+                { as_layout_options(u) } -> std::same_as<layout_options>;
+            })
+        : layout_options(as_layout_options(t))
+    {
+    }
+
     bool
     has_pad() const
     {
@@ -157,6 +171,12 @@ struct layout_options
     has_growth() const
     {
         return (present & growth_bit) != 0;
+    }
+
+    bool
+    has_size() const
+    {
+        return has_width() || has_height();
     }
 };
 
@@ -903,6 +923,136 @@ add_default_alignment(
 {
     return add_default_y_alignment(
         add_default_x_alignment(std::move(spec), x_alignment), y_alignment);
+}
+
+// Content size from width/height slots (missing axes are 0).
+inline alia_vec2f
+layout_content_size(layout_options const& layout)
+{
+    return alia_vec2f_make(
+        layout.has_width() ? layout.width_value : 0.f,
+        layout.has_height() ? layout.height_value : 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(layout_flag_set)
+{
+    return alia_vec2f_make(0.f, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(null_flag_set)
+{
+    return alia_vec2f_make(0.f, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(pad_spec const&)
+{
+    return alia_vec2f_make(0.f, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(growth_spec const&)
+{
+    return alia_vec2f_make(0.f, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(width_spec const& w)
+{
+    return alia_vec2f_make(w.value, 0.f);
+}
+
+inline alia_vec2f
+layout_content_size(height_spec const& h)
+{
+    return alia_vec2f_make(0.f, h.value);
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+alia_vec2f
+layout_content_size(layout_spec<Flags, Pad, Width, Height, Growth> const& spec)
+{
+    float w = 0.f;
+    float h = 0.f;
+    if constexpr (!detail::is_empty_layout_piece_v<Width>)
+        w = spec.width.value;
+    if constexpr (!detail::is_empty_layout_piece_v<Height>)
+        h = spec.height.value;
+    return alia_vec2f_make(w, h);
+}
+
+// Clear width/height so `apply_layout` will not open a min-size wrapper.
+// Size-less pieces are returned unchanged so typed `apply_layout` overloads
+// stay selected.
+inline layout_options
+without_size(layout_options layout)
+{
+    layout.present = static_cast<std::uint8_t>(
+        layout.present
+        & ~(layout_options::width_bit | layout_options::height_bit));
+    layout.width_value = 0.f;
+    layout.height_value = 0.f;
+    return layout;
+}
+
+inline layout_flag_set
+without_size(layout_flag_set flags)
+{
+    return flags;
+}
+
+inline null_flag_set
+without_size(null_flag_set flags)
+{
+    return flags;
+}
+
+inline pad_spec
+without_size(pad_spec p)
+{
+    return p;
+}
+
+inline growth_spec
+without_size(growth_spec g)
+{
+    return g;
+}
+
+// A lone size piece has nothing left once size is cleared.
+inline layout_flag_set
+without_size(width_spec)
+{
+    return NO_FLAGS;
+}
+
+inline layout_flag_set
+without_size(height_spec)
+{
+    return NO_FLAGS;
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+without_size(layout_spec<Flags, Pad, Width, Height, Growth> spec)
+{
+    return layout_spec<
+        Flags,
+        Pad,
+        empty_layout_piece,
+        empty_layout_piece,
+        Growth>{spec.flags, spec.pad, {}, {}, spec.growth};
+}
+
+// Adjust `flags` to work for a leaf that is flush by default.
+inline layout_flag_set
+add_default_flush(layout_flag_set flags)
+{
+    if ((flags & SPACING_MASK) == layout_flag_set(NO_FLAGS))
+        return flags | FLUSH;
+    return flags;
 }
 
 // Apply `layout` around `fn(flags)`.

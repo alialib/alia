@@ -3,358 +3,343 @@
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/context.h>
-#include <alia/ui/layout/flags.hpp>
+#include <alia/ui/layout/container_options.hpp>
+#include <alia/ui/layout/options.hpp>
 
-#include <type_traits>
 #include <utility>
 
 namespace alia {
 
-// COMPOSITION CONTAINERS
-
 namespace impl {
 
-struct layout_gap
-{
-    float value;
-};
-
-struct layout_line_gap
-{
-    float value;
-};
-
-struct layout_minimum_line_height
-{
-    float value;
-};
-
-struct layout_config
-{
-    layout_flag_set flags = NO_FLAGS;
-    alia_box* box = nullptr;
-    layout_gap gap = {0.f};
-    layout_line_gap line_gap = {0.f};
-    layout_minimum_line_height minimum_line_height = {0.f};
-
-    int
-    build_code() const
-    {
-        int code = raw_code(flags);
-        if (box)
-            code |= ALIA_PROVIDE_BOX;
-        return code;
-    }
-};
-
-template<typename T>
-constexpr bool is_valid_layout_arg_v
-    = std::is_same_v<std::decay_t<T>, layout_flag_set>
-   || std::is_same_v<std::decay_t<T>, alia_box*>
-   || std::is_same_v<std::decay_t<T>, layout_gap>;
-
-template<typename T>
-constexpr bool is_valid_flow_layout_arg_v
-    = is_valid_layout_arg_v<T>
-   || std::is_same_v<std::decay_t<T>, layout_line_gap>
-   || std::is_same_v<std::decay_t<T>, layout_minimum_line_height>;
-
-// Counts how many times 'T' appears in the 'Args' pack
-template<typename T, typename... Args>
-constexpr std::size_t count_type_v
-    = (0 + ... + std::is_same_v<T, std::decay_t<Args>>);
-
-template<typename T>
-constexpr void
-apply_layout_arg(layout_config& config, T&& arg)
-{
-    using ArgType = std::decay_t<T>;
-    if constexpr (std::is_same_v<ArgType, layout_flag_set>)
-    {
-        config.flags = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, alia_box*>)
-    {
-        config.box = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, layout_gap>)
-    {
-        config.gap = arg;
-    }
-}
-
-template<typename T>
-constexpr void
-apply_flow_layout_arg(layout_config& config, T&& arg)
-{
-    using ArgType = std::decay_t<T>;
-    if constexpr (std::is_same_v<ArgType, layout_flag_set>)
-    {
-        config.flags = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, alia_box*>)
-    {
-        config.box = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, layout_gap>)
-    {
-        config.gap = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, layout_line_gap>)
-    {
-        config.line_gap = arg;
-    }
-    else if constexpr (std::is_same_v<ArgType, layout_minimum_line_height>)
-    {
-        config.minimum_line_height = arg;
-    }
-}
-
-template<typename... Args>
-concept layout_args_must_have_maximum_one_flag_set
-    = (count_type_v<layout_flag_set, Args...> <= 1);
-
-template<typename... Args>
-concept layout_args_must_have_maximum_one_box
-    = (count_type_v<alia_box*, Args...> <= 1);
-
-template<typename... Args>
-concept layout_args_contain_only_valid_types_and_one_content_block
-    = ((0 + ... + is_valid_layout_arg_v<Args>) == sizeof...(Args) - 1);
-
-template<typename... Args>
-concept layout_args_must_have_maximum_one_gap
-    = (count_type_v<layout_gap, Args...> <= 1);
-
-template<typename... Args>
-concept layout_args_must_have_maximum_one_line_gap
-    = (count_type_v<layout_line_gap, Args...> <= 1);
-
-template<typename... Args>
-concept layout_args_must_have_maximum_one_minimum_line_height
-    = (count_type_v<layout_minimum_line_height, Args...> <= 1);
-
-template<typename... Args>
-concept ValidLayoutPack
-    = sizeof...(Args) > 0
-   && layout_args_contain_only_valid_types_and_one_content_block<Args...>&&
-          layout_args_must_have_maximum_one_flag_set<Args...>&&
-              layout_args_must_have_maximum_one_box<Args...>&&
-                  layout_args_must_have_maximum_one_gap<Args...>;
-
-template<class Begin, class End, class... Args>
-    requires ValidLayoutPack<Args...>
+template<class Content>
 void
-gapped_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
+consume_provided_box(
+    context& ctx, container_options const& options, Content&& content)
 {
-    auto&& content = (std::forward<Args>(args), ...);
+    if (options.has_provide_box() && !is_refresh_event(ctx))
+        *options.box = alia_layout_consume_box(&ctx);
+    std::forward<Content>(content)();
+}
 
-    layout_config config;
-    (apply_layout_arg(config, std::forward<Args>(args)), ...);
-
-    std::forward<Begin>(begin)(&ctx, config.build_code(), config.gap.value);
-
-    if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
-    {
-        if (!is_refresh_event(ctx))
-            *config.box = alia_layout_consume_box(&ctx);
-    }
-
-    content();
-
+template<class Begin, class End, class Content>
+void
+gapped_layout_container(
+    context& ctx,
+    Begin&& begin,
+    End&& end,
+    container_options const& options,
+    layout_flag_set flags,
+    Content&& content)
+{
+    std::forward<Begin>(begin)(
+        &ctx, container_begin_flags(flags, options), options.gap_value);
+    consume_provided_box(ctx, options, std::forward<Content>(content));
     std::forward<End>(end)(&ctx);
 }
 
-template<typename... Args>
-concept ValidFlowLayoutPack
-    = sizeof...(Args) > 0
-   && ((0 + ... + is_valid_flow_layout_arg_v<Args>) == sizeof...(Args) - 1)
-   && layout_args_must_have_maximum_one_flag_set<Args...>&&
-          layout_args_must_have_maximum_one_box<Args...>&&
-              layout_args_must_have_maximum_one_gap<Args...>&&
-                  layout_args_must_have_maximum_one_line_gap<Args...>&&
-                      layout_args_must_have_maximum_one_minimum_line_height<
-                          Args...>;
-
-template<class Begin, class End, class... Args>
-    requires ValidFlowLayoutPack<Args...>
+template<class Begin, class End, class Content>
 void
-flow_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
+flow_layout_container(
+    context& ctx,
+    Begin&& begin,
+    End&& end,
+    container_options const& options,
+    layout_flag_set flags,
+    Content&& content)
 {
-    auto&& content = (std::forward<Args>(args), ...);
-
-    layout_config config;
-    (apply_flow_layout_arg(config, std::forward<Args>(args)), ...);
-
     std::forward<Begin>(begin)(
         &ctx,
-        config.build_code(),
-        config.gap.value,
-        config.line_gap.value,
-        config.minimum_line_height.value);
-
-    if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
-    {
-        if (!is_refresh_event(ctx))
-            *config.box = alia_layout_consume_box(&ctx);
-    }
-
-    content();
-
+        container_begin_flags(flags, options),
+        options.gap_value,
+        options.line_gap_value,
+        options.minimum_line_height_value);
+    consume_provided_box(ctx, options, std::forward<Content>(content));
     std::forward<End>(end)(&ctx);
 }
 
-template<typename... Args>
-concept ValidSimpleLayoutPack
-    = sizeof...(Args) > 0
-   && layout_args_contain_only_valid_types_and_one_content_block<Args...>&&
-          layout_args_must_have_maximum_one_flag_set<Args...>&&
-              layout_args_must_have_maximum_one_box<Args...>&&
-                  layout_args_must_have_maximum_one_gap<Args...>
-   && (count_type_v<layout_gap, Args...> == 0);
-
-template<class Begin, class End, class... Args>
-    requires ValidSimpleLayoutPack<Args...>
+template<class Begin, class End, class Content>
 void
-simple_layout_container(context& ctx, Begin&& begin, End&& end, Args&&... args)
+simple_layout_container(
+    context& ctx,
+    Begin&& begin,
+    End&& end,
+    container_options const& options,
+    layout_flag_set flags,
+    Content&& content)
 {
-    auto&& content = (std::forward<Args>(args), ...);
-
-    layout_config config;
-    (apply_layout_arg(config, std::forward<Args>(args)), ...);
-
-    std::forward<Begin>(begin)(&ctx, config.build_code());
-
-    if constexpr ((std::is_same_v<alia_box*, std::decay_t<Args>> || ...))
-    {
-        if (!is_refresh_event(ctx))
-            *config.box = alia_layout_consume_box(&ctx);
-    }
-
-    content();
-
+    std::forward<Begin>(begin)(&ctx, container_begin_flags(flags, options));
+    consume_provided_box(ctx, options, std::forward<Content>(content));
     std::forward<End>(end)(&ctx);
 }
 
 } // namespace impl
 
-inline impl::layout_gap
-gap(float gap)
-{
-    return impl::layout_gap{gap};
-}
+// COMPOSITION CONTAINERS
 
-inline impl::layout_line_gap
-line_gap(float line_gap)
-{
-    return impl::layout_line_gap{line_gap};
-}
-
-inline impl::layout_minimum_line_height
-minimum_line_height(float minimum_line_height)
-{
-    return impl::layout_minimum_line_height{minimum_line_height};
-}
-
-template<class... ArgPack>
-    requires impl::ValidLayoutPack<ArgPack...>
+template<
+    container_like Container = container_options,
+    layout_like Layout = layout_options,
+    class Content>
 void
-row(context& ctx, ArgPack&&... args)
+row(context& ctx, Container container, Layout layout, Content&& content)
 {
-    impl::gapped_layout_container(
-        ctx,
-        alia_layout_row_begin,
-        alia_layout_row_end,
-        std::forward<ArgPack>(args)...);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        impl::gapped_layout_container(
+            ctx,
+            alia_layout_row_begin,
+            alia_layout_row_end,
+            as_container_options(container),
+            flags,
+            std::forward<Content>(content));
+    });
 }
 
-template<class... ArgPack>
-    requires impl::ValidLayoutPack<ArgPack...>
+template<layout_like Layout, class Content>
+    requires(!container_like<Layout>)
 void
-column(context& ctx, ArgPack&&... args)
+row(context& ctx, Layout layout, Content&& content)
 {
-    impl::gapped_layout_container(
-        ctx,
-        alia_layout_column_begin,
-        alia_layout_column_end,
-        std::forward<ArgPack>(args)...);
+    row(ctx, default_container, layout, std::forward<Content>(content));
 }
 
-template<class... ArgPack>
-    requires impl::ValidSimpleLayoutPack<ArgPack...>
+template<container_like Container, class Content>
+    requires(!layout_like<Container>)
 void
-zstack(context& ctx, ArgPack&&... args)
+row(context& ctx, Container container, Content&& content)
 {
-    impl::simple_layout_container(
-        ctx,
-        alia_layout_zstack_begin,
-        alia_layout_zstack_end,
-        std::forward<ArgPack>(args)...);
+    row(ctx, container, default_layout, std::forward<Content>(content));
 }
 
-template<class... ArgPack>
-    requires impl::ValidFlowLayoutPack<ArgPack...>
+template<class Content>
 void
-flow(context& ctx, ArgPack&&... args)
+row(context& ctx, Content&& content)
 {
-    impl::flow_layout_container(
-        ctx,
-        alia_layout_flow_begin,
-        alia_layout_flow_end,
-        std::forward<ArgPack>(args)...);
+    row(ctx,
+        default_container,
+        default_layout,
+        std::forward<Content>(content));
 }
 
-template<class... ArgPack>
-    requires impl::ValidFlowLayoutPack<ArgPack...>
+template<
+    container_like Container = container_options,
+    layout_like Layout = layout_options,
+    class Content>
 void
-block_flow(context& ctx, ArgPack&&... args)
+column(context& ctx, Container container, Layout layout, Content&& content)
 {
-    impl::flow_layout_container(
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        impl::gapped_layout_container(
+            ctx,
+            alia_layout_column_begin,
+            alia_layout_column_end,
+            as_container_options(container),
+            flags,
+            std::forward<Content>(content));
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!container_like<Layout>)
+void
+column(context& ctx, Layout layout, Content&& content)
+{
+    column(ctx, default_container, layout, std::forward<Content>(content));
+}
+
+template<container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+column(context& ctx, Container container, Content&& content)
+{
+    column(ctx, container, default_layout, std::forward<Content>(content));
+}
+
+template<class Content>
+void
+column(context& ctx, Content&& content)
+{
+    column(
         ctx,
-        alia_layout_block_flow_begin,
-        alia_layout_block_flow_end,
-        std::forward<ArgPack>(args)...);
+        default_container,
+        default_layout,
+        std::forward<Content>(content));
+}
+
+template<
+    container_like Container = container_options,
+    layout_like Layout = layout_options,
+    class Content>
+void
+zstack(context& ctx, Container container, Layout layout, Content&& content)
+{
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        impl::simple_layout_container(
+            ctx,
+            alia_layout_zstack_begin,
+            alia_layout_zstack_end,
+            as_container_options(container),
+            flags,
+            std::forward<Content>(content));
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!container_like<Layout>)
+void
+zstack(context& ctx, Layout layout, Content&& content)
+{
+    zstack(ctx, default_container, layout, std::forward<Content>(content));
+}
+
+template<container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+zstack(context& ctx, Container container, Content&& content)
+{
+    zstack(ctx, container, default_layout, std::forward<Content>(content));
+}
+
+template<class Content>
+void
+zstack(context& ctx, Content&& content)
+{
+    zstack(
+        ctx,
+        default_container,
+        default_layout,
+        std::forward<Content>(content));
+}
+
+template<
+    container_like Container = container_options,
+    layout_like Layout = layout_options,
+    class Content>
+void
+flow(context& ctx, Container container, Layout layout, Content&& content)
+{
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        impl::flow_layout_container(
+            ctx,
+            alia_layout_flow_begin,
+            alia_layout_flow_end,
+            as_container_options(container),
+            flags,
+            std::forward<Content>(content));
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!container_like<Layout>)
+void
+flow(context& ctx, Layout layout, Content&& content)
+{
+    flow(ctx, default_container, layout, std::forward<Content>(content));
+}
+
+template<container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+flow(context& ctx, Container container, Content&& content)
+{
+    flow(ctx, container, default_layout, std::forward<Content>(content));
+}
+
+template<class Content>
+void
+flow(context& ctx, Content&& content)
+{
+    flow(
+        ctx,
+        default_container,
+        default_layout,
+        std::forward<Content>(content));
+}
+
+template<
+    container_like Container = container_options,
+    layout_like Layout = layout_options,
+    class Content>
+void
+block_flow(context& ctx, Container container, Layout layout, Content&& content)
+{
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        impl::flow_layout_container(
+            ctx,
+            alia_layout_block_flow_begin,
+            alia_layout_block_flow_end,
+            as_container_options(container),
+            flags,
+            std::forward<Content>(content));
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!container_like<Layout>)
+void
+block_flow(context& ctx, Layout layout, Content&& content)
+{
+    block_flow(ctx, default_container, layout, std::forward<Content>(content));
+}
+
+template<container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+block_flow(context& ctx, Container container, Content&& content)
+{
+    block_flow(ctx, container, default_layout, std::forward<Content>(content));
+}
+
+template<class Content>
+void
+block_flow(context& ctx, Content&& content)
+{
+    block_flow(
+        ctx,
+        default_container,
+        default_layout,
+        std::forward<Content>(content));
+}
+
+template<layout_like Layout = layout_options, class Content>
+void
+grid(context& ctx, Layout layout, Content&& content)
+{
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        alia_layout_grid_handle handle
+            = alia_layout_grid_begin(&ctx, raw_code(flags));
+        std::forward<Content>(content)(handle);
+        alia_layout_grid_end(&ctx);
+    });
 }
 
 template<class Content>
 void
 grid(context& ctx, Content&& content)
 {
-    alia_layout_grid_handle handle = alia_layout_grid_begin(&ctx, 0);
-    std::forward<Content>(content)(handle);
-    alia_layout_grid_end(&ctx);
+    grid(ctx, default_layout, std::forward<Content>(content));
 }
 
-template<class Content>
+template<layout_like Layout = layout_options, class Content>
 void
-grid(context& ctx, layout_flag_set flags, Content&& content)
+grid_row(
+    context& ctx,
+    alia_layout_grid_handle grid,
+    Layout layout,
+    Content&& content)
 {
-    alia_layout_grid_handle handle
-        = alia_layout_grid_begin(&ctx, raw_code(flags));
-    std::forward<Content>(content)(handle);
-    alia_layout_grid_end(&ctx);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        alia_layout_grid_row_begin(&ctx, grid, raw_code(flags));
+        std::forward<Content>(content)();
+        alia_layout_grid_row_end(&ctx);
+    });
 }
 
 template<class Content>
 void
 grid_row(context& ctx, alia_layout_grid_handle grid, Content&& content)
 {
-    alia_layout_grid_row_begin(&ctx, grid, 0);
-    std::forward<Content>(content)();
-    alia_layout_grid_row_end(&ctx);
-}
-
-template<class Content>
-void
-grid_row(
-    context& ctx,
-    alia_layout_grid_handle grid,
-    layout_flag_set flags,
-    Content&& content)
-{
-    alia_layout_grid_row_begin(&ctx, grid, raw_code(flags));
-    std::forward<Content>(content)();
-    alia_layout_grid_row_end(&ctx);
+    grid_row(ctx, grid, default_layout, std::forward<Content>(content));
 }
 
 // WRAPPERS
@@ -417,21 +402,32 @@ flow_spring(context& ctx, float min_width = 0.f)
         (void) alia_layout_consume_box(&ctx);
 }
 
-// Emit an empty leaf that reserves `size` (logical px, theme-scaled).
-// FLUSH is always applied so style spacing does not inflate the reserved size.
-inline void
-spacer(context& ctx, alia_vec2f size, layout_flag_set flags = NO_FLAGS)
+// Emit an empty leaf that reserves space.
+// While the sizer always takes up a slot in its container, its size is 0x0 by
+// default. It can be sized using `width` and `height` like all other layout
+// nodes. By default, it is FLUSH.
+template<layout_like Layout = layout_options>
+void
+spacer(context& ctx, Layout layout = {})
 {
-    if (is_refresh_event(ctx))
-    {
-        alia_layout_leaf_emit(
-            &ctx,
-            alia_layout_content_metrics_make(alia_vec2f{
-                alia_px(&ctx, size.x), alia_px(&ctx, size.y)}),
-            raw_code(flags | FLUSH));
-    }
-    else
-        (void) alia_layout_consume_box(&ctx);
+    alia_vec2f const size = layout_content_size(layout);
+    apply_layout(
+        ctx, without_size(std::move(layout)), [&](layout_flag_set flags) {
+            flags = add_default_flush(flags);
+            if (is_refresh_event(ctx))
+            {
+                alia_layout_leaf_emit(
+                    &ctx,
+                    alia_layout_content_metrics_make(
+                        alia_vec2f{
+                            alia_px(&ctx, size.x), alia_px(&ctx, size.y)}),
+                    raw_code(flags));
+            }
+            else
+            {
+                (void) alia_layout_consume_box(&ctx);
+            }
+        });
 }
 
 } // namespace alia
