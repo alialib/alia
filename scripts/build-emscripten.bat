@@ -2,10 +2,10 @@
 setlocal EnableDelayedExpansion
 
 :: Usage: build-emscripten.bat [target]
-:: Default target: alia_app
+:: Default target: alia_widget_gallery
 
 set "TARGET=%~1"
-if "%TARGET%"=="" set "TARGET=alia_app"
+if "%TARGET%"=="" set "TARGET=alia_widget_gallery"
 
 set "EMSDK_ROOT=c:\dev\emsdk"
 if not "%EMSDK%"=="" set "EMSDK_ROOT=%EMSDK%"
@@ -25,7 +25,7 @@ set "BUILD_DIR=build\Emscripten"
 set "HOST_BUILDER=build\Release\tools\alia_asset_builder.exe"
 if not exist "%HOST_BUILDER%" (
     echo Error: Native asset builder not found at %HOST_BUILDER%
-    echo Build the desktop tree first: scripts\build.bat alia_app
+    echo Build the desktop tree first: scripts\build.bat alia_widget_gallery
     exit /b 1
 )
 

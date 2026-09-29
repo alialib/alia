@@ -193,10 +193,8 @@ typedef struct alia_checkbox_style
     // icon glyph size for the checkmark, logical px
     float checkmark_size;
 
-    // checkmark glyph in the UI's bound MSDF text engine - When using stock
-    // fonts, defaults pick up the font and glyph index from the generated font
-    // constants. When using a custom atlas, set these to match the loaded
-    // font/glyph. Zero for both skips glyph drawing.
+    // checkmark glyph in the bound MSDF text engine - Filled from
+    // `ALIA_UI_ICON_CHECK` when `ui` is non-null. Zero both to skip drawing.
     size_t checkmark_font_index;
     uint32_t checkmark_codepoint;
 
@@ -206,10 +204,14 @@ typedef struct alia_checkbox_style
 } alia_checkbox_style;
 
 // Fill `out` with the checkbox style for `seeds`.
+// If `ui` is not `NULL`, the checkmark glyph is taken from the UI icon
+// registry (via `ALIA_UI_ICON_CHECK`).
 // Seeds can be `NULL` to use the default seeds.
 void
 alia_checkbox_style_generate(
-    alia_checkbox_style* out, alia_style_seeds const* seeds);
+    alia_checkbox_style* out,
+    alia_ui_system* ui,
+    alia_style_seeds const* seeds);
 
 static inline alia_checkbox_style*
 alia_checkbox_style_default(alia_ui_system* ui)

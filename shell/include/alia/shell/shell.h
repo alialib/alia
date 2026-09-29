@@ -68,13 +68,16 @@ alia_shell_typeface(alia_shell* shell, size_t index);
 
 // Decompress the atlas, upload via `ui->renderer.upload_msdf_atlas`, and bind
 // an MSDF text engine. Requires renderer ops already installed on `ui`.
+// `default_font_index` selects the root/active typeface (must be less than
+// `font_count`).
 bool
 alia_shell_setup_text(
     alia_shell* shell,
     alia_ui_system* ui,
     alia_msdf_atlas_rle const* atlas_rle,
     alia_msdf_font_description const* font_descriptions,
-    size_t font_count);
+    size_t font_count,
+    size_t default_font_index);
 
 void
 alia_shell_teardown_text(alia_shell* shell, alia_ui_system* ui);

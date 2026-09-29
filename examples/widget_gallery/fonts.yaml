@@ -1,0 +1,6 @@
+# Alternate typography for the widget gallery in-app toggle.
+fonts:
+  - id: source_sans_regular
+    url: "https://github.com/adobe-fonts/source-sans/raw/release/TTF/SourceSans3-Regular.ttf"
+  - id: source_sans_bold
+    url: "https://github.com/adobe-fonts/source-sans/raw/release/TTF/SourceSans3-Bold.ttf"

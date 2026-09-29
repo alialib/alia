@@ -1,0 +1,6 @@
+# Use static Roboto from googlefonts/roboto. It has a non-GPOS kern table.
+fonts:
+  - id: roboto_regular
+    url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
+  - id: roboto_bold
+    url: "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf"

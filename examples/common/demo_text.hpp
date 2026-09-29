@@ -6,9 +6,8 @@
 #include <alia/shell/app.h>
 #include <alia/ui/layout/flags.hpp>
 
-// Small shared demo helpers: pre-resolved stock fonts + a thin text emitter.
-// Fonts are filled once at setup; call sites pass pointers (no per-call
-// resolve).
+// SHARED DEMO HELPERS - pre-resolved stock typography plus a thin text emitter
+// Call `demo_setup_fonts` after `alia_app_setup_stock_text`.
 
 struct demo_fonts
 {
@@ -20,10 +19,15 @@ struct demo_fonts
 demo_fonts const&
 demo_get_fonts();
 
-// Resolve the stock typefaces into `demo_get_fonts()` after
-// `alia_app_setup_stock_text`.
+// Resolve Roboto (stock typography) into `demo_get_fonts()`.
 void
 demo_setup_fonts(alia_app* app);
+
+// Re-resolve `demo_get_fonts()` from MSDF font indices (for apps that switch
+// among faces in a richer atlas).
+void
+demo_set_typefaces(
+    alia_app* app, size_t body_font_index, size_t heading_font_index);
 
 static inline alia_palette_color
 demo_text_color(enum alia_palette_ramp_level level)

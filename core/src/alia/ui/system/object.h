@@ -15,6 +15,7 @@
 #include <alia/ui/layout/system.h>
 // #include <alia/system/os_interface.hpp>
 // #include <alia/system/window_interface.hpp>
+#include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/host_window.h>
@@ -95,6 +96,10 @@ struct alia_ui_system
     alia_palette palette;
 
     alia::style_catalog styles;
+
+    // core icons - These sepcify fonts and codepoints for icons that are
+    // referenced by core components.
+    alia_ui_icon icons[ALIA_UI_ICON_COUNT]{};
 
     alia_stack stack;
 

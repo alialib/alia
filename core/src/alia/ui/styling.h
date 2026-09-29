@@ -37,7 +37,7 @@ struct style_catalog
 };
 
 void
-style_catalog_init(style_catalog& catalog);
+style_catalog_init(style_catalog& catalog, alia_ui_system* ui);
 
 void
 style_catalog_destroy(style_catalog& catalog);

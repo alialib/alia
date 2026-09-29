@@ -106,44 +106,67 @@ set(ALIA_GEN_DIR "${CMAKE_BINARY_DIR}/gen"
 
 set(ALIA_FONTS_H "${ALIA_GEN_DIR}/alia_fonts.h")
 set(ALIA_FONTS_CPP "${ALIA_GEN_DIR}/alia_fonts.cpp")
-set(ALIA_FONT_MANIFEST "${CMAKE_SOURCE_DIR}/assets/fonts.yaml")
+# The font manifest is split into typography (where the library is more
+# tolerant of app-provided overrides) and UI icons (where overrides are more
+# likely to break the appearance of library-provided UI components).
+set(ALIA_FONT_MANIFEST_UI_ICONS
+    "${CMAKE_SOURCE_DIR}/shell/assets/ui_icons.yaml")
+set(ALIA_FONT_MANIFEST_TYPOGRAPHY
+    "${CMAKE_SOURCE_DIR}/shell/assets/fonts.yaml")
+
+macro(alia_generate_font_assets out_h out_cpp)
+    set(_alia_font_manifests ${ARGN})
+    if(ALIA_ENABLE_ASSET_PIPELINE)
+        add_custom_command(
+            OUTPUT "${out_h}" "${out_cpp}"
+            COMMAND $<TARGET_FILE:alia_asset_builder>
+                ${_alia_font_manifests}
+                "${out_h}" "${out_cpp}"
+                --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
+            DEPENDS alia_asset_builder ${_alia_font_manifests}
+            COMMENT "Generating font assets (${out_h})"
+        )
+    elseif(EMSCRIPTEN AND ALIA_ENABLE_EXAMPLES)
+        set(ALIA_HOST_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/Release"
+            CACHE PATH
+            "Native build directory containing tools/alia_asset_builder")
+        set(ALIA_HOST_ASSET_BUILDER
+            "${ALIA_HOST_BUILD_DIR}/tools/alia_asset_builder.exe")
+        if(NOT EXISTS "${ALIA_HOST_ASSET_BUILDER}")
+            message(FATAL_ERROR
+                "Native alia_asset_builder not found at:\n"
+                "  ${ALIA_HOST_ASSET_BUILDER}\n"
+                "Build the desktop Release tree first "
+                "(scripts/build.bat alia_widget_gallery).")
+        endif()
+        add_custom_command(
+            OUTPUT "${out_h}" "${out_cpp}"
+            COMMAND "${ALIA_HOST_ASSET_BUILDER}"
+                ${_alia_font_manifests}
+                "${out_h}" "${out_cpp}"
+                --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
+            DEPENDS "${ALIA_HOST_ASSET_BUILDER}" ${_alia_font_manifests}
+            COMMENT "Generating font assets (host tool) (${out_h})"
+        )
+    endif()
+    set_source_files_properties("${out_cpp}" PROPERTIES GENERATED TRUE)
+endmacro()
 
 if(ALIA_ENABLE_ASSET_PIPELINE)
     add_subdirectory(tools)
-    file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
-    add_custom_command(
-        OUTPUT "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
-        COMMAND $<TARGET_FILE:alia_asset_builder>
-            "${ALIA_FONT_MANIFEST}" "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
-            --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
-        DEPENDS alia_asset_builder "${ALIA_FONT_MANIFEST}"
-        COMMENT "Generating Alia font assets"
-    )
-    set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
-elseif(EMSCRIPTEN AND ALIA_ENABLE_EXAMPLES)
-    # Cross-compile: run the native asset builder from a desktop build tree.
-    set(ALIA_HOST_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/Release"
-        CACHE PATH "Native build directory containing tools/alia_asset_builder")
-    set(ALIA_HOST_ASSET_BUILDER
-        "${ALIA_HOST_BUILD_DIR}/tools/alia_asset_builder.exe")
-    if(NOT EXISTS "${ALIA_HOST_ASSET_BUILDER}")
-        message(FATAL_ERROR
-            "Native alia_asset_builder not found at:\n"
-            "  ${ALIA_HOST_ASSET_BUILDER}\n"
-            "Build the desktop Release tree first (scripts/build.bat alia_app).")
-    endif()
-    file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
-    add_custom_command(
-        OUTPUT "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
-        COMMAND "${ALIA_HOST_ASSET_BUILDER}"
-            "${ALIA_FONT_MANIFEST}" "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
-            --cache-dir "${CMAKE_BINARY_DIR}/font_cache"
-        DEPENDS "${ALIA_HOST_ASSET_BUILDER}" "${ALIA_FONT_MANIFEST}"
-        COMMENT "Generating Alia font assets (host tool)"
-    )
-    set_source_files_properties("${ALIA_FONTS_CPP}" PROPERTIES GENERATED TRUE)
 endif()
 
+if(ALIA_ENABLE_ASSET_PIPELINE OR (EMSCRIPTEN AND ALIA_ENABLE_EXAMPLES))
+    file(MAKE_DIRECTORY "${ALIA_GEN_DIR}")
+    alia_generate_font_assets(
+        "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}"
+        "${ALIA_FONT_MANIFEST_UI_ICONS}"
+        "${ALIA_FONT_MANIFEST_TYPOGRAPHY}")
+endif()
+
+# This defines the stock atlas for the shell and most examples. Apps may link a
+# richer atlas with the same exported symbols instead (see
+# alia_widget_gallery_fonts).
 # TODO: Use a different option test for this.
 if(ALIA_ENABLE_EXAMPLES)
     add_library(alia_font_assets STATIC "${ALIA_FONTS_CPP}")
@@ -152,18 +175,11 @@ if(ALIA_ENABLE_EXAMPLES)
         ${CMAKE_SOURCE_DIR}/core/include)
     target_link_libraries(alia_font_assets PUBLIC alia_core)
 
-    # Stock widget icons (e.g. checkbox checkmark) compile against generated
-    # glyph IDs so remapped private-use codepoints stay in sync per build tree.
     add_custom_target(alia_fonts_gen DEPENDS "${ALIA_FONTS_H}" "${ALIA_FONTS_CPP}")
-    # TODO: Don't require this.
-    add_dependencies(alia_core alia_fonts_gen)
-    target_include_directories(alia_core PRIVATE "${ALIA_GEN_DIR}")
-    target_compile_definitions(alia_core PUBLIC ALIA_HAS_STOCK_FONTS=1)
-    set_source_files_properties(
-        "${CMAKE_SOURCE_DIR}/core/src/alia/ui/library/checkbox.cpp"
-        PROPERTIES OBJECT_DEPENDS "${ALIA_FONTS_H}")
+    # Compile shell stock-text setup against the generated declarations.
     if(TARGET alia_shell)
-        target_link_libraries(alia_shell PUBLIC alia_font_assets)
+        target_include_directories(alia_shell PRIVATE "${ALIA_GEN_DIR}")
+        add_dependencies(alia_shell alia_fonts_gen)
     endif()
 endif()
 
@@ -173,11 +189,37 @@ if(ALIA_ENABLE_EXAMPLES)
     set(ALIA_DEMO_COMMON_INCLUDE
         ${PROJECT_SOURCE_DIR}/examples)
 
-    add_executable(alia_app
-        ${PROJECT_SOURCE_DIR}/examples/app.cpp
+    set(ALIA_WG_FONTS_H "${ALIA_GEN_DIR}/widget_gallery/alia_fonts.h")
+    set(ALIA_WG_FONTS_CPP "${ALIA_GEN_DIR}/widget_gallery/alia_fonts.cpp")
+    set(ALIA_WG_FONT_MANIFEST
+        "${PROJECT_SOURCE_DIR}/examples/widget_gallery/fonts.yaml")
+    file(MAKE_DIRECTORY "${ALIA_GEN_DIR}/widget_gallery")
+    alia_generate_font_assets(
+        "${ALIA_WG_FONTS_H}" "${ALIA_WG_FONTS_CPP}"
+        "${ALIA_FONT_MANIFEST_UI_ICONS}"
+        "${ALIA_FONT_MANIFEST_TYPOGRAPHY}"
+        "${ALIA_WG_FONT_MANIFEST}")
+    add_library(alia_widget_gallery_fonts STATIC "${ALIA_WG_FONTS_CPP}")
+    target_include_directories(alia_widget_gallery_fonts PUBLIC
+        "${ALIA_GEN_DIR}/widget_gallery"
+        ${CMAKE_SOURCE_DIR}/core/include)
+    target_link_libraries(alia_widget_gallery_fonts PUBLIC alia_core)
+
+    add_executable(alia_widget_gallery
+        ${PROJECT_SOURCE_DIR}/examples/widget_gallery/main.cpp
         ${ALIA_DEMO_COMMON_SOURCES})
-    target_link_libraries(alia_app PRIVATE alia_cpp alia_shell_app)
-    target_include_directories(alia_app PRIVATE ${ALIA_DEMO_COMMON_INCLUDE})
+    target_link_libraries(alia_widget_gallery PRIVATE
+        alia_cpp alia_shell_app alia_widget_gallery_fonts)
+    target_include_directories(alia_widget_gallery PRIVATE
+        ${ALIA_DEMO_COMMON_INCLUDE})
+
+    add_executable(alia_layout_lab
+        ${PROJECT_SOURCE_DIR}/examples/layout_lab/main.cpp
+        ${ALIA_DEMO_COMMON_SOURCES})
+    target_link_libraries(alia_layout_lab PRIVATE
+        alia_cpp alia_shell_app alia_font_assets)
+    target_include_directories(alia_layout_lab PRIVATE
+        ${ALIA_DEMO_COMMON_INCLUDE})
 
     set(ALIA_GALLERY_SHADER_DIR
         "${PROJECT_SOURCE_DIR}/examples/shader_gallery")
@@ -239,10 +281,11 @@ if(ALIA_ENABLE_EXAMPLES)
         GENERATED TRUE)
 
     add_executable(alia_shader_gallery
-        ${PROJECT_SOURCE_DIR}/examples/shader_gallery_app.cpp
+        ${PROJECT_SOURCE_DIR}/examples/shader_gallery/main.cpp
         ${ALIA_DEMO_COMMON_SOURCES}
         "${ALIA_NOTARGS_GEN_CPP}")
-    target_link_libraries(alia_shader_gallery PRIVATE alia_cpp alia_shell_app)
+    target_link_libraries(alia_shader_gallery PRIVATE
+        alia_cpp alia_shell_app alia_font_assets)
     target_include_directories(alia_shader_gallery PRIVATE
         ${ALIA_DEMO_COMMON_INCLUDE}
         "${ALIA_GEN_DIR}"
@@ -251,7 +294,7 @@ if(ALIA_ENABLE_EXAMPLES)
     if(ALIA_ENABLE_GLFW AND ALIA_ENABLE_OPENGL AND NOT EMSCRIPTEN
             AND TARGET alia_glfw)
         add_executable(alia_glfw_gl_embed
-            ${PROJECT_SOURCE_DIR}/examples/glfw_gl_embed_app.cpp)
+            ${PROJECT_SOURCE_DIR}/examples/glfw_gl_embed/main.cpp)
         target_link_libraries(alia_glfw_gl_embed PRIVATE
             alia_glfw
             alia_gl_renderer
@@ -261,31 +304,20 @@ if(ALIA_ENABLE_EXAMPLES)
     endif()
 
     if(EMSCRIPTEN)
-        target_compile_options(alia_app PRIVATE
-            "-fwasm-exceptions")
-        target_compile_options(alia_shader_gallery PRIVATE
-            "-fwasm-exceptions")
-
-        target_link_options(alia_app PRIVATE
-            "-sUSE_WEBGL2=1"
-            "-sFULL_ES3=1"
-            "-sWASM=1"
-            "-fwasm-exceptions"
-            "-sALLOW_MEMORY_GROWTH=1"
-            "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
-            "--shell-file" "${ALIA_EMSCRIPTEN_SHELL_FILE}"
-        )
-        target_link_options(alia_shader_gallery PRIVATE
-            "-sUSE_WEBGL2=1"
-            "-sFULL_ES3=1"
-            "-sWASM=1"
-            "-fwasm-exceptions"
-            "-sALLOW_MEMORY_GROWTH=1"
-            "--preload-file" "${CMAKE_SOURCE_DIR}/assets@/assets"
-            "--shell-file" "${ALIA_EMSCRIPTEN_SHELL_FILE}"
-        )
-        set_target_properties(alia_app PROPERTIES SUFFIX ".html")
-        set_target_properties(alia_shader_gallery PROPERTIES SUFFIX ".html")
+        foreach(_alia_web_target
+                alia_widget_gallery alia_layout_lab alia_shader_gallery)
+            target_compile_options(${_alia_web_target} PRIVATE
+                "-fwasm-exceptions")
+            target_link_options(${_alia_web_target} PRIVATE
+                "-sUSE_WEBGL2=1"
+                "-sFULL_ES3=1"
+                "-sWASM=1"
+                "-fwasm-exceptions"
+                "-sALLOW_MEMORY_GROWTH=1"
+                "--shell-file" "${ALIA_EMSCRIPTEN_SHELL_FILE}"
+            )
+            set_target_properties(${_alia_web_target} PROPERTIES SUFFIX ".html")
+        endforeach()
     endif()
 endif()
 

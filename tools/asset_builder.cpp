@@ -1,13 +1,17 @@
 /**
- * Alia font asset builder: reads a YAML manifest, resolves font paths/URLs
- * (downloads via libcurl with optional cache), generates a single MSDF atlas,
- * compresses with RLE, and emits alia_fonts.h / alia_fonts.cpp.
+ * Alia font asset builder: reads one or more YAML manifests, resolves font
+ * paths/URLs (downloads via libcurl with optional cache), generates a single
+ * MSDF atlas, compresses with RLE, and emits alia_fonts.h / alia_fonts.cpp.
+ *
+ * Multiple manifests are concatenated in order. Prefer chrome/UI icon
+ * manifests before typography so widget glyph indices stay stable when apps
+ * append extra faces.
  *
  * Text fonts load printable ASCII. Icon fonts (optional `icons` plus
  * `codepoints_path` or `codepoints_url`) bake only listed glyphs from a Google
  * `.codepoints` file and emit Unicode constants per icon.
  *
- * Usage: alia_asset_builder <manifest.yaml> <output.h> <output.cpp>
+ * Usage: alia_asset_builder <manifest.yaml>... <output.h> <output.cpp>
  * [--cache-dir <dir>]
  */
 
@@ -470,133 +474,22 @@ usage(const char* prog)
 {
     fprintf(
         stderr,
-        "Usage: %s <manifest.yaml> <output.h> <output.cpp>"
+        "Usage: %s <manifest.yaml>... <output.h> <output.cpp>"
         " [--cache-dir <dir>]\n",
         prog);
 }
 
-// libcurl write callback to append to a file
-static size_t
-curl_write_file(void* ptr, size_t size, size_t nmemb, void* userdata)
-{
-    FILE* fp = static_cast<FILE*>(userdata);
-    size_t n = size * nmemb;
-    return fp ? fwrite(ptr, 1, n, fp) : 0;
-}
-
-// Download `url` to `dest_path`.
-// Returns 0 on success, non-zero on failure.
 static int
-download_url(const char* url, std::string const& dest_path)
+download_url(const char* url, std::string const& dest_path);
+
+// Append font entries from a single manifest. Returns 0 on success.
+static int
+load_manifest_fonts(
+    char const* manifest_path,
+    char const* cache_dir,
+    std::vector<FontEntry>& font_entries,
+    std::unordered_set<std::string>& seen_ids)
 {
-    CURL* curl = curl_easy_init();
-    if (!curl)
-    {
-        fprintf(stderr, "curl_easy_init failed\n");
-        return 1;
-    }
-    FILE* fp = fopen(dest_path.c_str(), "wb");
-    if (!fp)
-    {
-        fprintf(stderr, "Cannot open for write: %s\n", dest_path.c_str());
-        curl_easy_cleanup(curl);
-        return 1;
-    }
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_file);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    CURLcode res = curl_easy_perform(curl);
-    fclose(fp);
-    if (res != CURLE_OK)
-    {
-        fprintf(stderr, "Download failed: %s\n", curl_easy_strerror(res));
-        curl_easy_cleanup(curl);
-        return 1;
-    }
-    long code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-    curl_easy_cleanup(curl);
-    if (code < 200 || code >= 300)
-    {
-        fprintf(stderr, "HTTP %ld for %s\n", code, url);
-        return 1;
-    }
-    return 0;
-}
-
-// Compress a single-channel buffer of the MSDF atlas.
-//
-// The image contains large regions of 0x00 and 0xff as well as smooth
-// transitions between them, so we use RLE on those values (and those values
-// only).
-//
-// The compressed buffer is a sequence of entries, where each entry is either:
-// - a raw, single-byte value (`0x01` to `0xfe`)
-// - a pair of bytes representing a run-length encoded value -
-//   `(0x00 or 0xff, run_length_byte)`
-//
-static std::vector<uint8_t>
-rle_compress_0x00_0xff_only(uint8_t const* data, size_t size)
-{
-    std::vector<uint8_t> out;
-    size_t i = 0;
-    while (i < size)
-    {
-        uint8_t v = data[i];
-        if (v == 0x00 || v == 0xff)
-        {
-            size_t run = 1;
-            while (i + run < size && data[i + run] == v && run < 255)
-                ++run;
-            out.push_back(v);
-            out.push_back(static_cast<uint8_t>(run));
-            i += run;
-        }
-        else
-        {
-            out.push_back(v);
-            i += 1;
-        }
-    }
-    return out;
-}
-
-int
-main(int argc, char const* const* argv)
-{
-    char const* manifest_path = nullptr;
-    char const* out_h = nullptr;
-    char const* out_cpp = nullptr;
-    char const* cache_dir = nullptr;
-
-    for (int i = 1; i < argc; ++i)
-    {
-        if (strcmp(argv[i], "--cache-dir") == 0 && i + 1 < argc)
-        {
-            cache_dir = argv[++i];
-            continue;
-        }
-        if (!manifest_path)
-            manifest_path = argv[i];
-        else if (!out_h)
-            out_h = argv[i];
-        else if (!out_cpp)
-            out_cpp = argv[i];
-    }
-    if (!manifest_path || !out_h || !out_cpp)
-    {
-        usage(argv[0]);
-        return 1;
-    }
-
-    if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK)
-    {
-        fprintf(stderr, "curl_global_init failed\n");
-        return 1;
-    }
-
-    // Parse YAML manifest
     YAML::Node doc;
     try
     {
@@ -610,20 +503,25 @@ main(int argc, char const* const* argv)
     YAML::Node fonts_node = doc["fonts"];
     if (!fonts_node || !fonts_node.IsSequence())
     {
-        fprintf(stderr, "Manifest must contain a 'fonts' sequence\n");
+        fprintf(
+            stderr,
+            "Manifest %s must contain a 'fonts' sequence\n",
+            manifest_path);
         return 1;
     }
 
     fs::path manifest_dir = fs::path(manifest_path).parent_path();
-    std::vector<FontEntry> font_entries;
-    std::unordered_set<std::string> seen_ids;
 
     for (size_t i = 0; i < fonts_node.size(); ++i)
     {
         YAML::Node entry = fonts_node[i];
         if (!entry["id"])
         {
-            fprintf(stderr, "Font entry %zu: missing 'id'\n", i);
+            fprintf(
+                stderr,
+                "%s: font entry %zu: missing 'id'\n",
+                manifest_path,
+                i);
             return 1;
         }
         std::string id = entry["id"].as<std::string>();
@@ -893,6 +791,139 @@ main(int argc, char const* const* argv)
         font_entries.push_back(std::move(fe));
     }
 
+    return 0;
+}
+
+// libcurl write callback to append to a file
+static size_t
+curl_write_file(void* ptr, size_t size, size_t nmemb, void* userdata)
+{
+    FILE* fp = static_cast<FILE*>(userdata);
+    size_t n = size * nmemb;
+    return fp ? fwrite(ptr, 1, n, fp) : 0;
+}
+
+// Download `url` to `dest_path`.
+// Returns 0 on success, non-zero on failure.
+static int
+download_url(const char* url, std::string const& dest_path)
+{
+    CURL* curl = curl_easy_init();
+    if (!curl)
+    {
+        fprintf(stderr, "curl_easy_init failed\n");
+        return 1;
+    }
+    FILE* fp = fopen(dest_path.c_str(), "wb");
+    if (!fp)
+    {
+        fprintf(stderr, "Cannot open for write: %s\n", dest_path.c_str());
+        curl_easy_cleanup(curl);
+        return 1;
+    }
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_file);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    CURLcode res = curl_easy_perform(curl);
+    fclose(fp);
+    if (res != CURLE_OK)
+    {
+        fprintf(stderr, "Download failed: %s\n", curl_easy_strerror(res));
+        curl_easy_cleanup(curl);
+        return 1;
+    }
+    long code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+    curl_easy_cleanup(curl);
+    if (code < 200 || code >= 300)
+    {
+        fprintf(stderr, "HTTP %ld for %s\n", code, url);
+        return 1;
+    }
+    return 0;
+}
+
+// Compress a single-channel buffer of the MSDF atlas.
+//
+// The image contains large regions of 0x00 and 0xff as well as smooth
+// transitions between them, so we use RLE on those values (and those values
+// only).
+//
+// The compressed buffer is a sequence of entries, where each entry is either:
+// - a raw, single-byte value (`0x01` to `0xfe`)
+// - a pair of bytes representing a run-length encoded value -
+//   `(0x00 or 0xff, run_length_byte)`
+//
+static std::vector<uint8_t>
+rle_compress_0x00_0xff_only(uint8_t const* data, size_t size)
+{
+    std::vector<uint8_t> out;
+    size_t i = 0;
+    while (i < size)
+    {
+        uint8_t v = data[i];
+        if (v == 0x00 || v == 0xff)
+        {
+            size_t run = 1;
+            while (i + run < size && data[i + run] == v && run < 255)
+                ++run;
+            out.push_back(v);
+            out.push_back(static_cast<uint8_t>(run));
+            i += run;
+        }
+        else
+        {
+            out.push_back(v);
+            i += 1;
+        }
+    }
+    return out;
+}
+
+int
+main(int argc, char const* const* argv)
+{
+    std::vector<char const*> positionals;
+    char const* cache_dir = nullptr;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "--cache-dir") == 0 && i + 1 < argc)
+        {
+            cache_dir = argv[++i];
+            continue;
+        }
+        positionals.push_back(argv[i]);
+    }
+    if (positionals.size() < 3)
+    {
+        usage(argv[0]);
+        return 1;
+    }
+
+    char const* out_cpp = positionals.back();
+    positionals.pop_back();
+    char const* out_h = positionals.back();
+    positionals.pop_back();
+    // Remaining positionals are manifests, in merge order.
+
+    if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK)
+    {
+        fprintf(stderr, "curl_global_init failed\n");
+        return 1;
+    }
+
+    std::vector<FontEntry> font_entries;
+    std::unordered_set<std::string> seen_ids;
+    for (char const* manifest_path : positionals)
+    {
+        if (load_manifest_fonts(
+                manifest_path, cache_dir, font_entries, seen_ids)
+            != 0)
+            return 1;
+    }
+
     if (font_entries.empty())
     {
         fprintf(stderr, "No fonts in manifest\n");
@@ -1103,13 +1134,14 @@ extern std::size_t const alia_atlas_rle_g_size;
 extern std::uint8_t const alia_atlas_rle_b[];
 extern std::size_t const alia_atlas_rle_b_size;
 
-inline int const alia_atlas_width = )"
-          << w << R"(;
-inline int const alia_atlas_height = )"
-          << h << R"(;
-inline std::size_t const alia_atlas_decompressed_size = )"
-          << raw_size << R"(;
+extern int const alia_atlas_width;
+extern int const alia_atlas_height;
+extern std::size_t const alia_atlas_decompressed_size;
 
+// Build an RLE atlas view for the linked font asset object. Width/height and
+// decompressed size come from the same translation unit as the RLE blobs so
+// superseding atlases stay consistent when this header is compiled into the
+// shell against a different include path.
 inline alia_msdf_atlas_rle
 alia_stock_msdf_atlas_rle()
 {
@@ -1145,8 +1177,7 @@ alia_stock_msdf_atlas_rle()
         float const em_sz = static_cast<float>(em_size);
 
         f << R"(
-inline std::size_t const alia_font_count = )"
-          << fonts.size() << R"(;
+extern std::size_t const alia_font_count;
 
 extern alia_msdf_font_description const alia_font_descriptions[];
 
@@ -1165,6 +1196,11 @@ inline alia_msdf_font_description const& alia_font_description(std::size_t index
             return 1;
         }
         f << "#include \"alia_fonts.h\"\n\n";
+        f << "int const alia_atlas_width = " << w << ";\n";
+        f << "int const alia_atlas_height = " << h << ";\n";
+        f << "std::size_t const alia_atlas_decompressed_size = " << raw_size
+          << ";\n";
+        f << "std::size_t const alia_font_count = " << fonts.size() << ";\n\n";
 
         for (size_t font_idx = 0; font_idx < fonts.size(); ++font_idx)
         {

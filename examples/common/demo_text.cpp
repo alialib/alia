@@ -3,9 +3,12 @@
 #include <alia/abi/prelude.h>
 #include <alia/base/flags.hpp>
 
+#include "alia_fonts.h"
+
 namespace {
 
 demo_fonts g_fonts{};
+alia_app* g_app = nullptr;
 
 void
 fill_resolved_font(
@@ -25,6 +28,29 @@ fill_resolved_font(
         resolved.engine, resolved.engine_handle, size, &out->metrics);
 }
 
+void
+refresh_resolved_fonts(size_t body_index, size_t heading_index)
+{
+    ALIA_ASSERT(g_app);
+    alia_ui_system* ui = alia_app_ui(g_app);
+    ALIA_ASSERT(ui);
+    ALIA_ASSERT(body_index < alia_app_typeface_count(g_app));
+    ALIA_ASSERT(heading_index < alia_app_typeface_count(g_app));
+
+    fill_resolved_font(
+        ui, alia_app_typeface(g_app, body_index), 14.f, &g_fonts.body_14);
+    fill_resolved_font(
+        ui,
+        alia_app_typeface(g_app, heading_index),
+        14.f,
+        &g_fonts.heading_14);
+    fill_resolved_font(
+        ui,
+        alia_app_typeface(g_app, heading_index),
+        18.f,
+        &g_fonts.heading_18);
+}
+
 } // namespace
 
 demo_fonts const&
@@ -37,18 +63,18 @@ void
 demo_setup_fonts(alia_app* app)
 {
     ALIA_ASSERT(app);
-    alia_ui_system* ui = alia_app_ui(app);
-    ALIA_ASSERT(ui);
-    ALIA_ASSERT(alia_app_typeface_count(app) > 0);
+    g_app = app;
+    refresh_resolved_fonts(
+        alia_font_roboto_regular_index, alia_font_roboto_bold_index);
+}
 
-    alia_typeface_id const body = alia_app_typeface(app, 0);
-    alia_typeface_id const heading = alia_app_typeface_count(app) > 1
-                                       ? alia_app_typeface(app, 1)
-                                       : body;
-
-    fill_resolved_font(ui, body, 14.f, &g_fonts.body_14);
-    fill_resolved_font(ui, heading, 14.f, &g_fonts.heading_14);
-    fill_resolved_font(ui, heading, 18.f, &g_fonts.heading_18);
+void
+demo_set_typefaces(
+    alia_app* app, size_t body_font_index, size_t heading_font_index)
+{
+    ALIA_ASSERT(app);
+    g_app = app;
+    refresh_resolved_fonts(body_font_index, heading_font_index);
 }
 
 void

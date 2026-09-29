@@ -109,9 +109,11 @@ void
 generate_checkbox_style(
     void* user_data, void* out, alia_style_seeds const* seeds)
 {
-    (void) user_data;
+    // `user_data` is the owning `alia_ui_system` (see style_catalog_init).
     alia_checkbox_style_generate(
-        static_cast<alia_checkbox_style*>(out), seeds);
+        static_cast<alia_checkbox_style*>(out),
+        static_cast<alia_ui_system*>(user_data),
+        seeds);
 }
 
 void
@@ -145,7 +147,7 @@ generate_button_style(
 namespace alia {
 
 void
-style_catalog_init(style_catalog& catalog)
+style_catalog_init(style_catalog& catalog, alia_ui_system* ui)
 {
     catalog.seeds = alia_style_seeds_default();
     catalog.slot_count = ALIA_STYLE_BUILTIN_COUNT;
@@ -201,13 +203,15 @@ style_catalog_init(style_catalog& catalog)
         alignof(alia_radio_button_style),
         generate_radio_button_style,
         nullptr);
+    // Pass `ui` so the generator can copy registered icons into the checkbox
+    // style defaults.
     bind_slot(
         catalog,
         ALIA_STYLE_CHECKBOX,
         sizeof(alia_checkbox_style),
         alignof(alia_checkbox_style),
         generate_checkbox_style,
-        nullptr);
+        ui);
     bind_slot(
         catalog,
         ALIA_STYLE_NODE_EXPANDER,

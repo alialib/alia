@@ -3,6 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -13,10 +14,6 @@
 #include <alia/impl/kernel/animation.hpp>
 #include <alia/ui/animation.h>
 #include <alia/ui/system/object.h>
-
-#if defined(ALIA_HAS_STOCK_FONTS)
-#include "alia_fonts.h"
-#endif
 
 using namespace alia::operators;
 
@@ -162,7 +159,9 @@ ALIA_EXTERN_C_BEGIN
 
 void
 alia_checkbox_style_generate(
-    alia_checkbox_style* out, alia_style_seeds const* seeds)
+    alia_checkbox_style* out,
+    alia_ui_system* ui,
+    alia_style_seeds const* seeds)
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_checkbox_style{
@@ -241,16 +240,18 @@ alia_checkbox_style_generate(
         .box_corner_radius = 5.f * s.scale * s.roundness,
         .border_width = 3.f * s.scale,
         .checkmark_size = 18.f * s.scale,
-#if defined(ALIA_HAS_STOCK_FONTS)
-        .checkmark_font_index = alia_font_material_symbols_outlined_index,
-        .checkmark_codepoint = alia_font_material_symbols_outlined_icon_check,
-#else
         .checkmark_font_index = 0,
         .checkmark_codepoint = 0,
-#endif
         .highlight_radius = 21.f * s.scale,
         .flare_radius = 21.f * s.scale,
     };
+
+    alia_ui_icon icon{};
+    if (ui && alia_ui_icon_get(ui, ALIA_UI_ICON_CHECK, &icon))
+    {
+        out->checkmark_font_index = icon.font_index;
+        out->checkmark_codepoint = icon.codepoint;
+    }
 }
 
 alia_element_id

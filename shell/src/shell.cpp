@@ -10,8 +10,8 @@
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
-#include <alia/abi/ui/trace.h>
 #include <alia/abi/ui/text.h>
+#include <alia/abi/ui/trace.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
@@ -273,13 +273,15 @@ alia_shell_setup_text(
     alia_ui_system* ui,
     alia_msdf_atlas_rle const* atlas_rle,
     alia_msdf_font_description const* font_descriptions,
-    size_t font_count)
+    size_t font_count,
+    size_t default_font_index)
 {
     ALIA_ASSERT(shell);
     ALIA_ASSERT(ui);
     ALIA_ASSERT(atlas_rle);
     ALIA_ASSERT(font_descriptions);
     ALIA_ASSERT(font_count > 0);
+    ALIA_ASSERT(default_font_index < font_count);
     ALIA_ASSERT(ui->renderer.upload_msdf_atlas);
 
     alia_shell_teardown_text(shell, ui);
@@ -299,9 +301,10 @@ alia_shell_setup_text(
         = alia_msdf_create_text_engine(font_descriptions, font_count);
     alia_ui_bind_msdf_text_engine(ui, shell->text_engine);
 
-    // Register every MSDF font as a core typeface, then adopt font 0 at a
-    // default size as the root font. Resolve once into shell storage so the
-    // controller can push a stable pointer without touching the substrate.
+    // Register every MSDF font as a core typeface, then adopt the requested
+    // default at a fixed size as the root font. Resolve once into shell
+    // storage so the controller can push a stable pointer without touching the
+    // substrate.
     if (shell->text_engine)
     {
         shell->typefaces.reserve(font_count);
@@ -313,7 +316,7 @@ alia_shell_setup_text(
 
         float const size = 15.f;
         alia_resolved_typeface const resolved
-            = alia_typeface_resolve(ui, shell->typefaces[0]);
+            = alia_typeface_resolve(ui, shell->typefaces[default_font_index]);
         ALIA_ASSERT(
             resolved.engine && resolved.engine->vtable
             && resolved.engine->vtable->get_font_metrics);
