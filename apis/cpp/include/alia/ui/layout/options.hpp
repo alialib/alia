@@ -6,6 +6,7 @@
 #include <alia/context.h>
 #include <alia/ui/layout/flags.hpp>
 
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
@@ -126,6 +127,28 @@ struct layout_spec
     Growth growth{};
 };
 
+namespace detail {
+
+template<class T>
+inline constexpr bool is_layout_spec_v = false;
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+inline constexpr bool
+    is_layout_spec_v<layout_spec<Flags, Pad, Width, Height, Growth>> = true;
+
+// closed set of types accepted by layout_options' converting constructor -
+// Constraining via `as_layout_options` re-enters that constructor on Clang
+// ("constraint depends on itself").
+template<class T>
+concept layout_piece
+    = std::same_as<T, layout_flag_set> || std::same_as<T, null_flag_set>
+   || std::same_as<T, pad_spec> || std::same_as<T, width_spec>
+   || std::same_as<T, height_spec> || std::same_as<T, growth_spec>
+   || std::same_as<T, length_spec> || std::same_as<T, breadth_spec>
+   || is_layout_spec_v<T>;
+
+} // namespace detail
+
 // type-erased layout options for a leaf or leaf-like control
 struct layout_options
 {
@@ -167,10 +190,8 @@ struct layout_options
     template<class T>
     layout_options(T const& t)
         requires(
-            !std::same_as<std::decay_t<T>, layout_options> && requires(
-                T const& u) {
-                { as_layout_options(u) } -> std::same_as<layout_options>;
-            })
+            !std::same_as<std::decay_t<T>, layout_options>
+            && detail::layout_piece<std::decay_t<T>>)
         : layout_options(as_layout_options(t))
     {
     }
@@ -495,9 +516,8 @@ as_layout_options(layout_spec<Flags, Pad, Width, Height, Growth> const& spec)
 
 // concept for types that can be converted to `layout_options`
 template<class T>
-concept layout_like = requires(T const& t) {
-    { as_layout_options(t) } -> std::same_as<layout_options>;
-};
+concept layout_like = std::same_as<std::decay_t<T>, layout_options>
+                   || detail::layout_piece<std::decay_t<T>>;
 
 inline layout_options&
 operator|=(layout_options& layout, layout_flag_set flags)
