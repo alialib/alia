@@ -25,7 +25,7 @@ set "BUILD_DIR=build\Emscripten"
 set "HOST_BUILDER=build\Release\tools\alia_asset_builder.exe"
 if not exist "%HOST_BUILDER%" (
     echo Error: Native asset builder not found at %HOST_BUILDER%
-    echo Build the desktop tree first: scripts\build.bat alia_widget_gallery
+    echo Build the host tool first: scripts\build.bat alia_asset_builder
     exit /b 1
 )
 
