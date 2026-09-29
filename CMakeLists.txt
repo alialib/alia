@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Alia's own source root (stable under FetchContent / add_subdirectory).
-set(ALIA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+# Alia's own source root (for use under FetchContent / add_subdirectory)
+set(ALIA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
+    "Root of the Alia source tree" FORCE)
 
 include(cmake/utilities.cmake)
 
@@ -46,7 +47,7 @@ if(ALIA_ENABLE_OPENGL AND NOT ALIA_IS_EMSCRIPTEN)
   list(APPEND VCPKG_MANIFEST_FEATURES "opengl")
 endif()
 
-# GLFW integration helpers (input/surface glue) for embedding — not a host.
+# GLFW integration helpers (input/surface glue) for embedding
 option(
     ALIA_ENABLE_GLFW
     "Enable GLFW integration helpers and the GL embed example"
@@ -63,12 +64,11 @@ if(ALIA_ENABLE_ASSET_PIPELINE)
   list(APPEND VCPKG_MANIFEST_FEATURES "asset-pipeline")
 endif()
 
-# Stock MSDF atlas (UI icons + typography) for the shell and apps. Independent
-# of examples so FetchContent consumers can bake fonts without building demos.
+# stock MSDF atlas (icons/typography)
 option(
     ALIA_ENABLE_STOCK_FONTS
     "Generate and build the stock font atlas (UI icons + typography)"
-    ON)
+    ${ALIA_ENABLE_ASSET_PIPELINE})
 
 # We can only declare the project after we've set the vcpkg manifest features.
 project(alia)

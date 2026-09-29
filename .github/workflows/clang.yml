@@ -55,6 +55,7 @@ jobs:
             -DALIA_ENABLE_OPENGL=OFF \
             -DALIA_ENABLE_GLFW=OFF \
             -DALIA_ENABLE_ASSET_PIPELINE=OFF \
+            -DALIA_ENABLE_STOCK_FONTS=OFF \
             ${COVERAGE_FLAGS} \
             .
 
