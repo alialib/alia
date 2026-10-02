@@ -464,8 +464,14 @@ alia_node_expander(
     alia_layout_flags_t layout_flags);
 
 // Emit a separator leaf (layout + draw only; not hittable).
+// `content_size` is in logical px. A component `<= 0` uses the active style
+// thickness on that axis. For axis-relative sizing, set
+// `ALIA_AXIS_RELATIVE_SIZE` and pass (length, breadth).
 void
-alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags);
+alia_separator(
+    alia_context* ctx,
+    alia_layout_flags_t layout_flags,
+    alia_vec2f content_size);
 
 // scrollable view flags
 typedef uint32_t alia_scroll_view_flags_t;

@@ -2,6 +2,7 @@
 
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/impl/events.hpp>
@@ -26,21 +27,30 @@ alia_separator_style_generate(
 }
 
 void
-alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags)
+alia_separator(
+    alia_context* ctx,
+    alia_layout_flags_t layout_flags,
+    alia_vec2f content_size)
 {
     ALIA_ASSERT((layout_flags & ALIA_DEFAULT_CROSS_ALIGNMENT_MASK) == 0);
     layout_flags |= ALIA_DEFAULT_FILL_CROSS;
 
-    alia_separator_style const* const style = alia_separator_style_active(ctx);
-    float const thickness = alia_px(ctx, style->thickness);
+    if (content_size.x <= 0.f || content_size.y <= 0.f)
+    {
+        float const thickness = alia_separator_style_active(ctx)->thickness;
+        if (content_size.x <= 0.f)
+            content_size.x = thickness;
+        if (content_size.y <= 0.f)
+            content_size.y = thickness;
+    }
+    content_size.x = alia_px(ctx, content_size.x);
+    content_size.y = alia_px(ctx, content_size.y);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
     {
         alia_layout_leaf_emit(
-            ctx,
-            alia_layout_content_metrics_make(alia_vec2f{thickness, thickness}),
-            layout_flags);
+            ctx, alia_layout_content_metrics_make(content_size), layout_flags);
         return;
     }
 
@@ -48,6 +58,8 @@ alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags)
 
     if (category == ALIA_CATEGORY_DRAWING)
     {
+        alia_separator_style const* const style
+            = alia_separator_style_active(ctx);
         alia_srgba8 const color
             = alia_palette_color_resolve(alia_ctx_palette(ctx), style->color);
         alia_draw_box(

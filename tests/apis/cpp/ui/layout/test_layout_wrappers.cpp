@@ -2,6 +2,7 @@
 
 #include <alia/abi/base/geometry/edge_offsets.h>
 #include <alia/abi/base/geometry/vec2.h>
+#include <alia/abi/ui/library.h>
 #include <alia/ui/layout/api.hpp>
 
 #include <doctest/doctest.h>
@@ -147,6 +148,55 @@ TEST_CASE("layout apply_layout length opens min_axis_size")
     });
     CHECK(check_box_eq(
         after, alia_vec2f_make(30.f, 0.f), alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout separator content size is axis-relative")
+{
+    alia_box after_row;
+    alia_box after_column;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            row(ctx, [&]() {
+                // (length, breadth) = (20, 4) inside a row: 20 wide by 4 tall.
+                if (is_refresh_event(ctx))
+                {
+                    alia_separator(
+                        &ctx,
+                        raw_code(AXIS_RELATIVE_SIZE),
+                        alia_vec2f_make(20.f, 4.f));
+                }
+                else
+                {
+                    (void) alia_layout_consume_box(&ctx);
+                }
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_row);
+            });
+            column(ctx, [&]() {
+                // (length, breadth) = (20, 4) inside a column: 4 wide by 20
+                // tall.
+                if (is_refresh_event(ctx))
+                {
+                    alia_separator(
+                        &ctx,
+                        raw_code(AXIS_RELATIVE_SIZE),
+                        alia_vec2f_make(20.f, 4.f));
+                }
+                else
+                {
+                    (void) alia_layout_consume_box(&ctx);
+                }
+                test_leaf(
+                    ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_column);
+            });
+        });
+    });
+    CHECK(check_box_eq(
+        after_row, alia_vec2f_make(20.f, 0.f), alia_vec2f_make(10.f, 10.f)));
+    // Prior row is 10 tall; separator adds 20 along the column main axis.
+    CHECK(check_box_eq(
+        after_column,
+        alia_vec2f_make(0.f, 30.f),
+        alia_vec2f_make(10.f, 10.f)));
 }
 
 TEST_CASE("layout clamped centers by default")
