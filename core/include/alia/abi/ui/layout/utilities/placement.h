@@ -106,9 +106,9 @@ alia_resolve_alignment_flags(
     // Resolve absolute vs cross within the user flags.
     alia_layout_flags_t const user_xy = user & xy_mask;
     alia_layout_flags_t const user_level
-        = user_xy & ~alia_alignment_group_mask(user_xy, cross_abs_mask)
-        // Cross axis flags only apply if the corresponding absolute flag is
-        // not set.
+        // Cross axis flags only apply when the corresponding absolute flag is
+        // empty.
+        = user_xy
         | ((((user & ALIA_CROSS_ALIGNMENT_MASK) >> main_axis) & cross_abs_mask)
            & ~alia_alignment_group_mask(user_xy, cross_abs_mask));
 

@@ -98,6 +98,56 @@ TEST_CASE("layout min size inside row")
         leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(150.f, 50.f)));
 }
 
+TEST_CASE("layout clamped centers by default")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(200.f, 100.f), [&](alia_context& ctx) {
+        clamped(ctx, alia_vec2f_make(80.f, 40.f), [&]() {
+            test_leaf(ctx, alia_vec2f_make(80.f, 40.f), FILL, &leaf);
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(60.f, 30.f), alia_vec2f_make(80.f, 40.f)));
+}
+
+TEST_CASE("layout clamped respects alignment")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(200.f, 100.f), [&](alia_context& ctx) {
+        clamped(
+            ctx, alia_vec2f_make(80.f, 40.f), ALIGN_LEFT | ALIGN_TOP, [&]() {
+                test_leaf(ctx, alia_vec2f_make(80.f, 40.f), FILL, &leaf);
+            });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(80.f, 40.f)));
+}
+
+TEST_CASE("layout clamped width-only leaves height uncapped")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(200.f, 100.f), [&](alia_context& ctx) {
+        clamped(ctx, 80.f, [&]() {
+            test_leaf(ctx, alia_vec2f_make(80.f, 100.f), FILL, &leaf);
+        });
+    });
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(60.f, 0.f), alia_vec2f_make(80.f, 100.f)));
+}
+
+TEST_CASE("layout clamped yields to child min size")
+{
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(200.f, 100.f), [&](alia_context& ctx) {
+        clamped(ctx, alia_vec2f_make(80.f, 40.f), [&]() {
+            test_leaf(ctx, alia_vec2f_make(100.f, 50.f), FILL, &leaf);
+        });
+    });
+    // Child min exceeds the cap, so the content region grows to fit.
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(50.f, 25.f), alia_vec2f_make(100.f, 50.f)));
+}
+
 TEST_CASE("layout spacer applies theme scale")
 {
     alia_box leaf;

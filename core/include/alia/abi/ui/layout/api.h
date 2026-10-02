@@ -103,6 +103,15 @@ alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size);
 void
 alia_layout_min_size_end(alia_context* ctx);
 
+// A clamped layout caps the size assigned to its child. (A `max_size`
+// component `<= 0` means no cap on that axis.) It aligns the child within the
+// original box according to `flags`.
+void
+alia_layout_clamped_begin(
+    alia_context* ctx, alia_vec2f max_size, alia_layout_flags_t flags);
+void
+alia_layout_clamped_end(alia_context* ctx);
+
 // LEAVES
 
 // Emit a leaf node.

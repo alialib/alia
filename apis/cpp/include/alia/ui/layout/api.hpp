@@ -384,6 +384,46 @@ min_size_constraint(context& ctx, alia_vec2f min_size, Content&& content)
     alia_layout_min_size_end(&ctx);
 }
 
+// Cap the child's assigned size and align leftover space (default CENTER).
+// A `max_size` component `<= 0` means no cap on that axis.
+template<layout_like Layout = layout_options, class Content>
+void
+clamped(context& ctx, alia_vec2f max_size, Layout layout, Content&& content)
+{
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        flags = add_default_alignment(flags, CENTER_X, CENTER_Y);
+        alia_layout_clamped_begin(&ctx, max_size, raw_code(flags));
+        std::forward<Content>(content)();
+        alia_layout_clamped_end(&ctx);
+    });
+}
+
+template<class Content>
+void
+clamped(context& ctx, alia_vec2f max_size, Content&& content)
+{
+    clamped(ctx, max_size, default_layout, std::forward<Content>(content));
+}
+
+// Invoke a width-only clampoed layout..
+template<layout_like Layout = layout_options, class Content>
+void
+clamped(context& ctx, float max_width, Layout layout, Content&& content)
+{
+    clamped(
+        ctx,
+        alia_vec2f{max_width, 0.f},
+        layout,
+        std::forward<Content>(content));
+}
+
+template<class Content>
+void
+clamped(context& ctx, float max_width, Content&& content)
+{
+    clamped(ctx, max_width, default_layout, std::forward<Content>(content));
+}
+
 template<class Content>
 void
 growth_override(context& ctx, float growth, Content&& content)
