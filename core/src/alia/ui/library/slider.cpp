@@ -293,8 +293,7 @@ alia_slider(
         alia_layout_leaf_emit(
             ctx,
             alia_layout_content_metrics_make(
-                {alia_px(ctx, style->layout_width),
-                 alia_px(ctx, style->layout_height)}),
+                {style->layout_width, style->layout_height}),
             layout_flags);
         return base_id;
     }

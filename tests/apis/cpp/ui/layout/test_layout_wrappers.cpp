@@ -260,7 +260,7 @@ TEST_CASE("layout spacer applies theme scale")
             });
         });
     CHECK(check_box_eq(
-        leaf, alia_vec2f_make(0.f, 40.f), alia_vec2f_make(10.f, 10.f)));
+        leaf, alia_vec2f_make(0.f, 40.f), alia_vec2f_make(20.f, 20.f)));
 }
 
 TEST_CASE("layout spacer is flush against style spacing")

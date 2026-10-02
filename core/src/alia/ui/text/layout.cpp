@@ -420,7 +420,7 @@ alia_text(
         *node = text_layout_node{
             .base = {.vtable = &text_layout_vtable, .next_sibling = nullptr},
             .flags = flags,
-            .spacing = alia_layout_style_active(ctx)->spacing,
+            .spacing = alia_px(ctx, alia_layout_style_active(ctx)->spacing),
             .engine = engine,
             .block = cache->block,
             .text_length = cache->text_length,

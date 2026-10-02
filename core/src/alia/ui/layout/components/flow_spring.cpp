@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/protocol.h>
 #include <alia/abi/ui/layout/utilities/defaults.h>
@@ -113,7 +114,7 @@ alia_layout_flow_spring_emit(alia_context* ctx, float min_width)
     emission.next_ptr = &new_node->base.next_sibling;
     *new_node = layout_flow_spring_node{
         .base = {.vtable = &flow_spring_vtable, .next_sibling = 0},
-        .min_width = min_width};
+        .min_width = alia_px(ctx, min_width)};
 }
 
 } // extern "C"

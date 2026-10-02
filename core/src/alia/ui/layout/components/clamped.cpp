@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/context.h>
@@ -162,7 +163,8 @@ alia_layout_clamped_begin(
                .flags = 0,
                .first_child = 0},
             .flags = flags,
-            .max_size = max_size};
+            .max_size
+            = alia_vec2f{alia_px(ctx, max_size.x), alia_px(ctx, max_size.y)}};
         scope.node = node;
         alia_layout_container_activate(ctx, &node->container);
     }

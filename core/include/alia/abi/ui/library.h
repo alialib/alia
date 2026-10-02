@@ -279,6 +279,7 @@ typedef struct alia_scrollbar_style
     alia_palette_color glyph_color;
     alia_palette_color highlight;
 
+    // geometry, logical px
     float width;
     float button_length;
     float minimum_thumb_length;

@@ -471,8 +471,7 @@ spacer(context& ctx, Layout layout = {})
                 alia_layout_leaf_emit(
                     &ctx,
                     alia_layout_content_metrics_make(
-                        alia_vec2f{
-                            alia_px(&ctx, size.x), alia_px(&ctx, size.y)}),
+                        alia_vec2f{size.x, size.y}),
                     raw_code(flags));
             }
             else

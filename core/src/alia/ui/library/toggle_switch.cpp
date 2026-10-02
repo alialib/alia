@@ -275,9 +275,7 @@ alia_toggle_switch(
         alia_layout_leaf_emit(
             ctx,
             alia_layout_content_metrics_make(
-                alia_vec2f{
-                    alia_px(ctx, style->layout_width),
-                    alia_px(ctx, style->layout_height)}),
+                alia_vec2f{style->layout_width, style->layout_height}),
             layout_flags);
         return id;
     }

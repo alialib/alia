@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/context.h>
 #include <alia/impl/base/stack.hpp>
@@ -40,7 +41,7 @@ min_axis_size_measure_horizontal(
     auto const child_x
         = alia_measure_horizontal(ctx, main_axis, node.container.first_child);
     return alia_horizontal_requirements{
-        .min_size = (std::max)(min_xy.x, child_x.min_size),
+        .min_size = (std::max) (min_xy.x, child_x.min_size),
         .growth_factor = child_x.growth_factor};
 }
 
@@ -62,7 +63,7 @@ min_axis_size_measure_vertical(
     auto const child_y = alia_measure_vertical(
         ctx, main_axis, node.container.first_child, assigned_width);
     return alia_vertical_requirements{
-        .min_size = (std::max)(min_xy.y, child_y.min_size),
+        .min_size = (std::max) (min_xy.y, child_y.min_size),
         .growth_factor = child_y.growth_factor,
         .ascent = child_y.ascent,
         .descent = child_y.descent};
@@ -115,7 +116,8 @@ alia_layout_min_axis_size_begin(alia_context* ctx, alia_vec2f min_lb)
             = {.base = {.vtable = &min_axis_size_vtable, .next_sibling = 0},
                .flags = 0,
                .first_child = 0},
-            .min_lb = min_lb};
+            .min_lb
+            = alia_vec2f{alia_px(ctx, min_lb.x), alia_px(ctx, min_lb.y)}};
         scope.node = node;
         alia_layout_container_activate(ctx, &node->container);
     }

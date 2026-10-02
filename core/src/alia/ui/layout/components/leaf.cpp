@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/styling.h>
 
@@ -119,8 +120,12 @@ alia_layout_leaf_emit(
     *new_node = layout_leaf_node{
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
-        .spacing = alia_layout_style_active(ctx)->spacing,
-        .content = content};
+        .spacing = alia_px(ctx, alia_layout_style_active(ctx)->spacing),
+        .content = alia_layout_content_metrics{
+            .size
+            = {alia_px(ctx, content.size.x), alia_px(ctx, content.size.y)},
+            .ascent = alia_px(ctx, content.ascent),
+            .descent = alia_px(ctx, content.descent)}};
 }
 
 } // extern "C"

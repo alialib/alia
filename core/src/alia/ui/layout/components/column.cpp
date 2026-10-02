@@ -1,5 +1,6 @@
 #include <alia/ui/layout/components/column.h>
 
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/impl/ui/layout.hpp>
 
@@ -153,7 +154,8 @@ void
 alia_layout_column_begin(
     alia_context* ctx, alia_layout_flags_t flags, float gap)
 {
-    alia_layout_container_simple_begin(ctx, &alia::column_vtable, flags, gap);
+    alia_layout_container_simple_begin(
+        ctx, &alia::column_vtable, flags, alia_px(ctx, gap));
 }
 
 void

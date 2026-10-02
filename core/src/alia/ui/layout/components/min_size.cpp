@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/context.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
@@ -99,7 +100,8 @@ alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size)
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
                .flags = 0,
                .first_child = 0},
-            .min_size = min_size};
+            .min_size
+            = alia_vec2f{alia_px(ctx, min_size.x), alia_px(ctx, min_size.y)}};
         scope.node = node;
         alia_layout_container_activate(ctx, &node->container);
     }

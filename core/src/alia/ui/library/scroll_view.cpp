@@ -716,6 +716,14 @@ alia_scroll_view_begin(
         data->flags |= scroll_axes;
     data->layout_flags = layout_flags;
     data->style = *alia_scrollbar_style_active(ctx);
+    // Dimensional style fields are logical. Layout and drawing are physical.
+    data->style.width = alia_px(ctx, data->style.width);
+    data->style.button_length = alia_px(ctx, data->style.button_length);
+    data->style.minimum_thumb_length
+        = alia_px(ctx, data->style.minimum_thumb_length);
+    data->style.thumb_corner_radius
+        = alia_px(ctx, data->style.thumb_corner_radius);
+    data->style.line_size = alia_px(ctx, data->style.line_size);
 
     if (is_refresh_event(*ctx))
     {
@@ -767,7 +775,7 @@ alia_scroll_view_begin(
                     scope.placement,
                     0,
                     data->bar[0].logical
-                        + scroll_input_delta.x
+                        + alia_px(ctx, scroll_input_delta.x)
                               * data->style.scroll_sensitivity);
             }
             if (scope.placement.scrollbar_on[1])
@@ -777,7 +785,7 @@ alia_scroll_view_begin(
                     scope.placement,
                     1,
                     data->bar[1].logical
-                        + scroll_input_delta.y
+                        + alia_px(ctx, scroll_input_delta.y)
                               * data->style.scroll_sensitivity);
             }
         }

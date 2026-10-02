@@ -205,8 +205,8 @@ alia_button_begin(
             : alia_layout_style_active(ctx)->spacing;
     alia_edge_offsets const margin
         = alia_edge_offsets_make_uniform(layout_spacing);
-    alia_edge_offsets const padding = alia_edge_offsets_make_xy(
-        alia_px(ctx, style->padding_x), alia_px(ctx, style->padding_y));
+    alia_edge_offsets const padding
+        = alia_edge_offsets_make_xy(style->padding_x, style->padding_y);
 
     alia_layout_edge_offsets_begin(ctx, margin, layout_flags);
     alia_layout_edge_offsets_begin(ctx, padding, ALIA_PROVIDE_BOX);

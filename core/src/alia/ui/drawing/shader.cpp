@@ -102,8 +102,7 @@ alia_do_shader(
         alia_layout_leaf_emit(
             ctx,
             alia_layout_content_metrics_make(
-                alia_vec2f{
-                    alia_px(ctx, min_size.x), alia_px(ctx, min_size.y)}),
+                alia_vec2f{min_size.x, min_size.y}),
             layout_flags);
         return id;
     }

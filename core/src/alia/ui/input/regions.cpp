@@ -3,6 +3,7 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/styling.h>
 #include <alia/impl/events.hpp>
@@ -118,7 +119,7 @@ alia_element_handle_visibility(
             alia_box_expand(
                 *region,
                 alia_edge_offsets_make_uniform(
-                    alia_layout_style_active(ctx)->spacing)),
+                    alia_px(ctx, alia_layout_style_active(ctx)->spacing))),
             ctx->geometry->offset);
         e.acknowledged = true;
     }

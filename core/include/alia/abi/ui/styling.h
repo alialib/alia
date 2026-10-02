@@ -29,6 +29,7 @@ alia_style_seeds_default(void);
 // layout style (catalog slot ALIA_STYLE_LAYOUT)
 typedef struct alia_layout_style
 {
+    // default padding around leaves, logical px
     float spacing;
 } alia_layout_style;
 

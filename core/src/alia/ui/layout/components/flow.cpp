@@ -1,3 +1,4 @@
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/line.h>
@@ -781,9 +782,9 @@ alia_layout_flow_begin(
             .base = {.vtable = &alia::flow_vtable, .next_sibling = 0},
             .flags = flags,
             .first_child = 0,
-            .gap = gap,
-            .line_gap = line_gap,
-            .minimum_line_height = minimum_line_height};
+            .gap = alia_px(ctx, gap),
+            .line_gap = alia_px(ctx, line_gap),
+            .minimum_line_height = alia_px(ctx, minimum_line_height)};
         alia_layout_container_activate(ctx, alia::flow_as_container(node));
     }
 }

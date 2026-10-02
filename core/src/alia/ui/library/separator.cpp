@@ -43,8 +43,6 @@ alia_separator(
         if (content_size.y <= 0.f)
             content_size.y = thickness;
     }
-    content_size.x = alia_px(ctx, content_size.x);
-    content_size.y = alia_px(ctx, content_size.y);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)

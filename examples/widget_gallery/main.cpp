@@ -156,7 +156,7 @@ do_checkbox_demo(context& ctx)
     checkbox(ctx, ref(setting_one), "Initially Unchecked");
 
     static bool setting_two = true;
-    checkbox(ctx, ref(setting_two), "Initially Checked", GROW | pad(4));
+    checkbox(ctx, ref(setting_two), "Initially Checked");
 
     static bool setting_disabled_unchecked = false;
     checkbox(
