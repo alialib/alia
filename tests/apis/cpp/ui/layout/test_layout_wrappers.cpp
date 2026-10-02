@@ -98,6 +98,57 @@ TEST_CASE("layout min size inside row")
         leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(150.f, 50.f)));
 }
 
+TEST_CASE("layout min_axis_size length follows parent main axis")
+{
+    alia_box after_row;
+    alia_box after_column;
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        column(ctx, [&]() {
+            row(ctx, [&]() {
+                min_axis_size_constraint(
+                    ctx, alia_vec2f_make(20.f, 0.f), [&]() {
+                        test_leaf(ctx, alia_vec2f_make(5.f, 5.f), FLUSH);
+                    });
+                test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_row);
+            });
+            column(ctx, [&]() {
+                min_axis_size_constraint(
+                    ctx, alia_vec2f_make(20.f, 0.f), [&]() {
+                        test_leaf(ctx, alia_vec2f_make(5.f, 5.f), FLUSH);
+                    });
+                test_leaf(
+                    ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_column);
+            });
+        });
+    });
+    // In a row, length floors x, so the following leaf starts at x = 20.
+    CHECK(check_box_eq(
+        after_row, alia_vec2f_make(20.f, 0.f), alia_vec2f_make(10.f, 10.f)));
+    // In a column, length floors y. Nested column sits below the prior row
+    // (height 10), so the following leaf is at y = 10 + 20 = 30.
+    CHECK(check_box_eq(
+        after_column,
+        alia_vec2f_make(0.f, 30.f),
+        alia_vec2f_make(10.f, 10.f)));
+}
+
+TEST_CASE("layout apply_layout length opens min_axis_size")
+{
+    alia_box after;
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+        row(ctx, [&]() {
+            // `length` on a container goes through apply_layout →
+            // min_axis_size.
+            column(ctx, length(30.f), [&]() {
+                test_leaf(ctx, alia_vec2f_make(5.f, 5.f), FLUSH);
+            });
+            test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after);
+        });
+    });
+    CHECK(check_box_eq(
+        after, alia_vec2f_make(30.f, 0.f), alia_vec2f_make(10.f, 10.f)));
+}
+
 TEST_CASE("layout clamped centers by default")
 {
     alia_box leaf;

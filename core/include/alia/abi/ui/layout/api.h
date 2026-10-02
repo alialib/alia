@@ -103,6 +103,13 @@ alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size);
 void
 alia_layout_min_size_end(alia_context* ctx);
 
+// Like `alia_layout_min_size`, but `min_lb` is (length, breadth) relative to
+// the parent's main/cross axes.
+void
+alia_layout_min_axis_size_begin(alia_context* ctx, alia_vec2f min_lb);
+void
+alia_layout_min_axis_size_end(alia_context* ctx);
+
 // A clamped layout caps the size assigned to its child. (A `max_size`
 // component `<= 0` means no cap on that axis.) It aligns the child within the
 // original box according to `flags`.

@@ -384,6 +384,17 @@ min_size_constraint(context& ctx, alia_vec2f min_size, Content&& content)
     alia_layout_min_size_end(&ctx);
 }
 
+// Floor the child's size using (length, breadth) relative to the parent's
+// main/cross axes.
+template<class Content>
+void
+min_axis_size_constraint(context& ctx, alia_vec2f min_lb, Content&& content)
+{
+    alia_layout_min_axis_size_begin(&ctx, min_lb);
+    std::forward<Content>(content)();
+    alia_layout_min_axis_size_end(&ctx);
+}
+
 // Cap the child's assigned size and align leftover space (default CENTER).
 // A `max_size` component `<= 0` means no cap on that axis.
 template<layout_like Layout = layout_options, class Content>

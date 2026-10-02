@@ -1427,6 +1427,8 @@ layout_content_size(layout_spec<Flags, Pad, Width, Height, Growth> const& spec)
 }
 
 // Clear width/height so `apply_layout` will not open a min-size wrapper.
+// Axis-relative size still leaves `AXIS_RELATIVE_SIZE` on the flags so a leaf
+// can fold `(length, breadth)` into its own content metrics (see `spacer`).
 // Size-less pieces are returned unchanged so typed `apply_layout` overloads
 // stay selected.
 inline layout_options
@@ -1557,22 +1559,25 @@ apply_layout(context& ctx, height_spec const& h, Fn&& fn)
     alia_layout_min_size_end(&ctx);
 }
 
-// Axis-relative sizes are recorded on the leaf; they are not absolute
-// wrappers.
+// Absolute sizes open a `min_size` wrapper. Axis-relative sizes open a
+// `min_axis_size` wrapper. Leaves that fold size into content metrics should
+// call `without_size` first (see `spacer`).
 template<class Fn>
 void
-apply_layout(context& ctx, length_spec const&, Fn&& fn)
+apply_layout(context& ctx, length_spec const& l, Fn&& fn)
 {
-    (void) ctx;
-    std::forward<Fn>(fn)(AXIS_RELATIVE_SIZE);
+    alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(l.value, 0.f));
+    std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
+    alia_layout_min_axis_size_end(&ctx);
 }
 
 template<class Fn>
 void
-apply_layout(context& ctx, breadth_spec const&, Fn&& fn)
+apply_layout(context& ctx, breadth_spec const& b, Fn&& fn)
 {
-    (void) ctx;
-    std::forward<Fn>(fn)(AXIS_RELATIVE_SIZE);
+    alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(0.f, b.value));
+    std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
+    alia_layout_min_axis_size_end(&ctx);
 }
 
 template<class Fn>
@@ -1600,15 +1605,13 @@ apply_layout(
     layout_flag_set flags = NO_FLAGS;
     if constexpr (!detail::is_empty_layout_piece_v<Flags>)
         flags = spec.flags;
-    if constexpr (
-        detail::is_length_spec_v<Width> || detail::is_breadth_spec_v<Height>)
-    {
-        flags = flags | AXIS_RELATIVE_SIZE;
-    }
 
     constexpr bool has_absolute_width = detail::is_width_spec_v<Width>;
     constexpr bool has_absolute_height = detail::is_height_spec_v<Height>;
+    constexpr bool has_length = detail::is_length_spec_v<Width>;
+    constexpr bool has_breadth = detail::is_breadth_spec_v<Height>;
     constexpr bool has_min_size = has_absolute_width || has_absolute_height;
+    constexpr bool has_min_axis_size = has_length || has_breadth;
 
     if constexpr (!detail::is_empty_layout_piece_v<Pad>)
         alia_layout_edge_offsets_begin(&ctx, spec.pad.offsets, 0);
@@ -1620,9 +1623,18 @@ apply_layout(
         float const h = has_absolute_height ? spec.height.value : 0.f;
         alia_layout_min_size_begin(&ctx, detail::min_size_vec(w, h));
     }
+    if constexpr (has_min_axis_size)
+    {
+        float const length = has_length ? spec.width.value : 0.f;
+        float const breadth = has_breadth ? spec.height.value : 0.f;
+        alia_layout_min_axis_size_begin(
+            &ctx, detail::min_size_vec(length, breadth));
+    }
 
     std::forward<Fn>(fn)(flags);
 
+    if constexpr (has_min_axis_size)
+        alia_layout_min_axis_size_end(&ctx);
     if constexpr (has_min_size)
         alia_layout_min_size_end(&ctx);
     if constexpr (!detail::is_empty_layout_piece_v<Growth>)
@@ -1639,22 +1651,35 @@ apply_layout(context& ctx, layout_options const& layout, Fn&& fn)
         alia_layout_edge_offsets_begin(&ctx, layout.pad_offsets, 0);
     if (layout.has_growth())
         alia_layout_growth_override_begin(&ctx, layout.growth_value);
-    bool const absolute_size
-        = (layout.has_width() || layout.has_height())
-       && (raw_code(layout.flags) & raw_code(AXIS_RELATIVE_SIZE)) == 0;
-    if (absolute_size)
+
+    bool const has_size = layout.has_width() || layout.has_height();
+    bool const axis_relative
+        = (raw_code(layout.flags) & raw_code(AXIS_RELATIVE_SIZE)) != 0;
+    if (has_size)
     {
-        alia_layout_min_size_begin(
-            &ctx,
-            detail::min_size_vec(
-                layout.has_width() ? layout.width_value : 0.f,
-                layout.has_height() ? layout.height_value : 0.f));
+        alia_vec2f const size = detail::min_size_vec(
+            layout.has_width() ? layout.width_value : 0.f,
+            layout.has_height() ? layout.height_value : 0.f);
+        if (axis_relative)
+            alia_layout_min_axis_size_begin(&ctx, size);
+        else
+            alia_layout_min_size_begin(&ctx, size);
     }
 
-    std::forward<Fn>(fn)(layout.flags);
+    // Size lives on the wrapper; do not forward AXIS_RELATIVE_SIZE inward.
+    layout_flag_set flags = layout.flags;
+    if (has_size && axis_relative)
+        flags = flags & ~AXIS_RELATIVE_SIZE;
 
-    if (absolute_size)
-        alia_layout_min_size_end(&ctx);
+    std::forward<Fn>(fn)(flags);
+
+    if (has_size)
+    {
+        if (axis_relative)
+            alia_layout_min_axis_size_end(&ctx);
+        else
+            alia_layout_min_size_end(&ctx);
+    }
     if (layout.has_growth())
         alia_layout_growth_override_end(&ctx);
     if (layout.has_pad())

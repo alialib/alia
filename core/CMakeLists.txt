@@ -33,6 +33,7 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/alignment_override.cpp
     src/alia/ui/layout/components/growth_override.cpp
     src/alia/ui/layout/components/min_size.cpp
+    src/alia/ui/layout/components/min_axis_size.cpp
     src/alia/ui/layout/components/clamped.cpp
     src/alia/ui/layout/components/edge_offsets.cpp
     src/alia/ui/layout/components/leaf.cpp
