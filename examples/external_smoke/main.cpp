@@ -69,10 +69,8 @@ emit_text(
 {
     alia_text_style const style = {
         .font = font,
-        .color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level),
-            0xff),
+        .color = alia_palette_color_foundation(
+            ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff),
     };
     alia_text(&ctx, 0, alia_text_literal(text), &style);
 }

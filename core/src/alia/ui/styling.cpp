@@ -350,10 +350,7 @@ alia_focus_style_generate(alia_focus_style* out, alia_style_seeds const* seeds)
     ALIA_ASSERT(out);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     float const scale = s.scale;
-    out->color = alia_palette_color_make(
-        alia_palette_index_swatch(
-            ALIA_PALETTE_SWATCH_FOCUS, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0xff);
+    out->color = ALIA_PALETTE_COLOR(focus.outline, 0xff);
     out->outset = 2.f * scale;
     out->thickness = 2.f * scale;
     // Use a soft radius at roundness 1 and a square corner at 0.

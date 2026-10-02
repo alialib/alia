@@ -167,72 +167,32 @@ alia_checkbox_style_generate(
     *out = alia_checkbox_style{
         .unchecked =
             {
-                .outline = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                        ALIA_PALETTE_RAMP_LEVEL_BASE),
-                    0xff),
-                .fill = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                        ALIA_PALETTE_RAMP_LEVEL_BASE),
-                    0x00),
+                .outline = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
+                .fill = ALIA_PALETTE_COLOR(foundation.background.base, 0x00),
             },
         .checked =
             {
-                .outline = alia_palette_color_make(
-                    alia_palette_index_swatch(
-                        ALIA_PALETTE_SWATCH_PRIMARY,
-                        ALIA_PALETTE_SWATCH_PART_SOLID),
-                    0xff),
-                .fill = alia_palette_color_make(
-                    alia_palette_index_swatch(
-                        ALIA_PALETTE_SWATCH_PRIMARY,
-                        ALIA_PALETTE_SWATCH_PART_SOLID),
-                    0xff),
+                .outline = ALIA_PALETTE_COLOR(primary.solid, 0xff),
+                .fill = ALIA_PALETTE_COLOR(primary.solid, 0xff),
             },
         .disabled_unchecked =
             {
-                .outline = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-                    0xa0),
-                .fill = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                        ALIA_PALETTE_RAMP_LEVEL_BASE),
-                    0x00),
+                .outline
+                = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
+                .fill = ALIA_PALETTE_COLOR(foundation.background.base, 0x00),
             },
         .disabled_checked =
             {
-                .outline = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-                    0xa0),
-                .fill = alia_palette_color_make(
-                    alia_palette_index_foundation_ramp(
-                        ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                        ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-                    0xa0),
+                .outline
+                = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
+                .fill = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
             },
 
-        .checkmark = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
-        .disabled_checkmark = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
+        .checkmark = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
+        .disabled_checkmark
+        = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
 
-        .highlight = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x18),
+        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
 
         .layout_width = 40.f * s.scale,
         .layout_height = 40.f * s.scale,

@@ -63,23 +63,14 @@ static void
 button_style_apply_filled(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    style->fill = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0xff);
-    style->fill_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff);
+    style->fill = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0xff);
+    style->fill_disabled
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff);
 
-    style->label = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID),
-        0xff);
-    style->label_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_TEXT,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff);
+    style->label = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0xff);
+    style->label_disabled = ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff);
 
     style->border_width = 0.f;
     style->border = style->fill;
@@ -87,58 +78,41 @@ button_style_apply_filled(
     style->corner_radius = 0.f;
 
     // Soft ink wash over the solid fill.
-    style->highlight_hovered = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID),
-        0x30);
-    style->highlight_active = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID),
-        0x60);
+    style->highlight_hovered = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0x30);
+    style->highlight_active = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0x60);
 }
 
 static void
 button_style_apply_outline(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    style->fill = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0x00);
-    style->fill_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_3),
-        0x00);
+    style->fill = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x00);
+    style->fill_disabled
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0x00);
 
-    style->label = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_TEXT),
-        0xff);
-    style->label_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_TEXT,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff);
+    style->label = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff);
+    style->label_disabled = ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff);
 
     if (style->border_width <= 0.f)
         style->border_width = 1.5f;
 
-    style->border = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-        0xff);
-    style->border_disabled = alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-            ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-        0xff);
+    style->border = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_OUTLINE, 0xff);
+    style->border_disabled
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff);
 
     // Keep a slight round on outline chrome (filled uses square corners).
     if (style->corner_radius <= 0.f)
         style->corner_radius = 6.f;
 
-    style->highlight_hovered = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0x20);
-    style->highlight_active = alia_palette_color_make(
-        alia_palette_index_swatch(swatch, ALIA_PALETTE_SWATCH_PART_SOLID),
-        0x40);
+    style->highlight_hovered = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x20);
+    style->highlight_active = alia_palette_color_swatch(
+        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x40);
 }
 
 } // namespace alia

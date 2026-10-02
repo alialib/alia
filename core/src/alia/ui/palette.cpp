@@ -2,13 +2,13 @@
 #include <cmath>
 #include <numbers>
 
-// Compile-time check that flat index math matches struct layout (no padding
-// surprises).
+// This implemented a compile-time check that enum index math matches the named
+// `alia_palette` layout.
 consteval bool
 alia_palette_flat_index_ok()
 {
     size_t const slot = ALIA_PALETTE_SLOT_SIZE;
-    // Foundation: base + ramp*stride + level
+    // foundation: base + ramp * stride + level
     if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
             + 0u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
             + (size_t) ALIA_PALETTE_RAMP_LEVEL_BASE
@@ -24,7 +24,7 @@ alia_palette_flat_index_ok()
             + (size_t) ALIA_PALETTE_RAMP_LEVEL_BASE
         != offsetof(alia_palette, foundation.text.base) / slot)
         return false;
-    // Semantic swatch: base + swatch*stride + part
+    // semantic swatch: base + swatch * stride + part
     if (ALIA_PALETTE_INDEX_SWATCH_BASE
             + (size_t) ALIA_PALETTE_SWATCH_PRIMARY * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_OUTLINE
@@ -35,7 +35,7 @@ alia_palette_flat_index_ok()
             + (size_t) ALIA_PALETTE_SWATCH_PART_SOLID
         != offsetof(alia_palette, info.solid) / slot)
         return false;
-    // Literal: base + literal*stride + part
+    // literal: base + literal * stride + part
     if (ALIA_PALETTE_INDEX_LITERAL_BASE
             + (size_t) ALIA_PALETTE_LITERAL_RED * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_OUTLINE

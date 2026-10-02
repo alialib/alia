@@ -17,11 +17,7 @@ alia_separator_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_separator_style{
-        .color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
+        .color = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
         .thickness = 2.f * s.scale,
     };
 }

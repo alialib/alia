@@ -158,29 +158,13 @@ alia_radio_button_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_radio_button_style{
-        .outline = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
-        .dot = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0xff),
-        .outline_disabled = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_WEAKER_2),
-            0xff),
-        .dot_disabled = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_STRONGER_1),
-            0xff),
-        .highlight = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x18),
+        .outline = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
+        .dot = ALIA_PALETTE_COLOR(primary.outline, 0xff),
+        .outline_disabled
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff),
+        .dot_disabled
+        = ALIA_PALETTE_COLOR(foundation.structural.stronger_1, 0xff),
+        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
         .layout_width = 40.f * s.scale,
         .layout_height = 40.f * s.scale,
         .ring_radius = 12.f * s.scale,

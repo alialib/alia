@@ -658,30 +658,14 @@ alia_scrollbar_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_scrollbar_style{
-        .track_color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
-        .thumb_color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-            0xff),
-        .button_color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
-            0xff),
-        .glyph_color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_BACKGROUND,
-                ALIA_PALETTE_RAMP_LEVEL_STRONGER_4),
-            0xff),
-        .highlight = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_SUBTLE),
-            0x40),
+        .track_color = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
+        .thumb_color
+        = ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff),
+        .button_color
+        = ALIA_PALETTE_COLOR(foundation.background.stronger_2, 0xff),
+        .glyph_color
+        = ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff),
+        .highlight = ALIA_PALETTE_COLOR(primary.subtle, 0x40),
         .width = 24.f * s.scale,
         .button_length = 0.f * s.scale,
         .minimum_thumb_length = 20.f * s.scale,

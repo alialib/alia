@@ -126,20 +126,10 @@ alia_node_expander_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_node_expander_style{
-        .triangle = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
-        .disabled_triangle = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_WEAKER_4),
-            0xff),
-        .highlight = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x30),
+        .triangle = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
+        .disabled_triangle
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_4, 0xff),
+        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x30),
 
         .layout_width = 32.f * s.scale,
         .layout_height = 32.f * s.scale,

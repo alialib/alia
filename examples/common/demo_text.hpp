@@ -32,10 +32,8 @@ demo_set_typefaces(
 static inline alia_palette_color
 demo_text_color(enum alia_palette_ramp_level level)
 {
-    return alia_palette_color_make(
-        alia_palette_index_foundation_ramp(
-            ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level),
-        0xff);
+    return alia_palette_color_foundation(
+        ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff);
 }
 
 // Emit text with an already-resolved font (NULL => inherit the active font).

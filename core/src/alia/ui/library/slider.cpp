@@ -234,19 +234,10 @@ alia_slider_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_slider_style{
-        .track_color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_STRUCTURAL,
-                ALIA_PALETTE_RAMP_LEVEL_WEAKER_1),
-            0xff),
-        .thumb_color = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0xff),
-        .highlight = alia_palette_color_make(
-            alia_palette_index_swatch(
-                ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
-            0x18),
+        .track_color
+        = ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff),
+        .thumb_color = ALIA_PALETTE_COLOR(primary.outline, 0xff),
+        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
         .layout_width = 320.f * s.scale,
         .layout_height = 32.f * s.scale,
         .track_thickness = 6.f * s.scale,

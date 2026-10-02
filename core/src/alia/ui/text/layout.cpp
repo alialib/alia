@@ -331,11 +331,7 @@ alia_text_style_generate(alia_text_style* out, alia_style_seeds const* seeds)
     (void) seeds;
     *out = alia_text_style{
         .font = nullptr,
-        .color = alia_palette_color_make(
-            alia_palette_index_foundation_ramp(
-                ALIA_PALETTE_FOUNDATION_RAMP_TEXT,
-                ALIA_PALETTE_RAMP_LEVEL_BASE),
-            0xff),
+        .color = ALIA_PALETTE_COLOR(foundation.text.base, 0xff),
     };
 }
 

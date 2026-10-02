@@ -267,11 +267,7 @@ do_content(context& ctx, layout_options layout = {})
                         ctx.palette->primary.subtle,
                         [&]() {
                             alia_palette_color const on_subtle
-                                = alia_palette_color_make(
-                                    alia_palette_index_swatch(
-                                        ALIA_PALETTE_SWATCH_PRIMARY,
-                                        ALIA_PALETTE_SWATCH_PART_ON_SUBTLE),
-                                    0xff);
+                                = ALIA_PALETTE_COLOR(primary.on_subtle, 0xff);
                             demo_text(
                                 ctx,
                                 "Panel text A.",
