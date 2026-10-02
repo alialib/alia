@@ -14,7 +14,8 @@ alia_ui_icon_set(
 {
     ALIA_ASSERT(ui);
     ALIA_ASSERT(id < ALIA_UI_ICON_COUNT);
-    ui->icons[id] = alia_ui_icon{.font_index = font_index, .codepoint = codepoint};
+    ui->icons[id]
+        = alia_ui_icon{.font_index = font_index, .codepoint = codepoint};
 }
 
 void

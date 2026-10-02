@@ -1,5 +1,5 @@
-#include <alia/kernel/signals/state.hpp>
 #include <alia/kernel/signals/operators.hpp>
+#include <alia/kernel/signals/state.hpp>
 
 #include <alia/test/kernel/substrate_fixture.hpp>
 
@@ -15,7 +15,7 @@ TEST_CASE("state_binding write and clear")
 {
     effect_fixture fx;
     state_storage<int> storage;
-    
+
     auto s = make_state_binding(storage, &fx.ctx);
 
     CHECK_FALSE(signal_has_value(s));
@@ -41,7 +41,8 @@ TEST_CASE("state_binding write and clear")
     CHECK((storage.version & 1u) == 0u);
 }
 
-TEST_CASE("state_binding durable_ref is pure; post_mutation_commit tracks changes")
+TEST_CASE(
+    "state_binding durable_ref is pure; post_mutation_commit tracks changes")
 {
     effect_fixture fx;
     state_storage<int> storage;
@@ -100,7 +101,7 @@ TEST_CASE("use_state persists across traversals")
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 42);
         write_signal(&t.ctx, s, 100);
-    t.run_effects();
+        t.run_effects();
         CHECK(read_signal(s) == 100);
     }
     (void) alia_substrate_end_block(&t.ctx);

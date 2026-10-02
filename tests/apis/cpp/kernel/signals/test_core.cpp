@@ -79,10 +79,8 @@ TEST_CASE("signal_capabilities_compatible")
         binding_caps<signal_move_activated>,
         binding_caps<signal_movable>,
         false);
-    TEST_COMPATIBILITY(
-        nonempty_view_caps, view_caps<signal_readable>, false);
-    TEST_COMPATIBILITY(
-        view_caps<signal_readable>, nonempty_view_caps, true);
+    TEST_COMPATIBILITY(nonempty_view_caps, view_caps<signal_readable>, false);
+    TEST_COMPATIBILITY(view_caps<signal_readable>, nonempty_view_caps, true);
     TEST_COMPATIBILITY(nonempty_view_caps, nonempty_view_caps, true);
 #undef TEST_COMPATIBILITY
 }
@@ -143,7 +141,9 @@ TEST_CASE("signal_capabilities_intersection")
     TEST_INTERSECTION(
         nonempty_view_caps, nonempty_view_caps, nonempty_view_caps);
     TEST_INTERSECTION(
-        nonempty_view_caps, view_caps<signal_readable>, view_caps<signal_readable>);
+        nonempty_view_caps,
+        view_caps<signal_readable>,
+        view_caps<signal_readable>);
 #undef TEST_INTERSECTION
 }
 

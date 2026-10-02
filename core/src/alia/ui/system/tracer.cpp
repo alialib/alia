@@ -32,8 +32,7 @@ tracer_frame_end(void* user)
     tracer->current = nullptr;
     tracer->in_frame = false;
 
-    tracer->write_index
-        = (tracer->write_index + 1u) % ALIA_TRACE_RING_SIZE;
+    tracer->write_index = (tracer->write_index + 1u) % ALIA_TRACE_RING_SIZE;
     if (tracer->stored_count < ALIA_TRACE_RING_SIZE)
         ++tracer->stored_count;
 }
@@ -101,9 +100,8 @@ alia_ui_tracer_frame_ago(alia_ui_tracer const* tracer, uint32_t steps)
     if (tracer->stored_count == 0 || steps >= tracer->stored_count)
         return nullptr;
 
-    uint32_t const latest
-        = (tracer->write_index + ALIA_TRACE_RING_SIZE - 1u)
-        % ALIA_TRACE_RING_SIZE;
+    uint32_t const latest = (tracer->write_index + ALIA_TRACE_RING_SIZE - 1u)
+                          % ALIA_TRACE_RING_SIZE;
     uint32_t const index
         = (latest + ALIA_TRACE_RING_SIZE - steps) % ALIA_TRACE_RING_SIZE;
     return &tracer->frames[index];

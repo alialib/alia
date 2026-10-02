@@ -15,10 +15,7 @@ find_or_create_draw_bucket(
     alia_context* ctx, alia_z_index z_index, alia_draw_material_id material_id)
 {
     auto const key = make_bucket_key(
-        ctx->draw->target_id,
-        z_index,
-        ctx->geometry->clip.id,
-        material_id);
+        ctx->draw->target_id, z_index, ctx->geometry->clip.id, material_id);
     alia_draw_bucket_table* const buckets = ctx->draw->buckets;
     auto it = buckets->buckets.find(key);
     if (it == buckets->buckets.end())

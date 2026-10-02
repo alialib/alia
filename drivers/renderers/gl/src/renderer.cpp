@@ -5,8 +5,8 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
@@ -821,7 +821,10 @@ ensure_user_shader_geometry(alia_gl_renderer* renderer)
 
 void
 bind_user_shader_uniform_blocks(
-    GLuint program, size_t params_size, size_t ubo_bytes, gl_user_shader_slot* slot)
+    GLuint program,
+    size_t params_size,
+    size_t ubo_bytes,
+    gl_user_shader_slot* slot)
 {
     GLint block_count = 0;
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &block_count);
@@ -866,7 +869,8 @@ render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
         return;
 
     alia_gl_renderer* renderer = slot->renderer;
-    if (!renderer->system || renderer->user_shader_vao == 0 || slot->program == 0)
+    if (!renderer->system || renderer->user_shader_vao == 0
+        || slot->program == 0)
         return;
 
     alia_vec2f const surface_size
@@ -904,7 +908,8 @@ render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
                 0.f};
             glBindBuffer(GL_UNIFORM_BUFFER, renderer->user_shader_frame_ubo);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(frame), frame);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer->user_shader_frame_ubo);
+            glBindBufferBase(
+                GL_UNIFORM_BUFFER, 0, renderer->user_shader_frame_ubo);
         }
         else
         {
@@ -985,7 +990,8 @@ register_shader_blob(
         user_shader_vertex_source, source.c_str());
     if (program == 0)
     {
-        std::fprintf(stderr, "[alia gl] user-shader program creation failed\n");
+        std::fprintf(
+            stderr, "[alia gl] user-shader program creation failed\n");
         return -1;
     }
 

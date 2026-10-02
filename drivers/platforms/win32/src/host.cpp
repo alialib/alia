@@ -261,8 +261,7 @@ host_bind_dcomp(alia_win32_host* host)
         HRESULT hr = host->device->QueryInterface(IID_PPV_ARGS(&dxgi_device));
         if (FAILED(hr) || !dxgi_device)
             return false;
-        hr = DCompositionCreateDevice(
-            dxgi_device, IID_PPV_ARGS(&host->dcomp));
+        hr = DCompositionCreateDevice(dxgi_device, IID_PPV_ARGS(&host->dcomp));
         dxgi_device->Release();
         if (FAILED(hr) || !host->dcomp)
         {
@@ -307,14 +306,14 @@ host_bind_dcomp(alia_win32_host* host)
     HRESULT hr = host->dcomp_visual->SetContent(host->swapchain);
     if (FAILED(hr))
     {
-        std::fprintf(
-            stderr, "[alia win32] SetContent failed (0x%08lx)\n", hr);
+        std::fprintf(stderr, "[alia win32] SetContent failed (0x%08lx)\n", hr);
         return false;
     }
     hr = host->dcomp->Commit();
     if (FAILED(hr))
     {
-        std::fprintf(stderr, "[alia win32] DComp Commit failed (0x%08lx)\n", hr);
+        std::fprintf(
+            stderr, "[alia win32] DComp Commit failed (0x%08lx)\n", hr);
         return false;
     }
     return true;
@@ -331,11 +330,7 @@ host_resize_buffers(alia_win32_host* host, UINT width, UINT height)
     host_release_rtv(host);
 
     HRESULT hr = host->swapchain->ResizeBuffers(
-        0,
-        width,
-        height,
-        DXGI_FORMAT_UNKNOWN,
-        host_swapchain_flags(host));
+        0, width, height, DXGI_FORMAT_UNKNOWN, host_swapchain_flags(host));
     if (FAILED(hr) || !host_create_rtv(host))
         return false;
     return host->buffer_width == width && host->buffer_height == height;
@@ -706,8 +701,7 @@ host_present_frame(alia_win32_host* host, bool nonblocking)
 // RESTART/tearing so the new size can land in the same DWM frame as the
 // chrome — separate from the paced timer path used for window moves.
 bool
-host_present_frame_at_size(
-    alia_win32_host* host, UINT width, UINT height)
+host_present_frame_at_size(alia_win32_host* host, UINT width, UINT height)
 {
     if (!host || host->presenting || width == 0 || height == 0)
         return false;

@@ -143,8 +143,7 @@ TEST_CASE("push_back movable")
 {
     effect_fixture fx;
     test_state x{
-        fx,
-        std::vector<movable_object>{movable_object(1), movable_object(2)}};
+        fx, std::vector<movable_object>{movable_object(1), movable_object(2)}};
     {
         auto a = actions::push_back(x.binding()) << value(movable_object(3));
         CHECK(a.is_ready());
@@ -220,7 +219,8 @@ TEST_CASE("erase_key action")
         CHECK(a.is_ready());
         post_action(&fx.ctx, a);
         fx.run();
-        CHECK(read_signal(x.binding()) == (std::map<int, int>{{1, 2}, {3, 6}}));
+        CHECK(
+            read_signal(x.binding()) == (std::map<int, int>{{1, 2}, {3, 6}}));
     }
     {
         auto a = actions::erase_key(x.binding(), value(1));

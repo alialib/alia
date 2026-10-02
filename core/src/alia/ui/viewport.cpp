@@ -67,9 +67,10 @@ alia_do_viewport(
     {
         alia_layout_leaf_emit(
             ctx,
-            alia_layout_content_metrics_make(alia_vec2f{
-                alia_px(ctx, effective_style->min_size.x),
-                alia_px(ctx, effective_style->min_size.y)}),
+            alia_layout_content_metrics_make(
+                alia_vec2f{
+                    alia_px(ctx, effective_style->min_size.x),
+                    alia_px(ctx, effective_style->min_size.y)}),
             layout_flags);
         return id;
     }

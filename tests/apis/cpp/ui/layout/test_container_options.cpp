@@ -7,9 +7,8 @@ using namespace alia;
 TEST_CASE("container options combine gap, flags, and provide_box with |")
 {
     alia_box box;
-    auto const combined
-        = gap(8.f) | JUSTIFY_CENTER | provide_box(box) | line_gap(4.f)
-        | minimum_line_height(12.f);
+    auto const combined = gap(8.f) | JUSTIFY_CENTER | provide_box(box)
+                        | line_gap(4.f) | minimum_line_height(12.f);
 
     CHECK(combined.has_gap());
     CHECK(combined.gap_value == 8.f);
@@ -33,7 +32,8 @@ TEST_CASE("container begin flags OR placement and policy bits")
 {
     alia_box box;
     auto const options = JUSTIFY_SPACE_BETWEEN | provide_box(box);
-    alia_layout_flags_t const code = container_begin_flags(GROW | FILL, options);
+    alia_layout_flags_t const code
+        = container_begin_flags(GROW | FILL, options);
     CHECK((code & ALIA_GROW) != 0);
     CHECK((code & ALIA_FILL) != 0);
     CHECK((code & ALIA_JUSTIFY_SPACE_BETWEEN) != 0);

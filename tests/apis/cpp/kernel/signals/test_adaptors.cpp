@@ -60,14 +60,15 @@ make_id_by_reference(movable_object const& v)
 }
 
 template<class Wrapped>
-struct transparent_casting_wrapper : casting_signal_wrapper<
-                                         transparent_casting_wrapper<Wrapped>,
-                                         Wrapped,
-                                         typename Wrapped::value_type>
+struct transparent_casting_wrapper
+    : casting_signal_wrapper<
+          transparent_casting_wrapper<Wrapped>,
+          Wrapped,
+          typename Wrapped::value_type>
 {
     transparent_casting_wrapper(Wrapped wrapped)
         : transparent_casting_wrapper::casting_signal_wrapper(
-            std::move(wrapped))
+              std::move(wrapped))
     {
     }
     typename Wrapped::value_type const&
@@ -86,8 +87,8 @@ struct transparent_casting_wrapper : casting_signal_wrapper<
         return this->wrapped_.durable_ref();
     }
     std::optional<typename Wrapped::value_id_type>
-    post_write(alia_context* ctx, typename Wrapped::value_type value) const
-        override
+    post_write(
+        alia_context* ctx, typename Wrapped::value_type value) const override
     {
         return this->wrapped_.post_write(ctx, std::move(value));
     }
@@ -110,7 +111,8 @@ TEST_CASE("fake_readability")
     static_assert(sink_signal<decltype(s)>);
 
     CHECK(
-        (static_cast<untyped_signal_base const&>(s).value_id_erased() == null_id()));
+        (static_cast<untyped_signal_base const&>(s).value_id_erased()
+         == null_id()));
     CHECK_FALSE(signal_has_value(s));
     CHECK(signal_ready_to_write(s));
     write_signal(&fx.ctx, s, 1);
@@ -178,8 +180,7 @@ TEST_CASE("add_default")
         auto s = add_default(value(0), value(1));
         static_assert(view_signal<decltype(s)>);
         static_assert(!sink_signal<decltype(s)>);
-        static_assert(
-            signal_with<decltype(s), view_caps<signal_readable>>);
+        static_assert(signal_with<decltype(s), view_caps<signal_readable>>);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 0);
     }
@@ -267,7 +268,8 @@ TEST_CASE("simplify_id")
         CHECK(a.value_id() == b.value_id());
         CHECK(
             (to_id_view(a.value_id())
-             != static_cast<untyped_signal_base const&>(raw_a).value_id_erased()));
+             != static_cast<untyped_signal_base const&>(raw_a)
+                    .value_id_erased()));
     }
 
     {
@@ -314,7 +316,8 @@ TEST_CASE("override_id")
         CHECK((a.value_id() == b.value_id()));
         CHECK(
             (a.value_id()
-             != static_cast<untyped_signal_base const&>(raw_a).value_id_erased()));
+             != static_cast<untyped_signal_base const&>(raw_a)
+                    .value_id_erased()));
     }
 
     {
@@ -591,7 +594,8 @@ TEST_CASE("unwrap a read-only signal")
     auto empty_optional = unwrap(value(std::optional<int>()));
     CHECK_FALSE(signal_has_value(empty_optional));
     CHECK(
-        (static_cast<untyped_signal_base const&>(empty_optional).value_id_erased()
+        (static_cast<untyped_signal_base const&>(empty_optional)
+             .value_id_erased()
          == null_id()));
 }
 

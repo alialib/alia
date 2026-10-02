@@ -295,7 +295,8 @@ TEST_CASE("apply with id_view value ID")
 
     begin_refresh_block(t, spec);
     {
-        auto input = override_id(value(1), [&] { return make_id_by_reference(key); });
+        auto input
+            = override_id(value(1), [&] { return make_id_by_reference(key); });
         auto s = apply(&t.ctx, f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 1);
@@ -305,7 +306,8 @@ TEST_CASE("apply with id_view value ID")
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto input = override_id(value(1), [&] { return make_id_by_reference(key); });
+        auto input
+            = override_id(value(1), [&] { return make_id_by_reference(key); });
         auto s = apply(&t.ctx, f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 1);
@@ -316,7 +318,8 @@ TEST_CASE("apply with id_view value ID")
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto input = override_id(value(1), [&] { return make_id_by_reference(key); });
+        auto input
+            = override_id(value(1), [&] { return make_id_by_reference(key); });
         auto s = apply(&t.ctx, f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 2);

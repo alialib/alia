@@ -308,8 +308,9 @@ alia_win32_key_info_from_msg(WPARAM wParam, LPARAM lParam)
         info.hid = logical_to_hid(info.logical);
         if (info.hid != ALIA_HID_UNKNOWN)
         {
-            info.fields_present = (alia_key_fields_present_t) (
-                info.fields_present | ALIA_KEY_FIELD_HID);
+            info.fields_present
+                = (alia_key_fields_present_t) (info.fields_present
+                                               | ALIA_KEY_FIELD_HID);
         }
     }
     return info;
@@ -324,11 +325,7 @@ alia_win32_enqueue_mouse_motion(alia_ui_system* ui, float x, float y)
 
 void
 alia_win32_enqueue_mouse_button(
-    alia_ui_system* ui,
-    float x,
-    float y,
-    alia_button_t button,
-    bool pressed)
+    alia_ui_system* ui, float x, float y, alia_button_t button, bool pressed)
 {
     ALIA_ASSERT(ui);
     alia_kmods_t const mods = alia_win32_current_kmods();
@@ -352,8 +349,7 @@ alia_win32_enqueue_wheel(
     alia_ui_system* ui, short wheel_delta, bool horizontal)
 {
     ALIA_ASSERT(ui);
-    float const notches
-        = float(wheel_delta) / float(WHEEL_DELTA);
+    float const notches = float(wheel_delta) / float(WHEEL_DELTA);
     // Match GLFW glue: positive Alia scroll Y is wheel-down / content-up.
     alia_vec2f delta{};
     if (horizontal)

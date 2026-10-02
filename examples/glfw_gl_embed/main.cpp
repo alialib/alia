@@ -51,8 +51,8 @@ setup_stock_text()
     };
     alia_gl_renderer_upload_msdf_atlas(g_renderer, &atlas_image);
 
-    g_text_engine
-        = alia_msdf_create_text_engine(alia_font_descriptions, alia_font_count);
+    g_text_engine = alia_msdf_create_text_engine(
+        alia_font_descriptions, alia_font_count);
     if (!g_text_engine)
         return false;
     alia_ui_bind_msdf_text_engine(g_ui, g_text_engine);
@@ -79,8 +79,8 @@ embed_controller(void* /*user*/, alia_context* ctx)
         && ctx->events->event->type == ALIA_EVENT_DRAW)
     {
         alia_vec2i const size = alia_ui_surface_get_size(ctx->system);
-        alia_srgba8 const bg = alia_srgba8_from_srgb8(
-            ctx->palette->foundation.background.base);
+        alia_srgba8 const bg
+            = alia_srgba8_from_srgb8(ctx->palette->foundation.background.base);
         alia_draw_box(
             ctx,
             0,
@@ -93,8 +93,8 @@ embed_controller(void* /*user*/, alia_context* ctx)
         if (g_text_engine)
         {
             char const* const label = "Hello GLFW+GL";
-            alia_srgba8 const text_color = alia_srgba8_from_srgb8(
-                ctx->palette->foundation.text.base);
+            alia_srgba8 const text_color
+                = alia_srgba8_from_srgb8(ctx->palette->foundation.text.base);
             alia_msdf_draw_text(
                 g_text_engine,
                 ctx,
@@ -130,8 +130,7 @@ embed_controller(void* /*user*/, alia_context* ctx)
         if (signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             float const value = static_cast<float>(signal.value);
-            alia_post_write(
-                ctx, &g_value, &value, sizeof(g_value), "g_value");
+            alia_post_write(ctx, &g_value, &value, sizeof(g_value), "g_value");
         }
     }
     alia_layout_column_end(ctx);

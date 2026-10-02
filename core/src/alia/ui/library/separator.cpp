@@ -39,8 +39,7 @@ alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags)
     {
         alia_layout_leaf_emit(
             ctx,
-            alia_layout_content_metrics_make(
-                alia_vec2f{thickness, thickness}),
+            alia_layout_content_metrics_make(alia_vec2f{thickness, thickness}),
             layout_flags);
         return;
     }
@@ -49,8 +48,8 @@ alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags)
 
     if (category == ALIA_CATEGORY_DRAWING)
     {
-        alia_srgba8 const color = alia_palette_color_resolve(
-            alia_ctx_palette(ctx), style->color);
+        alia_srgba8 const color
+            = alia_palette_color_resolve(alia_ctx_palette(ctx), style->color);
         alia_draw_box(
             ctx,
             ctx->geometry->z_base + 1,

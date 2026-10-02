@@ -300,9 +300,7 @@ struct text_block_cache
 
 static void
 text_block_cache_cleanup(
-    alia_substrate_system*,
-    void* payload,
-    alia_substrate_cleanup_mode mode)
+    alia_substrate_system*, void* payload, alia_substrate_cleanup_mode mode)
 {
     auto* cache = reinterpret_cast<text_block_cache*>(payload);
     if (cache->block && cache->engine)

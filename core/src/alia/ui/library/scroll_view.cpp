@@ -571,18 +571,16 @@ scroll_view_assign_boxes(
     {
         changed = false;
 
-        bool const needs_vertical
-            = (d.flags & ALIA_SCROLL_VIEW_Y) != 0
-           && d.content_size.y > view_size.y;
+        bool const needs_vertical = (d.flags & ALIA_SCROLL_VIEW_Y) != 0
+                                 && d.content_size.y > view_size.y;
         if (needs_vertical != vertical_on)
         {
             vertical_on = needs_vertical;
             changed = true;
         }
 
-        bool const needs_horizontal
-            = (d.flags & ALIA_SCROLL_VIEW_X) != 0
-           && d.content_size.x > view_size.x;
+        bool const needs_horizontal = (d.flags & ALIA_SCROLL_VIEW_X) != 0
+                                   && d.content_size.x > view_size.x;
         if (needs_horizontal != horizontal_on)
         {
             horizontal_on = needs_horizontal;

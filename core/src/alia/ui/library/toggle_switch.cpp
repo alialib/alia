@@ -51,7 +51,8 @@ render_toggle_switch(
 {
     alia_palette const* p = alia_ctx_palette(ctx);
 
-    alia_vec2f const toggle_switch_min = toggle_switch_content_origin(ctx, placement, style);
+    alia_vec2f const toggle_switch_min
+        = toggle_switch_content_origin(ctx, placement, style);
     float const layout_w = alia_px(ctx, style->layout_width);
     float const layout_h = alia_px(ctx, style->layout_height);
     float const track_w = alia_px(ctx, style->track_width);
@@ -132,7 +133,8 @@ render_toggle_switch(
         alia_srgba8_from_srgb8(track_color),
         track_corner);
 
-    float const dot_center_x = toggle_switch_min.x + alia_px(ctx, dot_x_logical);
+    float const dot_center_x
+        = toggle_switch_min.x + alia_px(ctx, dot_x_logical);
     alia_vec2f const dot_center{dot_center_x, dot_y};
 
     // TODO: Add blur.
@@ -264,7 +266,8 @@ alia_toggle_switch(
     }
     alia_element_id const id = alia_make_element_id(ctx, result);
 
-    alia_toggle_switch_style const* const style = alia_toggle_switch_style_active(ctx);
+    alia_toggle_switch_style const* const style
+        = alia_toggle_switch_style_active(ctx);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)

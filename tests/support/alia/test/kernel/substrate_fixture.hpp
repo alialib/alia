@@ -17,8 +17,7 @@
 #include <malloc.h>
 #endif
 
-namespace alia {
-namespace test {
+namespace alia { namespace test {
 
 inline void*
 aligned_alloc_portable(size_t align, size_t size)
@@ -91,8 +90,7 @@ struct substrate_fixture
 
     substrate_fixture(substrate_fixture const&) = delete;
     substrate_fixture&
-    operator=(substrate_fixture const&)
-        = delete;
+    operator=(substrate_fixture const&) = delete;
 
     void
     reset_traversal()
@@ -211,5 +209,4 @@ struct substrate_fixture
     }
 };
 
-} // namespace test
-} // namespace alia
+}} // namespace alia::test

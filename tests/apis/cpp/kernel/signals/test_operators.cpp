@@ -246,7 +246,7 @@ TEST_CASE("field signal")
     };
 
     state_storage<foo> storage;
-    
+
     auto f_signal = make_state_binding(storage, &fx.ctx);
     write_signal(&fx.ctx, f_signal, foo{2, "1.5"});
     fx.run();
@@ -334,7 +334,7 @@ TEST_CASE("field signal with non-identifiable field")
     static_assert(!identifiable<inner>);
 
     state_storage<outer> storage;
-    
+
     auto s = make_state_binding(storage, &fx.ctx);
     write_signal(&fx.ctx, s, outer{{"a", 1}, {"b", 2}});
     fx.run();

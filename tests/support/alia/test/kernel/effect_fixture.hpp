@@ -14,8 +14,7 @@
 #include <malloc.h>
 #endif
 
-namespace alia {
-namespace test {
+namespace alia { namespace test {
 
 inline void*
 effect_aligned_alloc(size_t align, size_t size)
@@ -85,8 +84,7 @@ struct effect_fixture
 
     effect_fixture(effect_fixture const&) = delete;
     effect_fixture&
-    operator=(effect_fixture const&)
-        = delete;
+    operator=(effect_fixture const&) = delete;
 
     // Run posted effects and reset the scratch arena for the next posting
     // sequence.
@@ -100,5 +98,4 @@ struct effect_fixture
     }
 };
 
-} // namespace test
-} // namespace alia
+}} // namespace alia::test

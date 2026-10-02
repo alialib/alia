@@ -36,7 +36,8 @@ resolve_font(
     float size,
     alia_resolved_font* out)
 {
-    alia_resolved_typeface const resolved = alia_typeface_resolve(ui, typeface);
+    alia_resolved_typeface const resolved
+        = alia_typeface_resolve(ui, typeface);
     out->typeface = resolved;
     out->size = size;
     resolved.engine->vtable->get_font_metrics(
@@ -88,9 +89,9 @@ the_ui(context& ctx)
 
         emit_text(
             ctx,
-            "Alia was pulled in with examples off; this atlas adds Source Sans "
-            "after stock UI icons + Roboto. The checkbox checkmark should still "
-            "draw from the icon registry.",
+            "Alia was pulled in with examples off. This atlas adds Source "
+            "Sans after stock UI icons and Roboto. The checkbox checkmark "
+            "should still draw from the icon registry.",
             &body_font,
             ALIA_PALETTE_RAMP_LEVEL_BASE);
 

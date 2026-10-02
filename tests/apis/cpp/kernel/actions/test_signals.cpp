@@ -15,8 +15,7 @@ TEST_CASE("add_write_action")
     effect_fixture fx;
     int x = 0;
     bool written = false;
-    auto s
-        = add_write_action(ref(x), callback([&](int) { written = true; }));
+    auto s = add_write_action(ref(x), callback([&](int) { written = true; }));
 
     static_assert(view_signal<decltype(s)>);
     static_assert(sink_signal<decltype(s)>);

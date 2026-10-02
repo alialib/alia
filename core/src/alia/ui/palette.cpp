@@ -161,7 +161,8 @@ on_solid_l_for_contrast(
     alia_palette_params const& params,
     alia_theme_context const& ctx)
 {
-    float const target = ctx.contrast_target > 0.f ? ctx.contrast_target : 4.5f;
+    float const target
+        = ctx.contrast_target > 0.f ? ctx.contrast_target : 4.5f;
     float const fallback = base.l > 0.65f ? params.swatch_on_solid_l_dark
                                           : params.swatch_on_solid_l_light;
 
@@ -173,8 +174,8 @@ on_solid_l_for_contrast(
     for (int i = 0; i <= 16; ++i)
     {
         float candidate_l = i / 16.0f;
-        alia_srgb8 candidate_srgb = alia_srgb8_from_unclamped_oklch(
-            {candidate_l, 0.02f, base.h});
+        alia_srgb8 candidate_srgb
+            = alia_srgb8_from_unclamped_oklch({candidate_l, 0.02f, base.h});
         float ratio = alia_relative_luminance_ratio(
             solid_lum, alia_relative_luminance_srgb8(candidate_srgb));
         if (ratio >= target)
@@ -199,21 +200,19 @@ generate_swatch_from_oklch(
 
     fill_one(&swatch->solid, base);
 
-    float on_solid_l
-        = on_solid_l_for_contrast(base, *params, *ctx);
+    float on_solid_l = on_solid_l_for_contrast(base, *params, *ctx);
     fill_one(&swatch->on_solid, {on_solid_l, 0.02f, base.h});
 
     float subtle_l
         = dark ? params->swatch_subtle_l_dark : params->swatch_subtle_l_light;
-    fill_one(
-        &swatch->subtle,
-        {subtle_l, params->swatch_subtle_c, base.h});
+    fill_one(&swatch->subtle, {subtle_l, params->swatch_subtle_c, base.h});
 
     fill_one(
         &swatch->outline,
         {base.l, base.c * params->swatch_outline_c_scale, base.h});
 
-    float text_l = dark ? params->swatch_text_l_dark : params->swatch_text_l_light;
+    float text_l
+        = dark ? params->swatch_text_l_dark : params->swatch_text_l_light;
     alia_oklch text_oklch
         = {text_l, base.c * params->swatch_text_c_scale, base.h};
     fill_one(&swatch->text, text_oklch);
@@ -254,9 +253,9 @@ alia_palette_seeds_from_accent(
     float const primary_h = accent->primary.h;
 
     float bg_l = dark ? sp.elevation_bg_l_base_dark
-                          + (elevation * sp.elevation_bg_l_per_step_dark)
+                            + (elevation * sp.elevation_bg_l_per_step_dark)
                       : sp.elevation_bg_l_base_light
-                          + (elevation * sp.elevation_bg_l_per_step_light);
+                            + (elevation * sp.elevation_bg_l_per_step_light);
     out->bg = {bg_l, sp.elevation_bg_c, primary_h};
 
     float text_l = dark ? sp.elevation_text_l_dark : sp.elevation_text_l_light;
@@ -270,15 +269,15 @@ alia_palette_seeds_from_accent(
 
     float alert_l = dark ? sp.alert_l_dark : sp.alert_l_light;
 
-    out->danger = {
-        alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_danger_deg)};
-    out->success = {
-        alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_success_deg)};
+    out->danger
+        = {alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_danger_deg)};
+    out->success
+        = {alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_success_deg)};
     out->info = {alert_l, sp.alert_c, alia_deg_to_rad(sp.alert_hue_info_deg)};
-    out->warning = {
-        alert_l + sp.alert_warning_l_offset,
-        sp.alert_c,
-        alia_deg_to_rad(sp.alert_hue_warning_deg)};
+    out->warning
+        = {alert_l + sp.alert_warning_l_offset,
+           sp.alert_c,
+           alia_deg_to_rad(sp.alert_hue_warning_deg)};
 }
 
 static void

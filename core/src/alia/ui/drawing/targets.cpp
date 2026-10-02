@@ -105,8 +105,7 @@ alia_draw_target_begin(
     ALIA_ASSERT(target != ALIA_DRAW_TARGET_PRIMARY);
     ALIA_ASSERT(size.x > 0.f && size.y > 0.f);
 
-    alia_vec2i const pixel_size
-        = {int(size.x + 0.5f), int(size.y + 0.5f)};
+    alia_vec2i const pixel_size = {int(size.x + 0.5f), int(size.y + 0.5f)};
     alia_draw_target_ensure_size(ctx->system, target, pixel_size);
 
     auto& saved = alia::stack_push<draw_target_scope>(ctx);

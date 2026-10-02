@@ -89,25 +89,25 @@ TEST_CASE("make_id_by_reference")
 
 TEST_CASE("identifiable")
 {
-    CHECK((identifiable<bool>));
-    CHECK((identifiable<int>));
-    CHECK((identifiable<float>));
-    CHECK((identifiable<double>));
-    CHECK((identifiable<std::string>));
+    CHECK((identifiable<bool>) );
+    CHECK((identifiable<int>) );
+    CHECK((identifiable<float>) );
+    CHECK((identifiable<double>) );
+    CHECK((identifiable<std::string>) );
 
     struct pod
     {
         int a;
         int b;
     };
-    CHECK((identifiable<pod>));
+    CHECK((identifiable<pod>) );
 
     struct no_id
     {
         std::string s;
     };
-    CHECK_FALSE((identifiable<no_id>));
-    CHECK_FALSE((identifiable<std::vector<int>>));
+    CHECK_FALSE((identifiable<no_id>) );
+    CHECK_FALSE((identifiable<std::vector<int>>) );
 }
 
 TEST_CASE("std::hash matches alia_id_view_hash")
@@ -218,7 +218,8 @@ TEST_CASE("captured_id id_view inline avoids allocation")
     alia_general_allocator alloc = test_malloc_allocator();
     auto counting = alloc;
     counting.user_data = &allocs;
-    counting.alloc = [](void* user_data, size_t size, size_t alignment) -> void* {
+    counting.alloc
+        = [](void* user_data, size_t size, size_t alignment) -> void* {
         ++*static_cast<int*>(user_data);
         return test_malloc_allocator().alloc(nullptr, size, alignment);
     };

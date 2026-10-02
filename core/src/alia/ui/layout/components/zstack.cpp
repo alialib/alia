@@ -100,8 +100,8 @@ zstack_assign_boxes(
         = {.min = box.min + placement.min, .size = placement.size};
     // The stack reports no ascent to its parent, so layers share an internal
     // baseline derived from the stack's own baseline-group flags.
-    float const child_baseline = alia_resolve_baseline(
-        zstack.flags, placement.size.y, 0.f, 0.f);
+    float const child_baseline
+        = alia_resolve_baseline(zstack.flags, placement.size.y, 0.f, 0.f);
 
     for (alia_layout_node* child = zstack.first_child; child != nullptr;
          child = child->next_sibling)

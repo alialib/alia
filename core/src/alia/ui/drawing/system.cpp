@@ -2,8 +2,8 @@
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
-#include <alia/abi/ui/trace.h>
 #include <alia/abi/ui/system/renderer.h>
+#include <alia/abi/ui/trace.h>
 
 #include <alia/abi/ui/events.h>
 #include <alia/impl/events.hpp>
@@ -171,8 +171,7 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         alia::trace_pass_builder trace(*system, ALIA_TRACE_PASS_DRAW_EXECUTE);
         if (trace.active())
         {
-            trace.pass.draw.target_count
-                = static_cast<uint16_t>(order.size());
+            trace.pass.draw.target_count = static_cast<uint16_t>(order.size());
             trace.pass.draw.bucket_count
                 = static_cast<uint16_t>(bucket_table.keys.size());
         }
