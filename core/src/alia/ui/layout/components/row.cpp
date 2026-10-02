@@ -60,7 +60,7 @@ row_measure_vertical(
             ctx->scratch, scratch.child_count);
     // TODO: Stop repeating this logic everywhere.
     auto const placement = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(row.flags, main_axis),
+        alia_resolve_alignment_flags(row.flags, main_axis),
         assigned_width,
         scratch.total_width);
     float const total_extra_space
@@ -108,7 +108,7 @@ row_assign_boxes(
         = arena_alloc_array<alia_horizontal_requirements>(
             ctx->scratch, scratch.child_count);
     auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(row.flags, main_axis),
+        alia_resolve_alignment_flags(row.flags, main_axis),
         box.size,
         baseline,
         {scratch.total_width, scratch.height},

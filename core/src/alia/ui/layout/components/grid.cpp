@@ -178,7 +178,7 @@ grid_row_measure_vertical(
     auto& scratch = use_scratch<grid_row_scratch>(ctx->scratch);
     auto& grid = *grid_row.grid;
     auto const placement = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(grid_row.container.flags, main_axis),
+        alia_resolve_alignment_flags(grid_row.container.flags, main_axis),
         assigned_width,
         grid.scratch->total_width);
     float const total_extra_space
@@ -230,7 +230,7 @@ grid_row_assign_boxes(
     auto& scratch = use_scratch<grid_row_scratch>(ctx->scratch);
     auto& grid = *grid_row.grid;
     auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(grid_row.container.flags, main_axis),
+        alia_resolve_alignment_flags(grid_row.container.flags, main_axis),
         box.size,
         baseline,
         {grid.scratch->total_width, scratch.height},

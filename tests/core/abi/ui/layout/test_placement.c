@@ -102,10 +102,7 @@ static void
 test_resolve_baseline(void)
 {
     float baseline = alia_resolve_baseline(
-        ALIA_BASELINE_GROUP_ALIGN_CENTER,
-        100.f,
-        20.f,
-        30.f);
+        ALIA_BASELINE_GROUP_ALIGN_CENTER, 100.f, 20.f, 30.f);
 
     TEST_CHECK(baseline == 45.f);
 }
@@ -158,6 +155,63 @@ test_resolve_container_box_centered(void)
             alia_vec2f_make(45.f, 45.f), alia_vec2f_make(10.f, 10.f))));
 }
 
+static void
+test_resolve_alignment_flags_priority(void)
+{
+    // Caller absolute beats default CROSS on the cross axis.
+    {
+        alia_layout_flags_t const flags
+            = ALIA_CENTER_X | ALIA_DEFAULT_FILL_CROSS;
+        alia_layout_flags_t const resolved
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_Y);
+        TEST_CHECK((resolved & ALIA_X_ALIGNMENT_MASK) == ALIA_CENTER_X);
+        TEST_CHECK((resolved & ALIA_DEFAULT_ALIGNMENT_MASK) == 0);
+        TEST_CHECK((resolved & ALIA_CROSS_ALIGNMENT_MASK) == 0);
+    }
+
+    // Caller CROSS beats default absolute on the cross axis.
+    {
+        alia_layout_flags_t const flags
+            = ALIA_CENTER_CROSS | ALIA_DEFAULT_FILL_X;
+        alia_layout_flags_t const resolved
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_Y);
+        TEST_CHECK((resolved & ALIA_X_ALIGNMENT_MASK) == ALIA_CENTER_X);
+    }
+
+    // Default CROSS applies when nothing else claims the cross axis.
+    {
+        alia_layout_flags_t const flags = ALIA_DEFAULT_FILL_CROSS;
+        alia_layout_flags_t const in_column
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_Y);
+        TEST_CHECK((in_column & ALIA_X_ALIGNMENT_MASK) == ALIA_FILL_X);
+        TEST_CHECK((in_column & ALIA_Y_ALIGNMENT_MASK) == 0);
+
+        alia_layout_flags_t const in_row
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_X);
+        TEST_CHECK((in_row & ALIA_Y_ALIGNMENT_MASK) == ALIA_FILL_Y);
+        TEST_CHECK((in_row & ALIA_X_ALIGNMENT_MASK) == 0);
+    }
+
+    // Default on the main axis still applies when CROSS is set.
+    {
+        alia_layout_flags_t const flags
+            = ALIA_CENTER_CROSS | ALIA_DEFAULT_BASELINE_Y;
+        alia_layout_flags_t const in_column
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_Y);
+        TEST_CHECK((in_column & ALIA_X_ALIGNMENT_MASK) == ALIA_CENTER_X);
+        TEST_CHECK((in_column & ALIA_Y_ALIGNMENT_MASK) == ALIA_BASELINE_Y);
+    }
+
+    // Non-alignment flags are preserved.
+    {
+        alia_layout_flags_t const flags = ALIA_GROW | ALIA_DEFAULT_FILL_CROSS;
+        alia_layout_flags_t const resolved
+            = alia_resolve_alignment_flags(flags, ALIA_MAIN_AXIS_Y);
+        TEST_CHECK((resolved & ALIA_GROW) == ALIA_GROW);
+        TEST_CHECK((resolved & ALIA_X_ALIGNMENT_MASK) == ALIA_FILL_X);
+    }
+}
+
 void
 placement_tests(void)
 {
@@ -171,4 +225,5 @@ placement_tests(void)
     test_resolve_container_box_default_stretch();
     test_resolve_container_box_fill();
     test_resolve_container_box_centered();
+    test_resolve_alignment_flags_priority();
 }

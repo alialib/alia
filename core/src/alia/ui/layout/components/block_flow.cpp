@@ -119,7 +119,7 @@ block_flow_measure_vertical(
         ctx->scratch, scratch.child_count);
 
     auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(block_flow.flags, main_axis),
+        alia_resolve_alignment_flags(block_flow.flags, main_axis),
         assigned_width,
         scratch.max_child_width);
 
@@ -250,7 +250,7 @@ block_flow_assign_boxes(
         return;
 
     auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(block_flow.flags, main_axis),
+        alia_resolve_alignment_flags(block_flow.flags, main_axis),
         box.size,
         baseline,
         {scratch.max_child_width, scratch.total_height},

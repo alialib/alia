@@ -142,6 +142,15 @@ generate_button_style(
     alia_button_style_generate(static_cast<alia_button_style*>(out), seeds);
 }
 
+void
+generate_separator_style(
+    void* user_data, void* out, alia_style_seeds const* seeds)
+{
+    (void) user_data;
+    alia_separator_style_generate(
+        static_cast<alia_separator_style*>(out), seeds);
+}
+
 } // namespace
 
 namespace alia {
@@ -232,6 +241,13 @@ style_catalog_init(style_catalog& catalog, alia_ui_system* ui)
         sizeof(alia_button_style),
         alignof(alia_button_style),
         generate_button_style,
+        nullptr);
+    bind_slot(
+        catalog,
+        ALIA_STYLE_SEPARATOR,
+        sizeof(alia_separator_style),
+        alignof(alia_separator_style),
+        generate_separator_style,
         nullptr);
 }
 

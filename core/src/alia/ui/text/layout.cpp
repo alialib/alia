@@ -130,7 +130,7 @@ text_assign_boxes(
     float const width = text_measure_total_width(text);
 
     alia_box const placement = alia_resolve_leaf_box(
-        alia_fold_in_cross_axis_flags(text.flags, main_axis),
+        alia_resolve_alignment_flags(text.flags, main_axis),
         box.size,
         baseline,
         alia_vec2f{width, text.line_height},

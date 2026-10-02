@@ -44,7 +44,7 @@ alignment_override_measure_vertical(
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
     auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
     auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(override.flags, main_axis),
+        alia_resolve_alignment_flags(override.flags, main_axis),
         assigned_width,
         scratch.horizontal.min_size);
     scratch.vertical = alia_measure_vertical(
@@ -64,7 +64,7 @@ alignment_override_assign_boxes(
     auto& override = *reinterpret_cast<alignment_override_node*>(node);
     auto& scratch = use_scratch<alignment_override_scratch>(ctx->scratch);
     auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(override.flags, main_axis),
+        alia_resolve_alignment_flags(override.flags, main_axis),
         box.size,
         baseline,
         {scratch.horizontal.min_size, scratch.vertical.min_size},

@@ -82,7 +82,7 @@ leaf_assign_boxes(
     alia_vec2f const size = leaf_absolute_size(leaf, main_axis);
     alia_box* placement = arena_alloc<alia_box>(ctx->arena);
     auto const padded_placement = alia_resolve_leaf_box(
-        alia_fold_in_cross_axis_flags(leaf.flags, main_axis),
+        alia_resolve_alignment_flags(leaf.flags, main_axis),
         box.size,
         baseline,
         size,

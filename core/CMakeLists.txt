@@ -50,6 +50,7 @@ add_library(alia_core STATIC
     src/alia/ui/library/scroll_view.cpp
     src/alia/ui/library/collapsible.cpp
     src/alia/ui/library/button.cpp
+    src/alia/ui/library/separator.cpp
     src/alia/ui/viewport.cpp
     src/alia/ui/trace.cpp
     src/alia/ui/system/api.cpp

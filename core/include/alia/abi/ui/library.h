@@ -366,6 +366,37 @@ alia_button_style_active(alia_context* ctx)
     return (alia_button_style*) alia_style_active(ctx, ALIA_STYLE_BUTTON);
 }
 
+// separator style (catalog slot ALIA_STYLE_SEPARATOR)
+typedef struct alia_separator_style
+{
+    alia_palette_color color;
+    // thickness, logical px - Note that this is technically the minimum size
+    // along both layout axes, but separators default to stretching along the
+    // cross axis, so this is effectively the size along the main container
+    // axis (i.e., the thickness).
+    float thickness;
+} alia_separator_style;
+
+// Fill `out` with the separator style for `seeds`.
+// Seeds can be `NULL` to use the default seeds.
+void
+alia_separator_style_generate(
+    alia_separator_style* out, alia_style_seeds const* seeds);
+
+static inline alia_separator_style*
+alia_separator_style_default(alia_ui_system* ui)
+{
+    return (alia_separator_style*) alia_style_default(
+        ui, ALIA_STYLE_SEPARATOR);
+}
+
+static inline alia_separator_style*
+alia_separator_style_active(alia_context* ctx)
+{
+    return (alia_separator_style*) alia_style_active(
+        ctx, ALIA_STYLE_SEPARATOR);
+}
+
 typedef uint32_t alia_button_flags_t;
 
 enum
@@ -431,6 +462,10 @@ alia_node_expander(
     alia_context* ctx,
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags);
+
+// Emit a separator leaf (layout + draw only; not hittable).
+void
+alia_separator(alia_context* ctx, alia_layout_flags_t layout_flags);
 
 // scrollable view flags
 typedef uint32_t alia_scroll_view_flags_t;

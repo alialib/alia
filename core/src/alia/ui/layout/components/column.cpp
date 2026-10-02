@@ -59,7 +59,7 @@ column_measure_vertical(
         = arena_alloc_array<alia_vertical_requirements>(
             ctx->scratch, scratch.child_count);
     auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(column.flags, main_axis),
+        alia_resolve_alignment_flags(column.flags, main_axis),
         assigned_width,
         scratch.max_width);
     alia_vertical_requirements* requirement_i = y_requirements;
@@ -99,7 +99,7 @@ column_assign_boxes(
         = arena_alloc_array<alia_vertical_requirements>(
             ctx->scratch, scratch.child_count);
     auto const assignment = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(column.flags, main_axis),
+        alia_resolve_alignment_flags(column.flags, main_axis),
         box.size,
         baseline,
         {scratch.max_width, scratch.total_height},

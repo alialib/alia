@@ -46,7 +46,7 @@ zstack_measure_vertical(
     auto& scratch = use_scratch<zstack_scratch>(ctx->scratch);
 
     auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(zstack.flags, main_axis),
+        alia_resolve_alignment_flags(zstack.flags, main_axis),
         assigned_width,
         scratch.max_width);
 
@@ -84,7 +84,7 @@ zstack_assign_boxes(
     auto& scratch = use_scratch<zstack_scratch>(ctx->scratch);
 
     auto const placement = alia_resolve_container_box(
-        alia_fold_in_cross_axis_flags(zstack.flags, main_axis),
+        alia_resolve_alignment_flags(zstack.flags, main_axis),
         box.size,
         baseline,
         {scratch.max_width, scratch.max_height},

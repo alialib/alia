@@ -490,7 +490,7 @@ flow_measure_vertical(
     alia_arena_jump(&ctx->scratch, scratch.scratch_end);
 
     auto const assignment = alia_resolve_container_x(
-        alia_fold_in_cross_axis_flags(flow.flags, main_axis),
+        alia_resolve_alignment_flags(flow.flags, main_axis),
         assigned_width,
         scratch.max_fragment_width);
 
@@ -581,7 +581,7 @@ flow_assign_boxes(
             ctx->scratch, scratch.fragment_count);
 
     alia_layout_flags_t const flags
-        = alia_fold_in_cross_axis_flags(flow.flags, main_axis);
+        = alia_resolve_alignment_flags(flow.flags, main_axis);
     auto const x_placement = alia_resolve_container_x(
         flags, box.size.x, scratch.max_fragment_width);
     // Wrap at the assigned width before resolving Y so the flow's own

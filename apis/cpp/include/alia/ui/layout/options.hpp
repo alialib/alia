@@ -1192,25 +1192,45 @@ operator|(
     return layout | as_layout_options(spec);
 }
 
-// Fill in X alignment only when the caller left that group unset.
+// Shift caller-block alignment into the default alignment block.
+inline layout_flag_set
+as_default_alignment(layout_flag_set alignment)
+{
+    return layout_flag_set{alia_as_default_alignment(raw_code(alignment))};
+}
+
+// Fold a default X alignment into a flag set. (The input flag set must not
+// already have a default X alignment.)
 inline layout_flag_set
 add_default_x_alignment(layout_flag_set flags, layout_flag_set alignment)
 {
-    if ((flags & X_ALIGNMENT_MASK) == layout_flag_set(NO_FLAGS))
-        return flags | alignment;
-    return flags;
+    ALIA_ASSERT(
+        (flags & DEFAULT_X_ALIGNMENT_MASK) == layout_flag_set(NO_FLAGS));
+    return flags | as_default_alignment(alignment & X_ALIGNMENT_MASK);
 }
 
-// Fill in Y alignment only when the caller left that group unset.
+// Fold a default Y alignment into a flag set. (The input flag set must not
+// already have a default Y alignment.)
 inline layout_flag_set
 add_default_y_alignment(layout_flag_set flags, layout_flag_set alignment)
 {
-    if ((flags & Y_ALIGNMENT_MASK) == layout_flag_set(NO_FLAGS))
-        return flags | alignment;
-    return flags;
+    ALIA_ASSERT(
+        (flags & DEFAULT_Y_ALIGNMENT_MASK) == layout_flag_set(NO_FLAGS));
+    return flags | as_default_alignment(alignment & Y_ALIGNMENT_MASK);
 }
 
-// Fill in X and Y alignment only where the caller left those groups unset.
+// Fold a default CROSS alignment into a flag set. (The input flag set must not
+// already have a default CROSS alignment.)
+inline layout_flag_set
+add_default_cross_alignment(layout_flag_set flags, layout_flag_set alignment)
+{
+    ALIA_ASSERT(
+        (flags & DEFAULT_CROSS_ALIGNMENT_MASK) == layout_flag_set(NO_FLAGS));
+    return flags | as_default_alignment(alignment & CROSS_ALIGNMENT_MASK);
+}
+
+// Fold default X and Y alignments into a flag set. (The input flag set must
+// not already have default X or Y alignments.)
 inline layout_flag_set
 add_default_alignment(
     layout_flag_set flags,
@@ -1236,6 +1256,13 @@ add_default_y_alignment(layout_options layout, layout_flag_set alignment)
 }
 
 inline layout_options
+add_default_cross_alignment(layout_options layout, layout_flag_set alignment)
+{
+    layout.flags = add_default_cross_alignment(layout.flags, alignment);
+    return layout;
+}
+
+inline layout_options
 add_default_alignment(
     layout_options layout,
     layout_flag_set x_alignment,
@@ -1255,7 +1282,11 @@ add_default_x_alignment(
     if constexpr (detail::is_empty_layout_piece_v<Flags>)
     {
         return layout_spec<layout_flag_set, Pad, Width, Height, Growth>{
-            alignment, spec.pad, spec.width, spec.height, spec.growth};
+            as_default_alignment(alignment & X_ALIGNMENT_MASK),
+            spec.pad,
+            spec.width,
+            spec.height,
+            spec.growth};
     }
     else
     {
@@ -1273,11 +1304,37 @@ add_default_y_alignment(
     if constexpr (detail::is_empty_layout_piece_v<Flags>)
     {
         return layout_spec<layout_flag_set, Pad, Width, Height, Growth>{
-            alignment, spec.pad, spec.width, spec.height, spec.growth};
+            as_default_alignment(alignment & Y_ALIGNMENT_MASK),
+            spec.pad,
+            spec.width,
+            spec.height,
+            spec.growth};
     }
     else
     {
         spec.flags = add_default_y_alignment(spec.flags, alignment);
+        return spec;
+    }
+}
+
+template<class Flags, class Pad, class Width, class Height, class Growth>
+auto
+add_default_cross_alignment(
+    layout_spec<Flags, Pad, Width, Height, Growth> spec,
+    layout_flag_set alignment)
+{
+    if constexpr (detail::is_empty_layout_piece_v<Flags>)
+    {
+        return layout_spec<layout_flag_set, Pad, Width, Height, Growth>{
+            as_default_alignment(alignment & CROSS_ALIGNMENT_MASK),
+            spec.pad,
+            spec.width,
+            spec.height,
+            spec.growth};
+    }
+    else
+    {
+        spec.flags = add_default_cross_alignment(spec.flags, alignment);
         return spec;
     }
 }

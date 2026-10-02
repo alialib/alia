@@ -167,43 +167,53 @@ TEST_CASE("length and breadth are exclusive of width and height")
     CHECK(layout_content_size(breadth(9.f)).y == 9.f);
 }
 
-TEST_CASE("add_default alignment fills only unset groups")
+TEST_CASE("add_default alignment writes the default block")
 {
     layout_flag_set const empty = NO_FLAGS;
 
     CHECK(
         raw_code(add_default_x_alignment(empty, ALIGN_LEFT))
-        == raw_code(ALIGN_LEFT));
+        == raw_code(DEFAULT_ALIGN_LEFT));
     CHECK(
         raw_code(add_default_x_alignment(ALIGN_RIGHT, ALIGN_LEFT))
-        == raw_code(ALIGN_RIGHT));
+        == raw_code(ALIGN_RIGHT | DEFAULT_ALIGN_LEFT));
     CHECK(
         raw_code(add_default_x_alignment(GROW | CENTER_Y, ALIGN_LEFT))
-        == raw_code(GROW | CENTER_Y | ALIGN_LEFT));
+        == raw_code(GROW | CENTER_Y | DEFAULT_ALIGN_LEFT));
 
     CHECK(
         raw_code(add_default_y_alignment(empty, CENTER_Y))
-        == raw_code(CENTER_Y));
+        == raw_code(DEFAULT_CENTER_Y));
     CHECK(
         raw_code(add_default_y_alignment(ALIGN_TOP, CENTER_Y))
-        == raw_code(ALIGN_TOP));
+        == raw_code(ALIGN_TOP | DEFAULT_CENTER_Y));
+
+    CHECK(
+        raw_code(add_default_cross_alignment(empty, FILL_CROSS))
+        == raw_code(DEFAULT_FILL_CROSS));
+    CHECK(
+        raw_code(add_default_cross_alignment(CENTER_CROSS, FILL_CROSS))
+        == raw_code(CENTER_CROSS | DEFAULT_FILL_CROSS));
 
     CHECK(
         raw_code(add_default_alignment(GROW, ALIGN_LEFT, CENTER_Y))
-        == raw_code(GROW | ALIGN_LEFT | CENTER_Y));
+        == raw_code(GROW | DEFAULT_ALIGN_LEFT | DEFAULT_CENTER_Y));
     CHECK(
         raw_code(
             add_default_alignment(FILL_X | ALIGN_TOP, ALIGN_LEFT, CENTER_Y))
-        == raw_code(FILL_X | ALIGN_TOP));
+        == raw_code(
+            FILL_X | ALIGN_TOP | DEFAULT_ALIGN_LEFT | DEFAULT_CENTER_Y));
 
     layout_options options = as_layout_options(GROW | pad(4.f));
     options = add_default_x_alignment(options, ALIGN_LEFT);
-    CHECK(raw_code(options.flags) == raw_code(GROW | ALIGN_LEFT));
+    CHECK(raw_code(options.flags) == raw_code(GROW | DEFAULT_ALIGN_LEFT));
     CHECK(options.has_pad());
     CHECK(options.pad_offsets.left == 4.f);
 
     auto with_pad = CENTER_X | pad(1.f);
     with_pad = add_default_alignment(with_pad, ALIGN_LEFT, BASELINE_Y);
-    CHECK(raw_code(with_pad.flags) == raw_code(CENTER_X | BASELINE_Y));
+    CHECK(
+        raw_code(with_pad.flags)
+        == raw_code(CENTER_X | DEFAULT_ALIGN_LEFT | DEFAULT_BASELINE_Y));
     CHECK(with_pad.pad.offsets.left == 1.f);
 }

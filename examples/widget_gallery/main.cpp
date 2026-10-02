@@ -297,19 +297,19 @@ do_content(context& ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_toggle_switch_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_button_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_node_expander_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_radio_button_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_checkbox_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_slider_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_collapsible_demo(ctx);
-        do_heading(ctx, "");
+        separator(ctx);
         do_text_sample(ctx);
     });
 }
