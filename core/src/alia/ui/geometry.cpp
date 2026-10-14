@@ -46,6 +46,21 @@ alia_geometry_pop_translation(alia_context* ctx)
 }
 
 void
+alia_geometry_push_scale(alia_context* ctx, float factor)
+{
+    float& saved_scale = alia::stack_push<float>(ctx);
+    saved_scale = ctx->geometry->scale;
+    ctx->geometry->scale *= factor;
+}
+
+void
+alia_geometry_pop_scale(alia_context* ctx)
+{
+    float& saved_scale = alia::stack_pop<float>(ctx);
+    ctx->geometry->scale = saved_scale;
+}
+
+void
 alia_geometry_push_z_base(alia_context* ctx, alia_z_index z_base)
 {
     alia_z_index& saved_z_base = alia::stack_push<alia_z_index>(ctx);

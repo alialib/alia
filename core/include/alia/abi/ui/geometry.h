@@ -34,7 +34,7 @@ typedef struct alia_clip_state
 
 typedef struct alia_geometry_context
 {
-    // the current scale - logical pixels per physical pixel
+    // current logical-to-physical scale (physical = logical * scale)
     float scale;
 
     // the current offset in physical pixels
@@ -73,6 +73,13 @@ alia_geometry_push_translation(alia_context* ctx, alia_vec2f offset);
 
 void
 alia_geometry_pop_translation(alia_context* ctx);
+
+// Multiply the current geometry scale by `factor` for a nested region.
+void
+alia_geometry_push_scale(alia_context* ctx, float factor);
+
+void
+alia_geometry_pop_scale(alia_context* ctx);
 
 // Push a new Z base index.
 void

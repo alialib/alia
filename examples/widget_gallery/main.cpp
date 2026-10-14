@@ -6,6 +6,7 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/styling.h>
 #include <alia/abi/ui/system/api.h>
@@ -16,7 +17,6 @@
 #include <alia/kernel/actions/operators.hpp>
 #include <alia/kernel/signals/adaptors.hpp>
 #include <alia/kernel/signals/basic.hpp>
-#include <alia/kernel/signals/lambdas.hpp>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/object.h>
@@ -35,6 +35,7 @@ alia_ui_system* the_system;
 static alia_ui_tracer the_tracer;
 
 static float demo_spacing = 6.f;
+static float content_magnification = 1.f;
 
 #include "common/demo_text.hpp"
 #include "prototyping/allocation_probe.h"
@@ -102,19 +103,7 @@ do_controls(context& ctx)
     slider(ctx, ref(demo_spacing), 0.0, 24.0, 1.0);
 
     do_subheading(ctx, "Magnification");
-    {
-        alia_ui_system* const ui = ctx.system;
-        slider(
-            ctx,
-            lambda_binding(
-                [ui] { return double(alia_ui_get_magnification(ui)); },
-                [ui](double value) {
-                    alia_ui_set_magnification(ui, float(value));
-                }),
-            0.25,
-            3.0,
-            0.001);
-    }
+    slider(ctx, ref(content_magnification), 0.25, 3.0, 0.001);
 }
 
 void
@@ -349,7 +338,10 @@ the_demo(context& ctx)
                     [&]() {
                         column(ctx, GROW, [&]() {
                             scroll_view(ctx, GROW, [&]() {
+                                alia_geometry_push_scale(
+                                    &ctx, content_magnification);
                                 do_content(ctx, pad(40));
+                                alia_geometry_pop_scale(&ctx);
                             });
                         });
                     });
