@@ -326,7 +326,7 @@ the_demo(context& ctx)
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
-                        column(ctx, pad(40), [&]() { do_controls(ctx); });
+                        column(ctx, pad(20), [&]() { do_controls(ctx); });
                     });
                 });
             with_spacing(ctx, demo_spacing, [&] {
@@ -338,10 +338,13 @@ the_demo(context& ctx)
                     [&]() {
                         column(ctx, GROW, [&]() {
                             scroll_view(ctx, GROW, [&]() {
+                                alia_layout_edge_offsets_begin(
+                                    &ctx, {20, 20, 20, 20}, ALIA_FILL);
                                 alia_geometry_push_scale(
                                     &ctx, content_magnification);
-                                do_content(ctx, pad(40));
+                                do_content(ctx);
                                 alia_geometry_pop_scale(&ctx);
+                                alia_layout_edge_offsets_end(&ctx);
                             });
                         });
                     });
