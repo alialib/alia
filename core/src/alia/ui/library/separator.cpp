@@ -58,7 +58,7 @@ alia_separator(
             = alia_palette_color_resolve(alia_ctx_palette(ctx), style->color);
         alia_draw_box(
             ctx,
-            ctx->geometry->z_base + 1,
+            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             box,
             {.fill_color = color,
              .corner_radius = 0.f,

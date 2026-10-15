@@ -3,6 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -82,7 +83,7 @@ render_node_expander(
 
     alia_draw_equilateral_triangle(
         ctx,
-        ctx->geometry->z_base + 2,
+        alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         triangle_box,
         triangle_rgba,
         rotation_degrees);
@@ -97,7 +98,7 @@ render_node_expander(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 3,
+            alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             center,
             alia_px(ctx, style->highlight_radius),
             alia_palette_color_resolve(p, style->highlight));

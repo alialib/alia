@@ -22,7 +22,6 @@ struct button_scope
     alia_button_flags_t flags = 0;
     alia_box box{};
     alia_palette_color saved_text_color{};
-    alia_z_index saved_z_base = 0;
 };
 
 static void
@@ -167,7 +166,6 @@ alia_button_begin(
         .flags = flags,
         .box = {},
         .saved_text_color = {},
-        .saved_z_base = ctx->geometry->z_base,
     };
 
     // Outer margin matches leaf spacing so buttons sit in the same rhythm as
@@ -224,9 +222,10 @@ alia_button_begin(
             case ALIA_CATEGORY_DRAWING: {
                 alia_palette const* palette = alia_ctx_palette(ctx);
                 float const corner = alia_px(ctx, style->corner_radius);
+                alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_BACKGROUND);
                 alia_draw_box(
                     ctx,
-                    ctx->geometry->z_base,
+                    z,
                     scope.box,
                     {.fill_color = alia_palette_color_resolve(palette, fill_c),
                      .corner_radius = corner,
@@ -237,7 +236,7 @@ alia_button_begin(
                 {
                     alia_draw_box(
                         ctx,
-                        ctx->geometry->z_base,
+                        z,
                         scope.box,
                         {.fill_color
                          = alia_palette_color_resolve(palette, highlight_c),
@@ -245,8 +244,6 @@ alia_button_begin(
                          .border_width = 0.f,
                          .border_color = alia_srgba8_make(0, 0, 0, 0)});
                 }
-                // Content draws above the chrome.
-                ++ctx->geometry->z_base;
                 break;
             }
             default:
@@ -272,7 +269,6 @@ alia_button_end(alia_context* ctx)
     bool const is_disabled = (scope.flags & ALIA_BUTTON_DISABLED) != 0;
 
     alia_text_style_active(ctx)->color = scope.saved_text_color;
-    ctx->geometry->z_base = scope.saved_z_base;
 
     // Register after children so the button owns the hit (last writer wins).
     alia_element_box_region(

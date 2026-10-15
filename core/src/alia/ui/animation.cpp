@@ -2,6 +2,7 @@
 
 #include <alia/abi/kernel/animation.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/animation/unit_cubic_bezier.h>
 
@@ -66,7 +67,7 @@ render_click_flares(
                 0.00001));
             alia_draw_circle(
                 ctx,
-                ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
+                alia_z(ctx, ALIA_Z_PLANE_EFFECT),
                 position,
                 radius * radius_scale_factor,
                 alia_srgba8_from_srgb8_alpha(
@@ -84,7 +85,7 @@ render_click_flares(
             float intensity = float(ticks_left) / float(milliseconds(200));
             alia_draw_circle(
                 ctx,
-                ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
+                alia_z(ctx, ALIA_Z_PLANE_EFFECT),
                 position,
                 radius,
                 alia_srgba8_from_srgb8_alpha(
@@ -106,7 +107,7 @@ render_click_flares(
             alia_animation_curve{0.2, 0, 1, 1}, scale_factor, 0.00001);
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 4, // TODO: ALIA_Z_INDEX_EFFECTS?
+            alia_z(ctx, ALIA_Z_PLANE_EFFECT),
             position,
             scale_factor * radius,
             alia_srgba8_from_srgb8_alpha(color, uint8_t(scale_factor * 0x36)));

@@ -434,7 +434,7 @@ alia_text(
     // act on them per category.
     alia_bump_allocator* arena = alia_layout_placement_arena(ctx);
     auto const* header = arena_alloc<text_placement_header>(*arena);
-    alia_z_index const z = ctx->geometry->z_base;
+    alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_CONTENT);
     for (int i = 0; i < header->fragment_count; ++i)
     {
         auto const* frag = arena_alloc<text_placement_fragment>(*arena);

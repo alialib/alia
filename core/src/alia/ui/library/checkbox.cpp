@@ -3,6 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -72,7 +73,7 @@ draw_checkbox_checkmark(
     alia_msdf_draw_codepoint(
         ctx->system->msdf_text_engine,
         ctx,
-        ctx->geometry->z_base + 3,
+        alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         style->checkmark_codepoint,
         icon_scale,
         origin,
@@ -105,7 +106,7 @@ render_checkbox(
 
     alia_draw_box(
         ctx,
-        ctx->geometry->z_base + 2,
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         box,
         {.fill_color = fill,
          .corner_radius = alia_px(ctx, style->box_corner_radius),
@@ -144,7 +145,7 @@ render_checkbox(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2,
+            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
             alia_palette_color_resolve(p, style->highlight));

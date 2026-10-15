@@ -3,6 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -55,7 +56,7 @@ draw_radio_button_ring(
         .border_color = alia_srgba8_from_srgb8(border_color),
     };
 
-    alia_draw_box(ctx, ctx->geometry->z_base + 2, ring_box, paint);
+    alia_draw_box(ctx, alia_z(ctx, ALIA_Z_PLANE_BACKGROUND), ring_box, paint);
 }
 
 static void
@@ -88,7 +89,7 @@ render_radio_button(
         {
             alia_draw_circle(
                 ctx,
-                ctx->geometry->z_base + 2,
+                alia_z(ctx, ALIA_Z_PLANE_CONTENT),
                 center,
                 dot_radius_max_px,
                 alia_srgba8_from_srgb8(dot_srgb));
@@ -117,7 +118,7 @@ render_radio_button(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2,
+            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
             alia_palette_color_resolve(p, style->highlight));
@@ -139,7 +140,7 @@ render_radio_button(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2,
+            alia_z(ctx, ALIA_Z_PLANE_CONTENT),
             center,
             dot_radius_px,
             alia_srgba8_from_srgb8(dot_srgb));

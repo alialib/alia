@@ -4,6 +4,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -178,7 +179,7 @@ render_slider(
         = alia_palette_color_resolve(p, s->track_color);
 
     alia_draw_rounded_box(
-        ctx, ctx->geometry->z_base + 2, track_box, track_rgba, 0.f);
+        ctx, alia_z(ctx, ALIA_Z_PLANE_BACKGROUND), track_box, track_rgba, 0.f);
 
     alia_vec2f const thumb_center
         = get_thumb_center(box, axis, ctx, s, minimum, maximum, value);
@@ -195,7 +196,7 @@ render_slider(
 
     alia_draw_circle(
         ctx,
-        ctx->geometry->z_base + 2,
+        alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         thumb_center,
         thumb_r,
         alia_srgba8_from_srgb8(thumb_srgb));
@@ -206,7 +207,7 @@ render_slider(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2,
+            alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             thumb_center,
             alia_px(ctx, s->highlight_radius),
             alia_palette_color_resolve(p, s->highlight));

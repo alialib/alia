@@ -11,13 +11,34 @@ typedef uint16_t alia_clip_id;
 
 typedef uint16_t alia_z_index;
 
+// Z indices are organized as layers of planes.
+// This defines the number of planes within a layer.
 enum
 {
-    // default `z_base` for a top-level pass
-    ALIA_DEFAULT_Z_BASE = 256,
-    // Z spacing between UI layers
-    ALIA_Z_LAYER_SPACING = 4,
+    ALIA_Z_LAYER_SPACING = 16
 };
+
+// The following describes how the planes within a layer are organized.
+#define ALIA_Z_PLANES(X)                                                      \
+    X(0x0, SHADOW, "drop shadows and underlays")                              \
+    X(0x1, BACKGROUND, "fills and ordinary chrome")                           \
+    X(0x4, CONTENT, "text, icons, interactive elements")                      \
+    X(0x8, ACCENT, "focus/hover accents above content")                       \
+    X(0xc, EFFECT, "transient effects such as click flares")
+
+// the default z-base at the start of a UI pass
+enum
+{
+    ALIA_DEFAULT_Z_BASE = 256,
+};
+
+#define ALIA_DEFINE_Z_PLANE(offset, name, description)                        \
+    ALIA_Z_PLANE_##name = (offset),
+enum
+{
+    ALIA_Z_PLANES(ALIA_DEFINE_Z_PLANE)
+};
+#undef ALIA_DEFINE_Z_PLANE
 
 typedef struct alia_clip_state
 {
@@ -46,7 +67,7 @@ typedef struct alia_geometry_context
     // the next clip ID to use
     alia_clip_id next_clip_id;
 
-    // the base z-index for the current context
+    // base z-index of the current layer
     alia_z_index z_base;
 } alia_geometry_context;
 
@@ -54,6 +75,13 @@ static inline float
 alia_px(alia_context* ctx, float logical_px)
 {
     return logical_px * ctx->geometry->scale;
+}
+
+// Get the absolute Z index for `plane` in the current layer.
+static inline alia_z_index
+alia_z(alia_context* ctx, alia_z_index plane)
+{
+    return (alia_z_index) (ctx->geometry->z_base + plane);
 }
 
 static inline alia_box

@@ -75,7 +75,7 @@ render_toggle_switch(
             toggle_switch_min.y + (layout_h - track_h) * 0.5f};
         alia_draw_rounded_box(
             ctx,
-            ctx->geometry->z_base + 2, // TODO: Proper z offset.
+            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             alia_box{track_min, alia_vec2f{track_w, track_h}},
             alia_srgba8_from_srgb8(track_srgb),
             track_corner);
@@ -88,7 +88,7 @@ render_toggle_switch(
             = state ? style->dot_radius_on : style->dot_radius_off;
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2, // TODO: Proper z offset.
+            alia_z(ctx, ALIA_Z_PLANE_CONTENT),
             {toggle_switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
             alia_px(ctx, dot_radius_logical),
             alia_srgba8_from_srgb8(dot_srgb));
@@ -128,7 +128,7 @@ render_toggle_switch(
         toggle_switch_min.y + (layout_h - track_h) * 0.5f};
     alia_draw_rounded_box(
         ctx,
-        ctx->geometry->z_base + 2, // TODO: Proper z offset.
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         alia_box{track_min, alia_vec2f{track_w, track_h}},
         alia_srgba8_from_srgb8(track_color),
         track_corner);
@@ -143,7 +143,7 @@ render_toggle_switch(
     // float const y_drop = 2.0f;
     // alia_draw_blurred_box(
     //     ctx,
-    //     ctx->geometry->z_base + 2, // TODO: Proper z offset.
+    //     alia_z(ctx, ALIA_Z_PLANE_SHADOW),
     //     {dot_center_x + x_drop,
     //      dot_y + y_drop},
     //     dot_radius,
@@ -152,7 +152,7 @@ render_toggle_switch(
 
     alia_draw_circle(
         ctx,
-        ctx->geometry->z_base + 2, // TODO: Proper z offset.
+        alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         dot_center,
         dot_radius,
         alia_srgba8_from_srgb8(dot_color));
@@ -163,7 +163,7 @@ render_toggle_switch(
     {
         alia_draw_circle(
             ctx,
-            ctx->geometry->z_base + 2, // TODO: Proper z offset.
+            alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             dot_center,
             alia_px(ctx, style->highlight_radius),
             alia_palette_color_resolve(p, style->highlight));
