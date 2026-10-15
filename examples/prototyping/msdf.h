@@ -476,7 +476,12 @@ do_text(
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
                 alia_element_box_region(
-                    &ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                    &ctx,
+                    id,
+                    &box,
+                    ALIA_Z_PLANE_CONTENT,
+                    ALIA_HIT_TEST_MOUSE,
+                    ALIA_CURSOR_DEFAULT);
             }
             break;
         }

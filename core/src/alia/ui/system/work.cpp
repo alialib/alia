@@ -106,14 +106,16 @@ update_hot_from_pointer(ui_system& ui)
             {.x = ui.input.mouse_position.x,
              .y = ui.input.mouse_position.y,
              .result = {
-                 .id = alia_element_id{},
+                 .target = {.id = ALIA_ELEMENT_ID_NONE, .z = 0},
                  .cursor = ALIA_CURSOR_DEFAULT,
                  .region = {{0.f, 0.f}, {0.f, 0.f}},
              }});
         dispatch_event(ui, event);
-        if (alia_element_id_is_valid(as_mouse_hit_test_event(event).result.id))
+        if (alia_element_id_is_valid(
+                as_mouse_hit_test_event(event).result.target.id))
         {
-            set_hot_element(ui, as_mouse_hit_test_event(event).result.id);
+            set_hot_element(
+                ui, as_mouse_hit_test_event(event).result.target.id);
         }
         else
         {
@@ -176,15 +178,19 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             alia_event hit_test_event = alia_make_scroll_input_hit_test_event(
                 {.x = ui.input.mouse_position.x,
                  .y = ui.input.mouse_position.y,
-                 .result = ALIA_ELEMENT_ID_NONE});
+                 .result = {
+                     .target = {.id = ALIA_ELEMENT_ID_NONE, .z = 0},
+                 }});
             dispatch_event(ui, hit_test_event);
             if (alia_element_id_is_valid(
-                    as_scroll_input_hit_test_event(hit_test_event).result))
+                    as_scroll_input_hit_test_event(hit_test_event)
+                        .result.target.id))
             {
                 dispatch_targeted_event(
                     ui,
                     ev,
-                    as_scroll_input_hit_test_event(hit_test_event).result);
+                    as_scroll_input_hit_test_event(hit_test_event)
+                        .result.target.id);
             }
             break;
         }

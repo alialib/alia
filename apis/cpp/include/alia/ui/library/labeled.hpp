@@ -30,7 +30,12 @@ labeled_bool_control(
             alia_text(
                 &ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
             alia_element_box_region(
-                &ctx, id, &row_box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                &ctx,
+                id,
+                &row_box,
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
         });
     return id;
 }

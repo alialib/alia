@@ -392,24 +392,37 @@ do_scrollbar_pass(
                 ctx,
                 thumb_id,
                 &thumb,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
+                ALIA_Z_PLANE_BACKGROUND,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
+                ALIA_CURSOR_DEFAULT);
             alia_element_box_region(
-                ctx, btn0_id, &btn0, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                ctx,
+                btn0_id,
+                &btn0,
+                ALIA_Z_PLANE_BACKGROUND,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             alia_element_box_region(
-                ctx, btn1_id, &btn1, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                ctx,
+                btn1_id,
+                &btn1,
+                ALIA_Z_PLANE_BACKGROUND,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             alia_element_box_region(
                 ctx,
                 page0_id,
                 &page0,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE);
+                ALIA_Z_PLANE_BACKGROUND,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             alia_element_box_region(
                 ctx,
                 page1_id,
                 &page1,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE);
+                ALIA_Z_PLANE_BACKGROUND,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             break;
         }
 
@@ -745,8 +758,9 @@ alia_scroll_view_begin(
             ctx,
             scope.id,
             &scope.placement.viewport_box,
-            ALIA_CURSOR_DEFAULT,
-            ALIA_HIT_TEST_SCROLL_INPUT);
+            ALIA_Z_PLANE_CONTENT,
+            ALIA_HIT_TEST_SCROLL_INPUT,
+            ALIA_CURSOR_DEFAULT);
     }
 
     if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)

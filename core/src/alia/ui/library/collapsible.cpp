@@ -204,8 +204,9 @@ alia_collapsible_begin(
         ctx,
         scope.id,
         &scope.placement.window,
-        ALIA_CURSOR_DEFAULT,
-        ALIA_HIT_TEST_MOUSE);
+        ALIA_Z_PLANE_CONTENT,
+        ALIA_HIT_TEST_MOUSE,
+        ALIA_CURSOR_DEFAULT);
 
     bool const apply_geometry = expansion != 0.f && expansion != 1.f;
     if (apply_geometry)

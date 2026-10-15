@@ -275,8 +275,9 @@ alia_button_end(alia_context* ctx)
         ctx,
         scope.id,
         &scope.box,
-        is_disabled ? ALIA_CURSOR_DEFAULT : ALIA_CURSOR_POINTER,
-        ALIA_HIT_TEST_MOUSE);
+        ALIA_Z_PLANE_CONTENT,
+        ALIA_HIT_TEST_MOUSE,
+        is_disabled ? ALIA_CURSOR_DEFAULT : ALIA_CURSOR_POINTER);
 }
 
 ALIA_EXTERN_C_END

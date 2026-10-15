@@ -10,7 +10,7 @@ typedef uint16_t alia_event_category;
 typedef uint16_t alia_event_type;
 
 // TODO: Allow dynamic payload sizes.
-#define ALIA_EVENT_PAYLOAD_SIZE_MAX 64u
+#define ALIA_EVENT_PAYLOAD_SIZE_MAX 256u
 
 typedef struct alia_event
 {

@@ -6,6 +6,7 @@
 #include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/constants.h>
 
 #include <string.h>
@@ -135,9 +136,16 @@ typedef struct alia_make_widget_visible
     alia_box region;
 } alia_make_widget_visible;
 
-typedef struct alia_mouse_hit_test_result
+// element under a point together with its absolute Z
+typedef struct alia_hit_target
 {
     alia_element_id id;
+    alia_z_index z;
+} alia_hit_target;
+
+typedef struct alia_mouse_hit_test_result
+{
+    alia_hit_target target;
     alia_cursor_t cursor;
     // element bounds in surface coordinates (for tooltips, overlays, etc.)
     alia_box region;
@@ -150,23 +158,28 @@ typedef struct alia_mouse_hit_test
     alia_mouse_hit_test_result result;
 } alia_mouse_hit_test;
 
+typedef struct alia_scroll_input_hit_test_result
+{
+    alia_hit_target target;
+} alia_scroll_input_hit_test_result;
+
 typedef struct alia_scroll_input_hit_test
 {
     float x;
     float y;
-    alia_element_id result;
+    alia_scroll_input_hit_test_result result;
 } alia_scroll_input_hit_test;
 
 typedef struct alia_touch_gesture_hit_test_result
 {
     // frontmost element under the point that accepts pointer interaction
-    alia_element_id pointer_target;
+    alia_hit_target pointer;
     // frontmost scroll-view (or similar) that can consume touch pan scrolling
-    alia_element_id scroll_target;
+    alia_hit_target scroll;
     // frontmost touch drag handle under the point (e.g. slider track,
     // scrollbar thumb) - When set, touch pan scrolling should not preempt
     // manipulation.
-    alia_element_id touch_drag_target;
+    alia_hit_target touch_drag;
 } alia_touch_gesture_hit_test_result;
 
 typedef struct alia_touch_gesture_hit_test

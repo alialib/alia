@@ -299,16 +299,18 @@ alia_slider(
                 ctx,
                 track_id,
                 &box,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
+                ALIA_CURSOR_DEFAULT);
             alia_box const thumb_box = get_thumb_region(
                 box, axis, ctx, style, minimum, maximum, current);
             alia_element_box_region(
                 ctx,
                 thumb_id,
                 &thumb_box,
-                ALIA_CURSOR_DEFAULT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG);
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
+                ALIA_CURSOR_DEFAULT);
             break;
         }
 

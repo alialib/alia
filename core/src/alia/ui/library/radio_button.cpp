@@ -221,7 +221,12 @@ alia_radio_button(
     {
         case ALIA_CATEGORY_SPATIAL: {
             alia_element_box_region(
-                ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                ctx,
+                id,
+                &box,
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             break;
         }
 

@@ -14,15 +14,18 @@ do_rect(
     {
         case ALIA_CATEGORY_REFRESH: {
             alia_layout_leaf_emit(
-                &ctx,
-                alia_layout_content_metrics_make(size),
-                raw_code(flags));
+                &ctx, alia_layout_content_metrics_make(size), raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {
             alia_box box = alia_layout_consume_box(&ctx);
             alia_element_box_region(
-                &ctx, id, &box, ALIA_CURSOR_DEFAULT, ALIA_HIT_TEST_MOUSE);
+                &ctx,
+                id,
+                &box,
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
@@ -68,9 +71,7 @@ do_rect_with_offset(
     {
         case ALIA_CATEGORY_REFRESH: {
             alia_layout_leaf_emit(
-                &ctx,
-                alia_layout_content_metrics_make(size),
-                raw_code(flags));
+                &ctx, alia_layout_content_metrics_make(size), raw_code(flags));
             break;
         }
         case ALIA_CATEGORY_SPATIAL: {

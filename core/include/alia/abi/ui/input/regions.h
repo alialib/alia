@@ -5,6 +5,7 @@
 #include <alia/abi/context.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/input/constants.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -29,17 +30,19 @@ alia_element_box_region(
     alia_context* ctx,
     alia_element_id id,
     alia_box const* region,
-    alia_cursor_t cursor,
-    alia_hit_test_flags_t flags);
+    alia_z_index z_plane,
+    alia_hit_test_flags_t flags,
+    alia_cursor_t cursor);
 
 // Report a hit after custom geometry testing. `bounding_box` is in layout
-// coordinates. It will be transformed into surface coordinates and stored in
-// as part of the hit test result.
+// coordinates. If the hit passes Z testing, the box will be transformed into
+// surface coordinates and stored as part of the hit test result.
 void
 alia_element_report_hit(
     alia_context* ctx,
     alia_element_id id,
     alia_box const* bounding_box,
+    alia_z_index z_plane,
     alia_hit_test_flags_t flags,
     alia_cursor_t cursor);
 
