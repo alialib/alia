@@ -26,6 +26,8 @@ void
 ids_tests(void);
 void
 effect_tests(void);
+void
+animation_tests(void);
 
 void
 layout_abi_headers_tests(void);
@@ -33,6 +35,10 @@ void
 placement_tests(void);
 void
 line_tests(void);
+void
+popup_tests(void);
+void
+layout_detached_tests(void);
 
 TEST_LIST
     = {{"base/geometry/affine2", affine2_tests},
@@ -45,7 +51,10 @@ TEST_LIST
        {"kernel/ids", ids_tests},
        {"kernel/effect", effect_tests},
        {"kernel/substrate", substrate_tests},
+       {"kernel/animation", animation_tests},
        {"ui/layout/abi_headers", layout_abi_headers_tests},
        {"ui/layout/placement", placement_tests},
        {"ui/layout/line", line_tests},
+       {"ui/layout/popup", popup_tests},
+       {"ui/layout/detached", layout_detached_tests},
        {NULL, NULL}};

@@ -18,43 +18,43 @@ struct alia_layout_node;
 extern "C" {
 #endif
 
-layout_fixture*
+struct layout_fixture*
 layout_fixture_create();
 
 void
-layout_fixture_destroy(layout_fixture* fixture);
+layout_fixture_destroy(struct layout_fixture* fixture);
 
 alia_context*
-layout_fixture_context(layout_fixture* fixture);
+layout_fixture_context(struct layout_fixture* fixture);
 
 alia_layout_system*
-layout_fixture_layout_system(layout_fixture* fixture);
+layout_fixture_layout_system(struct layout_fixture* fixture);
 
-alia_layout_node*
-layout_fixture_root_child(layout_fixture* fixture);
+struct alia_layout_node*
+layout_fixture_root_child(struct layout_fixture* fixture);
 
 alia_arena_stats
-layout_fixture_node_arena_stats(layout_fixture* fixture);
+layout_fixture_node_arena_stats(struct layout_fixture* fixture);
 
 void*
-layout_fixture_placement_arena_identity(layout_fixture* fixture);
+layout_fixture_placement_arena_identity(struct layout_fixture* fixture);
 
 void
-layout_fixture_set_spacing(layout_fixture* fixture, float spacing);
+layout_fixture_set_spacing(struct layout_fixture* fixture, float spacing);
 
 void
-layout_fixture_set_scale(layout_fixture* fixture, float scale);
+layout_fixture_set_scale(struct layout_fixture* fixture, float scale);
 
 void
 layout_fixture_run_refresh_impl(
-    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    struct layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
 
 void
-layout_fixture_resolve(layout_fixture* fixture, alia_vec2f available);
+layout_fixture_resolve(struct layout_fixture* fixture, alia_vec2f available);
 
 void
 layout_fixture_run_spatial_impl(
-    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    struct layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
 
 bool
 alia_layout_context_is_refresh(alia_context* ctx);
@@ -64,7 +64,7 @@ alia_layout_context_is_refresh(alia_context* ctx);
 
 template<class Fn>
 void
-layout_fixture_run_refresh(layout_fixture* fixture, Fn&& fn)
+layout_fixture_run_refresh(struct layout_fixture* fixture, Fn&& fn)
 {
     layout_fixture_run_refresh_impl(
         fixture,
@@ -76,7 +76,7 @@ layout_fixture_run_refresh(layout_fixture* fixture, Fn&& fn)
 
 template<class Fn>
 void
-layout_fixture_run_spatial(layout_fixture* fixture, Fn&& fn)
+layout_fixture_run_spatial(struct layout_fixture* fixture, Fn&& fn)
 {
     layout_fixture_run_spatial_impl(
         fixture,

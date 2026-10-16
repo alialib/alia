@@ -30,14 +30,14 @@ alia_layout_placement_arena(alia_context* ctx)
     return &ctx->layout->placement;
 }
 
-struct alia_layout_container
+typedef struct alia_layout_container
 {
     alia_layout_node base;
     alia_layout_flags_t flags;
     alia_layout_node* first_child;
     // fixed spacing between adjacent children along the container main axis
     float gap;
-};
+} alia_layout_container;
 
 static inline float
 alia_layout_gap_total(float gap, uint32_t child_count)

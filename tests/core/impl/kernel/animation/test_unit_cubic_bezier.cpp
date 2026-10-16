@@ -1,4 +1,4 @@
-#include <alia/animation/unit_cubic_bezier.hpp>
+#include <alia/kernel/animation/unit_cubic_bezier.h>
 
 #include <doctest/doctest.h>
 

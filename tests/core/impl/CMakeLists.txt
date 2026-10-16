@@ -1,13 +1,10 @@
 add_executable(test_core_impl
     runner.cpp
-    base/geometry/test_operators.cpp
-    base/geometry/test_vec2.cpp
     base/test_bit_packing.cpp
+    base/test_operators.cpp
     kernel/test_timer.cpp
-    kernel/test_effect.cpp
-    ui/layout/test_layout_detached.cpp
-    ui/layout/test_popup_place.cpp)
-target_link_libraries(test_core_impl PRIVATE alia_core alia_layout_fixture)
+    kernel/animation/test_unit_cubic_bezier.cpp)
+target_link_libraries(test_core_impl PRIVATE alia_core)
 target_include_directories(test_core_impl PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support
     ${PROJECT_SOURCE_DIR}/core/src)

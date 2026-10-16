@@ -1,9 +1,9 @@
 #ifndef ALIA_ABI_KERNEL_TIMING_H
 #define ALIA_ABI_KERNEL_TIMING_H
 
+#include <alia/abi/context.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
-#include <alia/context.h>
 
 ALIA_EXTERN_C_BEGIN
 

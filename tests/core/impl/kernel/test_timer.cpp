@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 
-#include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/timing.h>
+#include <alia/abi/ui/events.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
@@ -92,18 +92,15 @@ TEST_CASE("timer requests queued in current cycle are deferred")
 
 TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
 {
-    // Create an "in component" timer state.
     alia_timer_state state{
         .active = true,
         .expected_fire_time = 100,
         .target = make_test_element_id(0x1234u)};
 
-    // Build a minimal event traversal + context.
     alia_event_traversal traversal{};
     alia_context ctx{};
     ctx.events = &traversal;
 
-    // Fire with wrong time.
     {
         alia_timer payload{.target = state.target, .fire_time = 99};
         alia_event event = alia_make_timer_event(payload);
@@ -113,7 +110,6 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
         CHECK(state.active == true);
     }
 
-    // Fire with wrong target.
     {
         alia_timer payload{
             .target = make_test_element_id(0xdeadbeefu), .fire_time = 100};
@@ -124,7 +120,6 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
         CHECK(state.active == true);
     }
 
-    // Correct fire event.
     {
         alia_timer payload{.target = state.target, .fire_time = 100};
         alia_event event = alia_make_timer_event(payload);
