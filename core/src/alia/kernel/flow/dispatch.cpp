@@ -36,11 +36,12 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .z_base = ALIA_DEFAULT_Z_BASE,
     };
 
-    alia_layout_context layout;
+    alia_layout_context layout = {};
+    layout.system = &sys.layout;
     if (events.event->type == ALIA_EVENT_REFRESH)
         layout.emission.next_ptr = &sys.layout.root.first_child;
     alia_bump_allocator_init(&layout.emission.arena, &sys.layout.node_arena);
-    alia_bump_allocator_init(&layout.placement, &sys.layout.placement_arena);
+    alia_bump_allocator_init(&layout.placement, &sys.layout.placement.arena);
 
     alia_stack_reset(&sys.stack);
 

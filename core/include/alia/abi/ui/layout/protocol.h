@@ -3,7 +3,7 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/layout/metrics.h>
 
 // Layout resolution consists of three phases:
 // 1. Measure horizontal requirements.
@@ -59,6 +59,9 @@ typedef struct alia_placement_context
 typedef struct alia_measurement_context
 {
     alia_bump_allocator scratch;
+    // If this is set, we are measuring the preferred size of the tree rather
+    // than the minimum size.
+    bool measure_preferred_size;
 } alia_measurement_context;
 
 typedef struct alia_line_requirements

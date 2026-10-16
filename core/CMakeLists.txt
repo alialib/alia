@@ -40,6 +40,8 @@ add_library(alia_core STATIC
     src/alia/ui/layout/components/flow_spring.cpp
     src/alia/ui/layout/components/placement.cpp
     src/alia/ui/layout/system.cpp
+    src/alia/ui/layout/placement.cpp
+    src/alia/ui/layout/detached.cpp
     src/alia/ui/layout/utilities/defaults.cpp
     src/alia/ui/layout/utilities/emission.cpp
     src/alia/ui/layout/utilities/line.cpp

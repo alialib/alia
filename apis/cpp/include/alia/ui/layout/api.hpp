@@ -10,6 +10,8 @@
 
 namespace alia {
 
+// INTERNAL UTILITIES
+
 namespace impl {
 
 template<class Content>
@@ -75,7 +77,7 @@ simple_layout_container(
 
 } // namespace impl
 
-// COMPOSITION CONTAINERS
+// ROW
 
 template<
     container_like Container = container_options,
@@ -120,6 +122,8 @@ row(context& ctx, Content&& content)
         default_layout,
         std::forward<Content>(content));
 }
+
+// COLUMN
 
 template<
     container_like Container = container_options,
@@ -166,6 +170,8 @@ column(context& ctx, Content&& content)
         std::forward<Content>(content));
 }
 
+// ZSTACK
+
 template<
     container_like Container = container_options,
     layout_like Layout = layout_options,
@@ -210,6 +216,8 @@ zstack(context& ctx, Content&& content)
         default_layout,
         std::forward<Content>(content));
 }
+
+// FLOW
 
 template<
     container_like Container = container_options,
@@ -256,6 +264,8 @@ flow(context& ctx, Content&& content)
         std::forward<Content>(content));
 }
 
+// BLOCK FLOW
+
 template<
     container_like Container = container_options,
     layout_like Layout = layout_options,
@@ -301,6 +311,8 @@ block_flow(context& ctx, Content&& content)
         std::forward<Content>(content));
 }
 
+// GRID
+
 template<layout_like Layout = layout_options, class Content>
 void
 grid(context& ctx, Layout layout, Content&& content)
@@ -342,7 +354,8 @@ grid_row(context& ctx, alia_layout_grid_handle grid, Content&& content)
     grid_row(ctx, grid, default_layout, std::forward<Content>(content));
 }
 
-// WRAPPERS
+// SIMPLE WRAPPERS - Note that these can usually be invoked implicitly via
+// layout options on the wrapper node.
 
 template<class Content>
 void
@@ -351,6 +364,15 @@ alignment_override(context& ctx, layout_flag_set flags, Content&& content)
     alia_layout_alignment_override_begin(&ctx, raw_code(flags));
     std::forward<Content>(content)();
     alia_layout_alignment_override_end(&ctx);
+}
+
+template<class Content>
+void
+growth_override(context& ctx, float growth, Content&& content)
+{
+    alia_layout_growth_override_begin(&ctx, growth);
+    std::forward<Content>(content)();
+    alia_layout_growth_override_end(&ctx);
 }
 
 template<class Content>
@@ -395,6 +417,8 @@ min_axis_size_constraint(context& ctx, alia_vec2f min_lb, Content&& content)
     alia_layout_min_axis_size_end(&ctx);
 }
 
+// CLAMPED
+
 // Cap the child's assigned size and align leftover space (default CENTER).
 // A `max_size` component `<= 0` means no cap on that axis.
 template<layout_like Layout = layout_options, class Content>
@@ -435,23 +459,7 @@ clamped(context& ctx, float max_width, Content&& content)
     clamped(ctx, max_width, default_layout, std::forward<Content>(content));
 }
 
-template<class Content>
-void
-growth_override(context& ctx, float growth, Content&& content)
-{
-    alia_layout_growth_override_begin(&ctx, growth);
-    std::forward<Content>(content)();
-    alia_layout_growth_override_end(&ctx);
-}
-
-inline void
-flow_spring(context& ctx, float min_width = 0.f)
-{
-    if (is_refresh_event(ctx))
-        alia_layout_flow_spring_emit(&ctx, min_width);
-    else
-        (void) alia_layout_consume_box(&ctx);
-}
+// SPACER
 
 // Emit an empty leaf that reserves space.
 // While the spacer always takes up a slot in its container, its size is 0x0 by
@@ -479,6 +487,17 @@ spacer(context& ctx, Layout layout = {})
                 (void) alia_layout_consume_box(&ctx);
             }
         });
+}
+
+// FLOW SPRING
+
+inline void
+flow_spring(context& ctx, float min_width = 0.f)
+{
+    if (is_refresh_event(ctx))
+        alia_layout_flow_spring_emit(&ctx, min_width);
+    else
+        (void) alia_layout_consume_box(&ctx);
 }
 
 } // namespace alia

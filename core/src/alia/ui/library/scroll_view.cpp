@@ -520,7 +520,7 @@ scroll_view_measure_horizontal(
         child = alia_measure_horizontal(ctx, main_axis, n.base.first_child);
 
     float required = child.min_size;
-    if (d.flags & ALIA_SCROLL_VIEW_X)
+    if ((d.flags & ALIA_SCROLL_VIEW_X) && !ctx->measure_preferred_size)
         required = d.style.minimum_thumb_length;
     if (d.flags & ALIA_SCROLL_VIEW_RESERVE_Y)
         required += d.style.width;
@@ -550,7 +550,7 @@ scroll_view_measure_vertical(
             ctx, main_axis, n.base.first_child, child_width);
 
     float required = child.min_size;
-    if (d.flags & ALIA_SCROLL_VIEW_Y)
+    if ((d.flags & ALIA_SCROLL_VIEW_Y) && !ctx->measure_preferred_size)
         required = d.style.minimum_thumb_length;
 
     d.content_size.y = child.min_size;

@@ -8,6 +8,8 @@
 
 ALIA_EXTERN_C_BEGIN
 
+typedef struct alia_layout_system alia_layout_system;
+
 typedef struct alia_layout_emission
 {
     alia_bump_allocator arena;
@@ -16,6 +18,7 @@ typedef struct alia_layout_emission
 
 struct alia_layout_context
 {
+    alia_layout_system* system;
     alia_layout_emission emission;
     alia_bump_allocator placement;
 };

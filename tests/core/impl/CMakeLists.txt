@@ -4,8 +4,9 @@ add_executable(test_core_impl
     base/geometry/test_vec2.cpp
     base/test_bit_packing.cpp
     kernel/test_timer.cpp
-    kernel/test_effect.cpp)
-target_link_libraries(test_core_impl PRIVATE alia_core)
+    kernel/test_effect.cpp
+    ui/layout/test_layout_detached.cpp)
+target_link_libraries(test_core_impl PRIVATE alia_core alia_layout_fixture)
 target_include_directories(test_core_impl PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support
     ${PROJECT_SOURCE_DIR}/core/src)
