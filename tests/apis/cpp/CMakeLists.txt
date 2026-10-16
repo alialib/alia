@@ -18,7 +18,6 @@ add_executable(test_apis_cpp
     kernel/actions/test_adaptors.cpp
     kernel/actions/test_library.cpp
     kernel/actions/test_signals.cpp
-    ${PROJECT_SOURCE_DIR}/tests/core/abi/kernel/substrate_fixture.cpp
     ui/layout/test_layout_components.cpp
     ui/layout/test_layout_wrappers.cpp
     ui/layout/test_layout_flow.cpp
@@ -27,8 +26,8 @@ add_executable(test_apis_cpp
     ui/layout/test_layout_options.cpp
     ui/layout/test_container_options.cpp
     ui/library/test_popup.cpp)
-target_link_libraries(test_apis_cpp PRIVATE alia_cpp alia_layout_fixture)
+target_link_libraries(test_apis_cpp PRIVATE
+    alia_cpp alia_layout_fixture alia_substrate_fixture)
 target_include_directories(test_apis_cpp PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support
-    ${PROJECT_SOURCE_DIR}/tests/core/abi/kernel
     ${PROJECT_SOURCE_DIR}/core/src)

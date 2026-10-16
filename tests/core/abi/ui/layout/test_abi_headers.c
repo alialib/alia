@@ -7,6 +7,7 @@
 #include <alia/abi/ui/layout/popup.h>
 #include <alia/abi/ui/layout/protocol.h>
 #include <alia/abi/ui/layout/system.h>
+#include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 
 #define TEST_NO_MAIN

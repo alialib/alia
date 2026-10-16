@@ -4,7 +4,7 @@
 #include <alia/abi/ui/events.h>
 #include <alia/impl/events.hpp>
 
-#include "substrate_fixture.h"
+#include <alia/test/kernel/substrate_fixture.h>
 #include <alia/kernel/substrate.h>
 
 #include <cstdlib>

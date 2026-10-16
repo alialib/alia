@@ -7,7 +7,7 @@
 #include <alia/abi/context.h>
 #include <alia/abi/kernel/effect.h>
 
-#include "substrate_fixture.h"
+#include <alia/test/kernel/substrate_fixture.h>
 
 #include <doctest/doctest.h>
 

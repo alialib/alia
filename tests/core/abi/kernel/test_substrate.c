@@ -1,4 +1,4 @@
-#include "substrate_fixture.h"
+#include <alia/test/kernel/substrate_fixture.h>
 
 #include <alia/abi/base/stack.h>
 #include <alia/abi/context.h>
