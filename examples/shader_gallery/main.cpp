@@ -251,10 +251,7 @@ do_theme_controls(context& ctx)
                             char const* labels[] = {"Blue", "Violet", "Red"};
                             for (int i = 0; i < 3; ++i)
                             {
-                                radio_button(
-                                    ctx,
-                                    make_radio_signal(seed, value(i)),
-                                    labels[i]);
+                                radio_button(ctx, seed, i, labels[i]);
                                 spacer(ctx, width(15.f));
                             }
                         });

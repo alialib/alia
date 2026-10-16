@@ -604,7 +604,7 @@ TEST_CASE("radio signal")
     effect_fixture fx;
     {
         int selected = 0;
-        auto radio = make_radio_signal(ref(selected), value(1));
+        auto radio = make_radio_signal(ref(selected), 1);
         static_assert(view_signal<decltype(radio)>);
         static_assert(sink_signal<decltype(radio)>);
         CHECK(signal_has_value(radio));

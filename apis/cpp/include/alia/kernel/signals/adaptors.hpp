@@ -658,6 +658,7 @@ move(Signal signal)
 // iff the value of `selected` matches the value of `index`. Writing `true` to
 // the signal sets `selected` to `index`. (Writing `false` is considered
 // a meaningless operation.)
+// `index` may be a raw value or a readable signal.
 //
 template<class Selected, class Index>
 struct radio_signal
@@ -704,12 +705,12 @@ struct radio_signal
 };
 template<class Selected, class Index>
     requires view_signal<Selected> && sink_signal<Selected>
-          && view_signal<Index>
-radio_signal<Selected, Index>
+auto
 make_radio_signal(Selected selected, Index index)
 {
-    return radio_signal<Selected, Index>(
-        std::move(selected), std::move(index));
+    auto index_signal = signalize(std::move(index));
+    return radio_signal<Selected, decltype(index_signal)>(
+        std::move(selected), std::move(index_signal));
 }
 
 } // namespace alia

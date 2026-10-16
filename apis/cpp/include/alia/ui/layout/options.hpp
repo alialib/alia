@@ -1619,8 +1619,12 @@ apply_layout(
         alia_layout_growth_override_begin(&ctx, spec.growth.value);
     if constexpr (has_min_size)
     {
-        float const w = has_absolute_width ? spec.width.value : 0.f;
-        float const h = has_absolute_height ? spec.height.value : 0.f;
+        float w = 0.f;
+        if constexpr (has_absolute_width)
+            w = spec.width.value;
+        float h = 0.f;
+        if constexpr (has_absolute_height)
+            h = spec.height.value;
         alia_layout_min_size_begin(&ctx, detail::min_size_vec(w, h));
     }
     if constexpr (has_min_axis_size)
