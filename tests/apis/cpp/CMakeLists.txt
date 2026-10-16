@@ -25,7 +25,8 @@ add_executable(test_apis_cpp
     ui/layout/test_layout_provide_box.cpp
     ui/layout/test_layout_baseline.cpp
     ui/layout/test_layout_options.cpp
-    ui/layout/test_container_options.cpp)
+    ui/layout/test_container_options.cpp
+    ui/library/test_popup.cpp)
 target_link_libraries(test_apis_cpp PRIVATE alia_cpp alia_layout_fixture)
 target_include_directories(test_apis_cpp PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support

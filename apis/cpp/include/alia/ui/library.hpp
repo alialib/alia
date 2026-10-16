@@ -4,6 +4,7 @@
 #include <alia/ui/library/checkbox.hpp>
 #include <alia/ui/library/collapsible.hpp>
 #include <alia/ui/library/node_expander.hpp>
+#include <alia/ui/library/popup.hpp>
 #include <alia/ui/library/radio_button.hpp>
 #include <alia/ui/library/scroll_view.hpp>
 #include <alia/ui/library/separator.hpp>
