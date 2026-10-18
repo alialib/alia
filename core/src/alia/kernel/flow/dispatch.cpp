@@ -14,11 +14,12 @@
 
 namespace alia {
 
+// TODO: Separate the kernel and UI aspects of this.
 void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
     alia_bump_allocator scratch;
-    alia_bump_allocator_init(&scratch, &sys.scratch);
+    alia_bump_allocator_init(&scratch, &sys.kernel.scratch);
 
     alia_box clip_box = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)};
     alia_box* clip_pointer = arena_new<alia_box>(scratch);
@@ -43,7 +44,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_bump_allocator_init(&layout.emission.arena, &sys.layout.node_arena);
     alia_bump_allocator_init(&layout.placement, &sys.layout.placement.arena);
 
-    alia_stack_reset(&sys.stack);
+    alia_stack_reset(&sys.kernel.stack);
 
     // TODO: Not this?
     alia_draw_context* draw = (events.event->type == ALIA_EVENT_DRAW)
@@ -53,12 +54,12 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_substrate_traversal substrate_traversal;
     alia_bump_allocator substrate_bump_allocator;
     alia_bump_allocator_init(
-        &substrate_bump_allocator, &sys.substrate_discovery_arena);
+        &substrate_bump_allocator, &sys.kernel.substrate_discovery_arena);
     substrate_traversal_init(
         substrate_traversal,
-        sys.substrate,
+        sys.kernel.substrate,
         &substrate_bump_allocator,
-        sys.refresh_counter,
+        sys.kernel.refresh_counter,
         events.event->type == ALIA_EVENT_REFRESH);
 
     ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
@@ -70,12 +71,12 @@ invoke_controller(ui_system& sys, event_traversal& events)
     alia_effect_log effects = {};
 
     alia_context ctx = {
-        .kernel = nullptr,
+        .kernel = &sys.kernel,
         .substrate = &substrate_traversal,
         .events = &events,
-        .stack = &sys.stack,
+        .stack = &sys.kernel.stack,
         .scratch = &scratch,
-        .tick_count = sys.tick_count,
+        .tick_count = sys.kernel.tick_count,
         .effects = &effects,
         .system = &sys,
         .active_styles = active_styles,
@@ -93,11 +94,13 @@ invoke_controller(ui_system& sys, event_traversal& events)
     };
 
     alia_substrate_begin_block(
-        &ctx, &sys.substrate.root_anchor, &sys.substrate.root_block_spec);
+        &ctx,
+        &sys.kernel.substrate.root_anchor,
+        &sys.kernel.substrate.root_block_spec);
 
     sys.controller.fn(sys.controller.user_data, &ctx);
 
-    sys.substrate.root_block_spec = alia_substrate_end_block(&ctx);
+    sys.kernel.substrate.root_block_spec = alia_substrate_end_block(&ctx);
 
     alia_run_effects(&ctx);
 
@@ -115,6 +118,7 @@ route_event_(
     // and follow the 'parent' pointers until we reach the root. We do this
     // via recursion so that the path can be constructed entirely on the
     // stack.
+    // TODO: Construct the path in scratch space instead.
     if (target)
     {
         event_routing_path path_node;

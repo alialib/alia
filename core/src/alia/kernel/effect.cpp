@@ -1,7 +1,7 @@
 #include <alia/abi/kernel/effect.h>
 
+#include <alia/abi/kernel/object.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/system/work.h>
 
 #include <cstring>
 
@@ -93,8 +93,8 @@ alia_run_effects(alia_context* ctx)
     ctx->effects->head = nullptr;
     ctx->effects->tail = nullptr;
 
-    if (any && ctx->system)
-        alia_ui_mark_dirty(ctx->system);
+    if (any && ctx->kernel)
+        alia_kernel_mark_dirty(ctx->kernel);
 }
 
 } // extern "C"

@@ -13,6 +13,7 @@
 #include <alia/abi/ui/text.h>
 #include <alia/abi/ui/trace.h>
 #include <alia/impl/events.hpp>
+#include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
@@ -372,7 +373,7 @@ alia_shell_initial_refresh(alia_ui_system* ui)
     ALIA_ASSERT(ui);
     refresh_system(*ui);
     // Mark the UI as needing a frame to be drawn.
-    ui->ui_dirty = true;
+    alia_ui_mark_dirty(ui);
 }
 
 } // extern "C"

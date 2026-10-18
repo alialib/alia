@@ -14,33 +14,16 @@
 #include <alia/ui/system/timer_internal.h>
 
 #include <chrono>
-#include <cstdlib>
 
 using namespace alia::operators;
-
-static void*
-ui_system_block_alloc(void* user, size_t size, size_t alignment)
-{
-    (void) user;
-    (void) alignment;
-    return malloc(size);
-}
-
-static void
-ui_system_block_free(void* user, void* ptr, size_t size, size_t alignment)
-{
-    (void) user;
-    (void) size;
-    (void) alignment;
-    free(ptr);
-}
 
 namespace alia {
 
 bool
 ui_has_active_animations(ui_system const& ui)
 {
-    return !ui.animation.transitions.empty() || !ui.animation.flares.empty();
+    return !ui.kernel.animation.transitions.empty()
+        || !ui.kernel.animation.flares.empty();
 }
 
 // TODO: Sort this out.
@@ -65,7 +48,10 @@ process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle)
     // Dispatch all timers that are due as of `now`, except those that were
     // queued in the current update cycle (same-cycle suppression).
     alia::process_due_timers_internal(
-        ui.timer_requests, now, cycle, [&](alia_ui_timer_request const& req) {
+        ui.kernel.timer_requests,
+        now,
+        cycle,
+        [&](alia_kernel_timer_request const& req) {
             alia_timer payload{
                 .target = req.target, .fire_time = req.fire_time};
             alia_event event = alia_make_timer_event(payload);
@@ -105,33 +91,17 @@ alia_ui_system_init(
     alia_ui_system* ui = new (object_storage) alia_ui_system;
 
     ui->controller = controller;
-
-    // TODO: Sort this out.
-    void* block = alia::allocate_virtual_block(1024 * 1024);
-    alia_stack_init(&ui->stack, block, 1024 * 1024);
+    alia::init_kernel(ui->kernel);
 
     alia_layout_system_init(&ui->layout);
     ui->surface_size = surface_size;
 
-    // TODO: Sort this out.
-    alia::initialize_lazy_commit_arena(&ui->substrate_discovery_arena);
-
-    alia_general_allocator allocator;
-    allocator.user_data = nullptr;
-    allocator.alloc = ui_system_block_alloc;
-    allocator.free = ui_system_block_free;
-    alia::substrate_system_init(ui->substrate, allocator);
-
-    // TODO: Sort this out.
-    alia::initialize_lazy_commit_arena(&ui->scratch, 1024 * 1024);
     alia::initialize_lazy_commit_arena(&ui->draw.command_arena);
 
     ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
     ui->refresh_policy.before_input = ALIA_UI_REFRESH_ALWAYS;
     ui->refresh_policy.before_draw = ALIA_UI_REFRESH_ALWAYS;
-
-    ui->ui_dirty = true;
 
     // Reserve typeface ID 0 as the "invalid" sentinel so registered IDs map
     // directly to entry indices.
@@ -161,7 +131,7 @@ alia_ui_surface_set_size(alia_ui_system* ui, alia_vec2i new_size)
     ALIA_ASSERT(ui);
 
     if (ui->surface_size.x != new_size.x || ui->surface_size.y != new_size.y)
-        ui->ui_dirty = true;
+        ui->kernel.dirty = true;
     ui->surface_size = new_size;
 }
 
@@ -177,7 +147,7 @@ alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi)
 {
     ALIA_ASSERT(ui);
     if (ui->dpi != dpi)
-        ui->ui_dirty = true;
+        ui->kernel.dirty = true;
     ui->dpi = dpi;
 }
 
@@ -193,7 +163,7 @@ alia_ui_set_magnification(alia_ui_system* ui, float magnification)
 {
     ALIA_ASSERT(ui);
     if (ui->magnification != magnification)
-        ui->ui_dirty = true;
+        ui->kernel.dirty = true;
     ui->magnification = magnification;
 }
 
@@ -249,7 +219,7 @@ refresh_system(ui_system& sys)
     // A refresh may take multiple passes. Each pass dispatches one REFRESH
     // event. If that pass marks the event incomplete (e.g. substrate
     // discovery), another pass is issued until the UI settles.
-    ++sys.refresh_counter;
+    ++sys.kernel.refresh_counter;
     int pass_index = 0;
     while (true)
     {
@@ -273,7 +243,7 @@ refresh_system(ui_system& sys)
             break;
     }
 
-    sys.ui_dirty = false;
+    sys.kernel.dirty = false;
 }
 
 #if 0
@@ -604,7 +574,7 @@ set_hot_element(ui_system& ui, alia_element_id element)
     if (!alia_element_id_is_valid(ui.input.element_with_capture)
         && ui.input.hot_element != element)
     {
-        ui.input.hover_start_time = ui.tick_count;
+        ui.input.hover_start_time = ui.kernel.tick_count;
     }
 
     ui.input.hot_element = std::move(element);

@@ -1,5 +1,5 @@
 #include <alia/kernel/animation.h>
-#include <alia/ui/system/object.h>
+#include <alia/kernel/object.h>
 
 namespace alia {
 
@@ -29,8 +29,9 @@ void
 alia_animation_fire_flare(
     alia_context* ctx, alia_bitref bit, alia_nanosecond_count duration)
 {
+    ALIA_ASSERT(ctx && ctx->kernel);
     push_flare(
-        ctx->system->animation.flares[alia_make_animation_id(bit)],
+        ctx->kernel->animation.flares[alia_make_animation_id(bit)],
         alia_animation_tick_count(ctx) + duration);
     alia_bitref_set(bit);
 }
@@ -42,7 +43,8 @@ alia_animation_process_flares(
     if (!alia_bitref_is_set(bit))
         return 0;
 
-    auto& group = ctx->system->animation.flares[alia_make_animation_id(bit)];
+    ALIA_ASSERT(ctx && ctx->kernel);
+    auto& group = ctx->kernel->animation.flares[alia_make_animation_id(bit)];
     unsigned flare_index = 0;
     while (flare_index < group.flare_count)
     {
@@ -68,7 +70,7 @@ alia_animation_process_flares(
     if (flare_index == 0)
     {
         // All flares were popped, so remove this group.
-        ctx->system->animation.flares.erase(alia_make_animation_id(bit));
+        ctx->kernel->animation.flares.erase(alia_make_animation_id(bit));
         alia_bitref_clear(bit);
     }
     return flare_index;

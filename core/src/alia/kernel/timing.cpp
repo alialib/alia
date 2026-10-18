@@ -2,37 +2,37 @@
 
 #include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/substrate.h>
+#include <alia/abi/kernel/object.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/system/work.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/flow/traversal.h>
-#include <alia/ui/system/object.h>
+#include <alia/kernel/object.h>
 
 #include <cstring>
 
 namespace {
 
 uint64_t
-get_current_timer_cycle(alia_ui_system* sys)
+get_current_timer_cycle(alia_kernel* kernel)
 {
     // Component code uses this as a "do not dispatch in the same cycle"
     // token.
-    return sys ? sys->timer_event_cycle : 0u;
+    return kernel ? kernel->timer_event_cycle : 0u;
 }
 
 void
 enqueue_timer(
-    alia_ui_system* sys,
+    alia_kernel* kernel,
     alia_element_id target,
     alia_nanosecond_count fire_time)
 {
-    ALIA_ASSERT(sys);
+    ALIA_ASSERT(kernel);
 
-    sys->timer_requests.push(
-        alia_ui_timer_request{
+    kernel->timer_requests.push(
+        alia_kernel_timer_request{
             .target = target,
             .fire_time = fire_time,
-            .queued_in_cycle = get_current_timer_cycle(sys)});
+            .queued_in_cycle = get_current_timer_cycle(kernel)});
 }
 
 } // namespace
@@ -43,9 +43,9 @@ void
 alia_timing_request_animation_refresh(alia_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->system);
+    ALIA_ASSERT(ctx->kernel);
 
-    alia_ui_mark_dirty(ctx->system);
+    alia_kernel_mark_dirty(ctx->kernel);
     if (ctx->events)
         alia::mark_animating_component(*ctx);
 }
@@ -83,7 +83,7 @@ alia_timer_start(
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(state);
-    ALIA_ASSERT(ctx->system);
+    ALIA_ASSERT(ctx->kernel);
 
     // TODO: If duration wraps, we still want wrap-safe comparisons in the
     // system dispatcher.
@@ -91,7 +91,7 @@ alia_timer_start(
     state->active = true;
     ALIA_ASSERT(alia_element_id_is_valid(state->target));
 
-    enqueue_timer(ctx->system, state->target, state->expected_fire_time);
+    enqueue_timer(ctx->kernel, state->target, state->expected_fire_time);
 }
 
 void

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <alia/abi/ui/context.h>
-#include <alia/abi/ui/system/work.h>
+#include <alia/abi/context.h>
+#include <alia/abi/kernel/object.h>
 #include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/substrate.hpp>
@@ -98,8 +98,8 @@ struct state_storage
     handle_tracked_change(alia_context* ctx)
     {
         inc_version();
-        if (ctx && ctx->system)
-            alia_ui_mark_dirty(alia_ctx_system(ctx));
+        if (ctx && ctx->kernel)
+            alia_kernel_mark_dirty(ctx->kernel);
     }
 };
 

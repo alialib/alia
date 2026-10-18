@@ -61,10 +61,10 @@ apply_pointer_state_from_event(alia_ui_system& ui, alia_event const& ev)
 bool
 timer_is_due(ui_system const& ui)
 {
-    if (ui.timer_requests.empty())
+    if (ui.kernel.timer_requests.empty())
         return false;
-    auto const& top = ui.timer_requests.top();
-    return static_cast<int64_t>(ui.tick_count - top.fire_time) >= 0;
+    auto const& top = ui.kernel.timer_requests.top();
+    return static_cast<int64_t>(ui.kernel.tick_count - top.fire_time) >= 0;
 }
 
 bool
@@ -75,7 +75,7 @@ evaluate_refresh_hook_policy(ui_system& ui, alia_ui_refresh_hook_policy mode)
         case ALIA_UI_REFRESH_NEVER:
             return false;
         case ALIA_UI_REFRESH_IF_DIRTY:
-            return ui.ui_dirty;
+            return ui.kernel.dirty;
         case ALIA_UI_REFRESH_ALWAYS:
         default:
             return true;
@@ -144,7 +144,8 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
             if (alia_element_id_is_valid(target))
                 dispatch_targeted_event(ui, ev, target);
             auto const& b = as_mouse_press_event(ev);
-            ui.input.last_mouse_press_time[unsigned(b.button)] = ui.tick_count;
+            ui.input.last_mouse_press_time[unsigned(b.button)]
+                = ui.kernel.tick_count;
             ui.input.mouse_button_state |= 1 << unsigned(b.button);
             ui.input.keyboard_interaction = false;
             break;
@@ -281,7 +282,7 @@ void
 alia_ui_system_poll_clock(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
-    ui->tick_count = alia::steady_clock_now_ns();
+    ui->kernel.tick_count = alia::steady_clock_now_ns();
 }
 
 void
@@ -291,8 +292,8 @@ alia_ui_system_begin_update(alia_ui_system* ui)
 
     alia_ui_system_poll_clock(ui);
 
-    ++ui->timer_event_cycle;
-    ui->update_timer_cycle = ui->timer_event_cycle;
+    ++ui->kernel.timer_event_cycle;
+    ui->kernel.update_timer_cycle = ui->kernel.timer_event_cycle;
 
     // TODO: This really doesn't belong here.
     if (ui->event_queue.empty())
@@ -309,7 +310,8 @@ alia_ui_work_step(alia_ui_system* ui)
 
     if (alia::timer_is_due(*ui))
     {
-        alia::process_due_timers(*ui, ui->tick_count, ui->update_timer_cycle);
+        alia::process_due_timers(
+            *ui, ui->kernel.tick_count, ui->kernel.update_timer_cycle);
         return ALIA_UI_WORK_STEP_TIMER;
     }
 
@@ -331,7 +333,7 @@ alia_ui_needs_tick(alia_ui_system* ui)
         return true;
     if (alia::timer_is_due(*ui))
         return true;
-    if (ui->ui_dirty)
+    if (ui->kernel.dirty)
         return true;
     return false;
 }
@@ -344,13 +346,13 @@ alia_ui_next_wake_ns(alia_ui_system* ui, alia_nanosecond_count* out_wake_ns)
 
     if (!ui->event_queue.empty())
     {
-        *out_wake_ns = ui->tick_count;
+        *out_wake_ns = ui->kernel.tick_count;
         return true;
     }
 
-    if (!ui->timer_requests.empty())
+    if (!ui->kernel.timer_requests.empty())
     {
-        *out_wake_ns = ui->timer_requests.top().fire_time;
+        *out_wake_ns = ui->kernel.timer_requests.top().fire_time;
         return true;
     }
 
@@ -369,7 +371,7 @@ void
 alia_ui_mark_dirty(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
-    ui->ui_dirty = true;
+    alia_kernel_mark_dirty(&ui->kernel);
 }
 
 void

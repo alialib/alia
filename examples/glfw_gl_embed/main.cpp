@@ -14,6 +14,7 @@
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
 
 #include "alia_fonts.h"
@@ -234,7 +235,7 @@ main()
 
     alia_glfw_sync_surface(window, g_ui);
     refresh_system(*g_ui);
-    g_ui->ui_dirty = true;
+    alia_ui_mark_dirty(g_ui);
 
     while (!glfwWindowShouldClose(window))
     {

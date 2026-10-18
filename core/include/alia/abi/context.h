@@ -22,6 +22,7 @@ typedef struct alia_effect_log alia_effect_log;
 typedef struct alia_context
 {
     // kernel-level capabilities
+    // persistent kernel object
     alia_kernel* kernel;
     alia_substrate_traversal* substrate;
     alia_event_traversal* events;

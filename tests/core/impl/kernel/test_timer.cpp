@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/timing.h>
 #include <alia/abi/ui/events.h>
 #include <alia/impl/events.hpp>
-#include <alia/ui/system/object.h>
+#include <alia/kernel/object.h>
 #include <alia/ui/system/timer_internal.h>
 
 #include <cstdint>
@@ -13,11 +13,11 @@ using namespace alia;
 
 namespace {
 
-using timer_request = alia_ui_timer_request;
+using timer_request = alia_kernel_timer_request;
 using timer_pq = std::priority_queue<
     timer_request,
     std::vector<timer_request>,
-    alia_ui_timer_request_compare>;
+    alia_kernel_timer_request_compare>;
 
 alia_element_id
 make_test_element_id(std::uintptr_t raw)
