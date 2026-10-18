@@ -85,6 +85,9 @@ demo_text(
     alia_palette_color color,
     alia::layout_flag_set flags)
 {
-    alia_text_style const style = {.font = font, .color = color};
+    alia_text_style const style = {
+        .font = font,
+        .color = alia_palette_color_resolve(ctx.palette, color),
+    };
     alia_text(&ctx, alia::raw_code(flags), alia_text_literal(text), &style);
 }

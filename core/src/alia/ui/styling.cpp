@@ -1,7 +1,6 @@
 #include <alia/ui/styling.h>
 
 #include <alia/abi/ui/library.h>
-#include <alia/abi/ui/text.h>
 #include <alia/ui/system/object.h>
 
 #include <algorithm>
@@ -63,13 +62,6 @@ generate_layout_style(
 {
     (void) user_data;
     alia_layout_style_generate(static_cast<alia_layout_style*>(out), seeds);
-}
-
-void
-generate_text_style(void* user_data, void* out, alia_style_seeds const* seeds)
-{
-    (void) user_data;
-    alia_text_style_generate(static_cast<alia_text_style*>(out), seeds);
 }
 
 void
@@ -176,13 +168,6 @@ style_catalog_init(style_catalog& catalog, alia_ui_system* ui)
         sizeof(alia_layout_style),
         alignof(alia_layout_style),
         generate_layout_style,
-        nullptr);
-    bind_slot(
-        catalog,
-        ALIA_STYLE_TEXT,
-        sizeof(alia_text_style),
-        alignof(alia_text_style),
-        generate_text_style,
         nullptr);
     bind_slot(
         catalog,

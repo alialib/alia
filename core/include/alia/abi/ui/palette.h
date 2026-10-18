@@ -293,6 +293,106 @@ alia_palette_color_resolve(alia_palette const* p, alia_palette_color c)
     return alia_palette_color_at(p, c.index, c.alpha);
 }
 
+// operation applied to a base palette color for one interaction state
+enum alia_color_op_kind
+{
+    // base color unchanged - This is here primarily to serve as a zero-value
+    // default.
+    ALIA_COLOR_OP_NONE = 0,
+    // shift OKLab lightness and chroma of the base
+    ALIA_COLOR_OP_ADJUST,
+    // paint `color` instead of the base
+    ALIA_COLOR_OP_REPLACE,
+    // composite `color` over the base using a linear blend
+    ALIA_COLOR_OP_BLEND,
+};
+
+// one interaction response applied to a base palette color
+typedef struct alia_color_op
+{
+    // which operation
+    uint8_t kind;
+    union
+    {
+        struct
+        {
+            // added to OKLab lightness, in units of 1/255
+            int8_t l;
+            // OKLab chroma scale - 255 leaves chroma unchanged. 0 removes it.
+            uint8_t c_scale;
+        } adjust;
+        // replacement or blend source
+        alia_palette_color color;
+    };
+} alia_color_op;
+
+// Return an op that leaves the base unchanged.
+static inline alia_color_op
+alia_color_op_none(void)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_NONE;
+    op.color = alia_palette_color_make(0, 0);
+    return op;
+}
+
+// Return an op that adds `l` to OKLab lightness and scales chroma by
+// `c_scale`. `c_scale` is in units of 1/255, so 255 leaves chroma unchanged.
+static inline alia_color_op
+alia_color_op_adjust(int8_t l, uint8_t c_scale)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_ADJUST;
+    op.adjust.l = l;
+    op.adjust.c_scale = c_scale;
+    return op;
+}
+
+// Return an op that paints `color` instead of the base.
+static inline alia_color_op
+alia_color_op_replace(alia_palette_color color)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_REPLACE;
+    op.color = color;
+    return op;
+}
+
+// Return an op that composites `color` over the base.
+static inline alia_color_op
+alia_color_op_blend(alia_palette_color color)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_BLEND;
+    op.color = color;
+    return op;
+}
+
+// palette color plus its hover, active, and disabled responses
+typedef struct alia_responsive_color
+{
+    // color at rest
+    alia_palette_color base;
+    // response while hovered
+    alia_color_op hovered;
+    // response while active (pressed)
+    alia_color_op active;
+    // response while disabled
+    alia_color_op disabled;
+} alia_responsive_color;
+
+// Resolve `op` applied to `base` against `p`.
+alia_srgba8
+alia_color_op_resolve(
+    alia_palette const* p, alia_palette_color base, alia_color_op op);
+
+// Resolve `color` for an interaction `status`.
+// `status` uses the `ALIA_INTERACTION_STATUS_*` bits. Disabled wins, then
+// active, then hovered. Focus is ignored.
+alia_srgba8
+alia_responsive_color_resolve(
+    alia_palette const* p, alia_responsive_color color, uint8_t status);
+
 // Theme generation expands an accent through OKLCH seeds into an sRGB
 // palette. Apps can hold and edit values at any stage before the next step.
 

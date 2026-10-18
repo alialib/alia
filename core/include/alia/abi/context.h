@@ -37,6 +37,8 @@ typedef struct alia_context
     void* active_styles;
     // NULL until a font is pushed
     alia_resolved_font const* active_font;
+    // active text color
+    alia_srgba8 text_color;
     alia_geometry_context* geometry;
     alia_input_state* input;
     alia_layout_context* layout;

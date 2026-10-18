@@ -3,7 +3,8 @@ add_executable(test_core_impl
     base/test_bit_packing.cpp
     base/test_operators.cpp
     kernel/test_timer.cpp
-    kernel/animation/test_unit_cubic_bezier.cpp)
+    kernel/animation/test_unit_cubic_bezier.cpp
+    ui/test_responsive_color.cpp)
 target_link_libraries(test_core_impl PRIVATE alia_core)
 target_include_directories(test_core_impl PRIVATE
     ${PROJECT_SOURCE_DIR}/tests/support

@@ -312,20 +312,15 @@ alia_scrollbar_style_active(alia_context* ctx)
 // button style (catalog slot ALIA_STYLE_BUTTON)
 typedef struct alia_button_style
 {
-    // base chrome - An alpha-0 fill is allowed for outline-only buttons.
-    alia_palette_color fill;
-    alia_palette_color fill_disabled;
-    alia_palette_color label;
-    alia_palette_color label_disabled;
+    // fill paint - An alpha-0 base is allowed for outline-only buttons.
+    alia_responsive_color fill;
+    // label color
+    alia_responsive_color label;
 
-    // outline - A `border_width` of 0 means filled-only (no stroke).
+    // outline width, logical px - 0 means filled-only (no stroke).
     float border_width;
-    alia_palette_color border;
-    alia_palette_color border_disabled;
-
-    // interaction overlays drawn on top of the base - Alpha 0 means unused.
-    alia_palette_color highlight_hovered;
-    alia_palette_color highlight_active;
+    // border paint
+    alia_responsive_color border;
 
     // geometry, logical px
     float padding_x;

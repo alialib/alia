@@ -63,7 +63,6 @@ alia_focus_style_generate(
 enum alia_style_slot
 {
     ALIA_STYLE_LAYOUT = 0,
-    ALIA_STYLE_TEXT,
     ALIA_STYLE_FOCUS,
     ALIA_STYLE_TOGGLE_SWITCH,
     ALIA_STYLE_SLIDER,

@@ -1,4 +1,5 @@
 #include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/input/elements.h>
 #include <cmath>
 #include <numbers>
 
@@ -360,6 +361,80 @@ alia_palette_from_seeds(
 
     generate_literals(&out->colors, seeds, ctx, &pp, literals);
 }
+
+static float
+clamp01_unit(float x)
+{
+    return x < 0.f ? 0.f : (x > 1.f ? 1.f : x);
+}
+
+static alia_srgba8
+adjust_oklab(alia_srgba8 base, int8_t l_delta, uint8_t c_scale)
+{
+    alia_oklab lab = alia_oklab_from_rgb(alia_rgb_from_srgb8(
+        alia_srgb8_make(base.r, base.g, base.b)));
+    lab.l = clamp01_unit(lab.l + (float) l_delta / 255.f);
+    float const scale = (float) c_scale / 255.f;
+    lab.a *= scale;
+    lab.b *= scale;
+    alia_srgb8 const rgb = alia_srgb8_from_oklab(lab);
+    return alia_srgba8_make(rgb.r, rgb.g, rgb.b, base.a);
+}
+
+// Composite `src` over `dst` in linear light. Both colors are straight alpha.
+static alia_srgba8
+blend_over(alia_srgba8 dst_s, alia_srgba8 src_s)
+{
+    alia_rgba const dst = alia_rgba_from_srgba8(dst_s);
+    alia_rgba const src = alia_rgba_from_srgba8(src_s);
+    float const out_a = src.a + dst.a * (1.f - src.a);
+    if (out_a <= 0.f)
+        return alia_srgba8_make(0, 0, 0, 0);
+    float const inv = 1.f / out_a;
+    float const dst_weight = dst.a * (1.f - src.a);
+    return alia_srgba8_from_rgba(alia_rgba{
+        (src.r * src.a + dst.r * dst_weight) * inv,
+        (src.g * src.a + dst.g * dst_weight) * inv,
+        (src.b * src.a + dst.b * dst_weight) * inv,
+        out_a,
+    });
+}
+
+alia_srgba8
+alia_color_op_resolve(
+    alia_palette const* p, alia_palette_color base, alia_color_op op)
+{
+    alia_srgba8 const base_rgba = alia_palette_color_resolve(p, base);
+    switch (op.kind)
+    {
+        case ALIA_COLOR_OP_ADJUST:
+            return adjust_oklab(base_rgba, op.adjust.l, op.adjust.c_scale);
+        case ALIA_COLOR_OP_REPLACE:
+            return alia_palette_color_resolve(p, op.color);
+        case ALIA_COLOR_OP_BLEND:
+            return blend_over(
+                base_rgba, alia_palette_color_resolve(p, op.color));
+        case ALIA_COLOR_OP_NONE:
+        default:
+            return base_rgba;
+    }
+}
+
+alia_srgba8
+alia_responsive_color_resolve(
+    alia_palette const* p, alia_responsive_color color, uint8_t status)
+{
+    if (status & ALIA_INTERACTION_STATUS_DISABLED)
+        return alia_color_op_resolve(p, color.base, color.disabled);
+    if (status & ALIA_INTERACTION_STATUS_ACTIVE)
+        return alia_color_op_resolve(p, color.base, color.active);
+    if (status & ALIA_INTERACTION_STATUS_HOVERED)
+        return alia_color_op_resolve(p, color.base, color.hovered);
+    return alia_palette_color_resolve(p, color.base);
+}
+
+static_assert(
+    sizeof(alia_color_op) <= 4, "color op should stay a few bytes");
 
 void
 alia_palette_from_accent(

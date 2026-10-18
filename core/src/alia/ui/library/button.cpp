@@ -10,7 +10,6 @@
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/styling.h>
-#include <alia/abi/ui/text.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
 
@@ -21,97 +20,92 @@ struct button_scope
     alia_element_id id{};
     alia_button_flags_t flags = 0;
     alia_box box{};
-    alia_palette_color saved_text_color{};
+    alia_srgba8 saved_text_color{};
 };
 
-static void
-button_pick_base(
-    alia_button_style const* style,
-    bool disabled,
-    alia_palette_color* fill,
-    alia_palette_color* label,
-    alia_palette_color* border)
+static alia_responsive_color
+responsive_color_make(
+    alia_palette_color base,
+    alia_color_op hovered,
+    alia_color_op active,
+    alia_color_op disabled)
 {
-    if (disabled)
-    {
-        *fill = style->fill_disabled;
-        *label = style->label_disabled;
-        *border = style->border_disabled;
-        return;
-    }
-
-    *fill = style->fill;
-    *label = style->label;
-    *border = style->border;
-}
-
-static alia_palette_color
-button_pick_highlight(
-    alia_button_style const* style, alia_interaction_status_t status)
-{
-    if (status & ALIA_INTERACTION_STATUS_DISABLED)
-        return alia_palette_color_make(0, 0);
-    if (status & ALIA_INTERACTION_STATUS_ACTIVE)
-        return style->highlight_active;
-    if (status & ALIA_INTERACTION_STATUS_HOVERED)
-        return style->highlight_hovered;
-    return alia_palette_color_make(0, 0);
+    alia_responsive_color color;
+    color.base = base;
+    color.hovered = hovered;
+    color.active = active;
+    color.disabled = disabled;
+    return color;
 }
 
 static void
 button_style_apply_filled(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    style->fill = alia_palette_color_swatch(
+    alia_palette_color const solid = alia_palette_color_swatch(
         swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0xff);
-    style->fill_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff);
+    // Sink the fill. -10 and -20 are about -0.04 and -0.08 lightness.
+    style->fill = responsive_color_make(
+        solid,
+        alia_color_op_adjust(-10, 255),
+        alia_color_op_adjust(-20, 255),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)));
 
-    style->label = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0xff);
-    style->label_disabled = ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff);
+    style->label = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0xff),
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff)));
 
     style->border_width = 0.f;
-    style->border = style->fill;
-    style->border_disabled = style->fill_disabled;
+    style->border = responsive_color_make(
+        solid,
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_none());
     style->corner_radius = 0.f;
-
-    // Soft ink wash over the solid fill.
-    style->highlight_hovered = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0x30);
-    style->highlight_active = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0x60);
 }
 
 static void
 button_style_apply_outline(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    style->fill = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x00);
-    style->fill_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0x00);
+    style->fill = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x00),
+        alia_color_op_replace(alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x20)),
+        alia_color_op_replace(alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x40)),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0x00)));
 
-    style->label = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff);
-    style->label_disabled = ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff);
+    style->label = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff),
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff)));
 
     if (style->border_width <= 0.f)
         style->border_width = 1.5f;
 
-    style->border = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_OUTLINE, 0xff);
-    style->border_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff);
+    // The stroke stays put on hover and press. Disabled swaps to a neutral.
+    style->border = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_OUTLINE, 0xff),
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)));
 
     // Keep a slight round on outline chrome (filled uses square corners).
     if (style->corner_radius <= 0.f)
         style->corner_radius = 6.f;
-
-    style->highlight_hovered = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x20);
-    style->highlight_active = alia_palette_color_swatch(
-        swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x40);
 }
 
 } // namespace alia
@@ -195,14 +189,9 @@ alia_button_begin(
             = alia_element_get_interaction_status(
                 ctx, id, is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
 
-        alia_palette_color fill_c, label_c, border_c;
-        button_pick_base(style, is_disabled, &fill_c, &label_c, &border_c);
-        alia_palette_color const highlight_c
-            = button_pick_highlight(style, interaction_status);
-
-        alia_text_style* text_style = alia_text_style_active(ctx);
-        scope.saved_text_color = text_style->color;
-        text_style->color = label_c;
+        scope.saved_text_color = ctx->text_color;
+        ctx->text_color = alia_responsive_color_resolve(
+            alia_ctx_palette(ctx), style->label, interaction_status);
 
         alia_event_category const category = get_event_category(*ctx);
         switch (category)
@@ -227,23 +216,12 @@ alia_button_begin(
                     ctx,
                     z,
                     scope.box,
-                    {.fill_color = alia_palette_color_resolve(palette, fill_c),
+                    {.fill_color = alia_responsive_color_resolve(
+                         palette, style->fill, interaction_status),
                      .corner_radius = corner,
                      .border_width = alia_px(ctx, style->border_width),
-                     .border_color
-                     = alia_palette_color_resolve(palette, border_c)});
-                if (highlight_c.alpha != 0)
-                {
-                    alia_draw_box(
-                        ctx,
-                        z,
-                        scope.box,
-                        {.fill_color
-                         = alia_palette_color_resolve(palette, highlight_c),
-                         .corner_radius = corner,
-                         .border_width = 0.f,
-                         .border_color = alia_srgba8_make(0, 0, 0, 0)});
-                }
+                     .border_color = alia_responsive_color_resolve(
+                         palette, style->border, interaction_status)});
                 break;
             }
             default:
@@ -268,7 +246,7 @@ alia_button_end(alia_context* ctx)
 
     bool const is_disabled = (scope.flags & ALIA_BUTTON_DISABLED) != 0;
 
-    alia_text_style_active(ctx)->color = scope.saved_text_color;
+    ctx->text_color = scope.saved_text_color;
 
     // Register after children so the button owns the hit (last writer wins).
     alia_element_box_region(

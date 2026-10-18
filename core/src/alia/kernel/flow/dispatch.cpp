@@ -82,6 +82,9 @@ invoke_controller(ui_system& sys, event_traversal& events)
         // No active font until something pushes one (see `alia_font_push`).
         // Using text before then is a programming error and asserts.
         .active_font = nullptr,
+        // Resolve the default text color for the system palette.
+        .text_color = alia_palette_color_resolve(
+            &sys.palette, ALIA_PALETTE_COLOR(foundation.text.base, 0xff)),
         .geometry = &geometry,
         .input = &sys.input,
         .layout = &layout,

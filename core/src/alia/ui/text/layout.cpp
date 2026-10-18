@@ -8,7 +8,6 @@
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
-#include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/styling.h>
 
 #include <alia/impl/base/arena.hpp>
@@ -326,25 +325,12 @@ using namespace alia;
 ALIA_EXTERN_C_BEGIN
 
 void
-alia_text_style_generate(alia_text_style* out, alia_style_seeds const* seeds)
-{
-    (void) seeds;
-    *out = alia_text_style{
-        .font = nullptr,
-        .color = ALIA_PALETTE_COLOR(foundation.text.base, 0xff),
-    };
-}
-
-void
 alia_text(
     alia_context* ctx,
     alia_layout_flags_t flags,
     alia_text_input_signal text,
     alia_text_style const* style)
 {
-    alia_text_style const* const effective_style
-        = style != nullptr ? style : alia_text_style_active(ctx);
-
     alia_substrate_usage_result const result = alia_substrate_use_object(
         ctx,
         sizeof(text_block_cache),
@@ -355,9 +341,12 @@ alia_text(
     if (fresh)
         *cache = text_block_cache{};
 
+    alia_resolved_font const* const style_font
+        = style != nullptr ? style->font : nullptr;
     alia_resolved_font const* font
-        = effective_style->font != nullptr ? effective_style->font
-                                           : alia_active_font(ctx);
+        = style_font != nullptr ? style_font : alia_active_font(ctx);
+    alia_srgba8 const color
+        = style != nullptr ? style->color : ctx->text_color;
     float const geometry_scale = ctx->geometry->scale;
     float const physical_size = font->size * geometry_scale;
     alia_text_engine* engine = font->typeface.engine;
@@ -445,8 +434,6 @@ alia_text(
                 // Selectable/copyable text can opt in when that exists.
                 break;
             case ALIA_CATEGORY_DRAWING: {
-                alia_srgba8 const color = alia_palette_color_resolve(
-                    alia_ctx_palette(ctx), effective_style->color);
                 cache->engine->vtable->draw_block_range(
                     cache->engine,
                     ctx,

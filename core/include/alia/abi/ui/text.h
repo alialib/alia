@@ -9,8 +9,6 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/flags.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
 
 #include <string.h>
 
@@ -253,36 +251,18 @@ alia_active_font_metrics(alia_context* ctx)
 
 // TEXT COMPONENT
 
-// styling for a text element - The font is a pointer to a resolved font (NULL
-// means inherit the active font). The color is palette-indexed like other UI
-// components.
+// styling for a text element
 typedef struct alia_text_style
 {
-    // NULL => inherit the active font
+    // resolved font to use, or NULL to inherit the active font
     alia_resolved_font const* font;
-    alia_palette_color color;
+    // text color
+    alia_srgba8 color;
 } alia_text_style;
-
-// Fill `out` with the text style for `seeds`.
-// Seeds can be `NULL` to use the default seeds.
-void
-alia_text_style_generate(alia_text_style* out, alia_style_seeds const* seeds);
-
-static inline alia_text_style*
-alia_text_style_default(alia_ui_system* ui)
-{
-    return (alia_text_style*) alia_style_default(ui, ALIA_STYLE_TEXT);
-}
-
-static inline alia_text_style*
-alia_text_style_active(alia_context* ctx)
-{
-    return (alia_text_style*) alia_style_active(ctx, ALIA_STYLE_TEXT);
-}
 
 // Emit a text element.
 // `flags` are layout flags.
-// `style` may be null, in which case the active text style is used.
+// `style` may be NULL, in which case the active font and text color are used.
 void
 alia_text(
     alia_context* ctx,
