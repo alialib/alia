@@ -98,8 +98,8 @@ check_flares(
     rig->ctx.kernel.tick_count = tick;
     alia_nanosecond_count got[8];
     memset(got, 0, sizeof(got));
-    unsigned count
-        = alia_animation_process_flares(&rig->ctx.kernel, rig_bit(rig), got);
+    unsigned count = alia_animation_process_flares(
+        alia_ctx_kernel(&rig->ctx), rig_bit(rig), got);
     TEST_CHECK(count == expected_count);
     unsigned i;
     for (i = 0; i < count && i < expected_count; ++i)
@@ -116,7 +116,7 @@ test_flares(void)
 
     rig.ctx.kernel.tick_count = alia_milliseconds(0);
     alia_animation_fire_flare(
-        &rig.ctx.kernel, rig_bit(&rig), alia_milliseconds(1000));
+        alia_ctx_kernel(&rig.ctx), rig_bit(&rig), alia_milliseconds(1000));
 
     {
         alia_nanosecond_count expected[] = {alia_milliseconds(900)};
@@ -124,7 +124,7 @@ test_flares(void)
     }
 
     alia_animation_fire_flare(
-        &rig.ctx.kernel, rig_bit(&rig), alia_milliseconds(1000));
+        alia_ctx_kernel(&rig.ctx), rig_bit(&rig), alia_milliseconds(1000));
 
     {
         alia_nanosecond_count expected[]
@@ -155,7 +155,12 @@ transition_at(animation_rig* rig, alia_nanosecond_count tick, bool state)
     transition.curve = alia_linear_curve;
     transition.duration = alia_milliseconds(1000);
     return alia_transition_float(
-        &rig->ctx.kernel, &transition, rig_bit(rig), state, 0.f, 1.f);
+        alia_ctx_kernel(&rig->ctx),
+        &transition,
+        rig_bit(rig),
+        state,
+        0.f,
+        1.f);
 }
 
 static void

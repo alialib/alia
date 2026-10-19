@@ -18,7 +18,7 @@
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
@@ -142,11 +142,9 @@ template<class Content>
 void
 with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
-    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
-    float old_spacing = layout_style->spacing;
-    layout_style->spacing = spacing * ctx.geometry->scale;
+    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
     content();
-    layout_style->spacing = old_spacing;
+    alia_spacing_pop(&ctx);
 }
 
 void
@@ -217,7 +215,11 @@ void
 do_theme_controls(ui_context& ctx)
 {
     concrete_panel(
-        ctx, 0, ctx.palette->foundation.background.stronger_1, FILL, [&]() {
+        ctx,
+        0,
+        alia_ctx_palette(&ctx)->foundation.background.stronger_1,
+        FILL,
+        [&]() {
             edge_offsets(
                 ctx,
                 {.left = 12, .right = 12, .top = 12, .bottom = 12},
@@ -315,7 +317,7 @@ shader_gallery_root(ui_context& ctx)
         palette_params.foundation_step_l = 0.06f;
 
         alia_palette_from_accent(
-            &ctx.system->palette,
+            &alia_ctx_system(&ctx)->palette,
             &accent,
             &theme_ctx,
             nullptr,
@@ -329,7 +331,11 @@ shader_gallery_root(ui_context& ctx)
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
             concrete_panel(
-                ctx, 0, ctx.palette->foundation.background.base, FILL, [&]() {
+                ctx,
+                0,
+                alia_ctx_palette(&ctx)->foundation.background.base,
+                FILL,
+                [&]() {
                     column(ctx, GROW, [&]() {
                         scroll_view(ctx, SCROLL_VIEW_Y, GROW, [&]() {
                             edge_offsets(
@@ -350,7 +356,11 @@ shader_gallery_root(ui_context& ctx)
                     });
                 });
             concrete_panel(
-                ctx, 0, ctx.palette->foundation.background.base, GROW, [&]() {
+                ctx,
+                0,
+                alia_ctx_palette(&ctx)->foundation.background.base,
+                GROW,
+                [&]() {
                     alia_do_shader(
                         &ctx,
                         0,

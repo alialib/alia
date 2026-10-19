@@ -31,7 +31,7 @@ slider(
         auto c = to_inline_c_signal<alia_double_signal>(value);
         id = alia_slider(
             &ctx, &c, minimum, maximum, step, raw_code(flags), vertical);
-        write_back_c_signal(&ctx.kernel, value, c);
+        write_back_c_signal(alia_ctx_kernel(&ctx), value, c);
     });
     return id;
 }

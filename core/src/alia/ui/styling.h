@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/base/allocator.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/catalog.h>
 
 #include <cstddef>
 #include <cstdint>

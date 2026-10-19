@@ -4,12 +4,12 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/text.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
 
@@ -20,7 +20,6 @@ struct button_scope
     alia_element_id id{};
     alia_button_flags_t flags = 0;
     alia_box box{};
-    alia_srgba8 saved_text_color{};
 };
 
 static alia_responsive_color
@@ -146,28 +145,26 @@ alia_button_begin(
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result const usage
-        = alia_substrate_use_memory(&ctx->kernel, 1, 1);
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, usage);
+        = alia_substrate_use_memory(alia_ctx_kernel(ctx), 1, 1);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), usage);
 
     alia_button_style const* const style = alia_button_style_active(ctx);
     bool const is_disabled = (flags & ALIA_BUTTON_DISABLED) != 0;
     alia_button_result_t pass_result = ALIA_BUTTON_RESULT_NONE;
 
-    auto& scope = stack_push<button_scope>(&ctx->kernel);
+    auto& scope = stack_push<button_scope>(alia_ctx_kernel(ctx));
     scope = button_scope{
         .id = id,
         .flags = flags,
         .box = {},
-        .saved_text_color = {},
     };
 
     // Outer margin matches leaf spacing so buttons sit in the same rhythm as
     // text and other controls. FLUSH zeros it. Inner padding is chrome only;
     // PROVIDE_BOX stays on that layer so hit/draw exclude the margin.
     float const layout_spacing
-        = (layout_flags & ALIA_FLUSH) != 0
-            ? 0.f
-            : alia_layout_style_active(ctx)->spacing;
+        = (layout_flags & ALIA_FLUSH) != 0 ? 0.f : alia_spacing_active(ctx);
     alia_edge_offsets const margin
         = alia_edge_offsets_make_uniform(layout_spacing);
     alia_edge_offsets const padding
@@ -188,9 +185,10 @@ alia_button_begin(
             = alia_element_get_interaction_status(
                 ctx, id, is_disabled ? ALIA_INTERACTION_STATUS_DISABLED : 0);
 
-        scope.saved_text_color = ctx->text_color;
-        ctx->text_color = alia_responsive_color_resolve(
-            alia_ctx_palette(ctx), style->label, interaction_status);
+        alia_text_color_push(
+            ctx,
+            alia_responsive_color_resolve(
+                alia_ctx_palette(ctx), style->label, interaction_status));
 
         alia_event_category const category = get_event_category(*ctx);
         switch (category)
@@ -238,14 +236,15 @@ alia_button_end(alia_ui_context* ctx)
     alia_layout_edge_offsets_end(ctx);
     alia_layout_edge_offsets_end(ctx);
 
-    auto scope = stack_pop<button_scope>(&ctx->kernel);
+    if (!is_refresh_event(*ctx))
+        alia_text_color_pop(ctx);
+
+    auto scope = stack_pop<button_scope>(alia_ctx_kernel(ctx));
 
     if (is_refresh_event(*ctx))
         return;
 
     bool const is_disabled = (scope.flags & ALIA_BUTTON_DISABLED) != 0;
-
-    ctx->text_color = scope.saved_text_color;
 
     // Register after children so the button owns the hit (last writer wins).
     alia_element_box_region(

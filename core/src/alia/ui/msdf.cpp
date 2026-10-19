@@ -281,7 +281,8 @@ msdf_engine_draw_block_range(
 
     // `baseline_origin` is the pen position on the baseline; glyph planes are
     // measured from the baseline, so no ascender offset is added here.
-    alia_vec2f cursor = alia_vec2f_add(baseline_origin, ctx->geometry->offset);
+    alia_vec2f cursor
+        = alia_vec2f_add(baseline_origin, alia_ctx_geometry(ctx)->offset);
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
 
     char const* text = block.text.data();
@@ -573,7 +574,7 @@ alia_msdf_draw_text(
     alia_msdf_atlas_description const& atlas = fonts->atlas;
 
     alia_vec2f cursor = alia_vec2f_add(
-        alia_vec2f_add(position, ctx->geometry->offset),
+        alia_vec2f_add(position, alia_ctx_geometry(ctx)->offset),
         alia_vec2f{0, font.metrics.ascender * scale});
 
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
@@ -622,7 +623,7 @@ alia_msdf_draw_codepoint(
         = font.glyph_cache.at(static_cast<int>(codepoint));
 
     alia_vec2f cursor = alia_vec2f_add(
-        alia_vec2f_add(position, ctx->geometry->offset),
+        alia_vec2f_add(position, alia_ctx_geometry(ctx)->offset),
         alia_vec2f{0, font.metrics.ascender * scale});
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
 

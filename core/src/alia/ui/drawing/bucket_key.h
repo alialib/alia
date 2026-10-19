@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/ui/drawing/commands.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 
 #include <cstdint>
 

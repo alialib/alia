@@ -97,8 +97,8 @@ struct state_storage
     handle_tracked_change(kernel_context* ctx)
     {
         inc_version();
-        if (ctx && ctx->object)
-            alia_kernel_mark_dirty(ctx->object);
+        if (ctx && alia_ctx_object(ctx))
+            alia_kernel_mark_dirty(alia_ctx_object(ctx));
     }
 };
 

@@ -6,7 +6,7 @@
 #include <alia/abi/kernel/events.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/constants.h>
 
 #include <string.h>

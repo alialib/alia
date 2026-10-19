@@ -3,9 +3,9 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 
@@ -107,8 +107,8 @@ alia_element_report_hit(
         {
             record_hit(e.result.target, id, z);
             e.result.cursor = cursor;
-            e.result.region
-                = alia_box_translate(*bounding_box, ctx->geometry->offset);
+            e.result.region = alia_box_translate(
+                *bounding_box, alia_ctx_geometry(ctx)->offset);
         }
     }
     else if (
@@ -154,8 +154,8 @@ alia_element_handle_visibility(
             alia_box_expand(
                 *region,
                 alia_edge_offsets_make_uniform(
-                    alia_px(ctx, alia_layout_style_active(ctx)->spacing))),
-            ctx->geometry->offset);
+                    alia_px(ctx, alia_spacing_active(ctx)))),
+            alia_ctx_geometry(ctx)->offset);
         e.acknowledged = true;
     }
 }

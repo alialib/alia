@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -101,7 +101,7 @@ render_toggle_switch(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float toggle_position = alia_transition_float(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         state,
@@ -227,7 +227,9 @@ alia_toggle_switch(
 {
     // TODO: Use C++ API for this.
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(toggle_switch_data), alignof(toggle_switch_data));
+        alia_ctx_kernel(ctx),
+        sizeof(toggle_switch_data),
+        alignof(toggle_switch_data));
     toggle_switch_data* data = (toggle_switch_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -236,7 +238,8 @@ alia_toggle_switch(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     alia_toggle_switch_style const* const style
         = alia_toggle_switch_style_active(ctx);

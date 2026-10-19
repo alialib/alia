@@ -288,7 +288,7 @@ struct tooltip_overlay_state
 static void
 do_tooltip_overlay(ui_context& ctx)
 {
-    auto& tooltip = ctx.system->tooltip;
+    auto& tooltip = alia_ctx_system(&ctx)->tooltip;
 
     scoped_data_block data_block(ctx, tooltip.data);
 
@@ -322,13 +322,13 @@ do_tooltip_overlay(ui_context& ctx)
         {
             vector<2,int> position;
             // Decide how to align each axis of the tooltip.
-            auto surface_size = layout_vector(ctx.system->surface_size);
+            auto surface_size = layout_vector(alia_ctx_system(&ctx)->surface_size);
             // First get the region that generated the tooltip (plus a little padding).
             // We want to try to align the tooltip with this.
             auto generating_region =
                 add_border(
                     smoothed_state.generating_region,
-                    as_layout_size(ctx.system->style.magnification * 2.5));
+                    as_layout_size(alia_ctx_system(&ctx)->style.magnification * 2.5));
             auto lower_region_edge = get_low_corner(generating_region);
             auto upper_region_edge = get_high_corner(generating_region);
             // For the horizontal alignment, we prefer to align the left edge of the
@@ -391,7 +391,7 @@ issue_event(
 
     ctx.surface = system.surface.get();
     if (event.type == RENDER_EVENT || event.type == OVERLAY_RENDER_EVENT)
-        set_subscriber(*ctx.geometry, *ctx.surface);
+        set_subscriber(*alia_ctx_geometry(&ctx), *ctx.surface);
 
     layout_traversal layout;
     ctx.layout = &layout;

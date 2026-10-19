@@ -1,14 +1,14 @@
 #ifndef ALIA_ABI_UI_LIBRARY_H
 #define ALIA_ABI_UI_LIBRARY_H
 
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/animation.h>
 #include <alia/abi/kernel/signal.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/catalog.h>
 
 #include <stdint.h>
 

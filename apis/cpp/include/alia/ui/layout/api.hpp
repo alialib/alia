@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/context.h>
 #include <alia/ui/layout/container_options.hpp>

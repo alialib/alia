@@ -2,7 +2,7 @@
 
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/kernel/substrate.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 
 #include <alia/impl/events.hpp>
@@ -52,12 +52,13 @@ alia_do_viewport(
     alia_viewport_style const* style)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(viewport_data), alignof(viewport_data));
+        alia_ctx_kernel(ctx), sizeof(viewport_data), alignof(viewport_data));
     viewport_data* data = (viewport_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     alia_viewport_style const* const effective_style
         = style != nullptr ? style : &default_viewport_style;

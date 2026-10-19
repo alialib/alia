@@ -3,7 +3,7 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/object.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/system/api.h>
 
@@ -138,10 +138,10 @@ TEST_CASE("popup places content, resets clip, and raises z")
         if (!alia_layout_context_is_refresh(ctx))
         {
             ctx->system = surface.system;
-            ctx->kernel.scratch = &scratch.bump;
-            ctx->geometry->offset = incoming_offset;
-            ctx->geometry->z_base = ALIA_DEFAULT_Z_BASE;
-            ctx->geometry->clip.box = incoming_clip;
+            *alia_ctx_scratch(alia_ctx_kernel(ctx)) = scratch.bump;
+            alia_ctx_geometry(ctx)->offset = incoming_offset;
+            alia_ctx_geometry(ctx)->z_base = ALIA_DEFAULT_Z_BASE;
+            alia_ctx_geometry(ctx)->clip.box = incoming_clip;
         }
 
         alia::popup(*ctx, anchor, [&] {
@@ -161,9 +161,10 @@ TEST_CASE("popup places content, resets clip, and raises z")
                     alia_vec2f_make(0.f, 0.f),
                     alia_vec2i_to_vec2f(surface_size))));
             CHECK(
-                ctx->geometry->z_base
+                alia_ctx_geometry(ctx)->z_base
                 == ALIA_DEFAULT_Z_BASE + ALIA_Z_LAYER_SPACING);
-            CHECK(alia_vec2f_equal(ctx->geometry->offset, placed.min));
+            CHECK(
+                alia_vec2f_equal(alia_ctx_geometry(ctx)->offset, placed.min));
             CHECK(alia_box_equal(
                 alia_layout_consume_box(ctx),
                 alia_box_make(alia_vec2f_make(0.f, 0.f), placed.size)));
@@ -171,9 +172,11 @@ TEST_CASE("popup places content, resets clip, and raises z")
 
         if (!alia_layout_context_is_refresh(ctx))
         {
-            CHECK(alia_vec2f_equal(ctx->geometry->offset, incoming_offset));
-            CHECK(ctx->geometry->z_base == ALIA_DEFAULT_Z_BASE);
-            CHECK(alia_box_equal(ctx->geometry->clip.box, incoming_clip));
+            CHECK(alia_vec2f_equal(
+                alia_ctx_geometry(ctx)->offset, incoming_offset));
+            CHECK(alia_ctx_geometry(ctx)->z_base == ALIA_DEFAULT_Z_BASE);
+            CHECK(alia_box_equal(
+                alia_ctx_geometry(ctx)->clip.box, incoming_clip));
         }
     };
 

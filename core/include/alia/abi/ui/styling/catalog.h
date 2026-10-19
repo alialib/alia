@@ -1,9 +1,9 @@
-#ifndef ALIA_ABI_UI_STYLING_H
-#define ALIA_ABI_UI_STYLING_H
+#ifndef ALIA_ABI_UI_STYLING_CATALOG_H
+#define ALIA_ABI_UI_STYLING_CATALOG_H
 
-#include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/context.h>
+
 #include <stddef.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -26,45 +26,17 @@ typedef struct alia_style_seeds
 alia_style_seeds
 alia_style_seeds_default(void);
 
-// layout style (catalog slot ALIA_STYLE_LAYOUT)
-typedef struct alia_layout_style
-{
-    // default padding around leaves, logical px
-    float spacing;
-} alia_layout_style;
-
-// Fill `out` with the layout style for `seeds`.
-// Seeds can be `NULL` to use the default seeds.
+// Set the ambient style fields on `style` from `seeds`.
+// `seeds` may be NULL to use the default seeds.
 void
-alia_layout_style_generate(
-    alia_layout_style* out, alia_style_seeds const* seeds);
-
-// focus ring chrome (catalog slot ALIA_STYLE_FOCUS)
-typedef struct alia_focus_style
-{
-    alia_palette_color color;
-    // outset beyond the control bounds, logical px
-    float outset;
-    float thickness;
-    float corner_radius;
-    // show-on-pointer policy - When false, draw focus only while
-    // input->keyboard_interaction is set.
-    bool show_on_pointer_focus;
-} alia_focus_style;
-
-// Fill `out` with the focus style for `seeds`.
-// Seeds can be `NULL` to use the default seeds.
-void
-alia_focus_style_generate(
-    alia_focus_style* out, alia_style_seeds const* seeds);
+alia_style_apply_seeds(
+    alia_style_context* style, alia_style_seeds const* seeds);
 
 // built-in style slot indices - Third-party slots start at
 // ALIA_STYLE_BUILTIN_COUNT via alia_style_slot_add.
 enum alia_style_slot
 {
-    ALIA_STYLE_LAYOUT = 0,
-    ALIA_STYLE_FOCUS,
-    ALIA_STYLE_TOGGLE_SWITCH,
+    ALIA_STYLE_TOGGLE_SWITCH = 0,
     ALIA_STYLE_SLIDER,
     ALIA_STYLE_RADIO_BUTTON,
     ALIA_STYLE_CHECKBOX,
@@ -125,34 +97,6 @@ alia_style_default(alia_ui_system* ui, alia_style_slot_id slot);
 void*
 alia_style_active(alia_ui_context* ctx, alia_style_slot_id slot);
 
-static inline alia_layout_style*
-alia_layout_style_default(alia_ui_system* ui)
-{
-    return (alia_layout_style*) alia_style_default(ui, ALIA_STYLE_LAYOUT);
-}
-
-static inline alia_layout_style*
-alia_layout_style_active(alia_ui_context* ctx)
-{
-    // `Layout` is always the first catalog slot, so its offset in the actives
-    // blob is 0. A consequence of this is that Layout-only test fixtures can
-    // point `active_styles` at a lone `alia_layout_style` without a UI system.
-    ALIA_ASSERT(ctx && ctx->active_styles);
-    return (alia_layout_style*) ctx->active_styles;
-}
-
-static inline alia_focus_style*
-alia_focus_style_default(alia_ui_system* ui)
-{
-    return (alia_focus_style*) alia_style_default(ui, ALIA_STYLE_FOCUS);
-}
-
-static inline alia_focus_style*
-alia_focus_style_active(alia_ui_context* ctx)
-{
-    return (alia_focus_style*) alia_style_active(ctx, ALIA_STYLE_FOCUS);
-}
-
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_ABI_UI_STYLING_H */
+#endif /* ALIA_ABI_UI_STYLING_CATALOG_H */

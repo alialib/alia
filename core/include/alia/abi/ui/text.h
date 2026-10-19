@@ -3,12 +3,13 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/signal.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/flags.h>
+#include <alia/abi/ui/styling/api.h>
 
 #include <string.h>
 
@@ -225,40 +226,14 @@ alia_font_key(alia_font font)
 alia_resolved_font const*
 alia_resolve_font(alia_ui_context* ctx, alia_font font);
 
-// Push a resolved font, making it the active font for the current scope.
-void
-alia_font_push(alia_ui_context* ctx, alia_resolved_font const* font);
-
-// Pop the active font, restoring the previous one.
-void
-alia_font_pop(alia_ui_context* ctx);
-
-// Return the active font.
-// Asserts if there is no active font.
-static inline alia_resolved_font const*
-alia_active_font(alia_ui_context* ctx)
-{
-    ALIA_ASSERT(ctx && ctx->active_font);
-    return ctx->active_font;
-}
-
-// Get the active font's metrics. Asserts if there is no active font.
+// Return the active font's metrics. Asserts if there is no active font.
 static inline alia_font_metrics const*
-alia_active_font_metrics(alia_ui_context* ctx)
+alia_font_active_metrics(alia_ui_context* ctx)
 {
-    return &alia_active_font(ctx)->metrics;
+    return &alia_font_active(ctx)->metrics;
 }
 
 // TEXT COMPONENT
-
-// styling for a text element
-typedef struct alia_text_style
-{
-    // resolved font to use, or NULL to inherit the active font
-    alia_resolved_font const* font;
-    // text color
-    alia_srgba8 color;
-} alia_text_style;
 
 // Emit a text element.
 // `flags` are layout flags.

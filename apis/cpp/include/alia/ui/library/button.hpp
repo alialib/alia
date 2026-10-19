@@ -163,7 +163,7 @@ button(
     if (button(ctx, flags, layout, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
     {
-        post_action(&ctx.kernel, on_click);
+        post_action(alia_ctx_kernel(&ctx), on_click);
     }
 }
 

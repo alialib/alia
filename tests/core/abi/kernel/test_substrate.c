@@ -1,9 +1,9 @@
 #include <alia/test/kernel/substrate_fixture.h>
 
 #include <alia/abi/base/stack.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/ids.h>
 #include <alia/abi/kernel/substrate.h>
+#include <alia/abi/ui/context.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -183,26 +183,26 @@ test_basic_block(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
     alia_substrate_usage_result use1
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use1.ptr != NULL);
     TEST_CHECK(use1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
     alia_substrate_usage_result use2
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use2.ptr != NULL);
     TEST_CHECK(((uint8_t*) use2.ptr - (uint8_t*) use1.ptr) == 256);
     TEST_CHECK(use2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
     alia_substrate_usage_result use3
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use3.ptr != NULL);
     TEST_CHECK(((uint8_t*) use3.ptr - (uint8_t*) use2.ptr) == 256);
     TEST_CHECK(use3.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -223,26 +223,27 @@ test_basic_block_discovery(void)
     // Enter discovery mode by passing align=0.
     alia_struct_spec discovery_spec = {.size = 0u, .align = 0u};
     alia_test_substrate_fixture_prepare_refresh_event(t.fixture, &t.ctx);
-    alia_substrate_begin_block(&t.ctx.kernel, root, &discovery_spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &discovery_spec);
 
     alia_substrate_usage_result use1
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use1.ptr != NULL);
     TEST_CHECK(use1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY);
 
     alia_substrate_usage_result use2
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use2.ptr != NULL);
     TEST_CHECK(((uint8_t*) use2.ptr - (uint8_t*) use1.ptr) == 256);
     TEST_CHECK(use2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY);
 
     alia_substrate_usage_result use3
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use3.ptr != NULL);
     TEST_CHECK(((uint8_t*) use3.ptr - (uint8_t*) use2.ptr) == 256);
     TEST_CHECK(use3.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY);
 
-    alia_struct_spec computed = alia_substrate_end_block(&t.ctx.kernel);
+    alia_struct_spec computed
+        = alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
     // 32 is the current size of a block header.
     // (Hopefully this will decrease soon.)
     TEST_CHECK(computed.size == 768u + 32u);
@@ -253,26 +254,26 @@ test_basic_block_discovery(void)
     alia_stack_reset(t.stack);
 
     alia_struct_spec init_spec = computed;
-    alia_substrate_begin_block(&t.ctx.kernel, root, &init_spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &init_spec);
 
     alia_substrate_usage_result init1
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(init1.ptr != NULL);
     TEST_CHECK(init1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
     alia_substrate_usage_result init2
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(init2.ptr != NULL);
     TEST_CHECK(((uint8_t*) init2.ptr - (uint8_t*) init1.ptr) == 256);
     TEST_CHECK(init2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
     alia_substrate_usage_result init3
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(init3.ptr != NULL);
     TEST_CHECK(((uint8_t*) init3.ptr - (uint8_t*) init2.ptr) == 256);
     TEST_CHECK(init3.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -291,26 +292,27 @@ test_substrate_use_anchor(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
-    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx.kernel);
+    alia_substrate_anchor* child
+        = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child != NULL);
 
     // Allocate inside the child.
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
     alia_substrate_usage_result use1
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use1.ptr != NULL);
     TEST_CHECK(use1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
     alia_substrate_usage_result use2
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use2.ptr != NULL);
     TEST_CHECK(((uint8_t*) use2.ptr - (uint8_t*) use1.ptr) == 256);
     TEST_CHECK(use2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -333,11 +335,11 @@ test_substrate_destructors(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
     // Root objects 1 and 2.
     alia_substrate_usage_result r1 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -347,7 +349,7 @@ test_substrate_destructors(void)
     ((test_object*) r1.ptr)->id = 1;
 
     alia_substrate_usage_result r2 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -357,13 +359,14 @@ test_substrate_destructors(void)
     ((test_object*) r2.ptr)->id = 2;
 
     // Child block.
-    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx.kernel);
+    alia_substrate_anchor* child
+        = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child != NULL);
 
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
 
     alia_substrate_usage_result c1 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -373,7 +376,7 @@ test_substrate_destructors(void)
     ((test_object*) c1.ptr)->id = 3;
 
     alia_substrate_usage_result c2 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -382,11 +385,11 @@ test_substrate_destructors(void)
     ((test_object*) c2.ptr)->state = &state;
     ((test_object*) c2.ptr)->id = 4;
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     // Back to root: objects 5 and 6.
     alia_substrate_usage_result r3 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -396,7 +399,7 @@ test_substrate_destructors(void)
     ((test_object*) r3.ptr)->id = 5;
 
     alia_substrate_usage_result r4 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -405,7 +408,7 @@ test_substrate_destructors(void)
     ((test_object*) r4.ptr)->state = &state;
     ((test_object*) r4.ptr)->id = 6;
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     // Destructors should not run until we cleanup the block.
     TEST_CHECK(state.count == 0);
@@ -443,15 +446,15 @@ test_substrate_deactivate_anchor(void)
     void* child_obj_ptr;
 
     // First traversal: create a child block with cached data.
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
-    child = alia_substrate_use_anchor(&t.ctx.kernel);
+    child = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child != NULL);
 
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
 
     alia_substrate_usage_result c1 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -462,8 +465,8 @@ test_substrate_deactivate_anchor(void)
     ((test_object*) c1.ptr)->id = 1;
     ((test_object*) c1.ptr)->cached_value = 42;
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.clear_cache_count == 0);
     TEST_CHECK(state.count == 0);
@@ -481,15 +484,16 @@ test_substrate_deactivate_anchor(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
-    alia_substrate_anchor* child2 = alia_substrate_use_anchor(&t.ctx.kernel);
+    alia_substrate_anchor* child2
+        = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child2 == child);
 
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
 
     alia_substrate_usage_result c2 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -497,8 +501,8 @@ test_substrate_deactivate_anchor(void)
     TEST_CHECK(c2.ptr == child_obj_ptr);
     TEST_CHECK(c2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     // Full cleanup should still run destroy callbacks.
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
@@ -530,21 +534,21 @@ test_substrate_path_for_object_flat(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
     alia_substrate_usage_result use1
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     alia_substrate_usage_result use2
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use1.ptr != NULL);
     TEST_ASSERT(use2.ptr != NULL);
 
     alia_id_view path1a
-        = alia_substrate_path_for_object(&t.ctx.kernel, use1.ptr);
+        = alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use1.ptr);
     alia_id_view path1b
-        = alia_substrate_path_for_object(&t.ctx.kernel, use1.ptr);
+        = alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use1.ptr);
     alia_id_view path2
-        = alia_substrate_path_for_object(&t.ctx.kernel, use2.ptr);
+        = alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use2.ptr);
 
     TEST_CHECK(!alia_id_view_is_null(path1a));
     TEST_CHECK(path1a.type_id == ALIA_ID_TYPE_U64);
@@ -554,7 +558,7 @@ test_substrate_path_for_object_flat(void)
     TEST_CHECK(test_u64_from_id(path1a) == 32u);
     TEST_CHECK(test_u64_from_id(path2) == 288u);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -573,17 +577,19 @@ test_substrate_path_for_object_nested(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
 
-    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx.kernel);
+    alia_substrate_anchor* child
+        = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child != NULL);
 
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
     alia_substrate_usage_result use
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use.ptr != NULL);
 
-    alia_id_view path = alia_substrate_path_for_object(&t.ctx.kernel, use.ptr);
+    alia_id_view path
+        = alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use.ptr);
     TEST_CHECK(path.type_id == ALIA_ID_TYPE_PAIR);
     TEST_CHECK(
         test_u64_from_id(alia_id_view_pair_right(path))
@@ -593,8 +599,8 @@ test_substrate_path_for_object_nested(void)
         test_u64_from_id(alia_id_view_pair_left(path))
         != test_u64_from_id(alia_id_view_pair_right(path)));
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -613,26 +619,26 @@ test_substrate_path_for_object_stable_normal_pass(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
     alia_substrate_usage_result init_use
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(init_use.ptr != NULL);
     TEST_CHECK(init_use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
-    alia_id_view init_path
-        = alia_substrate_path_for_object(&t.ctx.kernel, init_use.ptr);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_id_view init_path = alia_substrate_path_for_object(
+        alia_ctx_kernel(&t.ctx), init_use.ptr);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
     alia_substrate_usage_result normal_use
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(normal_use.ptr != NULL);
     TEST_CHECK(normal_use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
-    alia_id_view normal_path
-        = alia_substrate_path_for_object(&t.ctx.kernel, normal_use.ptr);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_id_view normal_path = alia_substrate_path_for_object(
+        alia_ctx_kernel(&t.ctx), normal_use.ptr);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(alia_id_view_equal(init_path, normal_path));
 
@@ -654,15 +660,15 @@ test_substrate_path_for_object_discovery(void)
 
     alia_struct_spec discovery_spec = {.size = 0u, .align = 0u};
     alia_test_substrate_fixture_prepare_refresh_event(t.fixture, &t.ctx);
-    alia_substrate_begin_block(&t.ctx.kernel, root, &discovery_spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &discovery_spec);
 
     alia_substrate_usage_result use
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use.ptr != NULL);
     TEST_CHECK(alia_id_view_is_null(
-        alia_substrate_path_for_object(&t.ctx.kernel, use.ptr)));
+        alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use.ptr)));
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -681,14 +687,16 @@ test_substrate_path_capture_smoke(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
-    alia_substrate_anchor* child = alia_substrate_use_anchor(&t.ctx.kernel);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &spec);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
+    alia_substrate_anchor* child
+        = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &spec);
     alia_substrate_usage_result use
-        = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+        = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
     TEST_ASSERT(use.ptr != NULL);
 
-    alia_id_view path = alia_substrate_path_for_object(&t.ctx.kernel, use.ptr);
+    alia_id_view path
+        = alia_substrate_path_for_object(alia_ctx_kernel(&t.ctx), use.ptr);
     alia_struct_spec cap_spec = alia_captured_id_spec(path);
     TEST_ASSERT(cap_spec.size > 0);
     void* mem = aligned_alloc_portable(cap_spec.align, cap_spec.size);
@@ -699,8 +707,8 @@ test_substrate_path_capture_smoke(void)
     alia_captured_id_release(mem);
     aligned_free_portable(mem);
 
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     substrate_fixture_destroy(&t);
@@ -721,15 +729,15 @@ test_substrate_generations(void)
         alia_test_substrate_fixture_reset_traversal(t.fixture, true);
         alia_stack_reset(t.stack);
 
-        alia_substrate_begin_block(&t.ctx.kernel, root, &spec);
+        alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), root, &spec);
         alia_substrate_usage_result use
-            = alia_substrate_use_memory(&t.ctx.kernel, 256u, 16u);
+            = alia_substrate_use_memory(alia_ctx_kernel(&t.ctx), 256u, 16u);
 
         TEST_ASSERT(use.ptr != NULL);
         TEST_CHECK(use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
         TEST_CHECK(use.generation == generation);
 
-        (void) alia_substrate_end_block(&t.ctx.kernel);
+        (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
         alia_test_substrate_fixture_cleanup_root_block(t.fixture);
     }
@@ -758,9 +766,12 @@ keyed_visit_object(
     int object_id)
 {
     alia_substrate_begin_keyed_block(
-        &t->ctx.kernel, scope, alia_id_view_make_u64(key), &keyed_block_spec);
+        alia_ctx_kernel(&t->ctx),
+        scope,
+        alia_id_view_make_u64(key),
+        &keyed_block_spec);
     alia_substrate_usage_result use = alia_substrate_use_object(
-        &t->ctx.kernel,
+        alia_ctx_kernel(&t->ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -780,7 +791,7 @@ keyed_visit_object(
 static void
 keyed_visit_end(substrate_fixture* t)
 {
-    (void) alia_substrate_end_keyed_block(&t->ctx.kernel);
+    (void) alia_substrate_end_keyed_block(alia_ctx_kernel(&t->ctx));
 }
 
 static void
@@ -792,13 +803,13 @@ run_keyed_pass(
     size_t key_count)
 {
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&t->ctx.kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t->ctx), table);
     for (size_t i = 0; i < key_count; ++i)
     {
         keyed_visit_object(t, scope, keys[i], state, (int) keys[i]);
         keyed_visit_end(t);
     }
-    alia_substrate_end_key_scope(&t->ctx.kernel, scope);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t->ctx), scope);
 }
 
 static void
@@ -816,28 +827,30 @@ test_keyed_block_basic(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     TEST_ASSERT(table != NULL);
 
     uint64_t keys[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, keys, 2);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
     void* p1 = keyed_visit_object(&t, scope, 1u, &state, 1);
     keyed_visit_end(&t);
     void* p2 = keyed_visit_object(&t, scope, 2u, &state, 2);
     keyed_visit_end(&t);
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(p1 == state.ptrs[0]);
     TEST_CHECK(p2 == state.ptrs[1]);
@@ -862,21 +875,23 @@ test_keyed_block_reorder(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     uint64_t pass1[] = {2u, 1u};
     run_keyed_pass(&t, table, &state, pass1, 2);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t pass2[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, pass2, 2);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.ptr_count == 2);
     TEST_CHECK(state.destroy_state.count == 0);
@@ -900,22 +915,24 @@ test_keyed_block_sweep_stale(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     uint64_t pass1[] = {1u, 2u, 3u};
     run_keyed_pass(&t, table, &state, pass1, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t pass2[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, pass2, 2);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.destroy_state.count == 1);
     TEST_CHECK(state.destroy_state.ids[0] == 3);
@@ -939,34 +956,38 @@ test_keyed_scope_requires_explicit_delete(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_REQUIRES_EXPLICIT_DELETE);
+        alia_ctx_kernel(&t.ctx),
+        ALIA_SUBSTRATE_KEY_TABLE_REQUIRES_EXPLICIT_DELETE);
     uint64_t pass1[] = {1u, 2u, 3u};
     run_keyed_pass(&t, table, &state, pass1, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t pass2[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, pass2, 2);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_substrate_delete_key(table, alia_id_view_make_u64(3u));
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t pass3[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, pass3, 2);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
     TEST_CHECK(state.destroy_state.count == 1);
     TEST_CHECK(state.destroy_state.ids[0] == 3);
 
@@ -989,17 +1010,18 @@ test_keyed_block_soft_delete_while_active(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
     void* ptr = keyed_visit_object(&t, scope, 5u, &state, 5);
     alia_substrate_delete_key(table, alia_id_view_make_u64(5u));
     void* ptr2 = keyed_visit_object(&t, scope, 5u, &state, 5);
     keyed_visit_end(&t);
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(ptr == ptr2);
     TEST_CHECK(state.destroy_state.count == 0);
@@ -1008,11 +1030,12 @@ test_keyed_block_soft_delete_while_active(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
-    scope = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
+    scope = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.destroy_state.count == 1);
     TEST_CHECK(state.destroy_state.ids[0] == 5);
@@ -1038,22 +1061,26 @@ test_keyed_block_nested_scopes(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* outer_table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     alia_substrate_key_scope* outer
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, outer_table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), outer_table);
     alia_substrate_begin_keyed_block(
-        &t.ctx.kernel, outer, alia_id_view_make_u64(1u), &keyed_block_spec);
+        alia_ctx_kernel(&t.ctx),
+        outer,
+        alia_id_view_make_u64(1u),
+        &keyed_block_spec);
     alia_substrate_key_table* inner_table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     alia_substrate_key_scope* inner
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, inner_table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), inner_table);
     void* inner_ptr = keyed_visit_object(&t, inner, 1u, &inner_state, 101);
     keyed_visit_end(&t);
-    alia_substrate_end_key_scope(&t.ctx.kernel, inner);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), inner);
     alia_substrate_usage_result outer_use = alia_substrate_use_memory(
-        &t.ctx.kernel, sizeof(test_object), _Alignof(test_object));
+        alia_ctx_kernel(&t.ctx), sizeof(test_object), _Alignof(test_object));
     TEST_ASSERT(outer_use.ptr != NULL);
     void* outer_ptr = outer_use.ptr;
     test_object* outer_obj = (test_object*) outer_use.ptr;
@@ -1063,9 +1090,9 @@ test_keyed_block_nested_scopes(void)
         outer_obj->id = 1;
         outer_state.ptrs[outer_state.ptr_count++] = outer_use.ptr;
     }
-    (void) alia_substrate_end_keyed_block(&t.ctx.kernel);
-    alia_substrate_end_key_scope(&t.ctx.kernel, outer);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_keyed_block(alia_ctx_kernel(&t.ctx));
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), outer);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(outer_ptr != inner_ptr);
     TEST_CHECK(outer_state.ptr_count == 1);
@@ -1090,31 +1117,34 @@ test_keyed_block_partial_pass(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     uint64_t pass1[] = {1u, 2u, 3u};
     run_keyed_pass(&t, table, &state, pass1, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_reset_traversal(t.fixture, false);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t partial[] = {1u, 2u};
     run_keyed_pass(&t, table, &state, partial, 2);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
     TEST_CHECK(state.destroy_state.count == 0);
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     run_keyed_pass(&t, table, &state, partial, 2);
-    alia_substrate_sweep_table_keys(&t.ctx.kernel, table);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(&t.ctx), table);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
     TEST_CHECK(state.destroy_state.count == 1);
     TEST_CHECK(state.destroy_state.ids[0] == 3);
 
@@ -1137,37 +1167,41 @@ test_keyed_block_partial_preserves_prediction(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     uint64_t pass1[] = {1u, 2u, 3u};
     run_keyed_pass(&t, table, &state, pass1, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_reset_traversal(t.fixture, false);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t scrambled[] = {3u, 1u, 2u};
     run_keyed_pass(&t, table, &state, scrambled, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     run_keyed_pass(&t, table, &state, pass1, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_test_substrate_fixture_advance_refresh(t.fixture);
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
     uint64_t reordered[] = {3u, 1u, 2u};
     run_keyed_pass(&t, table, &state, reordered, 3);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.ptr_count == 3);
     TEST_CHECK(state.destroy_state.count == 0);
@@ -1197,17 +1231,19 @@ test_key_table_cache_clear_on_deactivate(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
-    child = alia_substrate_use_anchor(&t.ctx.kernel);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
+    child = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(child != NULL);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), child, &root_block_spec);
 
     table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     TEST_ASSERT(table != NULL);
 
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
 
     keyed_ptrs[0] = keyed_visit_object(&t, scope, 1u, &state, 1);
     ((test_object*) keyed_ptrs[0])->cached_value = 42;
@@ -1217,9 +1253,9 @@ test_key_table_cache_clear_on_deactivate(void)
     ((test_object*) keyed_ptrs[1])->cached_value = 99;
     keyed_visit_end(&t);
 
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.destroy_state.clear_cache_count == 0);
     TEST_CHECK(state.destroy_state.count == 0);
@@ -1240,38 +1276,46 @@ test_key_table_cache_clear_on_deactivate(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), child, &root_block_spec);
 
-    scope = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
+    scope = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
 
     alia_substrate_begin_keyed_block(
-        &t.ctx.kernel, scope, alia_id_view_make_u64(1u), &keyed_block_spec);
+        alia_ctx_kernel(&t.ctx),
+        scope,
+        alia_id_view_make_u64(1u),
+        &keyed_block_spec);
     alia_substrate_usage_result reuse1 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
     TEST_ASSERT(reuse1.ptr != NULL);
     TEST_CHECK(reuse1.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
     TEST_CHECK(reuse1.ptr == keyed_ptrs[0]);
-    (void) alia_substrate_end_keyed_block(&t.ctx.kernel);
+    (void) alia_substrate_end_keyed_block(alia_ctx_kernel(&t.ctx));
 
     alia_substrate_begin_keyed_block(
-        &t.ctx.kernel, scope, alia_id_view_make_u64(2u), &keyed_block_spec);
+        alia_ctx_kernel(&t.ctx),
+        scope,
+        alia_id_view_make_u64(2u),
+        &keyed_block_spec);
     alia_substrate_usage_result reuse2 = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
     TEST_ASSERT(reuse2.ptr != NULL);
     TEST_CHECK(reuse2.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL);
     TEST_CHECK(reuse2.ptr == keyed_ptrs[1]);
-    (void) alia_substrate_end_keyed_block(&t.ctx.kernel);
+    (void) alia_substrate_end_keyed_block(alia_ctx_kernel(&t.ctx));
 
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     TEST_CHECK(state.destroy_state.clear_cache_count == 2);
     TEST_CHECK(state.destroy_state.count == 0);
@@ -1306,26 +1350,29 @@ test_key_table_cache_clear_preserves_sibling_block(void)
     alia_test_substrate_fixture_reset_traversal(t.fixture, true);
     alia_stack_reset(t.stack);
 
-    alia_substrate_begin_block(&t.ctx.kernel, root, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), root, &root_block_spec);
 
-    keyed_child = alia_substrate_use_anchor(&t.ctx.kernel);
+    keyed_child = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(keyed_child != NULL);
-    alia_substrate_begin_block(&t.ctx.kernel, keyed_child, &root_block_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), keyed_child, &root_block_spec);
     alia_substrate_key_table* table = alia_substrate_use_key_table(
-        &t.ctx.kernel, ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
+        alia_ctx_kernel(&t.ctx), ALIA_SUBSTRATE_KEY_TABLE_NORMAL);
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&t.ctx.kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(&t.ctx), table);
     keyed_ptr = keyed_visit_object(&t, scope, 1u, &keyed_state, 1);
     ((test_object*) keyed_ptr)->cached_value = 42;
     keyed_visit_end(&t);
-    alia_substrate_end_key_scope(&t.ctx.kernel, scope);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    alia_substrate_end_key_scope(alia_ctx_kernel(&t.ctx), scope);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
-    sibling_child = alia_substrate_use_anchor(&t.ctx.kernel);
+    sibling_child = alia_substrate_use_anchor(alia_ctx_kernel(&t.ctx));
     TEST_ASSERT(sibling_child != NULL);
-    alia_substrate_begin_block(&t.ctx.kernel, sibling_child, &sibling_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), sibling_child, &sibling_spec);
     alia_substrate_usage_result sibling_use = alia_substrate_use_object(
-        &t.ctx.kernel,
+        alia_ctx_kernel(&t.ctx),
         sizeof(test_object),
         _Alignof(test_object),
         test_object_cleanup);
@@ -1334,8 +1381,8 @@ test_key_table_cache_clear_preserves_sibling_block(void)
     ((test_object*) sibling_use.ptr)->state = &sibling_state;
     ((test_object*) sibling_use.ptr)->id = 10;
     ((test_object*) sibling_use.ptr)->cached_value = 77;
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_substrate_deactivate_anchor(system, keyed_child);
 

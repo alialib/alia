@@ -5,8 +5,7 @@
 #include <alia/abi/base/stack.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/events.h>
-#include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/base/stack.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/substrate.h>
@@ -84,7 +83,7 @@ struct layout_fixture
     alia_stack stack = {};
     void* stack_buffer = nullptr;
 
-    alia_layout_style layout_style = {.spacing = 0.f};
+    float spacing = 0.f;
     alia_geometry_context geometry = {.scale = 1.f};
 
     alia_event_traversal event_traversal = {};
@@ -147,13 +146,11 @@ wire_context(layout_fixture& fixture, bool refresh)
                                                 : nullptr,
             .events = &fixture.event_traversal,
             .stack = &fixture.stack,
-            .scratch = nullptr,
             .tick_count = 0,
-            .effects = nullptr,
         },
         .system = nullptr,
-        .active_styles = &fixture.layout_style,
-        .geometry = &fixture.geometry,
+        .style = {.spacing = fixture.spacing},
+        .geometry = fixture.geometry,
         .input = nullptr,
         .layout = &fixture.layout_context,
         .draw = nullptr,
@@ -169,11 +166,11 @@ run_with_substrate_root(
     {
         alia_struct_spec spec = root_block_spec;
         alia_substrate_begin_block(
-            &fixture.context.kernel,
+            alia_ctx_kernel(&fixture.context),
             &fixture.substrate_system.root_anchor,
             &spec);
         fn(&fixture.context, user);
-        (void) alia_substrate_end_block(&fixture.context.kernel);
+        (void) alia_substrate_end_block(alia_ctx_kernel(&fixture.context));
     }
     else
     {
@@ -322,15 +319,19 @@ layout_fixture_placement_arena_identity(layout_fixture* fixture)
 void
 layout_fixture_set_spacing(layout_fixture* fixture, float spacing)
 {
-    if (fixture)
-        fixture->layout_style.spacing = spacing;
+    if (!fixture)
+        return;
+    fixture->spacing = spacing;
+    fixture->context.style.spacing = spacing;
 }
 
 void
 layout_fixture_set_scale(layout_fixture* fixture, float scale)
 {
-    if (fixture)
-        fixture->geometry.scale = scale;
+    if (!fixture)
+        return;
+    fixture->geometry.scale = scale;
+    fixture->context.geometry.scale = scale;
 }
 
 void

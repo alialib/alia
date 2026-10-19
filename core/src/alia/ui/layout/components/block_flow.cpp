@@ -1,4 +1,4 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/line.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
@@ -374,9 +374,9 @@ alia_layout_block_flow_begin(
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope
-            = alia::stack_push<alia_layout_block_flow_scope>(&ctx->kernel);
-        auto& emission = ctx->layout->emission;
+        auto& scope = alia::stack_push<alia_layout_block_flow_scope>(
+            alia_ctx_kernel(ctx));
+        auto& emission = alia_ctx_layout(ctx)->emission;
         auto* node
             = alia::arena_alloc<alia::block_flow_layout_node>(emission.arena);
         scope.node = node;
@@ -397,8 +397,8 @@ alia_layout_block_flow_end(alia_ui_context* ctx)
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope
-            = alia::stack_pop<alia_layout_block_flow_scope>(&ctx->kernel);
+        auto& scope = alia::stack_pop<alia_layout_block_flow_scope>(
+            alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(
             ctx, alia::block_flow_as_container(scope.node));
     }

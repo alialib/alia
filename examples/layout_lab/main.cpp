@@ -9,11 +9,12 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
+#include <alia/abi/ui/styling/catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
@@ -64,11 +65,9 @@ template<class Content>
 void
 with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
-    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
-    float old_spacing = layout_style->spacing;
-    layout_style->spacing = spacing * ctx.geometry->scale;
+    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
     content();
-    layout_style->spacing = old_spacing;
+    alia_spacing_pop(&ctx);
 }
 
 void
@@ -97,8 +96,8 @@ do_draw_target_demo(ui_context& ctx)
     do_subheading(ctx, "Draw Target");
 
     static alia_draw_target_id target = ALIA_DRAW_TARGET_PRIMARY;
-    if (target == ALIA_DRAW_TARGET_PRIMARY && ctx.system)
-        target = alia_draw_target_create(ctx.system);
+    if (target == ALIA_DRAW_TARGET_PRIMARY && alia_ctx_system(&ctx))
+        target = alia_draw_target_create(alia_ctx_system(&ctx));
 
     alia_vec2f const size{160.f, 96.f};
     if (get_event_category(ctx) == ALIA_CATEGORY_REFRESH)
@@ -253,7 +252,7 @@ do_content(ui_context& ctx, layout_options layout = {})
                         ctx,
                         0,
                         alia_edge_offsets_make_uniform(8.f),
-                        ctx.palette->primary.subtle,
+                        alia_ctx_palette(&ctx)->primary.subtle,
                         [&]() {
                             alia_palette_color const on_subtle
                                 = ALIA_PALETTE_COLOR(primary.on_subtle, 0xff);
@@ -281,7 +280,7 @@ the_demo(ui_context& ctx)
             concrete_panel(
                 ctx,
                 0,
-                ctx.palette->foundation.background.stronger_2,
+                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -292,7 +291,7 @@ the_demo(ui_context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    ctx.palette->foundation.background.base,
+                    alia_ctx_palette(&ctx)->foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {

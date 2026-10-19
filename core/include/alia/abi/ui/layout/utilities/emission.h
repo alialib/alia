@@ -1,8 +1,8 @@
 #ifndef ALIA_ABI_UI_LAYOUT_UTILITIES_EMISSION_H
 #define ALIA_ABI_UI_LAYOUT_UTILITIES_EMISSION_H
 
-#include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/layout/flags.h>
 #include <alia/abi/ui/layout/protocol.h>
 
@@ -27,7 +27,7 @@ static inline alia_bump_allocator*
 alia_layout_placement_arena(alia_ui_context* ctx)
 {
     // TODO: ALIA_ASSERT(!alia_is_refresh_pass(ctx));
-    return &ctx->layout->placement;
+    return &alia_ctx_layout(ctx)->placement;
 }
 
 typedef struct alia_layout_container

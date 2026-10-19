@@ -6,7 +6,7 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/text.h>
 #include <alia/base/color.hpp>
@@ -70,7 +70,7 @@ emit_text(
     alia_text_style const style = {
         .font = font,
         .color = alia_palette_color_resolve(
-            ctx.palette,
+            alia_ctx_palette(&ctx),
             alia_palette_color_foundation(
                 ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff)),
     };

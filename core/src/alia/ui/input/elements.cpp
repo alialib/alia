@@ -46,7 +46,8 @@ alia_element_id
 alia_element_get_identity(alia_ui_context* ctx)
 {
     return alia_make_element_id(
-        &ctx->kernel, alia_substrate_use_memory(&ctx->kernel, 1, 1));
+        alia_ctx_kernel(ctx),
+        alia_substrate_use_memory(alia_ctx_kernel(ctx), 1, 1));
 }
 
 } // extern "C"

@@ -3,7 +3,7 @@
 // Layout test/benchmark support. Not part of the public alia API.
 
 #include <alia/abi/base/arena.h>
-#include <alia/abi/context.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/layout/system.h>
 
 #ifdef __cplusplus

@@ -72,10 +72,6 @@ struct substrate_fixture
     void* scratch_buffer = nullptr;
     // scratch arena
     alia_arena* scratch_arena = nullptr;
-    // bump allocator over the scratch arena
-    alia_bump_allocator scratch{};
-    // pass-local effect log
-    alia_effect_log effects{};
     ui_context ctx{};
 
     substrate_fixture()
@@ -97,9 +93,8 @@ struct substrate_fixture
     {
         alia_test_substrate_fixture_reset_traversal(fixture, true);
         alia_stack_reset(stack);
-        alia_arena_reset(&scratch);
-        effects = {};
-        ctx.kernel.effects = &effects;
+        alia_arena_reset(&ctx.kernel.scratch);
+        ctx.kernel.effects = {};
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
@@ -108,10 +103,9 @@ struct substrate_fixture
     void
     run_effects()
     {
-        alia_run_effects(&ctx.kernel);
-        alia_arena_reset(&scratch);
-        effects = {};
-        ctx.kernel.effects = &effects;
+        alia_run_effects(alia_ctx_kernel(&ctx));
+        alia_arena_reset(&ctx.kernel.scratch);
+        ctx.kernel.effects = {};
     }
 
     alia_substrate_anchor*
@@ -166,13 +160,10 @@ struct substrate_fixture
             64u * 1024u,
             alia_arena_no_controller());
         REQUIRE(scratch_arena);
-        alia_bump_allocator_init(&scratch, scratch_arena);
-
         ctx = {};
         ctx.kernel.substrate = alia_test_substrate_fixture_traversal(fixture);
         ctx.kernel.stack = stack;
-        ctx.kernel.scratch = &scratch;
-        ctx.kernel.effects = &effects;
+        alia_bump_allocator_init(&ctx.kernel.scratch, scratch_arena);
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 

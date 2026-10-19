@@ -8,27 +8,6 @@
 
 ALIA_EXTERN_C_BEGIN
 
-// a pass-local effect posted during traversal - Alia requires that passes
-// through component code are mutation-free, so instead of in-place mutations,
-// components post effect objects that are run after the pass completes.
-typedef struct alia_effect alia_effect;
-struct alia_effect
-{
-    // function that applies this effect
-    void (*run)(alia_effect* self);
-    // debug label
-    char const* label;
-    // next posted effect
-    alia_effect* next;
-};
-
-// FIFO of posted pass-local operations
-struct alia_effect_log
-{
-    alia_effect* head;
-    alia_effect* tail;
-};
-
 // Append `effect` to this pass's FIFO log. Effects are generally allocated
 // from the pass's scratch arena. Any referenced data should either be copied
 // there or should remain valid until the end of the pass.

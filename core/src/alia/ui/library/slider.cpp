@@ -4,7 +4,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -260,13 +260,14 @@ alia_slider(
     ALIA_ASSERT(value);
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(slider_data), alignof(slider_data));
+        alia_ctx_kernel(ctx), sizeof(slider_data), alignof(slider_data));
     slider_data* data = reinterpret_cast<slider_data*>(result.ptr);
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
         new (data) slider_data{.reserved = 0};
     }
-    alia_element_id const base_id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const base_id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
     alia_element_id const track_id = base_id;
     alia_element_id const thumb_id = alia_offset_id(base_id, 1);
 

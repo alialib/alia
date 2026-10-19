@@ -56,7 +56,7 @@ edge_offsets_is_zero(alia_edge_offsets offsets)
 void
 shell_draw_foundation_underlay(alia_ui_context* ctx)
 {
-    alia_ui_system* ui = ctx->system;
+    alia_ui_system* ui = alia_ctx_system(ctx);
     alia_box const surface_box
         = {{0.f, 0.f}, alia_vec2i_to_vec2f(ui->surface_size)};
     alia_srgba8 const fill
@@ -107,16 +107,16 @@ shell_handle_keyboard_zoom(alia_shell* shell, alia_ui_context* ctx)
 
     float const mag = shell->config.enable_smooth_zoom
                         ? shell->zoom_target
-                        : alia_ui_get_magnification(ctx->system);
+                        : alia_ui_get_magnification(alia_ctx_system(ctx));
     if (k.logical == ALIA_KEY_EQUAL || k.logical == ALIA_KEY_KP_ADD
         || k.logical == ALIA_KEY_KP_EQUAL)
     {
-        shell_set_zoom_target(shell, ctx->system, mag * 1.1f);
+        shell_set_zoom_target(shell, alia_ctx_system(ctx), mag * 1.1f);
         alia_input_acknowledge_key_event(ctx);
     }
     else if (k.logical == ALIA_KEY_MINUS || k.logical == ALIA_KEY_KP_SUBTRACT)
     {
-        shell_set_zoom_target(shell, ctx->system, mag / 1.1f);
+        shell_set_zoom_target(shell, alia_ctx_system(ctx), mag / 1.1f);
         alia_input_acknowledge_key_event(ctx);
     }
     else if (k.logical == ALIA_KEY_DIGIT_0 || k.logical == ALIA_KEY_KP_0)
@@ -124,7 +124,7 @@ shell_handle_keyboard_zoom(alia_shell* shell, alia_ui_context* ctx)
         // Ctrl+0 ignores Shift, matching common browser behavior.
         if ((k.mods & ALIA_KMOD_SHIFT) == 0)
         {
-            shell_set_zoom_target(shell, ctx->system, 1.f);
+            shell_set_zoom_target(shell, alia_ctx_system(ctx), 1.f);
             alia_input_acknowledge_key_event(ctx);
         }
     }
@@ -136,7 +136,7 @@ shell_advance_smooth_zoom(alia_shell* shell, alia_ui_context* ctx)
     if (!shell->config.enable_smooth_zoom)
         return;
 
-    alia_ui_system* ui = ctx->system;
+    alia_ui_system* ui = alia_ctx_system(ctx);
     float const current = alia_ui_get_magnification(ui);
 
     // Adopt external magnification changes (e.g. a demo slider) as the new
@@ -154,13 +154,13 @@ shell_advance_smooth_zoom(alia_shell* shell, alia_ui_context* ctx)
         &shell->zoom_smoother,
         shell->zoom_target,
         &k_zoom_transition,
-        alia_timing_tick_count(&ctx->kernel),
+        alia_timing_tick_count(alia_ctx_kernel(ctx)),
         &animating);
     if (shown != current)
         alia_ui_set_magnification(ui, shown);
     shell->last_applied_magnification = shown;
     if (animating)
-        alia_timing_request_animation_refresh(&ctx->kernel);
+        alia_timing_request_animation_refresh(alia_ctx_kernel(ctx));
 }
 
 void

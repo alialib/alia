@@ -102,10 +102,10 @@ alia_layout_alignment_override_begin(
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope
-            = stack_push<alia_layout_alignment_override_scope>(&ctx->kernel);
+        auto& scope = stack_push<alia_layout_alignment_override_scope>(
+            alia_ctx_kernel(ctx));
         auto* node = arena_alloc<alignment_override_node>(
-            ctx->layout->emission.arena);
+            alia_ctx_layout(ctx)->emission.arena);
         *node = alignment_override_node{
             .container
             = {.base
@@ -123,8 +123,8 @@ alia_layout_alignment_override_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope
-            = stack_pop<alia_layout_alignment_override_scope>(&ctx->kernel);
+        auto& scope = stack_pop<alia_layout_alignment_override_scope>(
+            alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

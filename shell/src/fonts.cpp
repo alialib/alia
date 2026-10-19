@@ -1,7 +1,7 @@
 #include <alia/shell/fonts.h>
 
 #include <alia/abi/ui/icons.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/catalog.h>
 
 #include "alia_fonts.h"
 

@@ -2,7 +2,7 @@
 
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/impl/events.hpp>

@@ -6,7 +6,7 @@
 #include <alia/impl/base/stack.hpp>
 #include <alia/ui/layout/system.h>
 
-#include <alia/abi/context.h>
+#include <alia/abi/ui/context.h>
 
 using namespace alia;
 
@@ -80,19 +80,19 @@ alia_layout_placement_push(
     alia_ui_context* ctx, alia_layout_placement_region region)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->layout);
-    auto& scope = stack_push<placement_consume_scope>(&ctx->kernel);
-    scope.old_offset = ctx->layout->placement.offset;
-    ctx->layout->placement.offset = region.offset;
+    ALIA_ASSERT(alia_ctx_layout(ctx));
+    auto& scope = stack_push<placement_consume_scope>(alia_ctx_kernel(ctx));
+    scope.old_offset = alia_ctx_layout(ctx)->placement.offset;
+    alia_ctx_layout(ctx)->placement.offset = region.offset;
 }
 
 void
 alia_layout_placement_pop(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->layout);
-    auto& scope = stack_pop<placement_consume_scope>(&ctx->kernel);
-    ctx->layout->placement.offset = scope.old_offset;
+    ALIA_ASSERT(alia_ctx_layout(ctx));
+    auto& scope = stack_pop<placement_consume_scope>(alia_ctx_kernel(ctx));
+    alia_ctx_layout(ctx)->placement.offset = scope.old_offset;
 }
 
 } // extern "C"

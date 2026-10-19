@@ -1,4 +1,4 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/context.h>
 
 #include <alia/impl/base/arena.hpp>
@@ -12,74 +12,79 @@ void
 alia_geometry_push_clip_box(alia_ui_context* ctx, alia_box box)
 {
     alia_clip_state& saved_clip
-        = alia::stack_push<alia_clip_state>(&ctx->kernel);
-    alia_box* pointer = alia::arena_new<alia_box>(*ctx->kernel.scratch);
+        = alia::stack_push<alia_clip_state>(alia_ctx_kernel(ctx));
+    alia_box* pointer
+        = alia::arena_new<alia_box>(*alia_ctx_scratch(alia_ctx_kernel(ctx)));
     *pointer = box;
-    saved_clip = ctx->geometry->clip;
-    ctx->geometry->clip = {
+    saved_clip = alia_ctx_geometry(ctx)->clip;
+    alia_ctx_geometry(ctx)->clip = {
         .box = box,
         .pointer = pointer,
-        .id = ctx->geometry->next_clip_id,
+        .id = alia_ctx_geometry(ctx)->next_clip_id,
     };
-    ++ctx->geometry->next_clip_id;
+    ++alia_ctx_geometry(ctx)->next_clip_id;
 }
 
 void
 alia_geometry_pop_clip_box(alia_ui_context* ctx)
 {
     alia_clip_state& saved_clip
-        = alia::stack_pop<alia_clip_state>(&ctx->kernel);
-    ctx->geometry->clip = saved_clip;
+        = alia::stack_pop<alia_clip_state>(alia_ctx_kernel(ctx));
+    alia_ctx_geometry(ctx)->clip = saved_clip;
 }
 
 void
 alia_geometry_push_translation(alia_ui_context* ctx, alia_vec2f offset)
 {
-    alia_vec2f& saved_offset = alia::stack_push<alia_vec2f>(&ctx->kernel);
-    saved_offset = ctx->geometry->offset;
-    ctx->geometry->offset += offset;
+    alia_vec2f& saved_offset
+        = alia::stack_push<alia_vec2f>(alia_ctx_kernel(ctx));
+    saved_offset = alia_ctx_geometry(ctx)->offset;
+    alia_ctx_geometry(ctx)->offset += offset;
 }
 
 void
 alia_geometry_pop_translation(alia_ui_context* ctx)
 {
-    alia_vec2f& saved_offset = alia::stack_pop<alia_vec2f>(&ctx->kernel);
-    ctx->geometry->offset = saved_offset;
+    alia_vec2f& saved_offset
+        = alia::stack_pop<alia_vec2f>(alia_ctx_kernel(ctx));
+    alia_ctx_geometry(ctx)->offset = saved_offset;
 }
 
 void
 alia_geometry_push_scale(alia_ui_context* ctx, float factor)
 {
-    float& saved_scale = alia::stack_push<float>(&ctx->kernel);
-    saved_scale = ctx->geometry->scale;
-    ctx->geometry->scale *= factor;
+    float& saved_scale = alia::stack_push<float>(alia_ctx_kernel(ctx));
+    saved_scale = alia_ctx_geometry(ctx)->scale;
+    alia_ctx_geometry(ctx)->scale *= factor;
 }
 
 void
 alia_geometry_pop_scale(alia_ui_context* ctx)
 {
-    float& saved_scale = alia::stack_pop<float>(&ctx->kernel);
-    ctx->geometry->scale = saved_scale;
+    float& saved_scale = alia::stack_pop<float>(alia_ctx_kernel(ctx));
+    alia_ctx_geometry(ctx)->scale = saved_scale;
 }
 
 void
 alia_geometry_push_z_base(alia_ui_context* ctx, alia_z_index z_base)
 {
-    alia_z_index& saved_z_base = alia::stack_push<alia_z_index>(&ctx->kernel);
-    saved_z_base = ctx->geometry->z_base;
-    ctx->geometry->z_base = z_base;
+    alia_z_index& saved_z_base
+        = alia::stack_push<alia_z_index>(alia_ctx_kernel(ctx));
+    saved_z_base = alia_ctx_geometry(ctx)->z_base;
+    alia_ctx_geometry(ctx)->z_base = z_base;
 }
 
 void
 alia_geometry_push_z_offset(alia_ui_context* ctx, alia_z_index delta)
 {
-    alia_geometry_push_z_base(ctx, ctx->geometry->z_base + delta);
+    alia_geometry_push_z_base(ctx, alia_ctx_geometry(ctx)->z_base + delta);
 }
 
 void
 alia_geometry_pop_z(alia_ui_context* ctx)
 {
-    alia_z_index& saved_z_base = alia::stack_pop<alia_z_index>(&ctx->kernel);
-    ctx->geometry->z_base = saved_z_base;
+    alia_z_index& saved_z_base
+        = alia::stack_pop<alia_z_index>(alia_ctx_kernel(ctx));
+    alia_ctx_geometry(ctx)->z_base = saved_z_base;
 }
 }

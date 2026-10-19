@@ -69,7 +69,7 @@ alia_element_add_to_focus_order(alia_ui_context* ctx, alia_element_id id)
 bool
 alia_element_has_focus(alia_ui_context* ctx, alia_element_id id)
 {
-    return alia_element_id_equal(ctx->input->element_with_focus, id);
+    return alia_element_id_equal(alia_ctx_input(ctx)->element_with_focus, id);
 }
 
 bool
@@ -93,7 +93,8 @@ alia_element_focus_on_click(alia_ui_context* ctx, alia_element_id id)
         && (get_event_type(*ctx) == ALIA_EVENT_MOUSE_PRESS
             || get_event_type(*ctx) == ALIA_EVENT_DOUBLE_CLICK))
     {
-        // TODO: set_focus(*ctx->system, make_routable_element_id(*ctx, id));
+        // TODO: set_focus(*alia_ctx_system(ctx),
+        // make_routable_element_id(*ctx, id));
     }
 }
 

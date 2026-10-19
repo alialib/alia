@@ -12,7 +12,7 @@ void
 alia_layout_container_activate(
     alia_ui_context* ctx, alia_layout_container* container)
 {
-    auto& emission = ctx->layout->emission;
+    auto& emission = alia_ctx_layout(ctx)->emission;
     *emission.next_ptr = &container->base;
     emission.next_ptr = &container->first_child;
 }
@@ -21,7 +21,7 @@ void
 alia_layout_container_deactivate(
     alia_ui_context* ctx, alia_layout_container* container)
 {
-    auto& emission = ctx->layout->emission;
+    auto& emission = alia_ctx_layout(ctx)->emission;
     *emission.next_ptr = 0;
     emission.next_ptr = &container->base.next_sibling;
 }
@@ -40,8 +40,9 @@ alia_layout_container_simple_begin(
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_container_scope>(&ctx->kernel);
-        auto& emission = ctx->layout->emission;
+        auto& scope
+            = stack_push<alia_layout_container_scope>(alia_ctx_kernel(ctx));
+        auto& emission = alia_ctx_layout(ctx)->emission;
         auto* container = arena_alloc<alia_layout_container>(emission.arena);
         scope.container = container;
         *container = alia_layout_container{
@@ -58,7 +59,8 @@ alia_layout_container_simple_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_container_scope>(&ctx->kernel);
+        auto& scope
+            = stack_pop<alia_layout_container_scope>(alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, scope.container);
     }
 }

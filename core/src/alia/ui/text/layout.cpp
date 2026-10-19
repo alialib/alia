@@ -2,13 +2,12 @@
 
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/protocol.h>
 #include <alia/abi/ui/layout/utilities/emission.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
-#include <alia/abi/ui/styling.h>
 
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
@@ -332,7 +331,7 @@ alia_text(
     alia_text_style const* style)
 {
     alia_substrate_usage_result const result = alia_substrate_use_object(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         sizeof(text_block_cache),
         alignof(text_block_cache),
         text_block_cache_cleanup);
@@ -344,10 +343,10 @@ alia_text(
     alia_resolved_font const* const style_font
         = style != nullptr ? style->font : nullptr;
     alia_resolved_font const* font
-        = style_font != nullptr ? style_font : alia_active_font(ctx);
+        = style_font != nullptr ? style_font : alia_font_active(ctx);
     alia_srgba8 const color
-        = style != nullptr ? style->color : ctx->text_color;
-    float const geometry_scale = ctx->geometry->scale;
+        = style != nullptr ? style->color : alia_text_color_active(ctx);
+    float const geometry_scale = alia_ctx_geometry(ctx)->scale;
     float const physical_size = font->size * geometry_scale;
     alia_text_engine* engine = font->typeface.engine;
     void* engine_handle = font->typeface.engine_handle;
@@ -398,14 +397,14 @@ alia_text(
                 length);
         }
 
-        auto& emission = ctx->layout->emission;
+        auto& emission = alia_ctx_layout(ctx)->emission;
         auto* node = arena_alloc<text_layout_node>(emission.arena);
         *emission.next_ptr = &node->base;
         emission.next_ptr = &node->base.next_sibling;
         *node = text_layout_node{
             .base = {.vtable = &text_layout_vtable, .next_sibling = nullptr},
             .flags = flags,
-            .spacing = alia_px(ctx, alia_layout_style_active(ctx)->spacing),
+            .spacing = alia_px(ctx, alia_spacing_active(ctx)),
             .engine = engine,
             .block = cache->block,
             .text_length = cache->text_length,

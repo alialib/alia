@@ -3,8 +3,8 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/kernel/substrate.h>
-#include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/geometry/api.h>
+#include <alia/abi/ui/styling/catalog.h>
 #include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/events.hpp>
@@ -18,25 +18,6 @@ namespace alia {
 void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
-    alia_bump_allocator scratch;
-    alia_bump_allocator_init(&scratch, &sys.kernel.scratch);
-
-    alia_box clip_box = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)};
-    alia_box* clip_pointer = arena_new<alia_box>(scratch);
-    *clip_pointer = clip_box;
-
-    alia_geometry_context geometry = {
-        .scale = sys.magnification * sys.dpi / 96.0f,
-        .offset = {0, 0},
-        .clip = {
-            .box = clip_box,
-            .pointer = clip_pointer,
-            .id = 0,
-        },
-        .next_clip_id = 1,
-        .z_base = ALIA_DEFAULT_Z_BASE,
-    };
-
     alia_layout_context layout = {};
     layout.system = &sys.layout;
     if (events.event->type == ALIA_EVENT_REFRESH)
@@ -62,50 +43,61 @@ invoke_controller(ui_system& sys, event_traversal& events)
         sys.kernel.refresh_counter,
         events.event->type == ALIA_EVENT_REFRESH);
 
-    ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
-    size_t const actives_bytes = alia::align_up(sys.styles.defaults_size);
-    void* active_styles
-        = alia_arena_ptr(&scratch, alia_arena_alloc(&scratch, actives_bytes));
-    std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
+    alia_ui_context ctx = {};
+    ctx.kernel.object = &sys.kernel;
+    ctx.kernel.substrate = &substrate_traversal;
+    ctx.kernel.events = &events;
+    ctx.kernel.stack = &sys.kernel.stack;
+    ctx.kernel.tick_count = sys.kernel.tick_count;
+    alia_bump_allocator_init(&ctx.kernel.scratch, &sys.kernel.scratch);
 
-    alia_effect_log effects = {};
-
-    alia_ui_context ctx = {
-        .kernel = {
-            .object = &sys.kernel,
-            .substrate = &substrate_traversal,
-            .events = &events,
-            .stack = &sys.kernel.stack,
-            .scratch = &scratch,
-            .tick_count = sys.kernel.tick_count,
-            .effects = &effects,
+    alia_box clip_box = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)};
+    alia_box* clip_pointer = arena_new<alia_box>(ctx.kernel.scratch);
+    *clip_pointer = clip_box;
+    ctx.geometry = {
+        .scale = sys.magnification * sys.dpi / 96.0f,
+        .offset = {0, 0},
+        .clip = {
+            .box = clip_box,
+            .pointer = clip_pointer,
+            .id = 0,
         },
-        .system = &sys,
-        .active_styles = active_styles,
-        // No active font until something pushes one (see `alia_font_push`).
-        // Using text before then is a programming error and asserts.
-        .active_font = nullptr,
-        // Resolve the default text color for the system palette.
-        .text_color = alia_palette_color_resolve(
-            &sys.palette, ALIA_PALETTE_COLOR(foundation.text.base, 0xff)),
-        .geometry = &geometry,
-        .input = &sys.input,
-        .layout = &layout,
-        .draw = draw,
-        .palette = &sys.palette,
+        .next_clip_id = 1,
+        .z_base = ALIA_DEFAULT_Z_BASE,
     };
 
+    ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
+    size_t const actives_bytes = alia::align_up(sys.styles.defaults_size);
+    void* active_styles = alia_arena_ptr(
+        &ctx.kernel.scratch,
+        alia_arena_alloc(&ctx.kernel.scratch, actives_bytes));
+    std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
+
+    ctx.system = &sys;
+    ctx.style.active_styles = active_styles;
+    // No active font until something pushes one (see `alia_font_push`).
+    // Using text before then is a programming error and asserts.
+    ctx.style.text.font = nullptr;
+    // Resolve the default text color for the system palette.
+    ctx.style.text.color = alia_palette_color_resolve(
+        &sys.palette, ALIA_PALETTE_COLOR(foundation.text.base, 0xff));
+    alia_style_apply_seeds(&ctx.style, &sys.styles.seeds);
+    ctx.input = &sys.input;
+    ctx.layout = &layout;
+    ctx.draw = draw;
+    ctx.palette = &sys.palette;
+
     alia_substrate_begin_block(
-        &ctx.kernel,
+        alia_ctx_kernel(&ctx),
         &sys.kernel.substrate.root_anchor,
         &sys.kernel.substrate.root_block_spec);
 
     sys.controller.fn(sys.controller.user_data, &ctx);
 
     sys.kernel.substrate.root_block_spec
-        = alia_substrate_end_block(&ctx.kernel);
+        = alia_substrate_end_block(alia_ctx_kernel(&ctx));
 
-    alia_run_effects(&ctx.kernel);
+    alia_run_effects(alia_ctx_kernel(&ctx));
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;

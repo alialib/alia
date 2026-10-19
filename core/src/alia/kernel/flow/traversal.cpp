@@ -1,6 +1,5 @@
 #include <alia/kernel/flow/traversal.h>
 
-#include <alia/abi/ui/styling.h>
 #include <alia/impl/events.hpp>
 
 namespace alia {
@@ -19,7 +18,7 @@ mark_dirty_component(component_container_ptr const& container)
 void
 mark_dirty_component(ui_context& ctx)
 {
-    event_traversal& traversal = *ctx.kernel.events;
+    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(&ctx));
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.
@@ -41,7 +40,7 @@ mark_animating_component(component_container_ptr const& container)
 void
 mark_animating_component(ui_context& ctx)
 {
-    event_traversal& traversal = *ctx.kernel.events;
+    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(&ctx));
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.
@@ -52,9 +51,10 @@ mark_animating_component(ui_context& ctx)
 void
 mark_animating_component(alia_kernel_context& ctx)
 {
-    if (ctx.events == nullptr || ctx.events->active_container == nullptr)
+    if (alia_ctx_events(&ctx) == nullptr
+        || alia_ctx_events(&ctx)->active_container == nullptr)
         return;
-    mark_animating_component(*ctx.events->active_container);
+    mark_animating_component(*alia_ctx_events(&ctx)->active_container);
 }
 
 // void
@@ -115,7 +115,7 @@ mark_animating_component(alia_kernel_context& ctx)
 //     if (ctx_)
 //     {
 //         auto ctx = *ctx_;
-//         ctx->kernel.events->active_container = parent_;
+//         alia_ctx_events(alia_ctx_kernel(ctx))->active_container = parent_;
 //         ctx_.reset();
 //     }
 // }

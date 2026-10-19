@@ -1,7 +1,7 @@
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 
 #include <alia/context.h>
 #include <alia/ui/drawing/bucket_key.h>
@@ -17,8 +17,11 @@ find_or_create_draw_bucket(
     alia_draw_material_id material_id)
 {
     auto const key = make_bucket_key(
-        ctx->draw->target_id, z_index, ctx->geometry->clip.id, material_id);
-    alia_draw_bucket_table* const buckets = ctx->draw->buckets;
+        alia_ctx_draw(ctx)->target_id,
+        z_index,
+        alia_ctx_geometry(ctx)->clip.id,
+        material_id);
+    alia_draw_bucket_table* const buckets = alia_ctx_draw(ctx)->buckets;
     auto it = buckets->buckets.find(key);
     if (it == buckets->buckets.end())
     {
@@ -27,7 +30,7 @@ find_or_create_draw_bucket(
             it,
             {key,
              alia_draw_bucket{
-                 .clip_rect = ctx->geometry->clip.pointer,
+                 .clip_rect = alia_ctx_geometry(ctx)->clip.pointer,
                  .head = nullptr,
                  .tail = nullptr,
                  .count = 0,
@@ -61,7 +64,8 @@ alia_draw_command_alloc(
     size_t size)
 {
     auto* command = (alia_draw_command*) alia_arena_ptr(
-        &ctx->draw->arena, alia_arena_alloc(&ctx->draw->arena, size));
+        &alia_ctx_draw(ctx)->arena,
+        alia_arena_alloc(&alia_ctx_draw(ctx)->arena, size));
     auto* bucket = find_or_create_draw_bucket(ctx, z_index, material_id);
     append_draw_command(bucket, command);
     return command;

@@ -6,9 +6,10 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
+#include <alia/abi/ui/styling/catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
@@ -79,7 +80,7 @@ do_controls(
 
     do_subheading(ctx, "Typography");
     {
-        auto typography_index = use_state(&ctx.kernel, 0);
+        auto typography_index = use_state(alia_ctx_kernel(&ctx), 0);
         radio_button(ctx, typography_index, 0, "Roboto");
         radio_button(ctx, typography_index, 1, "Source Sans 3");
         if (read_signal(typography_index) == 0)
@@ -110,9 +111,10 @@ do_toggle_switch_demo(ui_context& ctx)
 {
     do_heading(ctx, "TOGGLE SWITCHES");
 
-    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting One");
-    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting Two");
-    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting Three");
+    toggle_switch(ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting One");
+    toggle_switch(ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting Two");
+    toggle_switch(
+        ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting Three");
 }
 
 void
@@ -120,7 +122,7 @@ do_radio_button_demo(ui_context& ctx)
 {
     do_heading(ctx, "RADIO BUTTONS");
 
-    auto radio_index = use_state(&ctx.kernel, 0);
+    auto radio_index = use_state(alia_ctx_kernel(&ctx), 0);
     radio_button(ctx, radio_index, 0, "Option One");
     radio_button(ctx, radio_index, 1, "Option Two");
     radio_button(ctx, radio_index, 2, "Option Three");
@@ -131,14 +133,17 @@ do_checkbox_demo(ui_context& ctx)
 {
     do_heading(ctx, "CHECKBOXES");
 
-    checkbox(ctx, use_state(&ctx.kernel, false), "Initially Unchecked");
-    checkbox(ctx, use_state(&ctx.kernel, true), "Initially Checked");
+    checkbox(
+        ctx, use_state(alia_ctx_kernel(&ctx), false), "Initially Unchecked");
+    checkbox(ctx, use_state(alia_ctx_kernel(&ctx), true), "Initially Checked");
     checkbox(
         ctx,
-        disable_writes(use_state(&ctx.kernel, false)),
+        disable_writes(use_state(alia_ctx_kernel(&ctx), false)),
         "Disabled/Unchecked");
     checkbox(
-        ctx, disable_writes(use_state(&ctx.kernel, true)), "Disabled/Checked");
+        ctx,
+        disable_writes(use_state(alia_ctx_kernel(&ctx), true)),
+        "Disabled/Checked");
 }
 
 void
@@ -146,9 +151,11 @@ do_node_expander_demo(ui_context& ctx)
 {
     do_heading(ctx, "NODE EXPANDER");
 
-    node_expander(ctx, use_state(&ctx.kernel, false), "Expandable");
+    node_expander(ctx, use_state(alia_ctx_kernel(&ctx), false), "Expandable");
     node_expander(
-        ctx, disable_writes(use_state(&ctx.kernel, true)), "Disabled");
+        ctx,
+        disable_writes(use_state(alia_ctx_kernel(&ctx), true)),
+        "Disabled");
 }
 
 void
@@ -156,7 +163,7 @@ do_slider_demo(ui_context& ctx)
 {
     do_heading(ctx, "SLIDERS");
 
-    slider(ctx, use_state(&ctx.kernel, 5.f), 0.0, 10.0, 1.0);
+    slider(ctx, use_state(alia_ctx_kernel(&ctx), 5.f), 0.0, 10.0, 1.0);
 }
 
 void
@@ -164,7 +171,7 @@ do_collapsible_demo(ui_context& ctx)
 {
     do_heading(ctx, "COLLAPSIBLE");
 
-    auto collapsed = use_state(&ctx.kernel, false);
+    auto collapsed = use_state(alia_ctx_kernel(&ctx), false);
     node_expander(ctx, collapsed, "Collapsible");
 
     alia::collapsible(ctx, collapsed, [&]() {
@@ -183,9 +190,9 @@ do_button_demo(ui_context& ctx)
 {
     do_heading(ctx, "BUTTONS");
 
-    auto clicks = use_state(&ctx.kernel, 0);
-    auto n = use_state(&ctx.kernel, 0);
-    auto m = use_state(&ctx.kernel, 3);
+    auto clicks = use_state(alia_ctx_kernel(&ctx), 0);
+    auto n = use_state(alia_ctx_kernel(&ctx), 0);
+    auto m = use_state(alia_ctx_kernel(&ctx), 3);
 
     {
         char label[64];
@@ -247,8 +254,8 @@ do_dropdown_demo(ui_context& ctx)
 {
     do_heading(ctx, "DROPDOWN");
 
-    auto open = use_state(&ctx.kernel, false);
-    auto selected = use_state(&ctx.kernel, 0);
+    auto open = use_state(alia_ctx_kernel(&ctx), false);
+    auto selected = use_state(alia_ctx_kernel(&ctx), 0);
     char const* const items[] = {"First", "Second", "Third"};
 
     {
@@ -280,7 +287,7 @@ do_dropdown_demo(ui_context& ctx)
             concrete_panel(
                 ctx,
                 alia_z(&ctx, ALIA_Z_PLANE_BACKGROUND),
-                ctx.palette->foundation.background.stronger_2,
+                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     column(ctx, pad(6), [&]() {
@@ -349,25 +356,23 @@ template<class Content>
 void
 with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
-    alia_layout_style* layout_style = alia_layout_style_active(&ctx);
-    float old_spacing = layout_style->spacing;
-    layout_style->spacing = spacing * ctx.geometry->scale;
+    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
     content();
-    layout_style->spacing = old_spacing;
+    alia_spacing_pop(&ctx);
 }
 
 void
 the_demo(ui_context& ctx)
 {
-    auto spacing = use_state(&ctx.kernel, 6.f);
-    auto magnification = use_state(&ctx.kernel, 1.f);
+    auto spacing = use_state(alia_ctx_kernel(&ctx), 6.f);
+    auto magnification = use_state(alia_ctx_kernel(&ctx), 1.f);
 
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
             concrete_panel(
                 ctx,
                 0,
-                ctx.palette->foundation.background.stronger_2,
+                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -380,7 +385,7 @@ the_demo(ui_context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    ctx.palette->foundation.background.base,
+                    alia_ctx_palette(&ctx)->foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {

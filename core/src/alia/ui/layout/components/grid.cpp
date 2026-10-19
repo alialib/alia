@@ -288,8 +288,8 @@ alia_layout_grid_begin(alia_ui_context* ctx, alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_grid_scope>(&ctx->kernel);
-        auto& emission = ctx->layout->emission;
+        auto& scope = stack_push<alia_layout_grid_scope>(alia_ctx_kernel(ctx));
+        auto& emission = alia_ctx_layout(ctx)->emission;
         grid_layout_node* node = arena_alloc<grid_layout_node>(emission.arena);
         scope.grid = node;
         scope.next_row_ptr = &node->first_row;
@@ -315,9 +315,9 @@ alia_layout_grid_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_grid_scope>(&ctx->kernel);
+        auto& scope = stack_pop<alia_layout_grid_scope>(alia_ctx_kernel(ctx));
         *scope.next_row_ptr = 0;
-        auto& emission = ctx->layout->emission;
+        auto& emission = alia_ctx_layout(ctx)->emission;
         *emission.next_ptr = 0;
         emission.next_ptr = &scope.grid->base.next_sibling;
     }
@@ -336,8 +336,9 @@ alia_layout_grid_row_begin(
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<grid_row_layout_node_scope>(&ctx->kernel);
-        auto& emission = ctx->layout->emission;
+        auto& scope
+            = stack_push<grid_row_layout_node_scope>(alia_ctx_kernel(ctx));
+        auto& emission = alia_ctx_layout(ctx)->emission;
         auto* node = arena_alloc<grid_row_layout_node>(emission.arena);
         *node = grid_row_layout_node{
             .container
@@ -358,7 +359,8 @@ alia_layout_grid_row_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<grid_row_layout_node_scope>(&ctx->kernel);
+        auto& scope
+            = stack_pop<grid_row_layout_node_scope>(alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

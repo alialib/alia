@@ -43,10 +43,10 @@ void
 alia_timing_request_animation_refresh(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->object);
+    ALIA_ASSERT(alia_ctx_object(ctx));
 
-    alia_kernel_mark_dirty(ctx->object);
-    if (ctx->events)
+    alia_kernel_mark_dirty(alia_ctx_object(ctx));
+    if (alia_ctx_events(ctx))
         alia::mark_animating_component(*ctx);
 }
 
@@ -54,7 +54,7 @@ alia_timer_state*
 alia_timer_use(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->substrate);
+    ALIA_ASSERT(alia_ctx_substrate(ctx));
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
         ctx, sizeof(alia_timer_state), alignof(alia_timer_state));
@@ -85,15 +85,16 @@ alia_timer_start(
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(state);
-    ALIA_ASSERT(ctx->object);
+    ALIA_ASSERT(alia_ctx_object(ctx));
 
     // TODO: If duration wraps, we still want wrap-safe comparisons in the
     // system dispatcher.
-    state->expected_fire_time = ctx->tick_count + duration;
+    state->expected_fire_time = alia_timing_tick_count(ctx) + duration;
     state->active = true;
     ALIA_ASSERT(alia_element_id_is_valid(state->target));
 
-    enqueue_timer(ctx->object, state->target, state->expected_fire_time);
+    enqueue_timer(
+        alia_ctx_object(ctx), state->target, state->expected_fire_time);
 }
 
 void
@@ -110,10 +111,10 @@ alia_timer_handle_event(alia_kernel_context* ctx, alia_timer_state* state)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(state);
-    ALIA_ASSERT(ctx->events);
-    ALIA_ASSERT(ctx->events->event);
+    ALIA_ASSERT(alia_ctx_events(ctx));
+    ALIA_ASSERT(alia_ctx_events(ctx)->event);
 
-    auto* ev = ctx->events->event;
+    auto* ev = alia_ctx_events(ctx)->event;
     if (ev->type != ALIA_EVENT_TIMER)
         return false;
 

@@ -6,7 +6,7 @@
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/msdf.h>
 
 ALIA_EXTERN_C_BEGIN

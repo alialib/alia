@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/ui/layout/flags.hpp>
 
 #include <cstdint>

@@ -108,10 +108,10 @@ alia_layout_growth_override_begin(alia_ui_context* ctx, float growth)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope
-            = stack_push<alia_layout_growth_override_scope>(&ctx->kernel);
-        auto* node
-            = arena_alloc<growth_override_node>(ctx->layout->emission.arena);
+        auto& scope = stack_push<alia_layout_growth_override_scope>(
+            alia_ctx_kernel(ctx));
+        auto* node = arena_alloc<growth_override_node>(
+            alia_ctx_layout(ctx)->emission.arena);
         *node = growth_override_node{
             .container
             = {.base = {.vtable = &growth_override_vtable, .next_sibling = 0},
@@ -128,8 +128,8 @@ alia_layout_growth_override_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope
-            = stack_pop<alia_layout_growth_override_scope>(&ctx->kernel);
+        auto& scope = stack_pop<alia_layout_growth_override_scope>(
+            alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

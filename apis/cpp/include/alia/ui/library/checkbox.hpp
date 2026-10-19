@@ -17,7 +17,7 @@ checkbox(ui_context& ctx, Signal const& value, Layout layout = {})
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         auto c = to_inline_c_signal<alia_bool_signal>(value);
         id = alia_checkbox(&ctx, &c, raw_code(flags));
-        write_back_c_signal(&ctx.kernel, value, c);
+        write_back_c_signal(alia_ctx_kernel(&ctx), value, c);
     });
     return id;
 }

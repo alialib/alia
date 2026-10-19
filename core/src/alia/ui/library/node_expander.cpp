@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -66,7 +66,7 @@ render_node_expander(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float const rotation_degrees = alia_transition_float(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         expanded,
@@ -153,7 +153,9 @@ alia_node_expander(
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(node_expander_data), alignof(node_expander_data));
+        alia_ctx_kernel(ctx),
+        sizeof(node_expander_data),
+        alignof(node_expander_data));
     node_expander_data* data = (node_expander_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -163,7 +165,8 @@ alia_node_expander(
         };
     }
 
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     bool const is_disabled = (expanded == nullptr)
                           || ((expanded->flags & ALIA_SIGNAL_WRITABLE) == 0);

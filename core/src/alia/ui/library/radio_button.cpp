@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
@@ -101,7 +101,7 @@ render_radio_button(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float const smoothed_state = alia_transition_float(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         selected,
@@ -183,7 +183,9 @@ alia_radio_button(
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(radio_button_data), alignof(radio_button_data));
+        alia_ctx_kernel(ctx),
+        sizeof(radio_button_data),
+        alignof(radio_button_data));
     radio_button_data* data = (radio_button_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -192,7 +194,8 @@ alia_radio_button(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     alia_radio_button_style const* const style
         = alia_radio_button_style_active(ctx);

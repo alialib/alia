@@ -34,15 +34,15 @@ void
 alia_post_effect(alia_kernel_context* ctx, alia_effect* effect)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->effects);
     ALIA_ASSERT(effect);
     ALIA_ASSERT(effect->run);
     effect->next = nullptr;
-    if (ctx->effects->tail)
-        ctx->effects->tail->next = effect;
+    alia_effect_log* log = alia_ctx_effects(ctx);
+    if (log->tail)
+        log->tail->next = effect;
     else
-        ctx->effects->head = effect;
-    ctx->effects->tail = effect;
+        log->head = effect;
+    log->tail = effect;
 }
 
 void
@@ -54,13 +54,14 @@ alia_post_write(
     char const* label)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->scratch);
     ALIA_ASSERT(dst);
     ALIA_ASSERT(size == 0 || src != nullptr);
 
+    alia_bump_allocator* scratch = alia_ctx_scratch(ctx);
+    ALIA_ASSERT(scratch->arena);
     size_t const bytes = alia_min_aligned_size(sizeof(write_effect) + size);
     auto* write = reinterpret_cast<write_effect*>(
-        alia_arena_ptr(ctx->scratch, alia_arena_alloc(ctx->scratch, bytes)));
+        alia_arena_ptr(scratch, alia_arena_alloc(scratch, bytes)));
     write->base.run = write_effect_run;
     write->base.label = label;
     write->base.next = nullptr;
@@ -80,21 +81,21 @@ void
 alia_run_effects(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->effects);
 
+    alia_effect_log* log = alia_ctx_effects(ctx);
     bool any = false;
-    for (alia_effect* effect = ctx->effects->head; effect != nullptr;
+    for (alia_effect* effect = log->head; effect != nullptr;
          effect = effect->next)
     {
         ALIA_ASSERT(effect->run);
         effect->run(effect);
         any = true;
     }
-    ctx->effects->head = nullptr;
-    ctx->effects->tail = nullptr;
+    log->head = nullptr;
+    log->tail = nullptr;
 
-    if (any && ctx->object)
-        alia_kernel_mark_dirty(ctx->object);
+    if (any && alia_ctx_object(ctx))
+        alia_kernel_mark_dirty(alia_ctx_object(ctx));
 }
 
 } // extern "C"

@@ -2,10 +2,10 @@
 #define ALIA_ABI_UI_INPUT_POINTER_H
 
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/kernel/timing.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/input/state.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -17,7 +17,7 @@ alia_input_pointer_position(alia_ui_context* ctx);
 static inline bool
 alia_input_pointer_in_surface(alia_ui_context* ctx)
 {
-    return ctx->input->mouse_inside_window;
+    return alia_ctx_input(ctx)->mouse_inside_window;
 }
 
 bool
@@ -26,19 +26,21 @@ alia_input_pointer_in_box(alia_ui_context* ctx, alia_box const* box);
 static inline bool
 alia_input_button_is_down(alia_ui_context* ctx, alia_button_t button)
 {
-    return (ctx->input->mouse_button_state & (1u << (unsigned) button)) != 0;
+    return (alia_ctx_input(ctx)->mouse_button_state
+            & (1u << (unsigned) button))
+        != 0;
 }
 
 inline alia_nanosecond_count
 alia_input_click_start_time(alia_ui_context* ctx, alia_button_t button)
 {
-    return ctx->input->last_mouse_press_time[unsigned(button)];
+    return alia_ctx_input(ctx)->last_mouse_press_time[unsigned(button)];
 }
 
 static inline alia_nanosecond_count
 alia_input_click_duration(alia_ui_context* ctx, alia_button_t button)
 {
-    return alia_timing_tick_count(&ctx->kernel)
+    return alia_timing_tick_count(alia_ctx_kernel(ctx))
          - alia_input_click_start_time(ctx, button);
 }
 
@@ -46,13 +48,14 @@ alia_input_click_duration(alia_ui_context* ctx, alia_button_t button)
 static inline bool
 alia_element_is_hovered(alia_ui_context* ctx, alia_element_id id)
 {
-    return alia_element_id_equal(ctx->input->hot_element, id);
+    return alia_element_id_equal(alia_ctx_input(ctx)->hot_element, id);
 }
 
 static inline bool
 alia_no_element_has_capture(alia_ui_context* ctx)
 {
-    return !alia_element_id_is_valid(ctx->input->element_with_capture);
+    return !alia_element_id_is_valid(
+        alia_ctx_input(ctx)->element_with_capture);
 }
 
 // Detect if an element has captured the mouse. - Capture is implicitly
@@ -61,7 +64,8 @@ alia_no_element_has_capture(alia_ui_context* ctx)
 static inline bool
 alia_element_has_capture(alia_ui_context* ctx, alia_element_id id)
 {
-    return alia_element_id_equal(ctx->input->element_with_capture, id);
+    return alia_element_id_equal(
+        alia_ctx_input(ctx)->element_with_capture, id);
 }
 
 bool

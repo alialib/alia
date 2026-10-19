@@ -1,6 +1,6 @@
 #include <alia/abi/kernel/substrate.h>
 
-#include <alia/abi/context.h>
+#include <alia/abi/kernel/context.h>
 #include <alia/abi/kernel/ids.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
@@ -101,7 +101,7 @@ init_block(alia_kernel_context* ctx, void* ptr, alia_struct_spec spec)
 {
     return new (ptr) alia_substrate_block{
         .cleanup_records = nullptr,
-        .generation = ctx->substrate->system->current_generation,
+        .generation = alia_ctx_substrate(ctx)->system->current_generation,
         .spec = spec};
 }
 
@@ -113,7 +113,7 @@ add_cleanup_record(
         alia_substrate_system*, void*, alia_substrate_cleanup_mode mode),
     void* object)
 {
-    auto& traversal = *ctx->substrate;
+    auto& traversal = *alia_ctx_substrate(ctx);
     alia_substrate_cleanup_record* record
         = new (storage) alia_substrate_cleanup_record{
             traversal.block.block->cleanup_records, cleanup, object};
@@ -163,7 +163,7 @@ push_path_segments_for_object(
     alia_substrate_block_traversal_state const* block,
     size_t* out_count)
 {
-    alia_bump_allocator* scratch = &ctx->substrate->scratch;
+    alia_bump_allocator* scratch = &alia_ctx_substrate(ctx)->scratch;
     size_t const count = count_path_segments(block);
     alia_id_view* segments = static_cast<alia_id_view*>(alia_arena_ptr(
         scratch,
@@ -356,7 +356,7 @@ resolve_key_entry(
     {
         entry = scope->predicted;
         scope->predicted = entry->next;
-        if (ctx->substrate->allow_prediction_updates)
+        if (alia_ctx_substrate(ctx)->allow_prediction_updates)
             scope->prediction_tail = &entry->next;
     }
     else
@@ -364,14 +364,14 @@ resolve_key_entry(
         entry = find_entry_by_view(scope->table->map, key);
         if (!entry)
         {
-            entry
-                = create_key_entry(ctx->substrate->system, scope->table, key);
+            entry = create_key_entry(
+                alia_ctx_substrate(ctx)->system, scope->table, key);
         }
-        if (ctx->substrate->allow_prediction_updates)
+        if (alia_ctx_substrate(ctx)->allow_prediction_updates)
             append_to_prediction_list(scope, entry);
     }
 
-    entry->last_seen = ctx->substrate->current_refresh;
+    entry->last_seen = alia_ctx_substrate(ctx)->current_refresh;
     return entry;
 }
 
@@ -460,8 +460,9 @@ ALIA_EXTERN_C_BEGIN
 alia_substrate_system*
 alia_ctx_substrate_system(alia_kernel_context* ctx)
 {
-    ALIA_ASSERT(ctx && ctx->substrate && ctx->substrate->system);
-    return ctx->substrate->system;
+    ALIA_ASSERT(
+        ctx && alia_ctx_substrate(ctx) && alia_ctx_substrate(ctx)->system);
+    return alia_ctx_substrate(ctx)->system;
 }
 
 alia_general_allocator*
@@ -475,7 +476,7 @@ alia_substrate_usage_result
 alia_substrate_use_memory(
     alia_kernel_context* ctx, size_t size, size_t alignment)
 {
-    auto& traversal = *ctx->substrate;
+    auto& traversal = *alia_ctx_substrate(ctx);
     switch (traversal.block.mode)
     {
         case ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY: {
@@ -585,7 +586,7 @@ alia_substrate_begin_block(
     auto& parent_scope
         = alia::stack_push<alia_substrate_block_traversal_state>(ctx);
 
-    auto& traversal = *ctx->substrate;
+    auto& traversal = *alia_ctx_substrate(ctx);
     parent_scope = traversal.block;
     traversal.block.parent = &parent_scope;
     traversal.block.offset_in_parent = parent_scope.current_offset;
@@ -637,16 +638,17 @@ alia_substrate_begin_block(
 alia_struct_spec
 alia_substrate_end_block(alia_kernel_context* ctx)
 {
-    if (ctx->substrate->block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
+    if (alia_ctx_substrate(ctx)->block.mode
+        == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
     {
         invoke_cleanup_records(
-            ctx->substrate->system,
-            ctx->substrate->block.block,
+            alia_ctx_substrate(ctx)->system,
+            alia_ctx_substrate(ctx)->block.block,
             ALIA_SUBSTRATE_DESTROY);
     }
     auto& parent_scope
         = alia::stack_pop<alia_substrate_block_traversal_state>(ctx);
-    auto& traversal = *ctx->substrate;
+    auto& traversal = *alia_ctx_substrate(ctx);
     alia_struct_spec const completed_block_spec = traversal.block.spec;
     traversal.block = parent_scope;
     return completed_block_spec;
@@ -655,9 +657,10 @@ alia_substrate_end_block(alia_kernel_context* ctx)
 alia_id_view
 alia_substrate_path_for_object(alia_kernel_context* ctx, void* object)
 {
-    ALIA_ASSERT(ctx && ctx->substrate && object);
+    ALIA_ASSERT(ctx && alia_ctx_substrate(ctx) && object);
 
-    alia_substrate_block_traversal_state const& block = ctx->substrate->block;
+    alia_substrate_block_traversal_state const& block
+        = alia_ctx_substrate(ctx)->block;
     if (block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
         return alia_id_view_null();
 
@@ -671,7 +674,8 @@ alia_substrate_path_for_object(alia_kernel_context* ctx, void* object)
     size_t count = 0;
     alia_id_view* segments
         = push_path_segments_for_object(ctx, object, &block, &count);
-    return fold_id_segments(&ctx->substrate->scratch, segments, count);
+    return fold_id_segments(
+        &alia_ctx_substrate(ctx)->scratch, segments, count);
 }
 
 alia_substrate_key_table*
@@ -686,7 +690,7 @@ alia_substrate_use_key_table(
     auto* table = static_cast<alia_substrate_key_table*>(mr.ptr);
     if (mr.mode != ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL)
     {
-        alia_substrate_system* system = ctx->substrate->system;
+        alia_substrate_system* system = alia_ctx_substrate(ctx)->system;
         table->requires_explicit_delete
             = flags == ALIA_SUBSTRATE_KEY_TABLE_REQUIRES_EXPLICIT_DELETE;
         table->first = nullptr;
@@ -707,7 +711,7 @@ alia_substrate_begin_key_scope(
     scope.table = table;
     scope.predicted = table->first;
     scope.prediction_tail = &table->first;
-    table->last_seen = ctx->substrate->current_refresh;
+    table->last_seen = alia_ctx_substrate(ctx)->current_refresh;
     return &scope;
 }
 
@@ -717,7 +721,8 @@ alia_substrate_end_key_scope(
 {
     ALIA_ASSERT(ctx && scope && scope->table);
 
-    if (ctx->substrate->allow_prediction_updates && scope->prediction_tail)
+    if (alia_ctx_substrate(ctx)->allow_prediction_updates
+        && scope->prediction_tail)
         *scope->prediction_tail = nullptr;
 
     alia::stack_pop<alia_substrate_key_scope>(ctx);
@@ -745,7 +750,7 @@ void
 alia_substrate_sweep_table_keys(
     alia_kernel_context* ctx, alia_substrate_key_table* table)
 {
-    ALIA_ASSERT(ctx && ctx->substrate && table);
+    ALIA_ASSERT(ctx && alia_ctx_substrate(ctx) && table);
     sweep_key_table(table);
 }
 

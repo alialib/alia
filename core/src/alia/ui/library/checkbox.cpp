@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
@@ -55,23 +55,24 @@ draw_checkbox_checkmark(
     alia_srgba8 color,
     alia_checkbox_style const* style)
 {
-    if (style->checkmark_codepoint == 0 || !ctx->system->msdf_text_engine)
+    if (style->checkmark_codepoint == 0
+        || !alia_ctx_system(ctx)->msdf_text_engine)
         return;
 
     float const icon_scale = alia_px(ctx, style->checkmark_size);
     float const icon_width = alia_msdf_measure_codepoint_width(
-        ctx->system->msdf_text_engine,
+        alia_ctx_system(ctx)->msdf_text_engine,
         style->checkmark_font_index,
         style->checkmark_codepoint,
         icon_scale);
     alia_msdf_font_metrics const* icon_metrics = alia_msdf_get_font_metrics(
-        ctx->system->msdf_text_engine, style->checkmark_font_index);
+        alia_ctx_system(ctx)->msdf_text_engine, style->checkmark_font_index);
     float const icon_height = icon_metrics->line_height * icon_scale;
     alia_vec2f const origin{
         box.min.x + (box.size.x - icon_width) * 0.5f,
         box.min.y + (box.size.y - icon_height) * 0.5f};
     alia_msdf_draw_codepoint(
-        ctx->system->msdf_text_engine,
+        alia_ctx_system(ctx)->msdf_text_engine,
         ctx,
         alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         style->checkmark_codepoint,
@@ -222,7 +223,7 @@ alia_checkbox(
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel, sizeof(checkbox_data), alignof(checkbox_data));
+        alia_ctx_kernel(ctx), sizeof(checkbox_data), alignof(checkbox_data));
     checkbox_data* data = (checkbox_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -231,7 +232,8 @@ alia_checkbox(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     alia_checkbox_style const* const style = alia_checkbox_style_active(ctx);
 

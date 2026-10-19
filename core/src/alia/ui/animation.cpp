@@ -2,7 +2,7 @@
 
 #include <alia/abi/kernel/animation.h>
 #include <alia/abi/ui/drawing/primitives.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/animation/unit_cubic_bezier.h>
 
@@ -16,22 +16,22 @@ fire_click_flare(
     bitpack_ref<click_flare_bit_layout> bits,
     alia_button_t button)
 {
-    if (alia_animation_tick_count(&ctx->kernel)
+    if (alia_animation_tick_count(alia_ctx_kernel(ctx))
             - alia_input_click_start_time(ctx, button)
         < milliseconds(200))
     {
         alia_animation_fire_flare(
-            &ctx->kernel,
+            alia_ctx_kernel(ctx),
             ALIA_BITREF(bits, click_flare),
             click_flare_duration);
     }
     else
     {
         alia_animation_fire_flare(
-            &ctx->kernel,
+            alia_ctx_kernel(ctx),
             ALIA_BITREF(bits, press_and_hold_flare),
             (std::min) (click_accumulation_time,
-                        alia_animation_tick_count(&ctx->kernel)
+                        alia_animation_tick_count(alia_ctx_kernel(ctx))
                             - alia_input_click_start_time(ctx, button))
                 / 2);
     }
@@ -50,7 +50,9 @@ render_click_flares(
     alia_nanosecond_count flare_ticks_left[8];
     {
         unsigned flare_count = alia_animation_process_flares(
-            &ctx->kernel, ALIA_BITREF(bits, click_flare), flare_ticks_left);
+            alia_ctx_kernel(ctx),
+            ALIA_BITREF(bits, click_flare),
+            flare_ticks_left);
         for (unsigned i = 0; i < flare_count; ++i)
         {
             alia_nanosecond_count ticks_left = flare_ticks_left[i];
@@ -80,7 +82,7 @@ render_click_flares(
     {
         alia_nanosecond_count flare_ticks_left[8];
         unsigned flare_count = alia_animation_process_flares(
-            &ctx->kernel,
+            alia_ctx_kernel(ctx),
             ALIA_BITREF(bits, press_and_hold_flare),
             flare_ticks_left);
         for (unsigned i = 0; i < flare_count; ++i)
@@ -102,7 +104,7 @@ render_click_flares(
         alia_nanosecond_count const capped_duration
             = click_accumulation_time
             - alia_animation_ticks_left(
-                  &ctx->kernel,
+                  alia_ctx_kernel(ctx),
                   alia_input_click_start_time(ctx, ALIA_BUTTON_LEFT)
                       + click_accumulation_time);
         float scale_factor

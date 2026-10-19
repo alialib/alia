@@ -3,7 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/kernel/substrate.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
@@ -53,7 +53,7 @@ alia_draw_shader(
     size_t params_size)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->draw);
+    ALIA_ASSERT(alia_ctx_draw(ctx));
     ALIA_ASSERT(params_size == 0 || params != nullptr);
     ALIA_ASSERT(params_size <= UINT16_MAX);
 
@@ -64,15 +64,16 @@ alia_draw_shader(
             material_id,
             ALIA_MIN_ALIGNED_SIZE(sizeof(alia_shader_draw_command)));
 
-    command->region = alia_box_translate(region, ctx->geometry->offset);
+    command->region
+        = alia_box_translate(region, alia_ctx_geometry(ctx)->offset);
     command->params_size = (uint16_t) params_size;
     command->params = nullptr;
 
     if (params_size > 0)
     {
         void* blob = alia_arena_ptr(
-            &ctx->draw->arena,
-            alia_arena_alloc(&ctx->draw->arena, params_size));
+            &alia_ctx_draw(ctx)->arena,
+            alia_arena_alloc(&alia_ctx_draw(ctx)->arena, params_size));
         std::memcpy(blob, params, params_size);
         command->params = blob;
     }
@@ -89,14 +90,15 @@ alia_do_shader(
     alia_vec2f min_size)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         sizeof(shader_component_data),
         alignof(shader_component_data));
     shader_component_data* data = (shader_component_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
+    alia_element_id const id
+        = alia_make_element_id(alia_ctx_kernel(ctx), result);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -132,8 +134,8 @@ alia_do_shader(
                 ALIA_ASSERT(params != nullptr);
                 ALIA_ASSERT(params_size <= UINT16_MAX);
                 void* blob = alia_arena_ptr(
-                    &ctx->draw->arena,
-                    alia_arena_alloc(&ctx->draw->arena, params_size));
+                    &alia_ctx_draw(ctx)->arena,
+                    alia_arena_alloc(&alia_ctx_draw(ctx)->arena, params_size));
                 std::memcpy(blob, params, params_size);
                 command->params = blob;
             }

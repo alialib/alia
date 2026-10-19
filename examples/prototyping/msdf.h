@@ -4,7 +4,7 @@
 // <alia/abi/ui/text.h>. Kept for optional layout experiments / shader gallery.
 
 #include <alia/abi/ui/layout/utilities/flow.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
 
 struct text_layout_placement_header
 {
@@ -209,8 +209,7 @@ text_emit_token(
                     .kind = ALIA_FLOW_FRAGMENT_KIND_CONTENT,
                     .content
                     = {.size = alia_vec2f_make(
-                           text_measure_substring_width(
-                               text, start, length),
+                           text_measure_substring_width(text, start, length),
                            line.height),
                        .ascent = line.ascent,
                        .descent = line.descent}});
@@ -335,8 +334,9 @@ text_count_flow_emissions(
 {
     auto& text = *reinterpret_cast<msdf_text_layout_node*>(node);
     (void) ctx;
-    return alia_flow_emission_counts_with_run_scope({
-        .fragment_count = text_count_fragments(text.text, strlen(text.text))});
+    return alia_flow_emission_counts_with_run_scope(
+        {.fragment_count
+         = text_count_fragments(text.text, strlen(text.text))});
 }
 
 void
@@ -436,7 +436,7 @@ alia_layout_node_vtable text_layout_vtable
        text_read_fragment_placements};
 
 // `scale` is logical font size in design pixels; `do_text` applies
-// ctx.geometry->scale once.
+// alia_ctx_geometry(&ctx)->scale once.
 bool
 do_text(
     ui_context& ctx,
@@ -453,17 +453,17 @@ do_text(
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            auto& emission = ctx.layout->emission;
+            auto& emission = alia_ctx_layout(&ctx)->emission;
             msdf_text_layout_node* new_node
                 = arena_alloc<msdf_text_layout_node>(emission.arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = raw_code(flags);
             new_node->text = text;
-            new_node->font_size = scale * ctx.geometry->scale;
+            new_node->font_size = scale * alia_ctx_geometry(&ctx)->scale;
             new_node->engine = the_msdf_text_engine;
             new_node->font_index = font_index;
-            new_node->spacing = alia_layout_style_active(&ctx)->spacing;
+            new_node->spacing = alia_spacing_active(&ctx);
             *emission.next_ptr = &new_node->base;
             emission.next_ptr = &new_node->base.next_sibling;
             break;
@@ -496,7 +496,7 @@ do_text(
                     z_index,
                     fragment.text,
                     fragment.length,
-                    scale * ctx.geometry->scale,
+                    scale * alia_ctx_geometry(&ctx)->scale,
                     fragment.position,
                     color,
                     fragment.font_index);

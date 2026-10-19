@@ -1,4 +1,4 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/protocol.h>
 #include <alia/abi/ui/layout/utilities/defaults.h>
@@ -107,7 +107,7 @@ extern "C" {
 void
 alia_layout_flow_spring_emit(alia_ui_context* ctx, float min_width)
 {
-    auto& emission = ctx->layout->emission;
+    auto& emission = alia_ctx_layout(ctx)->emission;
     layout_flow_spring_node* new_node
         = arena_alloc<layout_flow_spring_node>(emission.arena);
     *emission.next_ptr = &new_node->base;

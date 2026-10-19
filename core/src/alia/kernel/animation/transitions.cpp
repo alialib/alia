@@ -18,9 +18,10 @@ start_transition(
     bool current_state,
     alia_animated_transition const& transition)
 {
-    ALIA_ASSERT(ctx && ctx->object);
+    ALIA_ASSERT(ctx && alia_ctx_object(ctx));
     auto& animation
-        = ctx->object->animation.transitions[alia_make_animation_id(bits)];
+        = alia_ctx_object(ctx)
+              ->animation.transitions[alia_make_animation_id(bits)];
     animation.direction = current_state;
     animation.transition_end
         = alia_animation_tick_count(ctx) + transition.duration;
@@ -34,9 +35,10 @@ update_transition(
     bool current_state,
     alia_animated_transition const& transition)
 {
-    ALIA_ASSERT(ctx && ctx->object);
+    ALIA_ASSERT(ctx && alia_ctx_object(ctx));
     auto& animation
-        = ctx->object->animation.transitions[alia_make_animation_id(bits)];
+        = alia_ctx_object(ctx)
+              ->animation.transitions[alia_make_animation_id(bits)];
     alia_nanosecond_count ticks_left
         = alia_animation_ticks_left(ctx, animation.transition_end);
     if (current_state != animation.direction)
@@ -74,7 +76,8 @@ update_transition(
     }
     else
     {
-        ctx->object->animation.transitions.erase(alia_make_animation_id(bits));
+        alia_ctx_object(ctx)->animation.transitions.erase(
+            alia_make_animation_id(bits));
         alia_bitref_write_pair(bits, current_state ? 0b11 : 0b10);
         return current_state ? 1.f : 0.f;
     }

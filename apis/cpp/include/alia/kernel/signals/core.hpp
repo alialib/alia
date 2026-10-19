@@ -262,14 +262,14 @@ erase_value_id(kernel_context* ctx, ValueId const& id)
     else
     {
         ALIA_ASSERT(ctx);
-        ALIA_ASSERT(ctx->scratch);
+        alia_bump_allocator* scratch = alia_ctx_scratch(ctx);
+        ALIA_ASSERT(scratch->arena);
         size_t const bytes = alia_min_aligned_size(sizeof(storage_type));
         size_t const align = alignof(storage_type) < ALIA_MIN_ALIGN
                                ? ALIA_MIN_ALIGN
                                : alignof(storage_type);
         void* mem = alia_arena_ptr(
-            ctx->scratch,
-            alia_arena_alloc_aligned(ctx->scratch, bytes, align));
+            scratch, alia_arena_alloc_aligned(scratch, bytes, align));
         auto* storage = new (mem) storage_type{};
         return to_id_view(*storage, id);
     }

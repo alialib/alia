@@ -20,9 +20,10 @@ traverse_until_complete(
     {
         t.reset_traversal();
         alia_ui_context* ctx = &t.ctx;
-        alia_substrate_begin_block(&ctx->kernel, t.root_anchor(), &root_spec);
+        alia_substrate_begin_block(
+            alia_ctx_kernel(ctx), t.root_anchor(), &root_spec);
         content(ctx);
-        (void) alia_substrate_end_block(&ctx->kernel);
+        (void) alia_substrate_end_block(alia_ctx_kernel(ctx));
         if (!as_refresh_event(*ctx).incomplete)
             break;
     }
@@ -41,26 +42,28 @@ TEST_CASE("use_object persists across traversals")
     };
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &spec);
     {
-        auto obj = use_object<counted>(&t.ctx.kernel);
+        auto obj = use_object<counted>(alia_ctx_kernel(&t.ctx));
         CHECK(obj.is_init());
         CHECK(obj.is_fresh());
         CHECK(obj->n == 0);
         obj->n = 11;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &spec);
     {
-        auto obj = use_object<counted>(&t.ctx.kernel);
+        auto obj = use_object<counted>(alia_ctx_kernel(&t.ctx));
         CHECK_FALSE(obj.is_fresh());
         CHECK_FALSE(obj.is_init());
         CHECK(obj->n == 11);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -72,23 +75,25 @@ TEST_CASE("use_memory persists across traversals")
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &spec);
     {
-        auto mem = use_memory<int>(&t.ctx.kernel);
+        auto mem = use_memory<int>(alia_ctx_kernel(&t.ctx));
         CHECK(mem.is_fresh());
         *mem = 7;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &spec);
     {
-        auto mem = use_memory<int>(&t.ctx.kernel);
+        auto mem = use_memory<int>(alia_ctx_kernel(&t.ctx));
         CHECK_FALSE(mem.is_fresh());
         CHECK(*mem == 7);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -108,32 +113,34 @@ TEST_CASE("use_object clear_cache is a no-op without the member")
     alia_substrate_anchor* child = nullptr;
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    child = use_anchor(&t.ctx.kernel);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    child = use_anchor(alia_ctx_kernel(&t.ctx));
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto obj = use_object<persist_only>(&t.ctx.kernel);
+        auto obj = use_object<persist_only>(alia_ctx_kernel(&t.ctx));
         CHECK(obj.is_init());
         obj->n = 42;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    CHECK(use_anchor(&t.ctx.kernel) == child);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    CHECK(use_anchor(alia_ctx_kernel(&t.ctx)) == child);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto obj = use_object<persist_only>(&t.ctx.kernel);
+        auto obj = use_object<persist_only>(alia_ctx_kernel(&t.ctx));
         CHECK_FALSE(obj.is_fresh());
         CHECK(obj->n == 42);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -160,33 +167,35 @@ TEST_CASE("use_object clear_cache runs the member")
     alia_substrate_anchor* child = nullptr;
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    child = use_anchor(&t.ctx.kernel);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    child = use_anchor(alia_ctx_kernel(&t.ctx));
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto obj = use_object<with_cache>(&t.ctx.kernel);
+        auto obj = use_object<with_cache>(alia_ctx_kernel(&t.ctx));
         obj->persist = 7;
         obj->cached = 99;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    CHECK(use_anchor(&t.ctx.kernel) == child);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    CHECK(use_anchor(alia_ctx_kernel(&t.ctx)) == child);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto obj = use_object<with_cache>(&t.ctx.kernel);
+        auto obj = use_object<with_cache>(alia_ctx_kernel(&t.ctx));
         CHECK_FALSE(obj.is_fresh());
         CHECK(obj->persist == 7);
         CHECK(obj->cached == 0);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -206,48 +215,51 @@ TEST_CASE("use_cache recreates after deactivate")
     alia_substrate_anchor* child = nullptr;
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    child = use_anchor(&t.ctx.kernel);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    child = use_anchor(alia_ctx_kernel(&t.ctx));
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto cache = use_cache<cached_value>(&t.ctx.kernel);
+        auto cache = use_cache<cached_value>(alia_ctx_kernel(&t.ctx));
         CHECK(cache.is_fresh());
         CHECK(cache.is_init());
         cache->n = 5;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     alia_substrate_deactivate_anchor(
         alia_test_substrate_fixture_system(t.fixture), child);
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    CHECK(use_anchor(&t.ctx.kernel) == child);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    CHECK(use_anchor(alia_ctx_kernel(&t.ctx)) == child);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto cache = use_cache<cached_value>(&t.ctx.kernel);
+        auto cache = use_cache<cached_value>(alia_ctx_kernel(&t.ctx));
         CHECK(cache.is_fresh());
         CHECK_FALSE(cache.is_init());
         CHECK(cache->n == 0);
         cache->n = 8;
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &root_spec);
-    CHECK(use_anchor(&t.ctx.kernel) == child);
-    alia_substrate_begin_block(&t.ctx.kernel, child, &child_spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &root_spec);
+    CHECK(use_anchor(alia_ctx_kernel(&t.ctx)) == child);
+    alia_substrate_begin_block(alia_ctx_kernel(&t.ctx), child, &child_spec);
     {
-        auto cache = use_cache<cached_value>(&t.ctx.kernel);
+        auto cache = use_cache<cached_value>(alia_ctx_kernel(&t.ctx));
         CHECK_FALSE(cache.is_fresh());
         CHECK(cache->n == 8);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -279,8 +291,8 @@ TEST_CASE("alia_if/alia_else preserves persist and clears cache")
         traverse_until_complete(t, root_spec, [&](alia_ui_context* ctx) {
             alia_if (take_then)
             {
-                auto visits = use_memory<int>(&ctx->kernel);
-                auto obj = use_object<with_cache>(&ctx->kernel);
+                auto visits = use_memory<int>(alia_ctx_kernel(ctx));
+                auto obj = use_object<with_cache>(alia_ctx_kernel(ctx));
                 if (obj.is_init())
                 {
                     *visits = 1;
@@ -302,8 +314,8 @@ TEST_CASE("alia_if/alia_else preserves persist and clears cache")
             }
             alia_else
             {
-                auto visits = use_memory<int>(&ctx->kernel);
-                auto obj = use_object<with_cache>(&ctx->kernel);
+                auto visits = use_memory<int>(alia_ctx_kernel(ctx));
+                auto obj = use_object<with_cache>(alia_ctx_kernel(ctx));
                 if (obj.is_init())
                 {
                     *visits = 1;
@@ -364,7 +376,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else share one chain")
         traverse_until_complete(t, root_spec, [&](alia_ui_context* ctx) {
             alia_if (which == 0)
             {
-                auto n = use_memory<int>(&ctx->kernel);
+                auto n = use_memory<int>(alia_ctx_kernel(ctx));
                 if (n.is_init())
                     *n = 100;
                 if (n.is_init() || !n.is_fresh())
@@ -376,7 +388,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else share one chain")
             }
             alia_else_if (which == 1)
             {
-                auto n = use_memory<int>(&ctx->kernel);
+                auto n = use_memory<int>(alia_ctx_kernel(ctx));
                 if (n.is_init())
                     *n = 200;
                 if (n.is_init() || !n.is_fresh())
@@ -388,7 +400,7 @@ TEST_CASE("alia_if/alia_else_if/alia_else share one chain")
             }
             alia_else
             {
-                auto n = use_memory<int>(&ctx->kernel);
+                auto n = use_memory<int>(alia_ctx_kernel(ctx));
                 if (n.is_init())
                     *n = 300;
                 if (n.is_init() || !n.is_fresh())

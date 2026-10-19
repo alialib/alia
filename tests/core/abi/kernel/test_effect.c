@@ -1,6 +1,6 @@
 #include <alia/abi/base/arena.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/effect.h>
+#include <alia/abi/ui/context.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -41,8 +41,6 @@ typedef struct effect_rig
     void* storage;
     void* buffer;
     alia_arena* arena;
-    alia_bump_allocator alloc;
-    alia_effect_log effects;
     alia_ui_context ctx;
 } effect_rig;
 
@@ -58,9 +56,7 @@ effect_rig_init(effect_rig* rig)
     rig->arena = alia_arena_init(
         rig->storage, rig->buffer, 4096, alia_arena_no_controller());
     TEST_ASSERT(rig->arena != NULL);
-    alia_bump_allocator_init(&rig->alloc, rig->arena);
-    rig->ctx.kernel.scratch = &rig->alloc;
-    rig->ctx.kernel.effects = &rig->effects;
+    alia_bump_allocator_init(&rig->ctx.kernel.scratch, rig->arena);
 }
 
 static void
@@ -97,16 +93,19 @@ test_write_applies_after_run(void)
 
     int dst = 0;
     int const src = 42;
-    alia_post_write(&rig.ctx.kernel, &dst, &src, sizeof(src), "int");
+    alia_post_write(alia_ctx_kernel(&rig.ctx), &dst, &src, sizeof(src), "int");
     TEST_CHECK(dst == 0);
-    TEST_CHECK(rig.ctx.kernel.effects->head != NULL);
-    TEST_CHECK(rig.ctx.kernel.effects->head->label != NULL);
-    TEST_CHECK(strcmp(rig.ctx.kernel.effects->head->label, "int") == 0);
+    TEST_CHECK(alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->head != NULL);
+    TEST_CHECK(
+        alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->head->label != NULL);
+    TEST_CHECK(
+        strcmp(alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->head->label, "int")
+        == 0);
 
-    alia_run_effects(&rig.ctx.kernel);
+    alia_run_effects(alia_ctx_kernel(&rig.ctx));
     TEST_CHECK(dst == 42);
-    TEST_CHECK(rig.ctx.kernel.effects->head == NULL);
-    TEST_CHECK(rig.ctx.kernel.effects->tail == NULL);
+    TEST_CHECK(alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->head == NULL);
+    TEST_CHECK(alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->tail == NULL);
 
     effect_rig_destroy(&rig);
 }
@@ -119,24 +118,27 @@ test_fifo_order(void)
 
     int value = 10;
     int const first = 1;
-    alia_post_write(&rig.ctx.kernel, &value, &first, sizeof(first), "first");
+    alia_post_write(
+        alia_ctx_kernel(&rig.ctx), &value, &first, sizeof(first), "first");
 
+    alia_bump_allocator* scratch = &rig.ctx.kernel.scratch;
     increment_effect* inc = (increment_effect*) alia_arena_ptr(
-        &rig.alloc,
+        scratch,
         alia_arena_alloc(
-            &rig.alloc, ALIA_MIN_ALIGNED_SIZE(sizeof(increment_effect))));
+            scratch, ALIA_MIN_ALIGNED_SIZE(sizeof(increment_effect))));
     inc->base.run = increment_effect_run;
     inc->base.label = "inc";
     inc->counter = &value;
-    alia_post_effect(&rig.ctx.kernel, &inc->base);
+    alia_post_effect(alia_ctx_kernel(&rig.ctx), &inc->base);
 
     int const third = 99;
-    alia_post_write(&rig.ctx.kernel, &value, &third, sizeof(third), "third");
+    alia_post_write(
+        alia_ctx_kernel(&rig.ctx), &value, &third, sizeof(third), "third");
 
     TEST_CHECK(value == 10);
     g_custom_runs = 0;
     g_custom_seen = 0;
-    alia_run_effects(&rig.ctx.kernel);
+    alia_run_effects(alia_ctx_kernel(&rig.ctx));
     TEST_CHECK(g_custom_runs == 1);
     TEST_CHECK(g_custom_seen == 1);
     TEST_CHECK(value == 99);
@@ -149,8 +151,8 @@ test_empty_run_is_noop(void)
 {
     effect_rig rig;
     effect_rig_init(&rig);
-    alia_run_effects(&rig.ctx.kernel);
-    TEST_CHECK(rig.ctx.kernel.effects->head == NULL);
+    alia_run_effects(alia_ctx_kernel(&rig.ctx));
+    TEST_CHECK(alia_ctx_effects(alia_ctx_kernel(&rig.ctx))->head == NULL);
     effect_rig_destroy(&rig);
 }
 

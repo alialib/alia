@@ -22,7 +22,8 @@ begin_refresh_block(substrate_fixture& t, alia_struct_spec& spec)
 {
     alia_test_substrate_fixture_prepare_refresh_event(t.fixture, &t.ctx);
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
+    alia_substrate_begin_block(
+        alia_ctx_kernel(&t.ctx), t.root_anchor(), &spec);
 }
 
 struct counting_int_view
@@ -114,32 +115,32 @@ TEST_CASE("apply caches across refreshes")
 
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, value(2), value(3));
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, value(2), value(3));
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 5);
         CHECK(calls == 1);
         CHECK(read_signal(s) == 5);
         CHECK(calls == 1);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, value(2), value(3));
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, value(2), value(3));
         CHECK(read_signal(s) == 5);
         CHECK(calls == 1);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, value(4), value(3));
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, value(4), value(3));
         CHECK(read_signal(s) == 7);
         CHECK(calls == 2);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -156,11 +157,11 @@ TEST_CASE("apply with empty argument")
 
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, empty<int>());
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, empty<int>());
         CHECK_FALSE(signal_has_value(s));
         CHECK(calls == 0);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -177,23 +178,23 @@ TEST_CASE("apply recomputes after destructive move")
 
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, value(10));
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, value(10));
         static_assert(signal_with<decltype(s), view_caps<signal_movable>>);
         CHECK(read_signal(s) == 11);
         CHECK(calls == 1);
         CHECK(std::move(s.durable_ref()) == 11);
         CHECK(calls == 1);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto s = apply(&t.ctx.kernel, f, value(10));
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, value(10));
         CHECK(read_signal(s) == 11);
         CHECK(calls == 2);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -209,7 +210,7 @@ TEST_CASE("apply feeds by-value args via read_into and refs via read")
     begin_refresh_block(t, spec);
     {
         auto by_value = apply(
-            &t.ctx.kernel,
+            alia_ctx_kernel(&t.ctx),
             [](int x) { return x + 1; },
             counting_int_view(&reads, &read_intos, 3));
         CHECK(read_signal(by_value) == 4);
@@ -219,14 +220,14 @@ TEST_CASE("apply feeds by-value args via read_into and refs via read")
         reads = 0;
         read_intos = 0;
         auto by_ref = apply(
-            &t.ctx.kernel,
+            alia_ctx_kernel(&t.ctx),
             [](int const& x) { return x + 1; },
             counting_int_view(&reads, &read_intos, 5));
         CHECK(read_signal(by_ref) == 6);
         CHECK(reads == 1);
         CHECK(read_intos == 0);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -239,10 +240,10 @@ TEST_CASE("lift")
 
     begin_refresh_block(t, spec);
     {
-        auto s = add(&t.ctx.kernel, value(1), value(2));
+        auto s = add(alia_ctx_kernel(&t.ctx), value(1), value(2));
         CHECK(read_signal(s) == 3);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -259,25 +260,25 @@ TEST_CASE("apply with use_state input")
 
     begin_refresh_block(t, spec);
     {
-        auto n = use_state(&t.ctx.kernel, 3);
-        auto s = apply(&t.ctx.kernel, f, n);
+        auto n = use_state(alia_ctx_kernel(&t.ctx), 3);
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, n);
         CHECK(read_signal(s) == 30);
         CHECK(calls == 1);
-        write_signal(&t.ctx.kernel, n, 4);
+        write_signal(alia_ctx_kernel(&t.ctx), n, 4);
         t.run_effects();
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
-        auto n = use_state(&t.ctx.kernel, 3);
+        auto n = use_state(alia_ctx_kernel(&t.ctx), 3);
         CHECK(read_signal(n) == 4);
-        auto s = apply(&t.ctx.kernel, f, n);
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, n);
         CHECK(read_signal(s) == 40);
         CHECK(calls == 2);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }
@@ -297,22 +298,22 @@ TEST_CASE("apply with id_view value ID")
     {
         auto input
             = override_id(value(1), [&] { return make_id_by_reference(key); });
-        auto s = apply(&t.ctx.kernel, f, input);
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 1);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.advance_refresh();
     begin_refresh_block(t, spec);
     {
         auto input
             = override_id(value(1), [&] { return make_id_by_reference(key); });
-        auto s = apply(&t.ctx.kernel, f, input);
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 1);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     key = "beta";
     t.advance_refresh();
@@ -320,11 +321,11 @@ TEST_CASE("apply with id_view value ID")
     {
         auto input
             = override_id(value(1), [&] { return make_id_by_reference(key); });
-        auto s = apply(&t.ctx.kernel, f, input);
+        auto s = apply(alia_ctx_kernel(&t.ctx), f, input);
         CHECK(read_signal(s) == 2);
         CHECK(calls == 2);
     }
-    (void) alia_substrate_end_block(&t.ctx.kernel);
+    (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
     t.cleanup_root_block();
 }

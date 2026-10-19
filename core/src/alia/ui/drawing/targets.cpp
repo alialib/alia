@@ -78,7 +78,7 @@ alia_draw_target_use(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
     alia_substrate_usage_result const result = alia_substrate_use_object(
-        &ctx->kernel,
+        alia_ctx_kernel(ctx),
         sizeof(draw_target_slot),
         alignof(draw_target_slot),
         draw_target_slot_cleanup);
@@ -89,8 +89,8 @@ alia_draw_target_use(alia_ui_context* ctx)
     // Recreate after a fresh allocation or after CLEAR_CACHE emptied the slot.
     if (slot->ui == nullptr || slot->id == ALIA_DRAW_TARGET_PRIMARY)
     {
-        slot->ui = ctx->system;
-        slot->id = alia_draw_target_create(ctx->system);
+        slot->ui = alia_ctx_system(ctx);
+        slot->id = alia_draw_target_create(alia_ctx_system(ctx));
     }
     return slot->id;
 }
@@ -100,44 +100,45 @@ alia_draw_target_begin(
     alia_ui_context* ctx, alia_draw_target_id target, alia_vec2f size)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->geometry);
-    ALIA_ASSERT(ctx->draw);
+    ALIA_ASSERT(alia_ctx_geometry(ctx));
+    ALIA_ASSERT(alia_ctx_draw(ctx));
     ALIA_ASSERT(target != ALIA_DRAW_TARGET_PRIMARY);
     ALIA_ASSERT(size.x > 0.f && size.y > 0.f);
 
     alia_vec2i const pixel_size = {int(size.x + 0.5f), int(size.y + 0.5f)};
-    alia_draw_target_ensure_size(ctx->system, target, pixel_size);
+    alia_draw_target_ensure_size(alia_ctx_system(ctx), target, pixel_size);
 
-    auto& saved = alia::stack_push<draw_target_scope>(&ctx->kernel);
+    auto& saved = alia::stack_push<draw_target_scope>(alia_ctx_kernel(ctx));
     saved = {
-        .target_id = ctx->draw->target_id,
-        .offset = ctx->geometry->offset,
-        .clip = ctx->geometry->clip,
+        .target_id = alia_ctx_draw(ctx)->target_id,
+        .offset = alia_ctx_geometry(ctx)->offset,
+        .clip = alia_ctx_geometry(ctx)->clip,
     };
 
-    alia_box* clip_pointer = alia::arena_new<alia_box>(*ctx->kernel.scratch);
+    alia_box* clip_pointer
+        = alia::arena_new<alia_box>(*alia_ctx_scratch(alia_ctx_kernel(ctx)));
     *clip_pointer = alia_box{{0.f, 0.f}, size};
 
-    ctx->draw->target_id = target;
-    ctx->geometry->offset = {0.f, 0.f};
-    ctx->geometry->clip = {
+    alia_ctx_draw(ctx)->target_id = target;
+    alia_ctx_geometry(ctx)->offset = {0.f, 0.f};
+    alia_ctx_geometry(ctx)->clip = {
         .box = *clip_pointer,
         .pointer = clip_pointer,
-        .id = ctx->geometry->next_clip_id,
+        .id = alia_ctx_geometry(ctx)->next_clip_id,
     };
-    ++ctx->geometry->next_clip_id;
+    ++alia_ctx_geometry(ctx)->next_clip_id;
 }
 
 void
 alia_draw_target_end(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->geometry);
-    ALIA_ASSERT(ctx->draw);
-    auto& saved = alia::stack_pop<draw_target_scope>(&ctx->kernel);
-    ctx->draw->target_id = saved.target_id;
-    ctx->geometry->offset = saved.offset;
-    ctx->geometry->clip = saved.clip;
+    ALIA_ASSERT(alia_ctx_geometry(ctx));
+    ALIA_ASSERT(alia_ctx_draw(ctx));
+    auto& saved = alia::stack_pop<draw_target_scope>(alia_ctx_kernel(ctx));
+    alia_ctx_draw(ctx)->target_id = saved.target_id;
+    alia_ctx_geometry(ctx)->offset = saved.offset;
+    alia_ctx_geometry(ctx)->clip = saved.clip;
 }
 
 void
@@ -149,9 +150,9 @@ alia_draw_target(
     float opacity)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->draw);
+    ALIA_ASSERT(alia_ctx_draw(ctx));
     ALIA_ASSERT(source != ALIA_DRAW_TARGET_PRIMARY);
-    ALIA_ASSERT(source != ctx->draw->target_id);
+    ALIA_ASSERT(source != alia_ctx_draw(ctx)->target_id);
 
     auto* command = (alia_draw_target_command*) alia_draw_command_alloc(
         ctx,
@@ -159,7 +160,7 @@ alia_draw_target(
         ALIA_DRAW_TARGET_MATERIAL_ID,
         ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_target_command)));
     command->source = source;
-    command->dest = alia_box_translate(dest, ctx->geometry->offset);
+    command->dest = alia_box_translate(dest, alia_ctx_geometry(ctx)->offset);
     command->opacity = opacity;
 }
 

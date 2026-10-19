@@ -2,8 +2,7 @@
 
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/ui/events.h>
-#include <alia/abi/ui/geometry.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/context.h>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/internal_api.h>
@@ -16,7 +15,8 @@ extern "C" {
 alia_vec2f
 alia_input_pointer_position(alia_ui_context* ctx)
 {
-    return ctx->input->mouse_position - ctx->geometry->offset;
+    return alia_ctx_input(ctx)->mouse_position
+         - alia_ctx_geometry(ctx)->offset;
 }
 
 bool
@@ -25,7 +25,8 @@ alia_input_pointer_in_box(alia_ui_context* ctx, alia_box const* box)
     return alia_input_pointer_in_surface(ctx)
         && alia_box_contains(*box, alia_input_pointer_position(ctx))
         && alia_box_contains(
-               alia_geometry_get_clip_box(ctx), ctx->input->mouse_position);
+               alia_geometry_get_clip_box(ctx),
+               alia_ctx_input(ctx)->mouse_position);
 }
 
 static bool
@@ -43,7 +44,7 @@ alia_element_detect_mouse_press(
 {
     if (!alia_element_is_hovered(ctx, id) || !detect_mouse_press(ctx, button))
         return false;
-    set_element_with_capture(*ctx->system, id);
+    set_element_with_capture(*alia_ctx_system(ctx), id);
     return true;
 }
 
@@ -143,7 +144,7 @@ alia_element_is_drag_in_progress(
     alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return alia_input_button_is_down(ctx, button)
-        && alia_element_has_capture(ctx, id) && ctx->input->dragging;
+        && alia_element_has_capture(ctx, id) && alia_ctx_input(ctx)->dragging;
 }
 
 bool
@@ -158,7 +159,8 @@ bool
 alia_element_detect_stationary_click(
     alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
-    return alia_element_detect_click(ctx, id, button) && !ctx->input->dragging;
+    return alia_element_detect_click(ctx, id, button)
+        && !alia_ctx_input(ctx)->dragging;
 }
 
 bool

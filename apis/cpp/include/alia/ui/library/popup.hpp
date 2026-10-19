@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/detached.h>
 #include <alia/abi/ui/layout/popup.h>
 #include <alia/abi/ui/system/api.h>
@@ -23,7 +23,7 @@ template<class Content>
 void
 popup(ui_context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
 {
-    auto data = use_memory<alia_layout_detached>(&ctx.kernel);
+    auto data = use_memory<alia_layout_detached>(alia_ctx_kernel(&ctx));
     if (data.is_fresh())
         *data = alia_layout_detached{};
 
@@ -35,15 +35,14 @@ popup(ui_context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
         return;
     }
 
-    ALIA_ASSERT(ctx.system);
-    ALIA_ASSERT(ctx.geometry);
-    ALIA_ASSERT(ctx.kernel.scratch);
+    ALIA_ASSERT(alia_ctx_system(&ctx));
+    ALIA_ASSERT(alia_ctx_scratch(alia_ctx_kernel(&ctx))->arena);
 
-    alia_vec2f const offset = ctx.geometry->offset;
+    alia_vec2f const offset = alia_ctx_geometry(&ctx)->offset;
     alia_box const anchor_surface = alia_box_translate(anchor, offset);
     alia_box const bounds = alia_box_make(
         alia_vec2f_make(0.f, 0.f),
-        alia_vec2i_to_vec2f(alia_ui_surface_get_size(ctx.system)));
+        alia_vec2i_to_vec2f(alia_ui_surface_get_size(alia_ctx_system(&ctx))));
     alia_vec2f const preferred = alia_layout_detached_measure(&ctx, data.ptr);
     alia_box const placed
         = alia_popup_place(anchor_surface, preferred, min_size, bounds);

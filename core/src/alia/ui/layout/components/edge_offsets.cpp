@@ -1,5 +1,5 @@
 #include <alia/abi/base/geometry/box.h>
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/flow.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
@@ -310,15 +310,17 @@ alia_layout_edge_offsets_begin(
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_edge_offsets_scope>(&ctx->kernel);
+        auto& scope
+            = stack_push<alia_layout_edge_offsets_scope>(alia_ctx_kernel(ctx));
         edge_offsets_layout_node* node = arena_alloc<edge_offsets_layout_node>(
-            ctx->layout->emission.arena);
+            alia_ctx_layout(ctx)->emission.arena);
         *node = edge_offsets_layout_node{
             .container
             = {.base = {.vtable = &edge_offsets_vtable, .next_sibling = 0},
                .flags = flags,
                .first_child = 0},
-            .offsets = alia_edge_offsets_scale(offsets, ctx->geometry->scale)};
+            .offsets
+            = alia_edge_offsets_scale(offsets, alia_ctx_geometry(ctx)->scale)};
         scope.node = node;
         alia_layout_container_activate(ctx, &node->container);
     }
@@ -329,7 +331,8 @@ alia_layout_edge_offsets_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_edge_offsets_scope>(&ctx->kernel);
+        auto& scope
+            = stack_pop<alia_layout_edge_offsets_scope>(alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

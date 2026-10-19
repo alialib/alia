@@ -17,7 +17,7 @@ node_expander(ui_context& ctx, Signal const& expanded, Layout layout = {})
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         auto c = to_inline_c_signal<alia_bool_signal>(expanded);
         id = alia_node_expander(&ctx, &c, raw_code(flags));
-        write_back_c_signal(&ctx.kernel, expanded, c);
+        write_back_c_signal(alia_ctx_kernel(&ctx), expanded, c);
     });
     return id;
 }

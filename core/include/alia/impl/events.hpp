@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/abi/context.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/events.h>
 #include <alia/kernel/flow/traversal.h>
 
@@ -33,7 +33,7 @@ template<class Context>
 component_container_ptr const
 get_active_component_container(Context& ctx)
 {
-    return *ctx.kernel.events->active_container;
+    return *alia_ctx_events(alia_ctx_kernel(&ctx))->active_container;
 }
 
 using component_identity = std::weak_ptr<component_container>;
@@ -41,25 +41,25 @@ using component_identity = std::weak_ptr<component_container>;
 inline alia_event_category
 get_event_category(ui_context& ctx)
 {
-    return ctx.kernel.events->event->category;
+    return alia_ctx_events(alia_ctx_kernel(&ctx))->event->category;
 }
 
 inline alia_event_type
 get_event_type(ui_context& ctx)
 {
-    return ctx.kernel.events->event->type;
+    return alia_ctx_events(alia_ctx_kernel(&ctx))->event->type;
 }
 
 inline alia_event_type
 get_event_type(alia_kernel_context& ctx)
 {
-    return ctx.events->event->type;
+    return alia_ctx_events(&ctx)->event->type;
 }
 
 inline alia_element_id
 get_event_target(ui_context& ctx)
 {
-    return ctx.kernel.events->event->target;
+    return alia_ctx_events(alia_ctx_kernel(&ctx))->event->target;
 }
 
 inline bool
@@ -80,7 +80,8 @@ template<class Payload>
 inline Payload&
 unsafe_get_event_payload(ui_context& ctx)
 {
-    return *reinterpret_cast<Payload*>(ctx.kernel.events->event->payload);
+    return *reinterpret_cast<Payload*>(
+        alia_ctx_events(alia_ctx_kernel(&ctx))->event->payload);
 }
 
 #define X(code, CATEGORY, flags, NAME, name, data_type)                       \
@@ -88,12 +89,13 @@ unsafe_get_event_payload(ui_context& ctx)
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
         return *reinterpret_cast<data_type*>(                                 \
-            ctx.kernel.events->event->payload);                               \
+            alia_ctx_events(alia_ctx_kernel(&ctx))->event->payload);          \
     }                                                                         \
     inline data_type& as_##name##_event(alia_kernel_context& ctx)             \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
-        return *reinterpret_cast<data_type*>(ctx.events->event->payload);     \
+        return *reinterpret_cast<data_type*>(                                 \
+            alia_ctx_events(&ctx)->event->payload);                           \
     }
 
 ALIA_EVENTS(X)

@@ -1,6 +1,6 @@
 #include <alia/ui/layout/components/column.h>
 
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/impl/ui/layout.hpp>
 

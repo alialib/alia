@@ -1,4 +1,4 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/context.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
@@ -93,8 +93,10 @@ alia_layout_min_size_begin(alia_ui_context* ctx, alia_vec2f min_size)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_min_size_scope>(&ctx->kernel);
-        auto* node = arena_alloc<min_size_node>(ctx->layout->emission.arena);
+        auto& scope
+            = stack_push<alia_layout_min_size_scope>(alia_ctx_kernel(ctx));
+        auto* node
+            = arena_alloc<min_size_node>(alia_ctx_layout(ctx)->emission.arena);
         *node = min_size_node{
             .container
             = {.base = {.vtable = &min_size_vtable, .next_sibling = 0},
@@ -112,7 +114,8 @@ alia_layout_min_size_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_min_size_scope>(&ctx->kernel);
+        auto& scope
+            = stack_pop<alia_layout_min_size_scope>(alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

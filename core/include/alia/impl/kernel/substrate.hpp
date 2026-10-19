@@ -82,7 +82,7 @@ struct if_block
         if (!condition)
         {
             alia_substrate_deactivate_anchor(
-                alia_ctx_substrate_system(&ctx->kernel), anchor);
+                alia_ctx_substrate_system(alia_ctx_kernel(ctx)), anchor);
         }
     }
 
@@ -208,10 +208,10 @@ void
 key_scope(ui_context* ctx, alia_substrate_key_table* table, Content&& content)
 {
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(&ctx->kernel, table);
+        = alia_substrate_begin_key_scope(alia_ctx_kernel(ctx), table);
     std::forward<Content>(content)(scope);
-    alia_substrate_end_key_scope(&ctx->kernel, scope);
-    alia_substrate_sweep_table_keys(&ctx->kernel, table);
+    alia_substrate_end_key_scope(alia_ctx_kernel(ctx), scope);
+    alia_substrate_sweep_table_keys(alia_ctx_kernel(ctx), table);
 }
 
 // Run `content` inside a keyed substrate block for `key`.
@@ -226,9 +226,9 @@ keyed_block(
     Content&& content)
 {
     alia_struct_spec* spec = get_memoized_block_spec<Content>();
-    alia_substrate_begin_keyed_block(&ctx->kernel, scope, key, spec);
+    alia_substrate_begin_keyed_block(alia_ctx_kernel(ctx), scope, key, spec);
     std::forward<Content>(content)();
-    *spec = alia_substrate_end_keyed_block(&ctx->kernel);
+    *spec = alia_substrate_end_keyed_block(alia_ctx_kernel(ctx));
 }
 
 } // namespace alia

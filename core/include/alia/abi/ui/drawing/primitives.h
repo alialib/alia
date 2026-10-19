@@ -2,7 +2,7 @@
 #define ALIA_ABI_UI_DRAWING_PRIMITIVES_H
 
 #include <alia/abi/base/color.h>
-#include <alia/abi/context.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
 
@@ -94,7 +94,7 @@ alia_draw_box(
                 ALIA_PRIMITIVE_MATERIAL_ID,
                 ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command)));
 
-        command->box = alia_box_translate(box, ctx->geometry->offset);
+        command->box = alia_box_translate(box, alia_ctx_geometry(ctx)->offset);
         command->primitive_type = ALIA_PRIMITIVE_BOX;
         command->color = paint.fill_color;
         command->payload.box.corner_radius = paint.corner_radius;
@@ -136,7 +136,7 @@ alia_draw_equilateral_triangle(
             ALIA_PRIMITIVE_MATERIAL_ID,
             ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command)));
 
-    command->box = alia_box_translate(box, ctx->geometry->offset);
+    command->box = alia_box_translate(box, alia_ctx_geometry(ctx)->offset);
     command->primitive_type = ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE;
     command->color = color;
     command->payload.triangle.rotation_degrees = rotation_degrees;
@@ -177,7 +177,7 @@ alia_draw_squircle(
             ALIA_PRIMITIVE_MATERIAL_ID,
             ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command)));
 
-    command->box = alia_box_translate(box, ctx->geometry->offset);
+    command->box = alia_box_translate(box, alia_ctx_geometry(ctx)->offset);
     command->primitive_type = ALIA_PRIMITIVE_SQUIRCLE;
     command->color = color;
     command->payload.squircle.radius = radius;

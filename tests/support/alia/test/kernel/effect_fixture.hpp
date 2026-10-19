@@ -47,10 +47,6 @@ struct effect_fixture
     void* buffer = nullptr;
     // scratch arena
     alia_arena* arena = nullptr;
-    // bump allocator over the scratch arena
-    alia_bump_allocator scratch{};
-    // pass-local effect log
-    alia_effect_log effects{};
     // kernel context with scratch and effects wired
     kernel_context ctx{};
 
@@ -64,9 +60,7 @@ struct effect_fixture
         arena = alia_arena_init(
             storage, buffer, 64u * 1024u, alia_arena_no_controller());
         REQUIRE(arena);
-        alia_bump_allocator_init(&scratch, arena);
-        ctx.scratch = &scratch;
-        ctx.effects = &effects;
+        alia_bump_allocator_init(&ctx.scratch, arena);
     }
 
     ~effect_fixture()
@@ -92,9 +86,8 @@ struct effect_fixture
     run()
     {
         alia_run_effects(&ctx);
-        alia_arena_reset(&scratch);
-        effects = {};
-        ctx.effects = &effects;
+        alia_arena_reset(&ctx.scratch);
+        ctx.effects = {};
     }
 };
 

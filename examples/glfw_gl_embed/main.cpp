@@ -76,12 +76,14 @@ teardown_stock_text()
 void
 embed_controller(void* /*user*/, alia_ui_context* ctx)
 {
-    if (ctx->kernel.events && ctx->kernel.events->event
-        && ctx->kernel.events->event->type == ALIA_EVENT_DRAW)
+    if (alia_ctx_events(alia_ctx_kernel(ctx))
+        && alia_ctx_events(alia_ctx_kernel(ctx))->event
+        && alia_ctx_events(alia_ctx_kernel(ctx))->event->type
+               == ALIA_EVENT_DRAW)
     {
-        alia_vec2i const size = alia_ui_surface_get_size(ctx->system);
-        alia_srgba8 const bg
-            = alia_srgba8_from_srgb8(ctx->palette->foundation.background.base);
+        alia_vec2i const size = alia_ui_surface_get_size(alia_ctx_system(ctx));
+        alia_srgba8 const bg = alia_srgba8_from_srgb8(
+            alia_ctx_palette(ctx)->foundation.background.base);
         alia_draw_box(
             ctx,
             0,
@@ -94,8 +96,8 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
         if (g_text_engine)
         {
             char const* const label = "Hello GLFW+GL";
-            alia_srgba8 const text_color
-                = alia_srgba8_from_srgb8(ctx->palette->foundation.text.base);
+            alia_srgba8 const text_color = alia_srgba8_from_srgb8(
+                alia_ctx_palette(ctx)->foundation.text.base);
             alia_msdf_draw_text(
                 g_text_engine,
                 ctx,
@@ -132,7 +134,11 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
         {
             float const value = static_cast<float>(signal.value);
             alia_post_write(
-                &ctx->kernel, &g_value, &value, sizeof(g_value), "g_value");
+                alia_ctx_kernel(ctx),
+                &g_value,
+                &value,
+                sizeof(g_value),
+                "g_value");
         }
     }
     alia_layout_column_end(ctx);

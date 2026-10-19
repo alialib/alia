@@ -2,8 +2,8 @@
 #define ALIA_ABI_UI_MSDF_H
 
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/context.h>
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/text.h>

@@ -1,4 +1,4 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities/placement.h>
 #include <alia/context.h>
@@ -155,8 +155,10 @@ alia_layout_clamped_begin(
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_clamped_scope>(&ctx->kernel);
-        auto* node = arena_alloc<clamped_node>(ctx->layout->emission.arena);
+        auto& scope
+            = stack_push<alia_layout_clamped_scope>(alia_ctx_kernel(ctx));
+        auto* node
+            = arena_alloc<clamped_node>(alia_ctx_layout(ctx)->emission.arena);
         *node = clamped_node{
             .container
             = {.base = {.vtable = &clamped_vtable, .next_sibling = 0},
@@ -175,7 +177,8 @@ alia_layout_clamped_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_clamped_scope>(&ctx->kernel);
+        auto& scope
+            = stack_pop<alia_layout_clamped_scope>(alia_ctx_kernel(ctx));
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

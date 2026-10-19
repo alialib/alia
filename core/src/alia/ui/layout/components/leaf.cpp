@@ -1,6 +1,6 @@
-#include <alia/abi/ui/geometry.h>
+#include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/styling.h>
+#include <alia/abi/ui/styling/api.h>
 
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
@@ -113,14 +113,14 @@ alia_layout_leaf_emit(
     alia_layout_content_metrics content,
     alia_layout_flags_t flags)
 {
-    auto& emission = ctx->layout->emission;
+    auto& emission = alia_ctx_layout(ctx)->emission;
     layout_leaf_node* new_node = arena_alloc<layout_leaf_node>(emission.arena);
     *emission.next_ptr = &new_node->base;
     emission.next_ptr = &new_node->base.next_sibling;
     *new_node = layout_leaf_node{
         .base = {.vtable = &leaf_vtable, .next_sibling = 0},
         .flags = flags,
-        .spacing = alia_px(ctx, alia_layout_style_active(ctx)->spacing),
+        .spacing = alia_px(ctx, alia_spacing_active(ctx)),
         .content = alia_layout_content_metrics{
             .size
             = {alia_px(ctx, content.size.x), alia_px(ctx, content.size.y)},

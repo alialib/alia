@@ -1,6 +1,9 @@
 #include <alia/ui/styling.h>
 
+#include <alia/abi/ui/styling/api.h>
+
 #include <alia/abi/ui/library.h>
+#include <alia/impl/base/stack.hpp>
 #include <alia/ui/system/object.h>
 
 #include <algorithm>
@@ -56,19 +59,61 @@ bind_slot(
     slot.bound = 1;
 }
 
-void
-generate_layout_style(
-    void* user_data, void* out, alia_style_seeds const* seeds)
+template<class T>
+struct field_scope
 {
-    (void) user_data;
-    alia_layout_style_generate(static_cast<alia_layout_style*>(out), seeds);
+    T parent;
+};
+
+template<class T>
+void
+push_style_field(alia_ui_context* ctx, T alia_style_context::* field, T value)
+{
+    auto& scope = alia::stack_push<field_scope<T>>(alia_ctx_kernel(ctx));
+    scope.parent = alia_ctx_style(ctx)->*field;
+    alia_ctx_style(ctx)->*field = value;
 }
 
+template<class T>
 void
-generate_focus_style(void* user_data, void* out, alia_style_seeds const* seeds)
+pop_style_field(alia_ui_context* ctx, T alia_style_context::* field)
 {
-    (void) user_data;
-    alia_focus_style_generate(static_cast<alia_focus_style*>(out), seeds);
+    auto& scope = alia::stack_pop<field_scope<T>>(alia_ctx_kernel(ctx));
+    alia_ctx_style(ctx)->*field = scope.parent;
+}
+
+template<class T>
+void
+push_focus_field(alia_ui_context* ctx, T alia_focus::* field, T value)
+{
+    auto& scope = alia::stack_push<field_scope<T>>(alia_ctx_kernel(ctx));
+    scope.parent = alia_ctx_style(ctx)->focus.*field;
+    alia_ctx_style(ctx)->focus.*field = value;
+}
+
+template<class T>
+void
+pop_focus_field(alia_ui_context* ctx, T alia_focus::* field)
+{
+    auto& scope = alia::stack_pop<field_scope<T>>(alia_ctx_kernel(ctx));
+    alia_ctx_style(ctx)->focus.*field = scope.parent;
+}
+
+template<class T>
+void
+push_text_field(alia_ui_context* ctx, T alia_text_style::* field, T value)
+{
+    auto& scope = alia::stack_push<field_scope<T>>(alia_ctx_kernel(ctx));
+    scope.parent = alia_ctx_style(ctx)->text.*field;
+    alia_ctx_style(ctx)->text.*field = value;
+}
+
+template<class T>
+void
+pop_text_field(alia_ui_context* ctx, T alia_text_style::* field)
+{
+    auto& scope = alia::stack_pop<field_scope<T>>(alia_ctx_kernel(ctx));
+    alia_ctx_style(ctx)->text.*field = scope.parent;
 }
 
 void
@@ -162,20 +207,6 @@ style_catalog_init(style_catalog& catalog, alia_ui_system* ui)
     for (uint32_t i = 0; i < ALIA_STYLE_SLOT_MAX; ++i)
         catalog.slots[i] = style_slot_info{};
 
-    bind_slot(
-        catalog,
-        ALIA_STYLE_LAYOUT,
-        sizeof(alia_layout_style),
-        alignof(alia_layout_style),
-        generate_layout_style,
-        nullptr);
-    bind_slot(
-        catalog,
-        ALIA_STYLE_FOCUS,
-        sizeof(alia_focus_style),
-        alignof(alia_focus_style),
-        generate_focus_style,
-        nullptr);
     bind_slot(
         catalog,
         ALIA_STYLE_TOGGLE_SWITCH,
@@ -321,26 +352,115 @@ alia_style_seeds_default(void)
 }
 
 void
-alia_layout_style_generate(
-    alia_layout_style* out, alia_style_seeds const* seeds)
+alia_style_apply_seeds(
+    alia_style_context* style, alia_style_seeds const* seeds)
 {
-    ALIA_ASSERT(out);
+    ALIA_ASSERT(style);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    out->spacing = s.spacing;
+    style->spacing = s.spacing;
+    style->focus.color = ALIA_PALETTE_COLOR(focus.outline, 0xff);
+    style->focus.show_on_pointer = false;
+    float const ring = 2.f * s.scale;
+    style->focus.ring.thickness = ring;
+    style->focus.ring.outset = ring;
 }
 
 void
-alia_focus_style_generate(alia_focus_style* out, alia_style_seeds const* seeds)
+alia_font_push(alia_ui_context* ctx, alia_resolved_font const* font)
 {
-    ALIA_ASSERT(out);
-    alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    float const scale = s.scale;
-    out->color = ALIA_PALETTE_COLOR(focus.outline, 0xff);
-    out->outset = 2.f * scale;
-    out->thickness = 2.f * scale;
-    // Use a soft radius at roundness 1 and a square corner at 0.
-    out->corner_radius = 4.f * scale * s.roundness;
-    out->show_on_pointer_focus = false;
+    ALIA_ASSERT(ctx && font);
+    push_text_field(ctx, &alia_text_style::font, font);
+}
+
+void
+alia_font_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_text_field(ctx, &alia_text_style::font);
+}
+
+void
+alia_text_color_push(alia_ui_context* ctx, alia_srgba8 color)
+{
+    ALIA_ASSERT(ctx);
+    push_text_field(ctx, &alia_text_style::color, color);
+}
+
+void
+alia_text_color_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_text_field(ctx, &alia_text_style::color);
+}
+
+void
+alia_text_style_push(alia_ui_context* ctx, alia_text_style style)
+{
+    ALIA_ASSERT(ctx && style.font);
+    push_style_field(ctx, &alia_style_context::text, style);
+}
+
+void
+alia_text_style_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_style_field(ctx, &alia_style_context::text);
+}
+
+void
+alia_spacing_push(alia_ui_context* ctx, float spacing)
+{
+    ALIA_ASSERT(ctx);
+    push_style_field(ctx, &alia_style_context::spacing, spacing);
+}
+
+void
+alia_spacing_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_style_field(ctx, &alia_style_context::spacing);
+}
+
+void
+alia_focus_color_push(alia_ui_context* ctx, alia_palette_color color)
+{
+    ALIA_ASSERT(ctx);
+    push_focus_field(ctx, &alia_focus::color, color);
+}
+
+void
+alia_focus_color_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_focus_field(ctx, &alia_focus::color);
+}
+
+void
+alia_focus_show_on_pointer_push(alia_ui_context* ctx, bool show)
+{
+    ALIA_ASSERT(ctx);
+    push_focus_field(ctx, &alia_focus::show_on_pointer, show);
+}
+
+void
+alia_focus_show_on_pointer_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_focus_field(ctx, &alia_focus::show_on_pointer);
+}
+
+void
+alia_focus_ring_push(alia_ui_context* ctx, alia_focus_ring ring)
+{
+    ALIA_ASSERT(ctx);
+    push_focus_field(ctx, &alia_focus::ring, ring);
+}
+
+void
+alia_focus_ring_pop(alia_ui_context* ctx)
+{
+    ALIA_ASSERT(ctx);
+    pop_focus_field(ctx, &alia_focus::ring);
 }
 
 alia_style_slot_id
@@ -396,12 +516,13 @@ void*
 alia_style_active(alia_ui_context* ctx, alia_style_slot_id slot)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->system);
-    ALIA_ASSERT(ctx->active_styles);
-    auto const& catalog = ctx->system->styles;
+    ALIA_ASSERT(alia_ctx_system(ctx));
+    ALIA_ASSERT(alia_ctx_style(ctx)->active_styles);
+    auto const& catalog = alia_ctx_system(ctx)->styles;
     ALIA_ASSERT(slot < catalog.slot_count);
     ALIA_ASSERT(catalog.slots[slot].bound);
-    return static_cast<char*>(ctx->active_styles) + catalog.slots[slot].offset;
+    return static_cast<char*>(alia_ctx_style(ctx)->active_styles)
+         + catalog.slots[slot].offset;
 }
 
 } // extern "C"
