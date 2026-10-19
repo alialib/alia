@@ -16,14 +16,14 @@ struct transition_bitfield : bitfield<2>
 
 void
 start_transition(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_bitref bits,
     bool current_state,
     alia_animated_transition const& transition);
 
 float
 update_transition(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_bitref bits,
     bool current_state,
     alia_animated_transition const& transition);
@@ -31,7 +31,7 @@ update_transition(
 template<class Value, class Lerp>
 Value
 transition_between(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_animated_transition const& transition,
     Lerp&& lerp,
     alia_bitref bits,

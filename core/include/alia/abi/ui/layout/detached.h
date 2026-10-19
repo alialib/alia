@@ -7,7 +7,7 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct alia_context alia_context;
+typedef struct alia_ui_context alia_ui_context;
 typedef struct alia_layout_node alia_layout_node;
 
 // persistent state for a detached layout tree - Zero-initialization is valid.
@@ -48,7 +48,7 @@ typedef struct alia_layout_detached
 // size.)
 alia_vec2f
 alia_layout_detached_measure(
-    alia_context* ctx, alia_layout_detached* detached);
+    alia_ui_context* ctx, alia_layout_detached* detached);
 
 // Assign the detached tree into the shared placement arena at (0, 0) with
 // `size`.
@@ -56,7 +56,7 @@ alia_layout_detached_measure(
 // This caches the result for the current placement generation.
 void
 alia_layout_detached_assign(
-    alia_context* ctx, alia_layout_detached* detached, alia_vec2f size);
+    alia_ui_context* ctx, alia_layout_detached* detached, alia_vec2f size);
 
 // Get the size from the last successful assign.
 // (This is zeros if never assigned.)
@@ -74,10 +74,10 @@ alia_layout_detached_size(alia_layout_detached const* detached)
 // Note that on non-refresh passes, `alia_layout_detached_assign` must have
 // already been called for the current placement generation.
 void
-alia_layout_detached_begin(alia_context* ctx, alia_layout_detached* detached);
+alia_layout_detached_begin(alia_ui_context* ctx, alia_layout_detached* detached);
 
 void
-alia_layout_detached_end(alia_context* ctx);
+alia_layout_detached_end(alia_ui_context* ctx);
 
 ALIA_EXTERN_C_END
 

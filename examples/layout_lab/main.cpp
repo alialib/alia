@@ -6,10 +6,10 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
-#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/geometry.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/abi/ui/palette.h>
@@ -62,7 +62,7 @@ char const* lorem_ipsum
 
 template<class Content>
 void
-with_spacing(context& ctx, float spacing, Content&& content)
+with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
     alia_layout_style* layout_style = alia_layout_style_active(&ctx);
     float old_spacing = layout_style->spacing;
@@ -72,7 +72,7 @@ with_spacing(context& ctx, float spacing, Content&& content)
 }
 
 void
-do_heading(context& ctx, char const* text)
+do_heading(ui_context& ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -82,7 +82,7 @@ do_heading(context& ctx, char const* text)
 }
 
 void
-do_subheading(context& ctx, char const* text)
+do_subheading(ui_context& ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -92,7 +92,7 @@ do_subheading(context& ctx, char const* text)
 }
 
 void
-do_draw_target_demo(context& ctx)
+do_draw_target_demo(ui_context& ctx)
 {
     do_subheading(ctx, "Draw Target");
 
@@ -135,7 +135,7 @@ do_draw_target_demo(context& ctx)
 }
 
 void
-do_controls(context& ctx)
+do_controls(ui_context& ctx)
 {
     do_heading(ctx, "GEOMETRY");
 
@@ -147,7 +147,7 @@ do_controls(context& ctx)
 }
 
 void
-do_content(context& ctx, layout_options layout = {})
+do_content(ui_context& ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_heading(ctx, "GAPS");
@@ -274,7 +274,7 @@ do_content(context& ctx, layout_options layout = {})
 }
 
 void
-the_demo(context& ctx)
+the_demo(ui_context& ctx)
 {
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
@@ -310,7 +310,7 @@ the_demo(context& ctx)
 }
 
 static void
-the_demo_controller(void* user_data, alia_context* ctx)
+the_demo_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
     the_demo(*ctx);

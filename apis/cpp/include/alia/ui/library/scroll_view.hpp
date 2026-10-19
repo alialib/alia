@@ -22,7 +22,7 @@ ALIA_SCROLL_VIEW_FLAGS(ALIA_DEFINE_SCROLL_VIEW_FLAG)
 template<layout_like Layout = layout_options, class Content>
 void
 scroll_view(
-    context& ctx,
+    ui_context& ctx,
     scroll_view_flag_set flags,
     Layout layout,
     Content&& content)
@@ -36,7 +36,7 @@ scroll_view(
 
 template<layout_like Layout = layout_options, class Content>
 void
-scroll_view(context& ctx, Layout layout, Content&& content)
+scroll_view(ui_context& ctx, Layout layout, Content&& content)
 {
     scroll_view(
         ctx,
@@ -47,14 +47,14 @@ scroll_view(context& ctx, Layout layout, Content&& content)
 
 template<class Content>
 void
-scroll_view(context& ctx, scroll_view_flag_set flags, Content&& content)
+scroll_view(ui_context& ctx, scroll_view_flag_set flags, Content&& content)
 {
     scroll_view(ctx, flags, default_layout, std::forward<Content>(content));
 }
 
 template<class Content>
 void
-scroll_view(context& ctx, Content&& content)
+scroll_view(ui_context& ctx, Content&& content)
 {
     scroll_view(
         ctx,

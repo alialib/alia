@@ -62,7 +62,7 @@ alia_toggle_switch_style_default(alia_ui_system* ui)
 }
 
 static inline alia_toggle_switch_style*
-alia_toggle_switch_style_active(alia_context* ctx)
+alia_toggle_switch_style_active(alia_ui_context* ctx)
 {
     return (alia_toggle_switch_style*) alia_style_active(
         ctx, ALIA_STYLE_TOGGLE_SWITCH);
@@ -71,7 +71,7 @@ alia_toggle_switch_style_active(alia_context* ctx)
 // Emit a toggle switch bound to `value`.
 alia_element_id
 alia_toggle_switch(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
@@ -106,7 +106,7 @@ alia_slider_style_default(alia_ui_system* ui)
 }
 
 static inline alia_slider_style*
-alia_slider_style_active(alia_context* ctx)
+alia_slider_style_active(alia_ui_context* ctx)
 {
     return (alia_slider_style*) alia_style_active(ctx, ALIA_STYLE_SLIDER);
 }
@@ -152,7 +152,7 @@ alia_radio_button_style_default(alia_ui_system* ui)
 }
 
 static inline alia_radio_button_style*
-alia_radio_button_style_active(alia_context* ctx)
+alia_radio_button_style_active(alia_ui_context* ctx)
 {
     return (alia_radio_button_style*) alia_style_active(
         ctx, ALIA_STYLE_RADIO_BUTTON);
@@ -220,7 +220,7 @@ alia_checkbox_style_default(alia_ui_system* ui)
 }
 
 static inline alia_checkbox_style*
-alia_checkbox_style_active(alia_context* ctx)
+alia_checkbox_style_active(alia_ui_context* ctx)
 {
     return (alia_checkbox_style*) alia_style_active(ctx, ALIA_STYLE_CHECKBOX);
 }
@@ -264,7 +264,7 @@ alia_node_expander_style_default(alia_ui_system* ui)
 }
 
 static inline alia_node_expander_style*
-alia_node_expander_style_active(alia_context* ctx)
+alia_node_expander_style_active(alia_ui_context* ctx)
 {
     return (alia_node_expander_style*) alia_style_active(
         ctx, ALIA_STYLE_NODE_EXPANDER);
@@ -303,7 +303,7 @@ alia_scrollbar_style_default(alia_ui_system* ui)
 }
 
 static inline alia_scrollbar_style*
-alia_scrollbar_style_active(alia_context* ctx)
+alia_scrollbar_style_active(alia_ui_context* ctx)
 {
     return (alia_scrollbar_style*) alia_style_active(
         ctx, ALIA_STYLE_SCROLLBAR);
@@ -357,7 +357,7 @@ alia_button_style_default(alia_ui_system* ui)
 }
 
 static inline alia_button_style*
-alia_button_style_active(alia_context* ctx)
+alia_button_style_active(alia_ui_context* ctx)
 {
     return (alia_button_style*) alia_style_active(ctx, ALIA_STYLE_BUTTON);
 }
@@ -387,7 +387,7 @@ alia_separator_style_default(alia_ui_system* ui)
 }
 
 static inline alia_separator_style*
-alia_separator_style_active(alia_context* ctx)
+alia_separator_style_active(alia_ui_context* ctx)
 {
     return (alia_separator_style*) alia_style_active(
         ctx, ALIA_STYLE_SEPARATOR);
@@ -421,16 +421,16 @@ enum
 // suppress it.
 alia_button_result_t
 alia_button_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_button_flags_t flags,
     alia_layout_flags_t layout_flags);
 void
-alia_button_end(alia_context* ctx);
+alia_button_end(alia_ui_context* ctx);
 
 // Emit a slider bound to `value`.
 alia_element_id
 alia_slider(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_double_signal* value,
     double minimum,
     double maximum,
@@ -441,21 +441,21 @@ alia_slider(
 // Emit a radio button bound to `value`.
 alia_element_id
 alia_radio_button(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
 // Emit a checkbox bound to `value`.
 alia_element_id
 alia_checkbox(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags);
 
 // Emit a node expander bound to `expanded`.
 alia_element_id
 alia_node_expander(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags);
 
@@ -465,7 +465,7 @@ alia_node_expander(
 // `ALIA_AXIS_RELATIVE_SIZE` and pass (length, breadth).
 void
 alia_separator(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t layout_flags,
     alia_vec2f content_size);
 
@@ -490,25 +490,25 @@ enum
 // both axes are scrollable.
 void
 alia_scroll_view_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t layout_flags,
     alia_scroll_view_flags_t flags);
 
 // End a scrollable view container.
 void
-alia_scroll_view_end(alia_context* ctx);
+alia_scroll_view_end(alia_ui_context* ctx);
 
 // Begin a collapsible container.
 // TODO: Decide on a more general return value for this.
 bool
 alia_collapsible_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     bool expanded,
     alia_layout_flags_t column_flags,
     float offset_factor,
     alia_animated_transition const* transition);
 void
-alia_collapsible_end(alia_context* ctx);
+alia_collapsible_end(alia_ui_context* ctx);
 
 ALIA_EXTERN_C_END
 

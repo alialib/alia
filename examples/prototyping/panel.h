@@ -3,7 +3,7 @@
 template<class Content>
 void
 concrete_panel(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_srgb8 color,
     layout_flag_set flags,
@@ -24,7 +24,7 @@ concrete_panel(
 template<class Content, class LayoutMods>
 void
 panel(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_srgb8 color,
     LayoutMods mods,

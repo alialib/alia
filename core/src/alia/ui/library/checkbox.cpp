@@ -39,7 +39,7 @@ checkbox_center(alia_box placement)
 
 static inline alia_box
 checkbox_box(
-    alia_context* ctx, alia_box placement, alia_checkbox_style const* style)
+    alia_ui_context* ctx, alia_box placement, alia_checkbox_style const* style)
 {
     alia_vec2f const center = checkbox_center(placement);
     float const side = alia_px(ctx, style->box_size);
@@ -50,7 +50,7 @@ checkbox_box(
 
 static void
 draw_checkbox_checkmark(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box box,
     alia_srgba8 color,
     alia_checkbox_style const* style)
@@ -83,7 +83,7 @@ draw_checkbox_checkmark(
 
 static void
 render_checkbox(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box placement,
     checkbox_data& data,
     bool checked,
@@ -217,12 +217,12 @@ alia_checkbox_style_generate(
 
 alia_element_id
 alia_checkbox(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(checkbox_data), alignof(checkbox_data));
+        &ctx->kernel, sizeof(checkbox_data), alignof(checkbox_data));
     checkbox_data* data = (checkbox_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -231,7 +231,7 @@ alia_checkbox(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     alia_checkbox_style const* const style = alia_checkbox_style_active(ctx);
 

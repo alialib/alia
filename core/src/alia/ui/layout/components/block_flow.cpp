@@ -366,7 +366,7 @@ struct alia_layout_block_flow_scope
 
 void
 alia_layout_block_flow_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t flags,
     float gap,
     float line_gap,
@@ -374,7 +374,8 @@ alia_layout_block_flow_begin(
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope = alia::stack_push<alia_layout_block_flow_scope>(ctx);
+        auto& scope
+            = alia::stack_push<alia_layout_block_flow_scope>(&ctx->kernel);
         auto& emission = ctx->layout->emission;
         auto* node
             = alia::arena_alloc<alia::block_flow_layout_node>(emission.arena);
@@ -392,11 +393,12 @@ alia_layout_block_flow_begin(
 }
 
 void
-alia_layout_block_flow_end(alia_context* ctx)
+alia_layout_block_flow_end(alia_ui_context* ctx)
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope = alia::stack_pop<alia_layout_block_flow_scope>(ctx);
+        auto& scope
+            = alia::stack_pop<alia_layout_block_flow_scope>(&ctx->kernel);
         alia_layout_container_deactivate(
             ctx, alia::block_flow_as_container(scope.node));
     }

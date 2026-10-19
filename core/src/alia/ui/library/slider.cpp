@@ -24,13 +24,13 @@ struct slider_data
 };
 
 static inline float
-left_pad(alia_context* ctx, alia_slider_style const* s)
+left_pad(alia_ui_context* ctx, alia_slider_style const* s)
 {
     return alia_px(ctx, s->thumb_radius);
 }
 
 static inline float
-right_pad(alia_context* ctx, alia_slider_style const* s)
+right_pad(alia_ui_context* ctx, alia_slider_style const* s)
 {
     return alia_px(ctx, s->thumb_radius);
 }
@@ -55,7 +55,7 @@ static double
 get_values_per_pixel(
     alia_box const& box,
     unsigned axis,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_slider_style const* s,
     double minimum,
     double maximum)
@@ -71,7 +71,7 @@ static alia_vec2f
 get_track_min(
     alia_box const& box,
     unsigned axis,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_slider_style const* s)
 {
     float const track_w
@@ -98,7 +98,7 @@ static alia_vec2f
 get_track_size(
     alia_box const& box,
     unsigned axis,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_slider_style const* s)
 {
     float const len
@@ -114,7 +114,7 @@ static alia_vec2f
 get_thumb_center(
     alia_box const& box,
     unsigned axis,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_slider_style const* s,
     double minimum,
     double maximum,
@@ -145,7 +145,7 @@ static alia_box
 get_thumb_region(
     alia_box const& box,
     unsigned axis,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_slider_style const* s,
     double minimum,
     double maximum,
@@ -159,7 +159,7 @@ get_thumb_region(
 
 static void
 render_slider(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box box,
     unsigned axis,
     alia_slider_style const* s,
@@ -249,7 +249,7 @@ alia_slider_style_generate(
 
 alia_element_id
 alia_slider(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_double_signal* value,
     double minimum,
     double maximum,
@@ -260,13 +260,13 @@ alia_slider(
     ALIA_ASSERT(value);
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(slider_data), alignof(slider_data));
+        &ctx->kernel, sizeof(slider_data), alignof(slider_data));
     slider_data* data = reinterpret_cast<slider_data*>(result.ptr);
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
         new (data) slider_data{.reserved = 0};
     }
-    alia_element_id const base_id = alia_make_element_id(ctx, result);
+    alia_element_id const base_id = alia_make_element_id(&ctx->kernel, result);
     alia_element_id const track_id = base_id;
     alia_element_id const thumb_id = alia_offset_id(base_id, 1);
 

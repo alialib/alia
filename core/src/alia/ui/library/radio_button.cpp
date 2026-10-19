@@ -37,7 +37,7 @@ radio_button_center(alia_box placement)
 
 static void
 draw_radio_button_ring(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_vec2f center,
     float radius_px,
     float border_width_px,
@@ -61,7 +61,7 @@ draw_radio_button_ring(
 
 static void
 render_radio_button(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box placement,
     radio_button_data& data,
     bool selected,
@@ -101,7 +101,7 @@ render_radio_button(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float const smoothed_state = alia_transition_float(
-        ctx,
+        &ctx->kernel,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         selected,
@@ -178,12 +178,12 @@ alia_radio_button_style_generate(
 
 alia_element_id
 alia_radio_button(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(radio_button_data), alignof(radio_button_data));
+        &ctx->kernel, sizeof(radio_button_data), alignof(radio_button_data));
     radio_button_data* data = (radio_button_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -192,7 +192,7 @@ alia_radio_button(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     alia_radio_button_style const* const style
         = alia_radio_button_style_active(ctx);

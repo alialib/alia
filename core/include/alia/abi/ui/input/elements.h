@@ -28,12 +28,12 @@ enum
 
 alia_interaction_status_t
 alia_element_get_interaction_status(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_interaction_status_t overrides);
 
 alia_element_id
-alia_element_get_identity(alia_context* ctx);
+alia_element_get_identity(alia_ui_context* ctx);
 
 ALIA_EXTERN_C_END
 

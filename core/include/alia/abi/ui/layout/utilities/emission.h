@@ -24,7 +24,7 @@ struct alia_layout_context
 };
 
 static inline alia_bump_allocator*
-alia_layout_placement_arena(alia_context* ctx)
+alia_layout_placement_arena(alia_ui_context* ctx)
 {
     // TODO: ALIA_ASSERT(!alia_is_refresh_pass(ctx));
     return &ctx->layout->placement;
@@ -47,21 +47,21 @@ alia_layout_gap_total(float gap, uint32_t child_count)
 
 void
 alia_layout_container_activate(
-    alia_context* ctx, alia_layout_container* container);
+    alia_ui_context* ctx, alia_layout_container* container);
 
 void
 alia_layout_container_deactivate(
-    alia_context* ctx, alia_layout_container* container);
+    alia_ui_context* ctx, alia_layout_container* container);
 
 void
 alia_layout_container_simple_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_node_vtable* vtable,
     alia_layout_flags_t flags,
     float gap);
 
 void
-alia_layout_container_simple_end(alia_context* ctx);
+alia_layout_container_simple_end(alia_ui_context* ctx);
 
 ALIA_EXTERN_C_END
 

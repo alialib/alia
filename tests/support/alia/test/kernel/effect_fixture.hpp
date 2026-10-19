@@ -3,8 +3,8 @@
 // C++ effect-log test fixture. Not part of the public alia API.
 
 #include <alia/abi/base/arena.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/effect.h>
+#include <alia/context.hpp>
 
 #include <doctest/doctest.h>
 
@@ -37,8 +37,8 @@ effect_aligned_free(void* p)
 #endif
 }
 
-// `effect_fixture` provides a scratch arena and effect log wired into an
-// `alia_context` for tests.
+// `effect_fixture` provides a scratch arena and effect log wired into a
+// `kernel_context` for tests.
 struct effect_fixture
 {
     // scratch arena object storage
@@ -51,8 +51,8 @@ struct effect_fixture
     alia_bump_allocator scratch{};
     // pass-local effect log
     alia_effect_log effects{};
-    // context with scratch and effects wired
-    alia_context ctx{};
+    // kernel context with scratch and effects wired
+    kernel_context ctx{};
 
     effect_fixture()
     {

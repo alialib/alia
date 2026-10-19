@@ -45,19 +45,19 @@ alia_viewport_region_to_gl_viewport(alia_box region, alia_vec2f surface_size)
 
 alia_element_id
 alia_do_viewport(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_layout_flags_t layout_flags,
     alia_viewport_style const* style)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(viewport_data), alignof(viewport_data));
+        &ctx->kernel, sizeof(viewport_data), alignof(viewport_data));
     viewport_data* data = (viewport_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     alia_viewport_style const* const effective_style
         = style != nullptr ? style : &default_viewport_style;

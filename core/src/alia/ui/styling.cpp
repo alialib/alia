@@ -393,7 +393,7 @@ alia_style_default(alia_ui_system* ui, alia_style_slot_id slot)
 }
 
 void*
-alia_style_active(alia_context* ctx, alia_style_slot_id slot)
+alia_style_active(alia_ui_context* ctx, alia_style_slot_id slot)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->system);

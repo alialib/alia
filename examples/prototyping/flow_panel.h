@@ -11,7 +11,7 @@
 template<class Content>
 void
 do_flow_panel(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_edge_offsets offsets,
     alia_srgb8 color,

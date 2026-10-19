@@ -12,7 +12,7 @@ TEST_CASE("layout row shared baseline y")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(60.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(60.f, 50.f), [&](alia_ui_context& ctx) {
         row(ctx, [&]() {
             test_leaf(
                 ctx,
@@ -41,7 +41,7 @@ TEST_CASE("layout row baseline group align top")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(60.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(60.f, 50.f), [&](alia_ui_context& ctx) {
         row(ctx, BASELINE_GROUP_ALIGN_TOP, [&]() {
             test_leaf(
                 ctx,
@@ -70,7 +70,7 @@ TEST_CASE("layout column baseline cross stacks children")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(50.f, 60.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 60.f), [&](alia_ui_context& ctx) {
         column(ctx, [&]() {
             test_leaf(
                 ctx,
@@ -101,7 +101,7 @@ TEST_CASE("layout flow line height from tallest fragment")
 {
     alia_box short_leaf;
     alia_box tall_leaf;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
         flow(ctx, [&]() {
             test_leaf(
                 ctx,

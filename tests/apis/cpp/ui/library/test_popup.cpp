@@ -12,7 +12,7 @@
 namespace {
 
 void
-noop_controller(void* user_data, alia_context* ctx)
+noop_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
     (void) ctx;
@@ -86,7 +86,7 @@ TEST_CASE("popup content stays out of the parent layout tree")
     layout_test_fixture* fixture = layout_test_fixture_create();
     REQUIRE(fixture != nullptr);
 
-    auto ui = [](alia_context* ctx) {
+    auto ui = [](alia_ui_context* ctx) {
         alia::popup(
             *ctx,
             alia_box_make(
@@ -134,11 +134,11 @@ TEST_CASE("popup places content, resets clip, and raises z")
         alia_box_make(
             alia_vec2f_make(0.f, 0.f), alia_vec2i_to_vec2f(surface_size)));
 
-    auto ui = [&](alia_context* ctx) {
+    auto ui = [&](alia_ui_context* ctx) {
         if (!alia_layout_context_is_refresh(ctx))
         {
             ctx->system = surface.system;
-            ctx->scratch = &scratch.bump;
+            ctx->kernel.scratch = &scratch.bump;
             ctx->geometry->offset = incoming_offset;
             ctx->geometry->z_base = ALIA_DEFAULT_Z_BASE;
             ctx->geometry->clip.box = incoming_clip;

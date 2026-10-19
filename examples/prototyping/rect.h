@@ -2,7 +2,7 @@
 
 bool
 do_rect(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_vec2f size,
     alia_srgb8 color,
@@ -60,7 +60,7 @@ do_rect(
 
 bool
 do_rect_with_offset(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_vec2f size,
     alia_srgb8 color,
@@ -96,7 +96,7 @@ do_rect_with_offset(
 template<class LayoutMods>
 void
 do_rect(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_vec2f size,
     alia_rgba color,
@@ -109,7 +109,7 @@ do_rect(
 
 void
 do_animated_rect(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     bool& initialized,
     alia_vec2f& offset,

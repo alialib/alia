@@ -3,11 +3,9 @@
 
 #include <alia/abi/base/allocator.h>
 #include <alia/abi/base/arena.h>
-#include <alia/abi/context.h>
+#include <alia/abi/kernel/context.h>
 #include <alia/abi/kernel/ids.h>
 #include <alia/abi/prelude.h>
-
-#include <alia/abi/context.h>
 
 // This file defines the data retrieval library used for associating mutable
 // state and cached data with Alia components. It is designed so that each
@@ -64,11 +62,10 @@ ALIA_EXTERN_C_BEGIN
 typedef struct alia_substrate_system alia_substrate_system;
 typedef struct alia_substrate_block alia_substrate_block;
 typedef struct alia_substrate_traversal alia_substrate_traversal;
-typedef struct alia_context alia_context;
 
 // TODO: There's probably a better way to do this.
 alia_substrate_system*
-alia_ctx_substrate_system(alia_context* ctx);
+alia_ctx_substrate_system(alia_kernel_context* ctx);
 
 // general allocator owned by `system`
 alia_general_allocator*
@@ -107,7 +104,8 @@ typedef struct alia_substrate_usage_result
 //   and/or the associated destructor require it.
 //
 alia_substrate_usage_result
-alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment);
+alia_substrate_use_memory(
+    alia_kernel_context* ctx, size_t size, size_t alignment);
 
 typedef enum
 {
@@ -126,7 +124,7 @@ typedef enum
 //
 alia_substrate_usage_result
 alia_substrate_use_object(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     size_t size,
     size_t alignment,
     void (*cleanup)(
@@ -142,7 +140,7 @@ typedef struct alia_substrate_anchor
 
 // 'Use' an anchor from the current substrate block.
 alia_substrate_anchor*
-alia_substrate_use_anchor(alia_context* ctx);
+alia_substrate_use_anchor(alia_kernel_context* ctx);
 
 // Reset an anchor, detaching any block that was attached to it.
 void
@@ -170,13 +168,15 @@ alia_substrate_block_needs_discovery(alia_struct_spec* spec)
 // traversal will enter discovery mode for the block.
 void
 alia_substrate_begin_block(
-    alia_context* ctx, alia_substrate_anchor* anchor, alia_struct_spec* spec);
+    alia_kernel_context* ctx,
+    alia_substrate_anchor* anchor,
+    alia_struct_spec* spec);
 
 // End the scope of the current substrate block.
 // Returns the layout specification of the block. - If the block was in
 // discovery mode, this should be used to update the memoized spec value.
 alia_struct_spec
-alia_substrate_end_block(alia_context* ctx);
+alia_substrate_end_block(alia_kernel_context* ctx);
 
 // Get the structural path to `object` as an ID view.
 //
@@ -187,7 +187,7 @@ alia_substrate_end_block(alia_context* ctx);
 // - The returned ID view uses the context's scratch arena, so it should be
 //   separately captured if it needs to persist.
 alia_id_view
-alia_substrate_path_for_object(alia_context* ctx, void* object);
+alia_substrate_path_for_object(alia_kernel_context* ctx, void* object);
 
 // KEY TABLES AND SCOPES
 //
@@ -224,22 +224,22 @@ enum
 // 'Use' a key table from the substrate.
 alia_substrate_key_table*
 alia_substrate_use_key_table(
-    alia_context* ctx, alia_substrate_key_table_flags flags);
+    alia_kernel_context* ctx, alia_substrate_key_table_flags flags);
 
 // Begin a key scope.
 // This marks the beginning of the traversal through the keys in the table.
 alia_substrate_key_scope*
 alia_substrate_begin_key_scope(
-    alia_context* ctx, alia_substrate_key_table* table);
+    alia_kernel_context* ctx, alia_substrate_key_table* table);
 
 // End a key scope.
 void
 alia_substrate_end_key_scope(
-    alia_context* ctx, alia_substrate_key_scope* scope);
+    alia_kernel_context* ctx, alia_substrate_key_scope* scope);
 
 void
 alia_substrate_begin_keyed_block(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_substrate_key_scope* scope,
     alia_id_view key,
     alia_struct_spec* spec);
@@ -248,12 +248,12 @@ alia_substrate_begin_keyed_block(
 // block was in discovery mode, this should be used to update the memoized
 // spec value.
 alia_struct_spec
-alia_substrate_end_keyed_block(alia_context* ctx);
+alia_substrate_end_keyed_block(alia_kernel_context* ctx);
 
 // Remove stale entries from a key table.
 void
 alia_substrate_sweep_table_keys(
-    alia_context* ctx, alia_substrate_key_table* table);
+    alia_kernel_context* ctx, alia_substrate_key_table* table);
 
 // Remove stale entries from all key tables in the substrate system.
 void

@@ -92,7 +92,7 @@ struct layout_fixture
     alia_event draw_event = {};
 
     alia_layout_context layout_context = {};
-    alia_context context = {};
+    alia_ui_context context = {};
 
     alia_substrate_system substrate_system{};
     alia_substrate_traversal substrate_traversal{};
@@ -140,15 +140,17 @@ wire_context(layout_fixture& fixture, bool refresh)
             true);
     }
 
-    fixture.context = alia_context{
-        .kernel = nullptr,
-        .substrate
-        = fixture.substrate_ready ? &fixture.substrate_traversal : nullptr,
-        .events = &fixture.event_traversal,
-        .stack = &fixture.stack,
-        .scratch = nullptr,
-        .tick_count = 0,
-        .effects = nullptr,
+    fixture.context = alia_ui_context{
+        .kernel = {
+            .object = nullptr,
+            .substrate = fixture.substrate_ready ? &fixture.substrate_traversal
+                                                : nullptr,
+            .events = &fixture.event_traversal,
+            .stack = &fixture.stack,
+            .scratch = nullptr,
+            .tick_count = 0,
+            .effects = nullptr,
+        },
         .system = nullptr,
         .active_styles = &fixture.layout_style,
         .geometry = &fixture.geometry,
@@ -161,15 +163,17 @@ wire_context(layout_fixture& fixture, bool refresh)
 
 static void
 run_with_substrate_root(
-    layout_fixture& fixture, void (*fn)(alia_context*, void*), void* user)
+    layout_fixture& fixture, void (*fn)(alia_ui_context*, void*), void* user)
 {
     if (fixture.substrate_ready)
     {
         alia_struct_spec spec = root_block_spec;
         alia_substrate_begin_block(
-            &fixture.context, &fixture.substrate_system.root_anchor, &spec);
+            &fixture.context.kernel,
+            &fixture.substrate_system.root_anchor,
+            &spec);
         fn(&fixture.context, user);
-        (void) alia_substrate_end_block(&fixture.context);
+        (void) alia_substrate_end_block(&fixture.context.kernel);
     }
     else
     {
@@ -282,7 +286,7 @@ layout_fixture_destroy(layout_fixture* fixture)
     std::free(fixture);
 }
 
-alia_context*
+alia_ui_context*
 layout_fixture_context(layout_fixture* fixture)
 {
     return fixture ? &fixture->context : nullptr;
@@ -331,7 +335,7 @@ layout_fixture_set_scale(layout_fixture* fixture, float scale)
 
 void
 layout_fixture_run_refresh_impl(
-    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
+    layout_fixture* fixture, void (*fn)(alia_ui_context*, void*), void* user)
 {
     if (!fixture || !fn)
         return;
@@ -353,7 +357,7 @@ layout_fixture_resolve(layout_fixture* fixture, alia_vec2f available)
 
 void
 layout_fixture_run_spatial_impl(
-    layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user)
+    layout_fixture* fixture, void (*fn)(alia_ui_context*, void*), void* user)
 {
     if (!fixture || !fn)
         return;
@@ -363,7 +367,7 @@ layout_fixture_run_spatial_impl(
 }
 
 bool
-alia_layout_context_is_refresh(alia_context* ctx)
+alia_layout_context_is_refresh(alia_ui_context* ctx)
 {
     return ctx != nullptr && alia::is_refresh_event(*ctx);
 }

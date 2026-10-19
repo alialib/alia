@@ -151,11 +151,11 @@ struct alia_layout_clamped_scope
 
 void
 alia_layout_clamped_begin(
-    alia_context* ctx, alia_vec2f max_size, alia_layout_flags_t flags)
+    alia_ui_context* ctx, alia_vec2f max_size, alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_clamped_scope>(ctx);
+        auto& scope = stack_push<alia_layout_clamped_scope>(&ctx->kernel);
         auto* node = arena_alloc<clamped_node>(ctx->layout->emission.arena);
         *node = clamped_node{
             .container
@@ -171,11 +171,11 @@ alia_layout_clamped_begin(
 }
 
 void
-alia_layout_clamped_end(alia_context* ctx)
+alia_layout_clamped_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_clamped_scope>(ctx);
+        auto& scope = stack_pop<alia_layout_clamped_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

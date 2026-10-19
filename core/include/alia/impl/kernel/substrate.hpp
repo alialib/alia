@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/abi/kernel/substrate.h>
 
 #include <utility>
@@ -70,17 +72,17 @@ condition_is_strictly_false(T&& x)
 // branch.
 struct if_block
 {
-    alia_context* ctx = nullptr;
+    ui_context* ctx = nullptr;
     // substrate anchor for this branch
     alia_substrate_anchor* anchor = nullptr;
 
-    if_block(alia_context* ctx_arg, bool condition)
-        : ctx(ctx_arg), anchor(alia_substrate_use_anchor(ctx_arg))
+    if_block(ui_context* ctx_arg, bool condition)
+        : ctx(ctx_arg), anchor(alia_substrate_use_anchor(&ctx_arg->kernel))
     {
         if (!condition)
         {
             alia_substrate_deactivate_anchor(
-                alia_ctx_substrate_system(ctx), anchor);
+                alia_ctx_substrate_system(&ctx->kernel), anchor);
         }
     }
 
@@ -93,21 +95,19 @@ struct if_block
 
 struct scoped_conditional_block
 {
-    alia_context* ctx_ = nullptr;
+    ui_context* ctx_ = nullptr;
     alia_struct_spec* spec_ = nullptr;
 
     scoped_conditional_block(
-        alia_context* ctx,
-        alia_substrate_anchor* anchor,
-        alia_struct_spec* spec)
+        ui_context* ctx, alia_substrate_anchor* anchor, alia_struct_spec* spec)
         : ctx_(ctx), spec_(spec)
     {
-        alia_substrate_begin_block(ctx_, anchor, spec_);
+        alia_substrate_begin_block(&ctx_->kernel, anchor, spec_);
     }
 
     ~scoped_conditional_block()
     {
-        *spec_ = alia_substrate_end_block(ctx_);
+        *spec_ = alia_substrate_end_block(&ctx_->kernel);
     }
 
     scoped_conditional_block(scoped_conditional_block const&) = delete;
@@ -205,14 +205,13 @@ struct scoped_conditional_block
 // `content` is invoked as `content(scope)`.
 template<class Content>
 void
-key_scope(
-    alia_context* ctx, alia_substrate_key_table* table, Content&& content)
+key_scope(ui_context* ctx, alia_substrate_key_table* table, Content&& content)
 {
     alia_substrate_key_scope* scope
-        = alia_substrate_begin_key_scope(ctx, table);
+        = alia_substrate_begin_key_scope(&ctx->kernel, table);
     std::forward<Content>(content)(scope);
-    alia_substrate_end_key_scope(ctx, scope);
-    alia_substrate_sweep_table_keys(ctx, table);
+    alia_substrate_end_key_scope(&ctx->kernel, scope);
+    alia_substrate_sweep_table_keys(&ctx->kernel, table);
 }
 
 // Run `content` inside a keyed substrate block for `key`.
@@ -221,15 +220,15 @@ key_scope(
 template<class Content>
 void
 keyed_block(
-    alia_context* ctx,
+    ui_context* ctx,
     alia_substrate_key_scope* scope,
     alia_id_view key,
     Content&& content)
 {
     alia_struct_spec* spec = get_memoized_block_spec<Content>();
-    alia_substrate_begin_keyed_block(ctx, scope, key, spec);
+    alia_substrate_begin_keyed_block(&ctx->kernel, scope, key, spec);
     std::forward<Content>(content)();
-    *spec = alia_substrate_end_keyed_block(ctx);
+    *spec = alia_substrate_end_keyed_block(&ctx->kernel);
 }
 
 } // namespace alia

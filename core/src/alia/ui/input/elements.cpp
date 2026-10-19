@@ -10,7 +10,9 @@ extern "C" {
 
 alia_interaction_status_t
 alia_element_get_interaction_status(
-    alia_context* ctx, alia_element_id id, alia_interaction_status_t overrides)
+    alia_ui_context* ctx,
+    alia_element_id id,
+    alia_interaction_status_t overrides)
 {
     alia_interaction_status_t status = 0;
 
@@ -41,9 +43,10 @@ alia_element_get_interaction_status(
 }
 
 alia_element_id
-alia_element_get_identity(alia_context* ctx)
+alia_element_get_identity(alia_ui_context* ctx)
 {
-    return alia_make_element_id(ctx, alia_substrate_use_memory(ctx, 1, 1));
+    return alia_make_element_id(
+        &ctx->kernel, alia_substrate_use_memory(&ctx->kernel, 1, 1));
 }
 
 } // extern "C"

@@ -24,7 +24,7 @@ alia_separator_style_generate(
 
 void
 alia_separator(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t layout_flags,
     alia_vec2f content_size)
 {

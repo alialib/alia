@@ -6,7 +6,7 @@
 
 static void
 scenario_leaf(
-    alia_context* ctx, float width, float height, alia_layout_flags_t flags)
+    alia_ui_context* ctx, float width, float height, alia_layout_flags_t flags)
 {
     if (alia_layout_context_is_refresh(ctx))
     {
@@ -20,7 +20,7 @@ scenario_leaf(
 }
 
 void
-alia_layout_scenario_nested_grid_10(alia_context* ctx, void* user_data)
+alia_layout_scenario_nested_grid_10(alia_ui_context* ctx, void* user_data)
 {
     (void) user_data;
 
@@ -41,7 +41,7 @@ alia_layout_scenario_nested_grid_10(alia_context* ctx, void* user_data)
 }
 
 void
-alia_layout_scenario_column_of_rows_100(alia_context* ctx, void* user_data)
+alia_layout_scenario_column_of_rows_100(alia_ui_context* ctx, void* user_data)
 {
     (void) user_data;
 
@@ -57,7 +57,7 @@ alia_layout_scenario_column_of_rows_100(alia_context* ctx, void* user_data)
 }
 
 void
-alia_layout_scenario_growth_rows_100(alia_context* ctx, void* user_data)
+alia_layout_scenario_growth_rows_100(alia_ui_context* ctx, void* user_data)
 {
     (void) user_data;
 

@@ -11,7 +11,7 @@ using namespace alia::layout_test;
 TEST_CASE("layout leaf fill")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](alia_ui_context& ctx) {
         test_leaf(ctx, alia_vec2f_make(50.f, 100.f), FILL, &box);
     });
     CHECK(check_box_eq(
@@ -21,7 +21,7 @@ TEST_CASE("layout leaf fill")
 TEST_CASE("layout leaf corner alignment")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         test_leaf(
             ctx,
             alia_vec2f_make(10.f, 10.f),
@@ -36,7 +36,7 @@ TEST_CASE("layout row with grow")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(300.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(300.f, 100.f), [&](alia_ui_context& ctx) {
         row(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(100.f, 100.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL | GROW, &leaf2);
@@ -51,7 +51,7 @@ TEST_CASE("layout row with grow")
 TEST_CASE("layout row CENTER_Y assigns resolved height")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
         row(ctx, CENTER_Y, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FILL, &leaf);
         });
@@ -64,7 +64,7 @@ TEST_CASE("layout column with grow")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 300.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 300.f), [&](alia_ui_context& ctx) {
         column(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(100.f, 100.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL | GROW, &leaf2);
@@ -80,7 +80,7 @@ TEST_CASE("layout grid column propagation")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
         grid(ctx, [&](alia_layout_grid_handle grid_handle) {
             grid_row(ctx, grid_handle, [&]() {
                 test_spacer(ctx, alia_vec2f_make(20.f, 20.f));
@@ -102,7 +102,7 @@ TEST_CASE("layout row with gap")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(130.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(130.f, 100.f), [&](alia_ui_context& ctx) {
         row(ctx, gap(10.f), [&]() {
             test_leaf(ctx, alia_vec2f_make(50.f, 100.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(50.f, 100.f), NO_FLAGS, &leaf2);
@@ -117,7 +117,7 @@ TEST_CASE("layout row with gap")
 TEST_CASE("layout column shrink to child")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_ui_context& ctx) {
         column(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(100.f, 100.f), ALIGN_LEFT, &box);
         });
@@ -129,7 +129,7 @@ TEST_CASE("layout column shrink to child")
 TEST_CASE("layout column grow only child")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(100.f, 200.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 200.f), [&](alia_ui_context& ctx) {
         column(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL | GROW, &box);
         });
@@ -141,7 +141,7 @@ TEST_CASE("layout column grow only child")
 TEST_CASE("layout grid backward propagation")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
         grid(ctx, [&](alia_layout_grid_handle grid_handle) {
             column(ctx, ALIGN_LEFT, [&]() {
                 grid_row(ctx, grid_handle, [&]() {
@@ -164,7 +164,7 @@ TEST_CASE("layout grid simple two by two")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
         grid(ctx, [&](alia_layout_grid_handle grid_handle) {
             grid_row(ctx, grid_handle, [&]() {
                 test_spacer(ctx, alia_vec2f_make(20.f, 20.f));
@@ -190,7 +190,7 @@ TEST_CASE("layout column with gap")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 130.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 130.f), [&](alia_ui_context& ctx) {
         column(ctx, gap(10.f), [&]() {
             test_leaf(ctx, alia_vec2f_make(100.f, 50.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(100.f, 50.f), NO_FLAGS, &leaf2);
@@ -205,7 +205,7 @@ TEST_CASE("layout column with gap")
 TEST_CASE("layout leaf fill x align top")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FILL_X | ALIGN_TOP, &box);
     });
     CHECK(check_box_eq(
@@ -215,7 +215,7 @@ TEST_CASE("layout leaf fill x align top")
 TEST_CASE("layout leaf fill y align right")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         test_leaf(
             ctx, alia_vec2f_make(10.f, 10.f), FILL_Y | ALIGN_RIGHT, &box);
     });
@@ -226,7 +226,7 @@ TEST_CASE("layout leaf fill y align right")
 TEST_CASE("layout leaf top left alignment")
 {
     alia_box box;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         test_leaf(
             ctx, alia_vec2f_make(10.f, 10.f), ALIGN_TOP | ALIGN_LEFT, &box);
     });
@@ -238,7 +238,7 @@ TEST_CASE("layout leaf with style spacing")
 {
     alia_box box;
     run_layout_case_with_spacing(
-        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FILL, &box);
         });
     CHECK(check_box_eq(
@@ -249,7 +249,7 @@ TEST_CASE("layout leaf flush ignores style spacing")
 {
     alia_box box;
     run_layout_case_with_spacing(
-        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+        8.f, alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FILL | FLUSH, &box);
         });
     CHECK(check_box_eq(
@@ -261,7 +261,7 @@ TEST_CASE("layout row leaf flush sizing")
     alia_box spaced;
     alia_box flush;
     run_layout_case_with_spacing(
-        8.f, alia_vec2f_make(60.f, 50.f), [&](alia_context& ctx) {
+        8.f, alia_vec2f_make(60.f, 50.f), [&](alia_ui_context& ctx) {
             row(ctx, [&]() {
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &spaced);
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f), FLUSH, &flush);
@@ -276,7 +276,7 @@ TEST_CASE("layout row leaf flush sizing")
 TEST_CASE("layout row container fill")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
         row(ctx, FILL, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
         });
@@ -288,7 +288,7 @@ TEST_CASE("layout row container fill")
 TEST_CASE("layout column container center")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         column(ctx, CENTER, [&]() {
             test_leaf(ctx, alia_vec2f_make(40.f, 20.f), NO_FLAGS, &leaf);
         });
@@ -300,7 +300,7 @@ TEST_CASE("layout column container center")
 TEST_CASE("layout grid row cross alignment")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
         grid(ctx, [&](alia_layout_grid_handle grid_handle) {
             grid_row(ctx, grid_handle, ALIGN_END, [&]() {
                 test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf);
@@ -316,7 +316,7 @@ TEST_CASE("layout zstack fills and corners")
 {
     alia_box background;
     alia_box overlay;
-    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_ui_context& ctx) {
         zstack(ctx, FILL, [&]() {
             test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL, &background);
             test_leaf(
@@ -336,7 +336,7 @@ TEST_CASE("layout zstack sizes to largest child")
 {
     alia_box small_leaf;
     alia_box large_leaf;
-    run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(200.f, 200.f), [&](alia_ui_context& ctx) {
         zstack(ctx, ALIGN_LEFT | ALIGN_TOP, [&]() {
             test_leaf(
                 ctx,
@@ -361,7 +361,7 @@ TEST_CASE("layout zstack overlay bottom left")
 {
     alia_box background;
     alia_box overlay;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
         zstack(ctx, FILL, [&]() {
             test_leaf(ctx, alia_vec2f_make(0.f, 0.f), FILL, &background);
             test_leaf(
@@ -381,7 +381,7 @@ TEST_CASE("layout zstack layers share an internal baseline")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_ui_context& ctx) {
         zstack(ctx, FILL, [&]() {
             test_leaf(
                 ctx,

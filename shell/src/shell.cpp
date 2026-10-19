@@ -10,10 +10,10 @@
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/system/work.h>
 #include <alia/abi/ui/text.h>
 #include <alia/abi/ui/trace.h>
 #include <alia/impl/events.hpp>
-#include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
 #include <alia/ui/system/object.h>
 
@@ -54,7 +54,7 @@ edge_offsets_is_zero(alia_edge_offsets offsets)
 }
 
 void
-shell_draw_foundation_underlay(alia_context* ctx)
+shell_draw_foundation_underlay(alia_ui_context* ctx)
 {
     alia_ui_system* ui = ctx->system;
     alia_box const surface_box
@@ -97,7 +97,7 @@ shell_set_zoom_target(alia_shell* shell, alia_ui_system* ui, float target)
 }
 
 void
-shell_handle_keyboard_zoom(alia_shell* shell, alia_context* ctx)
+shell_handle_keyboard_zoom(alia_shell* shell, alia_ui_context* ctx)
 {
     alia_key_info k;
     if (!alia_input_detect_global_key_press(ctx, &k))
@@ -131,7 +131,7 @@ shell_handle_keyboard_zoom(alia_shell* shell, alia_context* ctx)
 }
 
 void
-shell_advance_smooth_zoom(alia_shell* shell, alia_context* ctx)
+shell_advance_smooth_zoom(alia_shell* shell, alia_ui_context* ctx)
 {
     if (!shell->config.enable_smooth_zoom)
         return;
@@ -154,17 +154,17 @@ shell_advance_smooth_zoom(alia_shell* shell, alia_context* ctx)
         &shell->zoom_smoother,
         shell->zoom_target,
         &k_zoom_transition,
-        alia_timing_tick_count(ctx),
+        alia_timing_tick_count(&ctx->kernel),
         &animating);
     if (shown != current)
         alia_ui_set_magnification(ui, shown);
     shell->last_applied_magnification = shown;
     if (animating)
-        alia_timing_request_animation_refresh(ctx);
+        alia_timing_request_animation_refresh(&ctx->kernel);
 }
 
 void
-shell_controller(void* user_data, alia_context* ctx)
+shell_controller(void* user_data, alia_ui_context* ctx)
 {
     auto* shell = static_cast<alia_shell*>(user_data);
     ALIA_ASSERT(shell);

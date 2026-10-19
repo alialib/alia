@@ -18,7 +18,7 @@ template<binding_signal Signal, layout_like Layout = layout_options>
           && std::convertible_to<double, typename Signal::value_type>
 alia_element_id
 slider(
-    context& ctx,
+    ui_context& ctx,
     Signal const& value,
     double minimum,
     double maximum,
@@ -31,7 +31,7 @@ slider(
         auto c = to_inline_c_signal<alia_double_signal>(value);
         id = alia_slider(
             &ctx, &c, minimum, maximum, step, raw_code(flags), vertical);
-        write_back_c_signal(&ctx, value, c);
+        write_back_c_signal(&ctx.kernel, value, c);
     });
     return id;
 }

@@ -8,8 +8,6 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct alia_context alia_context;
-
 // IDs used when recording and bucketing draw commands
 typedef uint16_t alia_draw_material_id;
 typedef uint16_t alia_draw_target_id;
@@ -48,7 +46,7 @@ typedef struct alia_draw_context
 // Allocate a draw command with `ALIA_MIN_ALIGN` alignment.
 alia_draw_command*
 alia_draw_command_alloc(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     size_t size);
@@ -58,7 +56,7 @@ alia_draw_command_alloc(
 // `size` must be a multiple of `ALIA_MIN_ALIGN`.
 alia_draw_command*
 alia_draw_command_alloc_aligned(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     size_t size,

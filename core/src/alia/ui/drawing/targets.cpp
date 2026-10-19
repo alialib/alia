@@ -74,11 +74,11 @@ alia_draw_target_ensure_size(
 }
 
 alia_draw_target_id
-alia_draw_target_use(alia_context* ctx)
+alia_draw_target_use(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
     alia_substrate_usage_result const result = alia_substrate_use_object(
-        ctx,
+        &ctx->kernel,
         sizeof(draw_target_slot),
         alignof(draw_target_slot),
         draw_target_slot_cleanup);
@@ -97,7 +97,7 @@ alia_draw_target_use(alia_context* ctx)
 
 void
 alia_draw_target_begin(
-    alia_context* ctx, alia_draw_target_id target, alia_vec2f size)
+    alia_ui_context* ctx, alia_draw_target_id target, alia_vec2f size)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->geometry);
@@ -108,14 +108,14 @@ alia_draw_target_begin(
     alia_vec2i const pixel_size = {int(size.x + 0.5f), int(size.y + 0.5f)};
     alia_draw_target_ensure_size(ctx->system, target, pixel_size);
 
-    auto& saved = alia::stack_push<draw_target_scope>(ctx);
+    auto& saved = alia::stack_push<draw_target_scope>(&ctx->kernel);
     saved = {
         .target_id = ctx->draw->target_id,
         .offset = ctx->geometry->offset,
         .clip = ctx->geometry->clip,
     };
 
-    alia_box* clip_pointer = alia::arena_new<alia_box>(*ctx->scratch);
+    alia_box* clip_pointer = alia::arena_new<alia_box>(*ctx->kernel.scratch);
     *clip_pointer = alia_box{{0.f, 0.f}, size};
 
     ctx->draw->target_id = target;
@@ -129,12 +129,12 @@ alia_draw_target_begin(
 }
 
 void
-alia_draw_target_end(alia_context* ctx)
+alia_draw_target_end(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->geometry);
     ALIA_ASSERT(ctx->draw);
-    auto& saved = alia::stack_pop<draw_target_scope>(ctx);
+    auto& saved = alia::stack_pop<draw_target_scope>(&ctx->kernel);
     ctx->draw->target_id = saved.target_id;
     ctx->geometry->offset = saved.offset;
     ctx->geometry->clip = saved.clip;
@@ -142,7 +142,7 @@ alia_draw_target_end(alia_context* ctx)
 
 void
 alia_draw_target(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_target_id source,
     alia_box dest,

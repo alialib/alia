@@ -21,9 +21,9 @@ namespace alia {
 // component means no floor on that axis.
 template<class Content>
 void
-popup(context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
+popup(ui_context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
 {
-    auto data = use_memory<alia_layout_detached>(&ctx);
+    auto data = use_memory<alia_layout_detached>(&ctx.kernel);
     if (data.is_fresh())
         *data = alia_layout_detached{};
 
@@ -37,7 +37,7 @@ popup(context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
 
     ALIA_ASSERT(ctx.system);
     ALIA_ASSERT(ctx.geometry);
-    ALIA_ASSERT(ctx.scratch);
+    ALIA_ASSERT(ctx.kernel.scratch);
 
     alia_vec2f const offset = ctx.geometry->offset;
     alia_box const anchor_surface = alia_box_translate(anchor, offset);
@@ -66,7 +66,7 @@ popup(context& ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
 // The popup is at least as wide as `anchor`. There is no minimum height.
 template<class Content>
 void
-popup(context& ctx, alia_box anchor, Content&& content)
+popup(ui_context& ctx, alia_box anchor, Content&& content)
 {
     popup(
         ctx,

@@ -1,8 +1,8 @@
 #include <alia/abi/kernel/timing.h>
 
 #include <alia/abi/kernel/events.h>
-#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/kernel/object.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/flow/traversal.h>
@@ -40,18 +40,18 @@ enqueue_timer(
 extern "C" {
 
 void
-alia_timing_request_animation_refresh(alia_context* ctx)
+alia_timing_request_animation_refresh(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    ALIA_ASSERT(ctx->kernel);
+    ALIA_ASSERT(ctx->object);
 
-    alia_kernel_mark_dirty(ctx->kernel);
+    alia_kernel_mark_dirty(ctx->object);
     if (ctx->events)
         alia::mark_animating_component(*ctx);
 }
 
 alia_timer_state*
-alia_timer_use(alia_context* ctx)
+alia_timer_use(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->substrate);
@@ -79,11 +79,13 @@ alia_timer_use(alia_context* ctx)
 
 void
 alia_timer_start(
-    alia_context* ctx, alia_timer_state* state, alia_nanosecond_count duration)
+    alia_kernel_context* ctx,
+    alia_timer_state* state,
+    alia_nanosecond_count duration)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(state);
-    ALIA_ASSERT(ctx->kernel);
+    ALIA_ASSERT(ctx->object);
 
     // TODO: If duration wraps, we still want wrap-safe comparisons in the
     // system dispatcher.
@@ -91,11 +93,11 @@ alia_timer_start(
     state->active = true;
     ALIA_ASSERT(alia_element_id_is_valid(state->target));
 
-    enqueue_timer(ctx->kernel, state->target, state->expected_fire_time);
+    enqueue_timer(ctx->object, state->target, state->expected_fire_time);
 }
 
 void
-alia_timer_stop(alia_context* ctx, alia_timer_state* state)
+alia_timer_stop(alia_kernel_context* ctx, alia_timer_state* state)
 {
     (void) ctx;
     ALIA_ASSERT(state);
@@ -104,7 +106,7 @@ alia_timer_stop(alia_context* ctx, alia_timer_state* state)
 }
 
 bool
-alia_timer_handle_event(alia_context* ctx, alia_timer_state* state)
+alia_timer_handle_event(alia_kernel_context* ctx, alia_timer_state* state)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(state);

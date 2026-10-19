@@ -12,7 +12,9 @@ namespace {
 
 static alia_draw_bucket*
 find_or_create_draw_bucket(
-    alia_context* ctx, alia_z_index z_index, alia_draw_material_id material_id)
+    alia_ui_context* ctx,
+    alia_z_index z_index,
+    alia_draw_material_id material_id)
 {
     auto const key = make_bucket_key(
         ctx->draw->target_id, z_index, ctx->geometry->clip.id, material_id);
@@ -53,7 +55,7 @@ extern "C" {
 
 alia_draw_command*
 alia_draw_command_alloc(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     size_t size)

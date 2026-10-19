@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/kernel/actions/basic.hpp>
 #include <alia/kernel/signals/basic.hpp>
 
@@ -35,7 +37,7 @@ struct only_if_ready_adaptor<Wrapped, action_interface<Args...>>
     }
 
     void
-    post(alia_context* ctx, Args... args) const override
+    post(kernel_context* ctx, Args... args) const override
     {
         if (wrapped_.is_ready())
             wrapped_.post(ctx, std::move(args)...);
@@ -99,7 +101,7 @@ struct action_masking_adaptor<
     }
 
     void
-    post(alia_context* ctx, Args... args) const override
+    post(kernel_context* ctx, Args... args) const override
     {
         wrapped_.post(ctx, std::move(args)...);
     }

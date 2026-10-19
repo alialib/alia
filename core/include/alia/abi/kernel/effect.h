@@ -1,7 +1,7 @@
 #ifndef ALIA_ABI_KERNEL_EFFECT_H
 #define ALIA_ABI_KERNEL_EFFECT_H
 
-#include <alia/abi/context.h>
+#include <alia/abi/kernel/context.h>
 #include <alia/abi/prelude.h>
 
 #include <stddef.h>
@@ -23,22 +23,22 @@ struct alia_effect
 };
 
 // FIFO of posted pass-local operations
-typedef struct alia_effect_log
+struct alia_effect_log
 {
     alia_effect* head;
     alia_effect* tail;
-} alia_effect_log;
+};
 
 // Append `effect` to this pass's FIFO log. Effects are generally allocated
 // from the pass's scratch arena. Any referenced data should either be copied
 // there or should remain valid until the end of the pass.
 void
-alia_post_effect(alia_context* ctx, alia_effect* effect);
+alia_post_effect(alia_kernel_context* ctx, alia_effect* effect);
 
 // Post a memcpy of `size` bytes from `src` to `dst`. `label` is optional.
 void
 alia_post_write(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     void* dst,
     void const* src,
     size_t size,
@@ -46,7 +46,7 @@ alia_post_write(
 
 // Run posted effects in FIFO order.
 void
-alia_run_effects(alia_context* ctx);
+alia_run_effects(alia_kernel_context* ctx);
 
 ALIA_EXTERN_C_END
 

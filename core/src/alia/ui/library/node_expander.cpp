@@ -38,7 +38,7 @@ node_expander_center(alia_box placement)
 
 static inline alia_box
 node_expander_triangle_box(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box placement,
     alia_node_expander_style const* style)
 {
@@ -51,7 +51,7 @@ node_expander_triangle_box(
 
 static void
 render_node_expander(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box placement,
     node_expander_data& data,
     bool expanded,
@@ -66,7 +66,7 @@ render_node_expander(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float const rotation_degrees = alia_transition_float(
-        ctx,
+        &ctx->kernel,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         expanded,
@@ -148,12 +148,12 @@ alia_node_expander_style_generate(
 
 alia_element_id
 alia_node_expander(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(node_expander_data), alignof(node_expander_data));
+        &ctx->kernel, sizeof(node_expander_data), alignof(node_expander_data));
     node_expander_data* data = (node_expander_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -163,7 +163,7 @@ alia_node_expander(
         };
     }
 
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     bool const is_disabled = (expanded == nullptr)
                           || ((expanded->flags & ALIA_SIGNAL_WRITABLE) == 0);

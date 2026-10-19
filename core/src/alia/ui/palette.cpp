@@ -1,5 +1,5 @@
-#include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/input/elements.h>
+#include <alia/abi/ui/palette.h>
 #include <cmath>
 #include <numbers>
 
@@ -371,8 +371,8 @@ clamp01_unit(float x)
 static alia_srgba8
 adjust_oklab(alia_srgba8 base, int8_t l_delta, uint8_t c_scale)
 {
-    alia_oklab lab = alia_oklab_from_rgb(alia_rgb_from_srgb8(
-        alia_srgb8_make(base.r, base.g, base.b)));
+    alia_oklab lab = alia_oklab_from_rgb(
+        alia_rgb_from_srgb8(alia_srgb8_make(base.r, base.g, base.b)));
     lab.l = clamp01_unit(lab.l + (float) l_delta / 255.f);
     float const scale = (float) c_scale / 255.f;
     lab.a *= scale;
@@ -392,12 +392,13 @@ blend_over(alia_srgba8 dst_s, alia_srgba8 src_s)
         return alia_srgba8_make(0, 0, 0, 0);
     float const inv = 1.f / out_a;
     float const dst_weight = dst.a * (1.f - src.a);
-    return alia_srgba8_from_rgba(alia_rgba{
-        (src.r * src.a + dst.r * dst_weight) * inv,
-        (src.g * src.a + dst.g * dst_weight) * inv,
-        (src.b * src.a + dst.b * dst_weight) * inv,
-        out_a,
-    });
+    return alia_srgba8_from_rgba(
+        alia_rgba{
+            (src.r * src.a + dst.r * dst_weight) * inv,
+            (src.g * src.a + dst.g * dst_weight) * inv,
+            (src.b * src.a + dst.b * dst_weight) * inv,
+            out_a,
+        });
 }
 
 alia_srgba8
@@ -433,8 +434,7 @@ alia_responsive_color_resolve(
     return alia_palette_color_resolve(p, color.base);
 }
 
-static_assert(
-    sizeof(alia_color_op) <= 4, "color op should stay a few bytes");
+static_assert(sizeof(alia_color_op) <= 4, "color op should stay a few bytes");
 
 void
 alia_palette_from_accent(

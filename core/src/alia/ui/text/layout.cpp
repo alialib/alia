@@ -326,13 +326,13 @@ ALIA_EXTERN_C_BEGIN
 
 void
 alia_text(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t flags,
     alia_text_input_signal text,
     alia_text_style const* style)
 {
     alia_substrate_usage_result const result = alia_substrate_use_object(
-        ctx,
+        &ctx->kernel,
         sizeof(text_block_cache),
         alignof(text_block_cache),
         text_block_cache_cleanup);

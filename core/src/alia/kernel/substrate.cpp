@@ -97,7 +97,7 @@ anchor_cleanup(
 }
 
 alia_substrate_block*
-init_block(alia_context* ctx, void* ptr, alia_struct_spec spec)
+init_block(alia_kernel_context* ctx, void* ptr, alia_struct_spec spec)
 {
     return new (ptr) alia_substrate_block{
         .cleanup_records = nullptr,
@@ -107,7 +107,7 @@ init_block(alia_context* ctx, void* ptr, alia_struct_spec spec)
 
 void
 add_cleanup_record(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     void* storage,
     void (*cleanup)(
         alia_substrate_system*, void*, alia_substrate_cleanup_mode mode),
@@ -158,7 +158,7 @@ count_path_segments(alia_substrate_block_traversal_state const* block)
 
 alia_id_view*
 push_path_segments_for_object(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     void* object,
     alia_substrate_block_traversal_state const* block,
     size_t* out_count)
@@ -346,7 +346,9 @@ append_to_prediction_list(
 
 alia_substrate_key_entry*
 resolve_key_entry(
-    alia_context* ctx, alia_substrate_key_scope* scope, alia_id_view key)
+    alia_kernel_context* ctx,
+    alia_substrate_key_scope* scope,
+    alia_id_view key)
 {
     alia_substrate_key_entry* entry = nullptr;
     if (scope->predicted
@@ -456,7 +458,7 @@ substrate_reset_anchor(
 ALIA_EXTERN_C_BEGIN
 
 alia_substrate_system*
-alia_ctx_substrate_system(alia_context* ctx)
+alia_ctx_substrate_system(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx && ctx->substrate && ctx->substrate->system);
     return ctx->substrate->system;
@@ -470,7 +472,8 @@ alia_substrate_system_allocator(alia_substrate_system* system)
 }
 
 alia_substrate_usage_result
-alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
+alia_substrate_use_memory(
+    alia_kernel_context* ctx, size_t size, size_t alignment)
 {
     auto& traversal = *ctx->substrate;
     switch (traversal.block.mode)
@@ -509,7 +512,7 @@ alia_substrate_use_memory(alia_context* ctx, size_t size, size_t alignment)
 
 alia_substrate_usage_result
 alia_substrate_use_object(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     size_t size,
     size_t alignment,
     void (*cleanup)(
@@ -531,7 +534,7 @@ alia_substrate_use_object(
 }
 
 alia_substrate_anchor*
-alia_substrate_use_anchor(alia_context* ctx)
+alia_substrate_use_anchor(alia_kernel_context* ctx)
 {
     // TODO: Combine these two allocations/conditions into one.
     alia_substrate_usage_result mr = alia_substrate_use_memory(
@@ -575,7 +578,9 @@ alia_substrate_deactivate_anchor(
 // traversal will enter discovery mode for the block.
 void
 alia_substrate_begin_block(
-    alia_context* ctx, alia_substrate_anchor* anchor, alia_struct_spec* spec)
+    alia_kernel_context* ctx,
+    alia_substrate_anchor* anchor,
+    alia_struct_spec* spec)
 {
     auto& parent_scope
         = alia::stack_push<alia_substrate_block_traversal_state>(ctx);
@@ -630,7 +635,7 @@ alia_substrate_begin_block(
 // Returns the layout specification of the block. - If the block was in
 // discovery mode, this should be used to update the memoized spec value.
 alia_struct_spec
-alia_substrate_end_block(alia_context* ctx)
+alia_substrate_end_block(alia_kernel_context* ctx)
 {
     if (ctx->substrate->block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
     {
@@ -648,7 +653,7 @@ alia_substrate_end_block(alia_context* ctx)
 }
 
 alia_id_view
-alia_substrate_path_for_object(alia_context* ctx, void* object)
+alia_substrate_path_for_object(alia_kernel_context* ctx, void* object)
 {
     ALIA_ASSERT(ctx && ctx->substrate && object);
 
@@ -671,7 +676,7 @@ alia_substrate_path_for_object(alia_context* ctx, void* object)
 
 alia_substrate_key_table*
 alia_substrate_use_key_table(
-    alia_context* ctx, alia_substrate_key_table_flags flags)
+    alia_kernel_context* ctx, alia_substrate_key_table_flags flags)
 {
     alia_substrate_usage_result mr = alia_substrate_use_object(
         ctx,
@@ -695,7 +700,7 @@ alia_substrate_use_key_table(
 
 alia_substrate_key_scope*
 alia_substrate_begin_key_scope(
-    alia_context* ctx, alia_substrate_key_table* table)
+    alia_kernel_context* ctx, alia_substrate_key_table* table)
 {
     ALIA_ASSERT(ctx && table);
     auto& scope = alia::stack_push<alia_substrate_key_scope>(ctx);
@@ -708,7 +713,7 @@ alia_substrate_begin_key_scope(
 
 void
 alia_substrate_end_key_scope(
-    alia_context* ctx, alia_substrate_key_scope* scope)
+    alia_kernel_context* ctx, alia_substrate_key_scope* scope)
 {
     ALIA_ASSERT(ctx && scope && scope->table);
 
@@ -720,7 +725,7 @@ alia_substrate_end_key_scope(
 
 void
 alia_substrate_begin_keyed_block(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_substrate_key_scope* scope,
     alia_id_view key,
     alia_struct_spec* spec)
@@ -731,14 +736,14 @@ alia_substrate_begin_keyed_block(
 }
 
 alia_struct_spec
-alia_substrate_end_keyed_block(alia_context* ctx)
+alia_substrate_end_keyed_block(alia_kernel_context* ctx)
 {
     return alia_substrate_end_block(ctx);
 }
 
 void
 alia_substrate_sweep_table_keys(
-    alia_context* ctx, alia_substrate_key_table* table)
+    alia_kernel_context* ctx, alia_substrate_key_table* table)
 {
     ALIA_ASSERT(ctx && ctx->substrate && table);
     sweep_key_table(table);

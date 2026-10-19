@@ -98,11 +98,12 @@ struct alia_layout_alignment_override_scope
 
 void
 alia_layout_alignment_override_begin(
-    alia_context* ctx, alia_layout_flags_t flags)
+    alia_ui_context* ctx, alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_alignment_override_scope>(ctx);
+        auto& scope
+            = stack_push<alia_layout_alignment_override_scope>(&ctx->kernel);
         auto* node = arena_alloc<alignment_override_node>(
             ctx->layout->emission.arena);
         *node = alignment_override_node{
@@ -118,11 +119,12 @@ alia_layout_alignment_override_begin(
 }
 
 void
-alia_layout_alignment_override_end(alia_context* ctx)
+alia_layout_alignment_override_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_alignment_override_scope>(ctx);
+        auto& scope
+            = stack_pop<alia_layout_alignment_override_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

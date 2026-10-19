@@ -31,7 +31,9 @@ struct toggle_switch_data
 
 static inline alia_vec2f
 toggle_switch_content_origin(
-    alia_context* ctx, alia_box placement, alia_toggle_switch_style const* s)
+    alia_ui_context* ctx,
+    alia_box placement,
+    alia_toggle_switch_style const* s)
 {
     alia_vec2f const center = placement.min + placement.size * 0.5f;
     return center
@@ -42,7 +44,7 @@ toggle_switch_content_origin(
 
 void
 render_toggle_switch(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_box placement,
     toggle_switch_data& data,
     bool state,
@@ -99,7 +101,7 @@ render_toggle_switch(
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float toggle_position = alia_transition_float(
-        ctx,
+        &ctx->kernel,
         &transition,
         ALIA_BITREF(data.bits, state_smoothing),
         state,
@@ -219,13 +221,13 @@ alia_toggle_switch_style_generate(
 
 alia_element_id
 alia_toggle_switch(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_bool_signal* value,
     alia_layout_flags_t layout_flags)
 {
     // TODO: Use C++ API for this.
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(toggle_switch_data), alignof(toggle_switch_data));
+        &ctx->kernel, sizeof(toggle_switch_data), alignof(toggle_switch_data));
     toggle_switch_data* data = (toggle_switch_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -234,7 +236,7 @@ alia_toggle_switch(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     alia_toggle_switch_style const* const style
         = alia_toggle_switch_style_active(ctx);

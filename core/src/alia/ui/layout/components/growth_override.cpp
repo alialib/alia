@@ -104,11 +104,12 @@ struct alia_layout_growth_override_scope
 };
 
 void
-alia_layout_growth_override_begin(alia_context* ctx, float growth)
+alia_layout_growth_override_begin(alia_ui_context* ctx, float growth)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_growth_override_scope>(ctx);
+        auto& scope
+            = stack_push<alia_layout_growth_override_scope>(&ctx->kernel);
         auto* node
             = arena_alloc<growth_override_node>(ctx->layout->emission.arena);
         *node = growth_override_node{
@@ -123,11 +124,12 @@ alia_layout_growth_override_begin(alia_context* ctx, float growth)
 }
 
 void
-alia_layout_growth_override_end(alia_context* ctx)
+alia_layout_growth_override_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_growth_override_scope>(ctx);
+        auto& scope
+            = stack_pop<alia_layout_growth_override_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

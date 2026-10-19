@@ -12,10 +12,13 @@ namespace alia {
 
 // Emit a collapsible container driven by `expanded`.
 // An empty signal is treated as collapsed.
-template<view_of<bool> Signal, layout_like Layout = layout_options, class Content>
+template<
+    view_of<bool> Signal,
+    layout_like Layout = layout_options,
+    class Content>
 void
 collapsible(
-    context& ctx, Signal const& expanded, Layout layout, Content&& content)
+    ui_context& ctx, Signal const& expanded, Layout layout, Content&& content)
 {
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         bool const do_content = alia_collapsible_begin(
@@ -35,15 +38,18 @@ collapsible(
 
 template<view_of<bool> Signal, class Content>
 void
-collapsible(context& ctx, Signal const& expanded, Content&& content)
+collapsible(ui_context& ctx, Signal const& expanded, Content&& content)
 {
     collapsible(ctx, expanded, default_layout, std::forward<Content>(content));
 }
 
-template<view_of<bool> Signal, layout_like Layout = layout_options, class Content>
+template<
+    view_of<bool> Signal,
+    layout_like Layout = layout_options,
+    class Content>
 void
 collapsible(
-    context& ctx,
+    ui_context& ctx,
     Signal const& expanded,
     Layout layout,
     float offset_factor,

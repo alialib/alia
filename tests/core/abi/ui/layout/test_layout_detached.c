@@ -79,7 +79,7 @@ static alia_layout_node_vtable shrinkable_vtable
        alia_default_read_fragment_placements};
 
 static void
-emit_shrinkable(alia_context* ctx, bool* overflow)
+emit_shrinkable(alia_ui_context* ctx, bool* overflow)
 {
     alia_bump_allocator* arena = &ctx->layout->emission.arena;
     shrinkable_node* node = (shrinkable_node*) alia_arena_ptr(
@@ -106,7 +106,7 @@ near(float a, float b)
 
 static void
 test_leaf(
-    alia_context* ctx, alia_vec2f size, alia_layout_flags_t flags, alia_box* out)
+    alia_ui_context* ctx, alia_vec2f size, alia_layout_flags_t flags, alia_box* out)
 {
     if (alia_layout_context_is_refresh(ctx))
     {
@@ -133,7 +133,7 @@ typedef struct separate_state
 } separate_state;
 
 static void
-separate_ui(alia_context* ctx, void* user)
+separate_ui(alia_ui_context* ctx, void* user)
 {
     separate_state* state = (separate_state*) user;
     alia_layout_row_begin(ctx, 0, 0.f);
@@ -182,7 +182,7 @@ typedef struct intrinsic_state
 } intrinsic_state;
 
 static void
-intrinsic_ui(alia_context* ctx, void* user)
+intrinsic_ui(alia_ui_context* ctx, void* user)
 {
     intrinsic_state* state = (intrinsic_state*) user;
     if (!alia_layout_context_is_refresh(ctx))
@@ -225,7 +225,7 @@ typedef struct shrinkable_state
 } shrinkable_state;
 
 static void
-shrinkable_ui(alia_context* ctx, void* user)
+shrinkable_ui(alia_ui_context* ctx, void* user)
 {
     shrinkable_state* state = (shrinkable_state*) user;
     if (alia_layout_context_is_refresh(ctx))
@@ -266,7 +266,7 @@ typedef struct caller_size_state
 } caller_size_state;
 
 static void
-caller_size_ui(alia_context* ctx, void* user)
+caller_size_ui(alia_ui_context* ctx, void* user)
 {
     caller_size_state* state = (caller_size_state*) user;
     if (!alia_layout_context_is_refresh(ctx))
@@ -312,7 +312,7 @@ typedef struct nesting_state
 } nesting_state;
 
 static void
-nesting_ui(alia_context* ctx, void* user)
+nesting_ui(alia_ui_context* ctx, void* user)
 {
     nesting_state* state = (nesting_state*) user;
     if (!alia_layout_context_is_refresh(ctx))
@@ -368,7 +368,7 @@ typedef struct same_generation_state
 } same_generation_state;
 
 static void
-same_generation_refresh(alia_context* ctx, void* user)
+same_generation_refresh(alia_ui_context* ctx, void* user)
 {
     same_generation_state* state = (same_generation_state*) user;
     alia_layout_detached_begin(ctx, &state->data);
@@ -377,7 +377,7 @@ same_generation_refresh(alia_context* ctx, void* user)
 }
 
 static void
-same_generation_spatial(alia_context* ctx, void* user)
+same_generation_spatial(alia_ui_context* ctx, void* user)
 {
     same_generation_state* state = (same_generation_state*) user;
     alia_layout_detached_assign(ctx, &state->data, alia_vec2f_make(12.f, 6.f));
@@ -416,7 +416,7 @@ typedef struct generation_state
 } generation_state;
 
 static void
-generation_ui(alia_context* ctx, void* user)
+generation_ui(alia_ui_context* ctx, void* user)
 {
     generation_state* state = (generation_state*) user;
     if (!alia_layout_context_is_refresh(ctx))

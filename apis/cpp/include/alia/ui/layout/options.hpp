@@ -1518,7 +1518,7 @@ add_default_flush(layout_flag_set flags)
 // entirely at compile time.
 template<class Fn>
 void
-apply_layout(context& ctx, layout_flag_set flags, Fn&& fn)
+apply_layout(ui_context& ctx, layout_flag_set flags, Fn&& fn)
 {
     (void) ctx;
     std::forward<Fn>(fn)(flags);
@@ -1526,7 +1526,7 @@ apply_layout(context& ctx, layout_flag_set flags, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, null_flag_set, Fn&& fn)
+apply_layout(ui_context& ctx, null_flag_set, Fn&& fn)
 {
     (void) ctx;
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1534,7 +1534,7 @@ apply_layout(context& ctx, null_flag_set, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, pad_spec const& p, Fn&& fn)
+apply_layout(ui_context& ctx, pad_spec const& p, Fn&& fn)
 {
     alia_layout_edge_offsets_begin(&ctx, p.offsets, 0);
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1543,7 +1543,7 @@ apply_layout(context& ctx, pad_spec const& p, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, width_spec const& w, Fn&& fn)
+apply_layout(ui_context& ctx, width_spec const& w, Fn&& fn)
 {
     alia_layout_min_size_begin(&ctx, detail::min_size_vec(w.value, 0.f));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1552,7 +1552,7 @@ apply_layout(context& ctx, width_spec const& w, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, height_spec const& h, Fn&& fn)
+apply_layout(ui_context& ctx, height_spec const& h, Fn&& fn)
 {
     alia_layout_min_size_begin(&ctx, detail::min_size_vec(0.f, h.value));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1564,7 +1564,7 @@ apply_layout(context& ctx, height_spec const& h, Fn&& fn)
 // call `without_size` first (see `spacer`).
 template<class Fn>
 void
-apply_layout(context& ctx, length_spec const& l, Fn&& fn)
+apply_layout(ui_context& ctx, length_spec const& l, Fn&& fn)
 {
     alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(l.value, 0.f));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1573,7 +1573,7 @@ apply_layout(context& ctx, length_spec const& l, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, breadth_spec const& b, Fn&& fn)
+apply_layout(ui_context& ctx, breadth_spec const& b, Fn&& fn)
 {
     alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(0.f, b.value));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1582,7 +1582,7 @@ apply_layout(context& ctx, breadth_spec const& b, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(context& ctx, growth_spec const& g, Fn&& fn)
+apply_layout(ui_context& ctx, growth_spec const& g, Fn&& fn)
 {
     alia_layout_growth_override_begin(&ctx, g.value);
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1598,7 +1598,7 @@ template<
     class Fn>
 void
 apply_layout(
-    context& ctx,
+    ui_context& ctx,
     layout_spec<Flags, Pad, Width, Height, Growth> const& spec,
     Fn&& fn)
 {
@@ -1649,7 +1649,7 @@ apply_layout(
 
 template<class Fn>
 void
-apply_layout(context& ctx, layout_options const& layout, Fn&& fn)
+apply_layout(ui_context& ctx, layout_options const& layout, Fn&& fn)
 {
     if (layout.has_pad())
         alia_layout_edge_offsets_begin(&ctx, layout.pad_offsets, 0);

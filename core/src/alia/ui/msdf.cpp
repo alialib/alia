@@ -61,7 +61,7 @@ require_glyph(msdf_font_data const& font, uint32_t unicode)
 
 static inline void
 emit_glyph_draw_command(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_msdf_glyph const& glyph,
     cached_glyph_data const& cached_glyph,
@@ -262,7 +262,7 @@ msdf_engine_segment_info(
 void
 msdf_engine_draw_block_range(
     alia_text_engine* engine,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_text_block* block_opaque,
     size_t byte_start,
@@ -560,7 +560,7 @@ alia_msdf_break_text(
 extern "C" void
 alia_msdf_draw_text(
     alia_msdf_text_engine* fonts,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     char const* text,
     size_t length,
@@ -607,7 +607,7 @@ alia_msdf_draw_text(
 extern "C" void
 alia_msdf_draw_codepoint(
     alia_msdf_text_engine* fonts,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     uint32_t codepoint,
     float scale,

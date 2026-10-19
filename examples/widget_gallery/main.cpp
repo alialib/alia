@@ -49,7 +49,7 @@ char const* lorem_ipsum
       "dictum massa. Maecenas et euismod lorem, ut dapibus eros.";
 
 void
-do_heading(context& ctx, char const* text)
+do_heading(ui_context& ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -59,7 +59,7 @@ do_heading(context& ctx, char const* text)
 }
 
 void
-do_subheading(context& ctx, char const* text)
+do_subheading(ui_context& ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -71,13 +71,15 @@ do_subheading(context& ctx, char const* text)
 template<class Spacing, class Magnification>
 void
 do_controls(
-    context& ctx, Spacing const& spacing, Magnification const& magnification)
+    ui_context& ctx,
+    Spacing const& spacing,
+    Magnification const& magnification)
 {
     do_heading(ctx, "SETTINGS");
 
     do_subheading(ctx, "Typography");
     {
-        auto typography_index = use_state(&ctx, 0);
+        auto typography_index = use_state(&ctx.kernel, 0);
         radio_button(ctx, typography_index, 0, "Roboto");
         radio_button(ctx, typography_index, 1, "Source Sans 3");
         if (read_signal(typography_index) == 0)
@@ -104,61 +106,65 @@ do_controls(
 }
 
 void
-do_toggle_switch_demo(context& ctx)
+do_toggle_switch_demo(ui_context& ctx)
 {
     do_heading(ctx, "TOGGLE SWITCHES");
 
-    toggle_switch(ctx, use_state(&ctx, false), "Setting One");
-    toggle_switch(ctx, use_state(&ctx, false), "Setting Two");
-    toggle_switch(ctx, use_state(&ctx, false), "Setting Three");
+    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting One");
+    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting Two");
+    toggle_switch(ctx, use_state(&ctx.kernel, false), "Setting Three");
 }
 
 void
-do_radio_button_demo(context& ctx)
+do_radio_button_demo(ui_context& ctx)
 {
     do_heading(ctx, "RADIO BUTTONS");
 
-    auto radio_index = use_state(&ctx, 0);
+    auto radio_index = use_state(&ctx.kernel, 0);
     radio_button(ctx, radio_index, 0, "Option One");
     radio_button(ctx, radio_index, 1, "Option Two");
     radio_button(ctx, radio_index, 2, "Option Three");
 }
 
 void
-do_checkbox_demo(context& ctx)
+do_checkbox_demo(ui_context& ctx)
 {
     do_heading(ctx, "CHECKBOXES");
 
-    checkbox(ctx, use_state(&ctx, false), "Initially Unchecked");
-    checkbox(ctx, use_state(&ctx, true), "Initially Checked");
+    checkbox(ctx, use_state(&ctx.kernel, false), "Initially Unchecked");
+    checkbox(ctx, use_state(&ctx.kernel, true), "Initially Checked");
     checkbox(
-        ctx, disable_writes(use_state(&ctx, false)), "Disabled/Unchecked");
-    checkbox(ctx, disable_writes(use_state(&ctx, true)), "Disabled/Checked");
+        ctx,
+        disable_writes(use_state(&ctx.kernel, false)),
+        "Disabled/Unchecked");
+    checkbox(
+        ctx, disable_writes(use_state(&ctx.kernel, true)), "Disabled/Checked");
 }
 
 void
-do_node_expander_demo(context& ctx)
+do_node_expander_demo(ui_context& ctx)
 {
     do_heading(ctx, "NODE EXPANDER");
 
-    node_expander(ctx, use_state(&ctx, false), "Expandable");
-    node_expander(ctx, disable_writes(use_state(&ctx, true)), "Disabled");
+    node_expander(ctx, use_state(&ctx.kernel, false), "Expandable");
+    node_expander(
+        ctx, disable_writes(use_state(&ctx.kernel, true)), "Disabled");
 }
 
 void
-do_slider_demo(context& ctx)
+do_slider_demo(ui_context& ctx)
 {
     do_heading(ctx, "SLIDERS");
 
-    slider(ctx, use_state(&ctx, 5.f), 0.0, 10.0, 1.0);
+    slider(ctx, use_state(&ctx.kernel, 5.f), 0.0, 10.0, 1.0);
 }
 
 void
-do_collapsible_demo(context& ctx)
+do_collapsible_demo(ui_context& ctx)
 {
     do_heading(ctx, "COLLAPSIBLE");
 
-    auto collapsed = use_state(&ctx, false);
+    auto collapsed = use_state(&ctx.kernel, false);
     node_expander(ctx, collapsed, "Collapsible");
 
     alia::collapsible(ctx, collapsed, [&]() {
@@ -173,13 +179,13 @@ do_collapsible_demo(context& ctx)
 }
 
 void
-do_button_demo(context& ctx)
+do_button_demo(ui_context& ctx)
 {
     do_heading(ctx, "BUTTONS");
 
-    auto clicks = use_state(&ctx, 0);
-    auto n = use_state(&ctx, 0);
-    auto m = use_state(&ctx, 3);
+    auto clicks = use_state(&ctx.kernel, 0);
+    auto n = use_state(&ctx.kernel, 0);
+    auto m = use_state(&ctx.kernel, 3);
 
     {
         char label[64];
@@ -237,12 +243,12 @@ do_button_demo(context& ctx)
 }
 
 void
-do_dropdown_demo(context& ctx)
+do_dropdown_demo(ui_context& ctx)
 {
     do_heading(ctx, "DROPDOWN");
 
-    auto open = use_state(&ctx, false);
-    auto selected = use_state(&ctx, 0);
+    auto open = use_state(&ctx.kernel, false);
+    auto selected = use_state(&ctx.kernel, 0);
     char const* const items[] = {"First", "Second", "Third"};
 
     {
@@ -293,7 +299,7 @@ do_dropdown_demo(context& ctx)
 }
 
 void
-do_text_sample(context& ctx)
+do_text_sample(ui_context& ctx)
 {
     do_heading(ctx, "TEXT");
     flow(ctx, FILL, [&]() {
@@ -316,7 +322,7 @@ do_text_sample(context& ctx)
 }
 
 void
-do_content(context& ctx, layout_options layout = {})
+do_content(ui_context& ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_toggle_switch_demo(ctx);
@@ -341,7 +347,7 @@ do_content(context& ctx, layout_options layout = {})
 
 template<class Content>
 void
-with_spacing(context& ctx, float spacing, Content&& content)
+with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
     alia_layout_style* layout_style = alia_layout_style_active(&ctx);
     float old_spacing = layout_style->spacing;
@@ -351,10 +357,10 @@ with_spacing(context& ctx, float spacing, Content&& content)
 }
 
 void
-the_demo(context& ctx)
+the_demo(ui_context& ctx)
 {
-    auto spacing = use_state(&ctx, 6.f);
-    auto magnification = use_state(&ctx, 1.f);
+    auto spacing = use_state(&ctx.kernel, 6.f);
+    auto magnification = use_state(&ctx.kernel, 1.f);
 
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
@@ -395,7 +401,7 @@ the_demo(context& ctx)
 }
 
 static void
-the_demo_controller(void* user_data, alia_context* ctx)
+the_demo_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
     the_demo(*ctx);

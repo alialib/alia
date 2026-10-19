@@ -41,7 +41,7 @@ aligned_free_portable(void* p)
 }
 
 static void
-noop_controller(void* user_data, alia_context* ctx)
+noop_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
     (void) ctx;
@@ -51,7 +51,7 @@ typedef struct animation_rig
 {
     void* storage;
     alia_ui_system* system;
-    alia_context ctx;
+    alia_ui_context ctx;
     uint32_t bits;
 } animation_rig;
 
@@ -69,6 +69,8 @@ rig_init(animation_rig* rig)
         rig->storage, controller, alia_vec2i_make(64, 64));
     TEST_ASSERT(rig->system != NULL);
     rig->ctx.system = rig->system;
+    // The kernel object is the first member of `alia_ui_system`.
+    rig->ctx.kernel.object = (alia_kernel*) rig->system;
 }
 
 static void
@@ -93,10 +95,11 @@ check_flares(
     alia_nanosecond_count const* expected,
     unsigned expected_count)
 {
-    rig->ctx.tick_count = tick;
+    rig->ctx.kernel.tick_count = tick;
     alia_nanosecond_count got[8];
     memset(got, 0, sizeof(got));
-    unsigned count = alia_animation_process_flares(&rig->ctx, rig_bit(rig), got);
+    unsigned count
+        = alia_animation_process_flares(&rig->ctx.kernel, rig_bit(rig), got);
     TEST_CHECK(count == expected_count);
     unsigned i;
     for (i = 0; i < count && i < expected_count; ++i)
@@ -111,15 +114,17 @@ test_flares(void)
 
     check_flares(&rig, alia_milliseconds(0), NULL, 0);
 
-    rig.ctx.tick_count = alia_milliseconds(0);
-    alia_animation_fire_flare(&rig.ctx, rig_bit(&rig), alia_milliseconds(1000));
+    rig.ctx.kernel.tick_count = alia_milliseconds(0);
+    alia_animation_fire_flare(
+        &rig.ctx.kernel, rig_bit(&rig), alia_milliseconds(1000));
 
     {
         alia_nanosecond_count expected[] = {alia_milliseconds(900)};
         check_flares(&rig, alia_milliseconds(100), expected, 1);
     }
 
-    alia_animation_fire_flare(&rig.ctx, rig_bit(&rig), alia_milliseconds(1000));
+    alia_animation_fire_flare(
+        &rig.ctx.kernel, rig_bit(&rig), alia_milliseconds(1000));
 
     {
         alia_nanosecond_count expected[]
@@ -145,12 +150,12 @@ test_flares(void)
 static float
 transition_at(animation_rig* rig, alia_nanosecond_count tick, bool state)
 {
-    rig->ctx.tick_count = tick;
+    rig->ctx.kernel.tick_count = tick;
     alia_animated_transition transition;
     transition.curve = alia_linear_curve;
     transition.duration = alia_milliseconds(1000);
     return alia_transition_float(
-        &rig->ctx, &transition, rig_bit(rig), state, 0.f, 1.f);
+        &rig->ctx.kernel, &transition, rig_bit(rig), state, 0.f, 1.f);
 }
 
 static void

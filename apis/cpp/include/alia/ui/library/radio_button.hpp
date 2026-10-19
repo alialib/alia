@@ -19,13 +19,13 @@ namespace alia {
 // (There is no way to set `value` to false via the UI.)
 template<binding_of<bool> Signal, layout_like Layout = layout_options>
 alia_element_id
-radio_button(context& ctx, Signal const& value, Layout layout = {})
+radio_button(ui_context& ctx, Signal const& value, Layout layout = {})
 {
     alia_element_id id{};
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         auto c = to_inline_c_signal<alia_bool_signal>(value);
         id = alia_radio_button(&ctx, &c, raw_code(flags));
-        write_back_c_signal(&ctx, value, c);
+        write_back_c_signal(&ctx.kernel, value, c);
     });
     return id;
 }
@@ -34,7 +34,10 @@ radio_button(context& ctx, Signal const& value, Layout layout = {})
 template<binding_of<bool> Signal, layout_like Layout = layout_options>
 alia_element_id
 radio_button(
-    context& ctx, Signal const& value, char const* label, Layout layout = {})
+    ui_context& ctx,
+    Signal const& value,
+    char const* label,
+    Layout layout = {})
 {
     return detail::labeled_bool_control(ctx, label, layout, [&] {
         return radio_button(ctx, value, CENTER_Y);
@@ -50,7 +53,7 @@ template<class Selected, class Index, layout_like Layout = layout_options>
           && (!std::convertible_to<std::remove_cvref_t<Index>, char const*>)
 alia_element_id
 radio_button(
-    context& ctx, Selected const& selected, Index index, Layout layout = {})
+    ui_context& ctx, Selected const& selected, Index index, Layout layout = {})
 {
     return radio_button(
         ctx, make_radio_signal(selected, std::move(index)), layout);
@@ -63,7 +66,7 @@ template<class Selected, class Index, layout_like Layout = layout_options>
           && (!layout_like<std::remove_cvref_t<Index>>)
 alia_element_id
 radio_button(
-    context& ctx,
+    ui_context& ctx,
     Selected const& selected,
     Index index,
     char const* label,

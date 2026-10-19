@@ -25,13 +25,16 @@ void
 mark_dirty_component(component_container_ptr const& container);
 
 void
-mark_dirty_component(ephemeral_context& ctx);
+mark_dirty_component(ui_context& ctx);
 
 void
 mark_animating_component(component_container_ptr const& container);
 
 void
-mark_animating_component(ephemeral_context& ctx);
+mark_animating_component(ui_context& ctx);
+
+void
+mark_animating_component(alia_kernel_context& ctx);
 
 // TODO: Make this a C-friendly API.
 
@@ -82,7 +85,7 @@ mark_animating_component(ephemeral_context& ctx);
 //     }
 
 //  private:
-//     optional_context<ephemeral_context> ctx_;
+//     optional_context<ui_context> ctx_;
 //     component_container_ptr* container_;
 //     component_container_ptr* parent_;
 //     bool is_on_route_;

@@ -81,8 +81,8 @@ TEST_CASE("responsive color ops")
 
         alia_srgba8 const saturated
             = alia_color_op_resolve(&palette, red, alia_color_op_none());
-        alia_srgba8 const grayed = alia_color_op_resolve(
-            &palette, red, alia_color_op_adjust(0, 0));
+        alia_srgba8 const grayed
+            = alia_color_op_resolve(&palette, red, alia_color_op_adjust(0, 0));
         CHECK(channel_spread(grayed) < channel_spread(saturated));
         CHECK(grayed.a == saturated.a);
     }

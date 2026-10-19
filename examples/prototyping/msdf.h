@@ -32,14 +32,14 @@ struct msdf_text_layout_node
 };
 
 static text_layout_placement_header&
-msdf_consume_text_placement_header(context& ctx)
+msdf_consume_text_placement_header(ui_context& ctx)
 {
     return *arena_alloc<text_layout_placement_header>(
         *alia_layout_placement_arena(&ctx));
 }
 
 static text_layout_placement_fragment&
-msdf_consume_text_placement_fragment(context& ctx)
+msdf_consume_text_placement_fragment(ui_context& ctx)
 {
     return *arena_alloc<text_layout_placement_fragment>(
         *alia_layout_placement_arena(&ctx));
@@ -439,7 +439,7 @@ alia_layout_node_vtable text_layout_vtable
 // ctx.geometry->scale once.
 bool
 do_text(
-    context& ctx,
+    ui_context& ctx,
     alia_z_index z_index,
     alia_srgba8 color,
     float scale,

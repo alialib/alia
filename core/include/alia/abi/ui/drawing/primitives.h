@@ -78,7 +78,7 @@ typedef struct alia_box_paint
 
 static inline void
 alia_draw_box(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_box box,
     alia_box_paint paint)
@@ -105,7 +105,7 @@ alia_draw_box(
 
 static inline void
 alia_draw_rounded_box(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_box box,
     alia_srgba8 color,
@@ -123,7 +123,7 @@ alia_draw_rounded_box(
 
 static inline void
 alia_draw_equilateral_triangle(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_box box,
     alia_srgba8 color,
@@ -144,7 +144,7 @@ alia_draw_equilateral_triangle(
 
 static inline void
 alia_draw_circle(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_vec2f center,
     float radius,
@@ -164,7 +164,7 @@ alia_draw_circle(
 
 static inline void
 alia_draw_squircle(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_box box,
     float radius,

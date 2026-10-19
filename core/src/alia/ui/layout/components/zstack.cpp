@@ -123,13 +123,13 @@ alia_layout_node_vtable zstack_vtable
 extern "C" {
 
 void
-alia_layout_zstack_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_zstack_begin(alia_ui_context* ctx, alia_layout_flags_t flags)
 {
     alia_layout_container_simple_begin(ctx, &alia::zstack_vtable, flags, 0.f);
 }
 
 void
-alia_layout_zstack_end(alia_context* ctx)
+alia_layout_zstack_end(alia_ui_context* ctx)
 {
     alia_layout_container_simple_end(ctx);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/core.hpp>
 #include <alia/kernel/signals/utilities.hpp>
@@ -58,12 +60,12 @@ struct empty_signal
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
     std::optional<constant_value_tag>
-    post_write(alia_context*, Value) const override
+    post_write(kernel_context*, Value) const override
     {
         return std::nullopt;
     }
     std::optional<constant_value_tag>
-    post_clear(alia_context*) const override
+    post_clear(kernel_context*) const override
     {
         return std::nullopt;
     }
@@ -226,14 +228,14 @@ struct pointer_binding
         return true;
     }
     std::optional<Value>
-    post_write(alia_context* ctx, Value value) const override
+    post_write(kernel_context* ctx, Value value) const override
     {
         Value id = value;
         post_assignment(ctx, v_, std::move(value));
         return id;
     }
     std::optional<Value>
-    post_mutation_commit(alia_context*) const override
+    post_mutation_commit(kernel_context*) const override
     {
         // Value-as-ID signals cannot predict the ID of an arbitrary in-place
         // mutation.
@@ -329,7 +331,7 @@ struct versioned_pointer_binding
         return true;
     }
     std::optional<Version>
-    post_write(alia_context* ctx, Value value) const override
+    post_write(kernel_context* ctx, Value value) const override
     {
         Version const expected = *version_ + 1;
         post_call(
@@ -341,7 +343,7 @@ struct versioned_pointer_binding
         return expected;
     }
     std::optional<Version>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         Version const expected = *version_ + 1;
         post_call(ctx, [version = version_]() { ++*version; });

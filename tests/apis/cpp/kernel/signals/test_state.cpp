@@ -95,26 +95,26 @@ TEST_CASE("use_state persists across traversals")
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx, t.root_anchor(), &spec);
+    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
     {
-        auto s = use_state(&t.ctx, 42);
+        auto s = use_state(&t.ctx.kernel, 42);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 42);
-        write_signal(&t.ctx, s, 100);
+        write_signal(&t.ctx.kernel, s, 100);
         t.run_effects();
         CHECK(read_signal(s) == 100);
     }
-    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx.kernel);
 
     t.advance_refresh();
     t.reset_traversal();
-    alia_substrate_begin_block(&t.ctx, t.root_anchor(), &spec);
+    alia_substrate_begin_block(&t.ctx.kernel, t.root_anchor(), &spec);
     {
-        auto s = use_state(&t.ctx, 42);
+        auto s = use_state(&t.ctx.kernel, 42);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 100);
     }
-    (void) alia_substrate_end_block(&t.ctx);
+    (void) alia_substrate_end_block(&t.ctx.kernel);
 
     t.cleanup_root_block();
 }

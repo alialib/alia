@@ -9,7 +9,7 @@ namespace alia {
 // Emit a separator.
 template<layout_like Layout = layout_options>
 void
-separator(context& ctx, Layout layout = {})
+separator(ui_context& ctx, Layout layout = {})
 {
     auto opts = as_layout_options(layout);
     alia_vec2f const size = layout_content_size(opts);

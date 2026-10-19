@@ -142,7 +142,7 @@ struct alia_text_engine_vtable
     // starting at `baseline_origin`.
     void (*draw_block_range)(
         alia_text_engine* engine,
-        alia_context* ctx,
+        alia_ui_context* ctx,
         alia_z_index z_index,
         alia_text_block* block,
         size_t byte_start,
@@ -223,20 +223,20 @@ alia_font_key(alia_font font)
 // anywhere within the current pass through the component subtree, but it
 // shouldn't be stored across frames without proper lifetime consideration.
 alia_resolved_font const*
-alia_resolve_font(alia_context* ctx, alia_font font);
+alia_resolve_font(alia_ui_context* ctx, alia_font font);
 
 // Push a resolved font, making it the active font for the current scope.
 void
-alia_font_push(alia_context* ctx, alia_resolved_font const* font);
+alia_font_push(alia_ui_context* ctx, alia_resolved_font const* font);
 
 // Pop the active font, restoring the previous one.
 void
-alia_font_pop(alia_context* ctx);
+alia_font_pop(alia_ui_context* ctx);
 
 // Return the active font.
 // Asserts if there is no active font.
 static inline alia_resolved_font const*
-alia_active_font(alia_context* ctx)
+alia_active_font(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx && ctx->active_font);
     return ctx->active_font;
@@ -244,7 +244,7 @@ alia_active_font(alia_context* ctx)
 
 // Get the active font's metrics. Asserts if there is no active font.
 static inline alia_font_metrics const*
-alia_active_font_metrics(alia_context* ctx)
+alia_active_font_metrics(alia_ui_context* ctx)
 {
     return &alia_active_font(ctx)->metrics;
 }
@@ -265,7 +265,7 @@ typedef struct alia_text_style
 // `style` may be NULL, in which case the active font and text color are used.
 void
 alia_text(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t flags,
     alia_text_input_signal text,
     alia_text_style const* style);

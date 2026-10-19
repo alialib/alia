@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/effects.hpp>
 
@@ -25,7 +27,7 @@ struct noop_action : action_interface<Args...>
     }
 
     void
-    post(alia_context*, Args...) const override
+    post(kernel_context*, Args...) const override
     {
     }
 };
@@ -58,7 +60,7 @@ struct unready_action : action_interface<Args...>
 
     // LCOV_EXCL_START
     void
-    post(alia_context*, Args...) const override
+    post(kernel_context*, Args...) const override
     {
         // This action is never supposed to be posted!
         assert(0);
@@ -126,7 +128,7 @@ struct callback_action<IsReady, Fn, action_interface<Args...>>
     }
 
     void
-    post(alia_context* ctx, Args... args) const override
+    post(kernel_context* ctx, Args... args) const override
     {
         post_call(
             ctx,

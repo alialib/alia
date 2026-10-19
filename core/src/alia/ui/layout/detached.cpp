@@ -43,7 +43,8 @@ measure_detached_size(alia_layout_system* system, alia_layout_node* root)
 extern "C" {
 
 alia_vec2f
-alia_layout_detached_measure(alia_context* ctx, alia_layout_detached* detached)
+alia_layout_detached_measure(
+    alia_ui_context* ctx, alia_layout_detached* detached)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(detached);
@@ -58,7 +59,7 @@ alia_layout_detached_measure(alia_context* ctx, alia_layout_detached* detached)
 
 void
 alia_layout_detached_assign(
-    alia_context* ctx, alia_layout_detached* detached, alia_vec2f size)
+    alia_ui_context* ctx, alia_layout_detached* detached, alia_vec2f size)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(detached);
@@ -85,7 +86,8 @@ alia_layout_detached_assign(
 }
 
 void
-alia_layout_detached_begin(alia_context* ctx, alia_layout_detached* detached)
+alia_layout_detached_begin(
+    alia_ui_context* ctx, alia_layout_detached* detached)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(detached);
@@ -93,7 +95,7 @@ alia_layout_detached_begin(alia_context* ctx, alia_layout_detached* detached)
 
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<detached_emission_scope>(ctx);
+        auto& scope = stack_push<detached_emission_scope>(&ctx->kernel);
         scope.old_next_ptr = ctx->layout->emission.next_ptr;
         detached->root = nullptr;
         ctx->layout->emission.next_ptr = &detached->root;
@@ -103,27 +105,27 @@ alia_layout_detached_begin(alia_context* ctx, alia_layout_detached* detached)
         ALIA_ASSERT(ctx->layout->system);
         ALIA_ASSERT(
             detached->generation == ctx->layout->system->placement.generation);
-        auto& scope = stack_push<detached_placement_scope>(ctx);
+        auto& scope = stack_push<detached_placement_scope>(&ctx->kernel);
         scope.old_placement_offset = ctx->layout->placement.offset;
         ctx->layout->placement.offset = detached->region.offset;
     }
 }
 
 void
-alia_layout_detached_end(alia_context* ctx)
+alia_layout_detached_end(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->layout);
 
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<detached_emission_scope>(ctx);
+        auto& scope = stack_pop<detached_emission_scope>(&ctx->kernel);
         *ctx->layout->emission.next_ptr = nullptr;
         ctx->layout->emission.next_ptr = scope.old_next_ptr;
     }
     else
     {
-        auto& scope = stack_pop<detached_placement_scope>(ctx);
+        auto& scope = stack_pop<detached_placement_scope>(&ctx->kernel);
         ctx->layout->placement.offset = scope.old_placement_offset;
     }
 }

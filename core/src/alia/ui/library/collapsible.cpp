@@ -137,16 +137,16 @@ ALIA_EXTERN_C_BEGIN
 
 bool
 alia_collapsible_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     bool expanded,
     alia_layout_flags_t column_flags,
     float offset_factor,
     alia_animated_transition const* transition)
 {
-    auto& scope = stack_push<collapsible_scope>(ctx);
+    auto& scope = stack_push<collapsible_scope>(&ctx->kernel);
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(collapsible_state), alignof(collapsible_state));
+        &ctx->kernel, sizeof(collapsible_state), alignof(collapsible_state));
     auto* data = reinterpret_cast<collapsible_state*>(result.ptr);
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
@@ -157,13 +157,13 @@ alia_collapsible_begin(
 
     scope.data = data;
     scope.offset_factor = offset_factor;
-    scope.id = alia_make_element_id(ctx, result);
+    scope.id = alia_make_element_id(&ctx->kernel, result);
 
     alia_animated_transition const* transition_eff
         = transition != nullptr ? transition : &default_collapsible_transition;
 
     float const expansion = alia_transition_float(
-        ctx,
+        &ctx->kernel,
         transition_eff,
         ALIA_BITREF(data->bits, expansion_smoothing),
         expanded,
@@ -222,7 +222,7 @@ alia_collapsible_begin(
 
     // TODO: We could combine all this stack data into a single structure
     // and avoid some of this conditional push/pop complexity.
-    stack_push<bool>(ctx) = apply_geometry;
+    stack_push<bool>(&ctx->kernel) = apply_geometry;
 
     // TODO: Layout could be entirely conditional based on the expansion value.
     alia_layout_column_begin(ctx, column_flags, 0.f);
@@ -231,12 +231,12 @@ alia_collapsible_begin(
 }
 
 void
-alia_collapsible_end(alia_context* ctx)
+alia_collapsible_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
         alia_layout_column_end(ctx);
-        auto scope = stack_pop<collapsible_scope>(ctx);
+        auto scope = stack_pop<collapsible_scope>(&ctx->kernel);
         if (scope.node)
             alia_layout_container_deactivate(ctx, &scope.node->base);
         return;
@@ -244,14 +244,14 @@ alia_collapsible_end(alia_context* ctx)
 
     alia_layout_column_end(ctx);
 
-    bool const apply_geometry = stack_pop<bool>(ctx);
+    bool const apply_geometry = stack_pop<bool>(&ctx->kernel);
     if (apply_geometry)
     {
         alia_geometry_pop_translation(ctx);
         alia_geometry_pop_clip_box(ctx);
     }
 
-    (void) stack_pop<collapsible_scope>(ctx);
+    (void) stack_pop<collapsible_scope>(&ctx->kernel);
 }
 
 ALIA_EXTERN_C_END

@@ -74,10 +74,10 @@ teardown_stock_text()
 }
 
 void
-embed_controller(void* /*user*/, alia_context* ctx)
+embed_controller(void* /*user*/, alia_ui_context* ctx)
 {
-    if (ctx->events && ctx->events->event
-        && ctx->events->event->type == ALIA_EVENT_DRAW)
+    if (ctx->kernel.events && ctx->kernel.events->event
+        && ctx->kernel.events->event->type == ALIA_EVENT_DRAW)
     {
         alia_vec2i const size = alia_ui_surface_get_size(ctx->system);
         alia_srgba8 const bg
@@ -131,7 +131,8 @@ embed_controller(void* /*user*/, alia_context* ctx)
         if (signal.flags & ALIA_SIGNAL_WRITTEN)
         {
             float const value = static_cast<float>(signal.value);
-            alia_post_write(ctx, &g_value, &value, sizeof(g_value), "g_value");
+            alia_post_write(
+                &ctx->kernel, &g_value, &value, sizeof(g_value), "g_value");
         }
     }
     alia_layout_column_end(ctx);

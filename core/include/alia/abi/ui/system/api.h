@@ -9,7 +9,7 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_ui_system alia_ui_system;
 
-typedef void (*alia_ui_controller_fn)(void* user_data, alia_context* ctx);
+typedef void (*alia_ui_controller_fn)(void* user_data, alia_ui_context* ctx);
 
 typedef struct alia_ui_controller
 {

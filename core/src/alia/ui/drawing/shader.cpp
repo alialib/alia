@@ -45,7 +45,7 @@ alia_ui_register_shader(
 
 void
 alia_draw_shader(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_box region,
@@ -80,7 +80,7 @@ alia_draw_shader(
 
 alia_element_id
 alia_do_shader(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     void const* params,
@@ -89,12 +89,14 @@ alia_do_shader(
     alia_vec2f min_size)
 {
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(shader_component_data), alignof(shader_component_data));
+        &ctx->kernel,
+        sizeof(shader_component_data),
+        alignof(shader_component_data));
     shader_component_data* data = (shader_component_data*) result.ptr;
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id = alia_make_element_id(ctx, result);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, result);
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)

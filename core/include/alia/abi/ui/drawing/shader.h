@@ -71,7 +71,7 @@ typedef struct alia_shader_draw_command
 // Record a shader draw command.
 void
 alia_draw_shader(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_box region,
@@ -82,7 +82,7 @@ alia_draw_shader(
 // TODO: Move elsewhere?
 alia_element_id
 alia_do_shader(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     void const* params,

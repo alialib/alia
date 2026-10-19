@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/base/stack.h>
-#include <alia/abi/context.h>
+#include <alia/abi/kernel/context.h>
 
 #include <alia/prelude.hpp>
 
@@ -9,7 +9,7 @@ namespace alia {
 
 template<typename T>
 T&
-stack_push(alia_context* ctx)
+stack_push(alia_kernel_context* ctx)
 {
     static_assert(
         std::is_trivially_destructible<T>::value,
@@ -31,7 +31,7 @@ stack_push(alia_context* ctx)
 
 template<typename T>
 T&
-stack_pop(alia_context* ctx)
+stack_pop(alia_kernel_context* ctx)
 {
     T* ptr = reinterpret_cast<T*>(alia_stack_peek_payload(ctx->stack));
     alia_stack_pop(ctx->stack);

@@ -84,8 +84,7 @@ button_style_apply_outline(
             ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0x00)));
 
     style->label = responsive_color_make(
-        alia_palette_color_swatch(
-            swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff),
+        alia_palette_color_swatch(swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff),
         alia_color_op_none(),
         alia_color_op_none(),
         alia_color_op_replace(
@@ -142,19 +141,19 @@ alia_button_style_apply_swatch(
 
 alia_button_result_t
 alia_button_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_button_flags_t flags,
     alia_layout_flags_t layout_flags)
 {
     alia_substrate_usage_result const usage
-        = alia_substrate_use_memory(ctx, 1, 1);
-    alia_element_id const id = alia_make_element_id(ctx, usage);
+        = alia_substrate_use_memory(&ctx->kernel, 1, 1);
+    alia_element_id const id = alia_make_element_id(&ctx->kernel, usage);
 
     alia_button_style const* const style = alia_button_style_active(ctx);
     bool const is_disabled = (flags & ALIA_BUTTON_DISABLED) != 0;
     alia_button_result_t pass_result = ALIA_BUTTON_RESULT_NONE;
 
-    auto& scope = stack_push<button_scope>(ctx);
+    auto& scope = stack_push<button_scope>(&ctx->kernel);
     scope = button_scope{
         .id = id,
         .flags = flags,
@@ -233,13 +232,13 @@ alia_button_begin(
 }
 
 void
-alia_button_end(alia_context* ctx)
+alia_button_end(alia_ui_context* ctx)
 {
     alia_layout_row_end(ctx);
     alia_layout_edge_offsets_end(ctx);
     alia_layout_edge_offsets_end(ctx);
 
-    auto scope = stack_pop<button_scope>(ctx);
+    auto scope = stack_pop<button_scope>(&ctx->kernel);
 
     if (is_refresh_event(*ctx))
         return;

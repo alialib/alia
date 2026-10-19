@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/abi/kernel/substrate.h>
 
 #include <new>
@@ -13,7 +15,7 @@ namespace alia {
 
 // general allocator associated with the substrate system on `ctx`
 inline alia_general_allocator*
-substrate_allocator(alia_context* ctx)
+substrate_allocator(kernel_context* ctx)
 {
     return alia_substrate_system_allocator(alia_ctx_substrate_system(ctx));
 }
@@ -96,7 +98,7 @@ struct cache_storage
 // responsible for initializing fresh nodes.
 template<class T>
 use_result<T>
-use_memory(alia_context* ctx)
+use_memory(kernel_context* ctx)
 {
     alia_substrate_usage_result usage
         = alia_substrate_use_memory(ctx, sizeof(T), alignof(T));
@@ -111,7 +113,7 @@ use_memory(alia_context* ctx)
 // object remains constructed.
 template<class T>
 use_result<T>
-use_object(alia_context* ctx)
+use_object(kernel_context* ctx)
 {
     static_assert(std::is_default_constructible_v<T>);
 
@@ -132,7 +134,7 @@ use_object(alia_context* ctx)
 // (`is_fresh()` is true when it was just constructed).
 template<class T>
 use_result<T>
-use_cache(alia_context* ctx)
+use_cache(kernel_context* ctx)
 {
     static_assert(std::is_default_constructible_v<T>);
 
@@ -155,7 +157,7 @@ use_cache(alia_context* ctx)
 
 // Use an anchor from the current substrate block.
 inline alia_substrate_anchor*
-use_anchor(alia_context* ctx)
+use_anchor(kernel_context* ctx)
 {
     return alia_substrate_use_anchor(ctx);
 }

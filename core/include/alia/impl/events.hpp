@@ -33,31 +33,43 @@ template<class Context>
 component_container_ptr const
 get_active_component_container(Context& ctx)
 {
-    return *ctx.events->active_container;
+    return *ctx.kernel.events->active_container;
 }
 
 using component_identity = std::weak_ptr<component_container>;
 
 inline alia_event_category
-get_event_category(ephemeral_context& ctx)
+get_event_category(ui_context& ctx)
 {
-    return ctx.events->event->category;
+    return ctx.kernel.events->event->category;
 }
 
 inline alia_event_type
-get_event_type(ephemeral_context& ctx)
+get_event_type(ui_context& ctx)
+{
+    return ctx.kernel.events->event->type;
+}
+
+inline alia_event_type
+get_event_type(alia_kernel_context& ctx)
 {
     return ctx.events->event->type;
 }
 
 inline alia_element_id
-get_event_target(ephemeral_context& ctx)
+get_event_target(ui_context& ctx)
 {
-    return ctx.events->event->target;
+    return ctx.kernel.events->event->target;
 }
 
 inline bool
-is_refresh_event(ephemeral_context& ctx)
+is_refresh_event(ui_context& ctx)
+{
+    return get_event_type(ctx) == ALIA_EVENT_REFRESH;
+}
+
+inline bool
+is_refresh_event(alia_kernel_context& ctx)
 {
     return get_event_type(ctx) == ALIA_EVENT_REFRESH;
 }
@@ -66,13 +78,19 @@ is_refresh_event(ephemeral_context& ctx)
 
 template<class Payload>
 inline Payload&
-unsafe_get_event_payload(ephemeral_context& ctx)
+unsafe_get_event_payload(ui_context& ctx)
 {
-    return *reinterpret_cast<Payload*>(ctx.events->event->payload);
+    return *reinterpret_cast<Payload*>(ctx.kernel.events->event->payload);
 }
 
 #define X(code, CATEGORY, flags, NAME, name, data_type)                       \
-    inline data_type& as_##name##_event(ephemeral_context& ctx)               \
+    inline data_type& as_##name##_event(ui_context& ctx)                      \
+    {                                                                         \
+        ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
+        return *reinterpret_cast<data_type*>(                                 \
+            ctx.kernel.events->event->payload);                               \
+    }                                                                         \
+    inline data_type& as_##name##_event(alia_kernel_context& ctx)             \
     {                                                                         \
         ALIA_ASSERT(get_event_type(ctx) == ALIA_EVENT_##NAME);                \
         return *reinterpret_cast<data_type*>(ctx.events->event->payload);     \
@@ -98,7 +116,7 @@ ALIA_EVENTS(X)
 
 // template<class Event>
 // bool
-// detect_event(ephemeral_context& ctx, Event** event)
+// detect_event(ui_context& ctx, Event** event)
 // {
 //     event_traversal& traversal = get_event_traversal(ctx);
 //     if (traversal.event->type == ALIA_EVENT_TYPE(Event))
@@ -125,11 +143,10 @@ ALIA_EVENTS(X)
 typedef component_identity* component_id;
 
 void
-refresh_component_identity(
-    ephemeral_context& ctx, component_identity& identity);
+refresh_component_identity(ui_context& ctx, component_identity& identity);
 
 component_id
-get_component_id(ephemeral_context& ctx);
+get_component_id(ui_context& ctx);
 
 // external_component_id identifies a component in a form that can be safely
 // stored outside of the alia data graph.
@@ -168,7 +185,7 @@ struct targeted_event
 
 template<class Event>
 bool
-detect_targeted_event(ephemeral_context& ctx, component_id id, Event** event)
+detect_targeted_event(ui_context& ctx, component_id id, Event** event)
 {
     return detect_event(ctx, event) && (*event)->target_id == id;
 }

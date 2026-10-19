@@ -1,5 +1,7 @@
 #pragma once
 
+#include <alia/context.hpp>
+
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/core.hpp>
@@ -78,12 +80,12 @@ struct writability_faker
     // called.
     // LCOV_EXCL_START
     std::optional<typename Wrapped::value_id_type>
-    post_write(alia_context*, typename Wrapped::value_type) const override
+    post_write(kernel_context*, typename Wrapped::value_type) const override
     {
         return std::nullopt;
     }
     std::optional<typename Wrapped::value_id_type>
-    post_mutation_commit(alia_context*) const override
+    post_mutation_commit(kernel_context*) const override
     {
         return std::nullopt;
     }
@@ -126,7 +128,7 @@ struct casting_signal
         *dst = static_cast<To>(this->wrapped_.read());
     }
     std::optional<typename Wrapped::value_id_type>
-    post_write(alia_context* ctx, To value) const override
+    post_write(kernel_context* ctx, To value) const override
     {
         return this->wrapped_.post_write(
             ctx, static_cast<typename Wrapped::value_type>(value));
@@ -207,7 +209,7 @@ struct default_value_signal
     }
     std::optional<std::pair<bool, id_view>>
     post_write(
-        alia_context* ctx, typename Primary::value_type value) const override
+        kernel_context* ctx, typename Primary::value_type value) const override
     {
         auto inner = this->wrapped_.post_write(ctx, std::move(value));
         if (!inner)
@@ -215,7 +217,7 @@ struct default_value_signal
         return std::pair{true, detail::erase_value_id(ctx, *inner)};
     }
     std::optional<std::pair<bool, id_view>>
-    post_clear(alia_context* ctx) const override
+    post_clear(kernel_context* ctx) const override
     {
         (void) this->wrapped_.post_clear(ctx);
         // After clearing the primary, the signal falls back to the default
@@ -230,7 +232,7 @@ struct default_value_signal
         return std::nullopt;
     }
     std::optional<std::pair<bool, id_view>>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         auto inner = this->wrapped_.post_mutation_commit(ctx);
         if (!inner)
@@ -281,20 +283,20 @@ struct simplified_id_wrapper
     }
     std::optional<typename Wrapped::value_type>
     post_write(
-        alia_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context* ctx, typename Wrapped::value_type value) const override
     {
         typename Wrapped::value_type id = value;
         (void) this->wrapped_.post_write(ctx, std::move(value));
         return id;
     }
     std::optional<typename Wrapped::value_type>
-    post_clear(alia_context* ctx) const override
+    post_clear(kernel_context* ctx) const override
     {
         (void) this->wrapped_.post_clear(ctx);
         return std::nullopt;
     }
     std::optional<typename Wrapped::value_type>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
         return std::nullopt;
@@ -332,19 +334,19 @@ struct override_id_wrapper
     }
     std::optional<std::invoke_result_t<GenerateId const&>>
     post_write(
-        alia_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context* ctx, typename Wrapped::value_type value) const override
     {
         (void) this->wrapped_.post_write(ctx, std::move(value));
         return generate_id_();
     }
     std::optional<std::invoke_result_t<GenerateId const&>>
-    post_clear(alia_context* ctx) const override
+    post_clear(kernel_context* ctx) const override
     {
         (void) this->wrapped_.post_clear(ctx);
         return generate_id_();
     }
     std::optional<std::invoke_result_t<GenerateId const&>>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
         return generate_id_();
@@ -587,19 +589,19 @@ struct unwrapper_signal
     }
     std::optional<typename Wrapped::value_id_type>
     post_write(
-        alia_context* ctx,
+        kernel_context* ctx,
         typename Wrapped::value_type::value_type value) const override
     {
         return this->wrapped_.post_write(
             ctx, typename Wrapped::value_type(std::move(value)));
     }
     std::optional<typename Wrapped::value_id_type>
-    post_clear(alia_context* ctx) const override
+    post_clear(kernel_context* ctx) const override
     {
         return this->wrapped_.post_write(ctx, typename Wrapped::value_type());
     }
     std::optional<typename Wrapped::value_id_type>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         return this->wrapped_.post_mutation_commit(ctx);
     }
@@ -615,8 +617,8 @@ unwrap(Signal signal)
 //
 // If the input signal is movable, the returned signal's value can be accessed
 // via `durable_ref()` for steal-out. (The ref should be recorded in an effect
-// and only accessed when the effect is run; call `post_mutation_commit` on writable
-// durable signals after stealing.)
+// and only accessed when the effect is run; call `post_mutation_commit` on
+// writable durable signals after stealing.)
 //
 // If the input signal isn't movable, it's returned unchanged.
 //
@@ -693,7 +695,7 @@ struct radio_signal
         return signal_ready_to_write(selected_) && signal_has_value(index_);
     }
     std::optional<bool>
-    post_write(alia_context* ctx, bool) const override
+    post_write(kernel_context* ctx, bool) const override
     {
         write_signal(ctx, selected_, read_signal(index_));
         return true;

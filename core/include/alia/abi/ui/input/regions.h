@@ -27,7 +27,7 @@ enum
 // Handle all region-related events for a rectangular region.
 void
 alia_element_box_region(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_box const* region,
     alia_z_index z_plane,
@@ -39,7 +39,7 @@ alia_element_box_region(
 // surface coordinates and stored as part of the hit test result.
 void
 alia_element_report_hit(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_box const* bounding_box,
     alia_z_index z_plane,
@@ -49,13 +49,13 @@ alia_element_report_hit(
 // Respond to `make_widget_visible` events for a given region.
 void
 alia_element_handle_visibility(
-    alia_context* ctx, alia_element_id id, alia_box const* region);
+    alia_ui_context* ctx, alia_element_id id, alia_box const* region);
 
 // Override the cursor for a given element. This can be called after hit
 // testing to override the cursor associated with an element.
 void
 alia_element_override_cursor(
-    alia_context* ctx, alia_element_id id, alia_cursor_t cursor);
+    alia_ui_context* ctx, alia_element_id id, alia_cursor_t cursor);
 
 ALIA_EXTERN_C_END
 

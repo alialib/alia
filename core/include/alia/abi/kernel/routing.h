@@ -1,7 +1,7 @@
 #ifndef ALIA_ABI_ROUTING_H
 #define ALIA_ABI_ROUTING_H
 
-#include <alia/abi/context.h>
+#include <alia/abi/kernel/context.h>
 #include <alia/abi/prelude.h>
 
 #include <alia/abi/kernel/substrate.h>
@@ -42,7 +42,8 @@ alia_element_id_equal(alia_element_id a, alia_element_id b)
 ALIA_DEFINE_EQUALITY_OPERATOR(alia_element_id);
 
 static inline alia_element_id
-alia_make_element_id(alia_context* ctx, alia_substrate_usage_result result)
+alia_make_element_id(
+    alia_kernel_context* ctx, alia_substrate_usage_result result)
 {
     // TODO: Get the route node ID from the context.
     return ALIA_BRACED_INIT(alia_element_id, result.ptr, result.generation, 0);

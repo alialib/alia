@@ -32,7 +32,7 @@ alia_default_viewport_style(void);
 
 alia_element_id
 alia_do_viewport(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_layout_flags_t layout_flags,

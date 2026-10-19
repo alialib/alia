@@ -10,7 +10,7 @@ extern "C" {
 
 void
 alia_layout_container_activate(
-    alia_context* ctx, alia_layout_container* container)
+    alia_ui_context* ctx, alia_layout_container* container)
 {
     auto& emission = ctx->layout->emission;
     *emission.next_ptr = &container->base;
@@ -19,7 +19,7 @@ alia_layout_container_activate(
 
 void
 alia_layout_container_deactivate(
-    alia_context* ctx, alia_layout_container* container)
+    alia_ui_context* ctx, alia_layout_container* container)
 {
     auto& emission = ctx->layout->emission;
     *emission.next_ptr = 0;
@@ -33,14 +33,14 @@ struct alia_layout_container_scope
 
 void
 alia_layout_container_simple_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_node_vtable* vtable,
     alia_layout_flags_t flags,
     float gap)
 {
     if (alia::is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_container_scope>(ctx);
+        auto& scope = stack_push<alia_layout_container_scope>(&ctx->kernel);
         auto& emission = ctx->layout->emission;
         auto* container = arena_alloc<alia_layout_container>(emission.arena);
         scope.container = container;
@@ -54,11 +54,11 @@ alia_layout_container_simple_begin(
 }
 
 void
-alia_layout_container_simple_end(alia_context* ctx)
+alia_layout_container_simple_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_container_scope>(ctx);
+        auto& scope = stack_pop<alia_layout_container_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, scope.container);
     }
 }

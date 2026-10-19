@@ -77,21 +77,21 @@ alia_layout_placement_resolve(
 
 void
 alia_layout_placement_push(
-    alia_context* ctx, alia_layout_placement_region region)
+    alia_ui_context* ctx, alia_layout_placement_region region)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->layout);
-    auto& scope = stack_push<placement_consume_scope>(ctx);
+    auto& scope = stack_push<placement_consume_scope>(&ctx->kernel);
     scope.old_offset = ctx->layout->placement.offset;
     ctx->layout->placement.offset = region.offset;
 }
 
 void
-alia_layout_placement_pop(alia_context* ctx)
+alia_layout_placement_pop(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->layout);
-    auto& scope = stack_pop<placement_consume_scope>(ctx);
+    auto& scope = stack_pop<placement_consume_scope>(&ctx->kernel);
     ctx->layout->placement.offset = scope.old_offset;
 }
 

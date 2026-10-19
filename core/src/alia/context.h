@@ -8,9 +8,9 @@
 
 namespace alia {
 
-using context = alia_context;
+using ui_context = alia_ui_context;
+using kernel_context = alia_kernel_context;
 using ui_system = alia_ui_system;
-using ephemeral_context = alia_context;
 using event_traversal = alia_event_traversal;
 
 } // namespace alia

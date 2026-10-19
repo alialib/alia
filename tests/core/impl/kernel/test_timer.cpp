@@ -98,15 +98,15 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
         .target = make_test_element_id(0x1234u)};
 
     alia_event_traversal traversal{};
-    alia_context ctx{};
-    ctx.events = &traversal;
+    alia_ui_context ctx{};
+    ctx.kernel.events = &traversal;
 
     {
         alia_timer payload{.target = state.target, .fire_time = 99};
         alia_event event = alia_make_timer_event(payload);
         traversal.event = &event;
 
-        CHECK(alia_timer_handle_event(&ctx, &state) == false);
+        CHECK(alia_timer_handle_event(&ctx.kernel, &state) == false);
         CHECK(state.active == true);
     }
 
@@ -116,7 +116,7 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
         alia_event event = alia_make_timer_event(payload);
         traversal.event = &event;
 
-        CHECK(alia_timer_handle_event(&ctx, &state) == false);
+        CHECK(alia_timer_handle_event(&ctx.kernel, &state) == false);
         CHECK(state.active == true);
     }
 
@@ -125,7 +125,7 @@ TEST_CASE("alia_timer_handle_event ignores stale fire_time / target")
         alia_event event = alia_make_timer_event(payload);
         traversal.event = &event;
 
-        CHECK(alia_timer_handle_event(&ctx, &state) == true);
+        CHECK(alia_timer_handle_event(&ctx.kernel, &state) == true);
         CHECK(state.active == false);
     }
 }

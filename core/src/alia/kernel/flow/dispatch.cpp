@@ -70,14 +70,16 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     alia_effect_log effects = {};
 
-    alia_context ctx = {
-        .kernel = &sys.kernel,
-        .substrate = &substrate_traversal,
-        .events = &events,
-        .stack = &sys.kernel.stack,
-        .scratch = &scratch,
-        .tick_count = sys.kernel.tick_count,
-        .effects = &effects,
+    alia_ui_context ctx = {
+        .kernel = {
+            .object = &sys.kernel,
+            .substrate = &substrate_traversal,
+            .events = &events,
+            .stack = &sys.kernel.stack,
+            .scratch = &scratch,
+            .tick_count = sys.kernel.tick_count,
+            .effects = &effects,
+        },
         .system = &sys,
         .active_styles = active_styles,
         // No active font until something pushes one (see `alia_font_push`).
@@ -94,15 +96,16 @@ invoke_controller(ui_system& sys, event_traversal& events)
     };
 
     alia_substrate_begin_block(
-        &ctx,
+        &ctx.kernel,
         &sys.kernel.substrate.root_anchor,
         &sys.kernel.substrate.root_block_spec);
 
     sys.controller.fn(sys.controller.user_data, &ctx);
 
-    sys.kernel.substrate.root_block_spec = alia_substrate_end_block(&ctx);
+    sys.kernel.substrate.root_block_spec
+        = alia_substrate_end_block(&ctx.kernel);
 
-    alia_run_effects(&ctx);
+    alia_run_effects(&ctx.kernel);
 
     if (events.event->type == ALIA_EVENT_REFRESH)
         *layout.emission.next_ptr = 0;

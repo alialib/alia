@@ -14,13 +14,13 @@ using namespace alia;
 extern "C" {
 
 alia_vec2f
-alia_input_pointer_position(alia_context* ctx)
+alia_input_pointer_position(alia_ui_context* ctx)
 {
     return ctx->input->mouse_position - ctx->geometry->offset;
 }
 
 bool
-alia_input_pointer_in_box(alia_context* ctx, alia_box const* box)
+alia_input_pointer_in_box(alia_ui_context* ctx, alia_box const* box)
 {
     return alia_input_pointer_in_surface(ctx)
         && alia_box_contains(*box, alia_input_pointer_position(ctx))
@@ -29,7 +29,7 @@ alia_input_pointer_in_box(alia_context* ctx, alia_box const* box)
 }
 
 static bool
-detect_mouse_press(alia_context* ctx, alia_button_t button)
+detect_mouse_press(alia_ui_context* ctx, alia_button_t button)
 {
     return (get_event_type(*ctx) == ALIA_EVENT_MOUSE_PRESS
             && as_mouse_press_event(*ctx).button == button)
@@ -39,7 +39,7 @@ detect_mouse_press(alia_context* ctx, alia_button_t button)
 
 bool
 alia_element_detect_mouse_press(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     if (!alia_element_is_hovered(ctx, id) || !detect_mouse_press(ctx, button))
         return false;
@@ -49,7 +49,7 @@ alia_element_detect_mouse_press(
 
 bool
 alia_element_detect_mouse_release(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return get_event_type(*ctx) == ALIA_EVENT_MOUSE_RELEASE
         && as_mouse_release_event(*ctx).button == button
@@ -57,7 +57,7 @@ alia_element_detect_mouse_release(
 }
 
 bool
-alia_element_detect_mouse_motion(alia_context* ctx, alia_element_id id)
+alia_element_detect_mouse_motion(alia_ui_context* ctx, alia_element_id id)
 {
     return get_event_type(*ctx) == ALIA_EVENT_MOUSE_MOTION
         // TODO: Revisit this logic. What if the element itself has capture?
@@ -67,7 +67,7 @@ alia_element_detect_mouse_motion(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_detect_double_click(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return get_event_type(*ctx) == ALIA_EVENT_DOUBLE_CLICK
         && as_double_click_event(*ctx).button == button
@@ -76,7 +76,7 @@ alia_element_detect_double_click(
 
 bool
 alia_element_detect_click(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     (void) alia_element_detect_mouse_press(ctx, id, button);
     return alia_element_detect_mouse_release(ctx, id, button)
@@ -84,7 +84,7 @@ alia_element_detect_click(
 }
 
 bool
-alia_element_is_click_possible(alia_context* ctx, alia_element_id id)
+alia_element_is_click_possible(alia_ui_context* ctx, alia_element_id id)
 {
     return alia_element_is_hovered(ctx, id)
         && alia_no_element_has_capture(ctx);
@@ -92,7 +92,7 @@ alia_element_is_click_possible(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_is_click_in_progress(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return alia_element_is_hovered(ctx, id)
         && alia_element_has_capture(ctx, id)
@@ -101,7 +101,7 @@ alia_element_is_click_in_progress(
 
 bool
 alia_element_detect_drag(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     (void) alia_element_detect_mouse_press(ctx, id, button);
     return get_event_type(*ctx) == ALIA_EVENT_MOUSE_MOTION
@@ -111,7 +111,7 @@ alia_element_detect_drag(
 
 bool
 alia_element_detect_press_or_drag(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     bool press = alia_element_detect_mouse_press(ctx, id, button);
     bool motion = get_event_type(*ctx) == ALIA_EVENT_MOUSE_MOTION
@@ -120,7 +120,7 @@ alia_element_detect_press_or_drag(
 }
 
 alia_vec2f
-alia_element_get_mouse_motion_delta(alia_context* ctx, alia_element_id id)
+alia_element_get_mouse_motion_delta(alia_ui_context* ctx, alia_element_id id)
 {
     // TODO: Implement this.
     alia_vec2f zero = {0.0f, 0.0f};
@@ -140,7 +140,7 @@ alia_element_get_mouse_motion_delta(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_is_drag_in_progress(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return alia_input_button_is_down(ctx, button)
         && alia_element_has_capture(ctx, id) && ctx->input->dragging;
@@ -148,7 +148,7 @@ alia_element_is_drag_in_progress(
 
 bool
 alia_element_detect_drag_release(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return alia_element_is_drag_in_progress(ctx, id, button)
         && alia_element_detect_mouse_release(ctx, id, button);
@@ -156,20 +156,20 @@ alia_element_detect_drag_release(
 
 bool
 alia_element_detect_stationary_click(
-    alia_context* ctx, alia_element_id id, alia_button_t button)
+    alia_ui_context* ctx, alia_element_id id, alia_button_t button)
 {
     return alia_element_detect_click(ctx, id, button) && !ctx->input->dragging;
 }
 
 bool
-alia_element_detect_mouse_gain(alia_context* ctx, alia_element_id id)
+alia_element_detect_mouse_gain(alia_ui_context* ctx, alia_element_id id)
 {
     return get_event_type(*ctx) == ALIA_EVENT_MOUSE_GAIN
         && get_event_target(*ctx) == id;
 }
 
 bool
-alia_element_detect_mouse_loss(alia_context* ctx, alia_element_id id)
+alia_element_detect_mouse_loss(alia_ui_context* ctx, alia_element_id id)
 {
     return get_event_type(*ctx) == ALIA_EVENT_MOUSE_LOSS
         && get_event_target(*ctx) == id;
@@ -177,7 +177,7 @@ alia_element_detect_mouse_loss(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_detect_scroll(
-    alia_context* ctx, alia_element_id id, alia_vec2f* out_delta)
+    alia_ui_context* ctx, alia_element_id id, alia_vec2f* out_delta)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_SCROLL_INPUT
         && get_event_target(*ctx) == id)

@@ -105,7 +105,7 @@ using namespace alia;
 extern "C" {
 
 void
-alia_layout_flow_spring_emit(alia_context* ctx, float min_width)
+alia_layout_flow_spring_emit(alia_ui_context* ctx, float min_width)
 {
     auto& emission = ctx->layout->emission;
     layout_flow_spring_node* new_node

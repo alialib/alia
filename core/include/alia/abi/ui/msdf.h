@@ -159,7 +159,7 @@ alia_msdf_break_text(
 void
 alia_msdf_draw_text(
     alia_msdf_text_engine* fonts,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     char const* text,
     size_t length,
@@ -171,7 +171,7 @@ alia_msdf_draw_text(
 void
 alia_msdf_draw_codepoint(
     alia_msdf_text_engine* fonts,
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     uint32_t codepoint,
     float scale,

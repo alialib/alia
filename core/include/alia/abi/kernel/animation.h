@@ -11,14 +11,15 @@
 ALIA_EXTERN_C_BEGIN
 
 static inline alia_nanosecond_count
-alia_animation_tick_count(alia_context* ctx)
+alia_animation_tick_count(alia_kernel_context* ctx)
 {
     alia_timing_request_animation_refresh(ctx);
     return alia_timing_tick_count(ctx);
 }
 
 static inline alia_nanosecond_count
-alia_animation_ticks_left(alia_context* ctx, alia_nanosecond_count end_time)
+alia_animation_ticks_left(
+    alia_kernel_context* ctx, alia_nanosecond_count end_time)
 {
     alia_nanosecond_count ticks_remaining
         = end_time - alia_timing_tick_count(ctx);
@@ -44,11 +45,13 @@ alia_make_animation_id(alia_bitref bit)
 
 void
 alia_animation_fire_flare(
-    alia_context* ctx, alia_bitref bit, alia_nanosecond_count duration);
+    alia_kernel_context* ctx, alia_bitref bit, alia_nanosecond_count duration);
 
 unsigned
 alia_animation_process_flares(
-    alia_context* ctx, alia_bitref bit, alia_nanosecond_count* tick_counts);
+    alia_kernel_context* ctx,
+    alia_bitref bit,
+    alia_nanosecond_count* tick_counts);
 
 // TRANSITIONS
 
@@ -81,7 +84,7 @@ typedef struct alia_animated_transition
 // changes.
 float
 alia_transition_float(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -90,7 +93,7 @@ alia_transition_float(
 
 alia_rgb
 alia_transition_rgb(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -99,7 +102,7 @@ alia_transition_rgb(
 
 alia_rgba
 alia_transition_rgba(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -138,7 +141,7 @@ alia_float_smoother_update(
 // Requests an animation refresh when needed.
 float
 alia_smooth_float(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_float_smoother* smoother,
     float target,
     alia_animated_transition const* transition);

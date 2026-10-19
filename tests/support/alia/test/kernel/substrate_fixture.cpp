@@ -4,8 +4,8 @@
 #include <alia/abi/ui/events.h>
 #include <alia/impl/events.hpp>
 
-#include <alia/test/kernel/substrate_fixture.h>
 #include <alia/kernel/substrate.h>
+#include <alia/test/kernel/substrate_fixture.h>
 
 #include <cstdlib>
 
@@ -174,14 +174,14 @@ alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture)
 
 void
 alia_test_substrate_fixture_prepare_refresh_event(
-    alia_test_substrate_fixture* fixture, alia_context* ctx)
+    alia_test_substrate_fixture* fixture, alia_ui_context* ctx)
 {
     if (!fixture || !ctx)
         return;
 
     fixture->refresh_event = alia_make_refresh_event(alia_refresh{false});
     fixture->event_traversal.event = &fixture->refresh_event;
-    ctx->events = &fixture->event_traversal;
+    ctx->kernel.events = &fixture->event_traversal;
 }
 
 void

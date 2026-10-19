@@ -109,7 +109,7 @@ extern "C" {
 
 void
 alia_layout_leaf_emit(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_content_metrics content,
     alia_layout_flags_t flags)
 {

@@ -306,11 +306,11 @@ struct alia_layout_edge_offsets_scope
 
 void
 alia_layout_edge_offsets_begin(
-    alia_context* ctx, alia_edge_offsets offsets, alia_layout_flags_t flags)
+    alia_ui_context* ctx, alia_edge_offsets offsets, alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_edge_offsets_scope>(ctx);
+        auto& scope = stack_push<alia_layout_edge_offsets_scope>(&ctx->kernel);
         edge_offsets_layout_node* node = arena_alloc<edge_offsets_layout_node>(
             ctx->layout->emission.arena);
         *node = edge_offsets_layout_node{
@@ -325,11 +325,11 @@ alia_layout_edge_offsets_begin(
 }
 
 void
-alia_layout_edge_offsets_end(alia_context* ctx)
+alia_layout_edge_offsets_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_edge_offsets_scope>(ctx);
+        auto& scope = stack_pop<alia_layout_edge_offsets_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

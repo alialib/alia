@@ -17,7 +17,7 @@ using namespace alia::operators;
 extern "C" {
 
 void
-alia_input_acknowledge_key_event(alia_context* ctx)
+alia_input_acknowledge_key_event(alia_ui_context* ctx)
 {
     ALIA_ASSERT(
         get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS
@@ -36,7 +36,7 @@ alia_input_acknowledge_key_event(alia_context* ctx)
 }
 
 void
-alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
+alia_element_add_to_focus_order(alia_ui_context* ctx, alia_element_id id)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_FOCUS_SUCCESSOR)
     {
@@ -67,27 +67,27 @@ alia_element_add_to_focus_order(alia_context* ctx, alia_element_id id)
 }
 
 bool
-alia_element_has_focus(alia_context* ctx, alia_element_id id)
+alia_element_has_focus(alia_ui_context* ctx, alia_element_id id)
 {
     return alia_element_id_equal(ctx->input->element_with_focus, id);
 }
 
 bool
-alia_element_detect_focus_gain(alia_context* ctx, alia_element_id id)
+alia_element_detect_focus_gain(alia_ui_context* ctx, alia_element_id id)
 {
     return get_event_type(*ctx) == ALIA_EVENT_FOCUS_GAIN
         && as_focus_gain_event(*ctx).target == id;
 }
 
 bool
-alia_element_detect_focus_loss(alia_context* ctx, alia_element_id id)
+alia_element_detect_focus_loss(alia_ui_context* ctx, alia_element_id id)
 {
     return get_event_type(*ctx) == ALIA_EVENT_FOCUS_LOSS
         && as_focus_loss_event(*ctx).target == id;
 }
 
 void
-alia_element_focus_on_click(alia_context* ctx, alia_element_id id)
+alia_element_focus_on_click(alia_ui_context* ctx, alia_element_id id)
 {
     if (alia_element_is_hovered(ctx, id)
         && (get_event_type(*ctx) == ALIA_EVENT_MOUSE_PRESS
@@ -99,7 +99,7 @@ alia_element_focus_on_click(alia_context* ctx, alia_element_id id)
 
 bool
 alia_element_detect_key_press(
-    alia_context* ctx, alia_element_id id, alia_key_info* out)
+    alia_ui_context* ctx, alia_element_id id, alia_key_info* out)
 {
     alia_element_focus_on_click(ctx, id);
     // TODO: The event should be targeted to the element.
@@ -118,7 +118,7 @@ alia_element_detect_key_press(
 
 bool
 alia_element_detect_key_release(
-    alia_context* ctx, alia_element_id id, alia_key_info* out)
+    alia_ui_context* ctx, alia_element_id id, alia_key_info* out)
 {
     alia_element_focus_on_click(ctx, id);
     // TODO: The event should be targeted to the element.
@@ -136,7 +136,7 @@ alia_element_detect_key_release(
 }
 
 bool
-alia_input_detect_key_press(alia_context* ctx, alia_key_info* out)
+alia_input_detect_key_press(alia_ui_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_KEY_PRESS)
     {
@@ -151,7 +151,7 @@ alia_input_detect_key_press(alia_context* ctx, alia_key_info* out)
 }
 
 bool
-alia_input_detect_key_release(alia_context* ctx, alia_key_info* out)
+alia_input_detect_key_release(alia_ui_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_KEY_RELEASE)
     {
@@ -166,7 +166,7 @@ alia_input_detect_key_release(alia_context* ctx, alia_key_info* out)
 }
 
 bool
-alia_input_detect_global_key_press(alia_context* ctx, alia_key_info* out)
+alia_input_detect_global_key_press(alia_ui_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_PRESS)
     {
@@ -181,7 +181,7 @@ alia_input_detect_global_key_press(alia_context* ctx, alia_key_info* out)
 }
 
 bool
-alia_input_detect_global_key_release(alia_context* ctx, alia_key_info* out)
+alia_input_detect_global_key_release(alia_ui_context* ctx, alia_key_info* out)
 {
     if (get_event_type(*ctx) == ALIA_EVENT_GLOBAL_KEY_RELEASE)
     {
@@ -197,7 +197,7 @@ alia_input_detect_global_key_release(alia_context* ctx, alia_key_info* out)
 
 bool
 alia_element_detect_keyboard_click(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_keyboard_click_state* state,
     alia_element_id id,
     alia_key_info spec)

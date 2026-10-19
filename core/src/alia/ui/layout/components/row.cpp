@@ -158,14 +158,15 @@ alia_layout_node_vtable row_vtable
 extern "C" {
 
 void
-alia_layout_row_begin(alia_context* ctx, alia_layout_flags_t flags, float gap)
+alia_layout_row_begin(
+    alia_ui_context* ctx, alia_layout_flags_t flags, float gap)
 {
     alia_layout_container_simple_begin(
         ctx, &alia::row_vtable, flags, alia_px(ctx, gap));
 }
 
 void
-alia_layout_row_end(alia_context* ctx)
+alia_layout_row_end(alia_ui_context* ctx)
 {
     alia_layout_container_simple_end(ctx);
 }

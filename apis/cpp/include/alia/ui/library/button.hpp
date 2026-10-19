@@ -80,10 +80,10 @@ to_c_chrome(button_chrome chrome)
 
 struct button_variant_scope
 {
-    context& ctx;
+    ui_context& ctx;
     alia_button_style saved{};
 
-    button_variant_scope(context& ctx_, button_variant variant) : ctx(ctx_)
+    button_variant_scope(ui_context& ctx_, button_variant variant) : ctx(ctx_)
     {
         alia_button_style* style = alia_button_style_active(&ctx);
         saved = *style;
@@ -106,7 +106,7 @@ struct button_variant_scope
 // Run `content` while the active button style matches `variant`.
 template<class Content>
 void
-with_button_variant(context& ctx, button_variant variant, Content&& content)
+with_button_variant(ui_context& ctx, button_variant variant, Content&& content)
 {
     detail::button_variant_scope const scope(ctx, variant);
     std::forward<Content>(content)();
@@ -117,7 +117,7 @@ with_button_variant(context& ctx, button_variant variant, Content&& content)
 template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
-    context& ctx,
+    ui_context& ctx,
     alia_button_flags_t flags,
     Layout layout,
     Content&& content)
@@ -134,7 +134,7 @@ button(
 template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
-    context& ctx,
+    ui_context& ctx,
     alia_button_flags_t flags,
     Layout layout,
     button_variant variant,
@@ -142,8 +142,7 @@ button(
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
     with_button_variant(ctx, variant, [&] {
-        result = button(
-            ctx, flags, layout, std::forward<Content>(content));
+        result = button(ctx, flags, layout, std::forward<Content>(content));
     });
     return result;
 }
@@ -153,7 +152,7 @@ button(
 template<layout_like Layout = layout_options, class Content>
 void
 button(
-    context& ctx,
+    ui_context& ctx,
     action<> const& on_click,
     Layout layout,
     Content&& content)
@@ -164,14 +163,14 @@ button(
     if (button(ctx, flags, layout, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
     {
-        post_action(&ctx, on_click);
+        post_action(&ctx.kernel, on_click);
     }
 }
 
 template<layout_like Layout = layout_options, class Content>
 void
 button(
-    context& ctx,
+    ui_context& ctx,
     action<> const& on_click,
     Layout layout,
     button_variant variant,
@@ -186,7 +185,7 @@ button(
 template<layout_like Layout = layout_options>
 void
 button(
-    context& ctx,
+    ui_context& ctx,
     char const* label,
     action<> const& on_click,
     Layout layout = {})
@@ -199,7 +198,7 @@ button(
 template<layout_like Layout = layout_options>
 void
 button(
-    context& ctx,
+    ui_context& ctx,
     char const* label,
     action<> const& on_click,
     Layout layout,
@@ -212,7 +211,7 @@ button(
 
 inline void
 button(
-    context& ctx,
+    ui_context& ctx,
     char const* label,
     action<> const& on_click,
     button_variant variant)

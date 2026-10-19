@@ -284,11 +284,11 @@ typedef struct alia_layout_grid_scope
 } alia_layout_grid_scope;
 
 alia_layout_grid_handle
-alia_layout_grid_begin(alia_context* ctx, alia_layout_flags_t flags)
+alia_layout_grid_begin(alia_ui_context* ctx, alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_grid_scope>(ctx);
+        auto& scope = stack_push<alia_layout_grid_scope>(&ctx->kernel);
         auto& emission = ctx->layout->emission;
         grid_layout_node* node = arena_alloc<grid_layout_node>(emission.arena);
         scope.grid = node;
@@ -311,11 +311,11 @@ alia_layout_grid_begin(alia_context* ctx, alia_layout_flags_t flags)
 }
 
 void
-alia_layout_grid_end(alia_context* ctx)
+alia_layout_grid_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_grid_scope>(ctx);
+        auto& scope = stack_pop<alia_layout_grid_scope>(&ctx->kernel);
         *scope.next_row_ptr = 0;
         auto& emission = ctx->layout->emission;
         *emission.next_ptr = 0;
@@ -330,11 +330,13 @@ struct grid_row_layout_node_scope
 
 void
 alia_layout_grid_row_begin(
-    alia_context* ctx, alia_layout_grid_handle grid, alia_layout_flags_t flags)
+    alia_ui_context* ctx,
+    alia_layout_grid_handle grid,
+    alia_layout_flags_t flags)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<grid_row_layout_node_scope>(ctx);
+        auto& scope = stack_push<grid_row_layout_node_scope>(&ctx->kernel);
         auto& emission = ctx->layout->emission;
         auto* node = arena_alloc<grid_row_layout_node>(emission.arena);
         *node = grid_row_layout_node{
@@ -352,11 +354,11 @@ alia_layout_grid_row_begin(
 }
 
 void
-alia_layout_grid_row_end(alia_context* ctx)
+alia_layout_grid_row_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<grid_row_layout_node_scope>(ctx);
+        auto& scope = stack_pop<grid_row_layout_node_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

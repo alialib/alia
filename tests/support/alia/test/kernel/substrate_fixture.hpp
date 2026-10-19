@@ -4,8 +4,8 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/stack.h>
-#include <alia/abi/context.h>
 #include <alia/abi/kernel/effect.h>
+#include <alia/context.hpp>
 
 #include <alia/test/kernel/substrate_fixture.h>
 
@@ -76,7 +76,7 @@ struct substrate_fixture
     alia_bump_allocator scratch{};
     // pass-local effect log
     alia_effect_log effects{};
-    alia_context ctx{};
+    ui_context ctx{};
 
     substrate_fixture()
     {
@@ -99,7 +99,7 @@ struct substrate_fixture
         alia_stack_reset(stack);
         alia_arena_reset(&scratch);
         effects = {};
-        ctx.effects = &effects;
+        ctx.kernel.effects = &effects;
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
@@ -108,10 +108,10 @@ struct substrate_fixture
     void
     run_effects()
     {
-        alia_run_effects(&ctx);
+        alia_run_effects(&ctx.kernel);
         alia_arena_reset(&scratch);
         effects = {};
-        ctx.effects = &effects;
+        ctx.kernel.effects = &effects;
     }
 
     alia_substrate_anchor*
@@ -169,10 +169,10 @@ struct substrate_fixture
         alia_bump_allocator_init(&scratch, scratch_arena);
 
         ctx = {};
-        ctx.substrate = alia_test_substrate_fixture_traversal(fixture);
-        ctx.stack = stack;
-        ctx.scratch = &scratch;
-        ctx.effects = &effects;
+        ctx.kernel.substrate = alia_test_substrate_fixture_traversal(fixture);
+        ctx.kernel.stack = stack;
+        ctx.kernel.scratch = &scratch;
+        ctx.kernel.effects = &effects;
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 

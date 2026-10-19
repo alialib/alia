@@ -28,23 +28,23 @@ alia_draw_target_ensure_size(
 // first use and destroying it when the substrate slot is destroyed. Returns
 // ALIA_DRAW_TARGET_PRIMARY if the creation fails.
 alia_draw_target_id
-alia_draw_target_use(alia_context* ctx);
+alia_draw_target_use(alia_ui_context* ctx);
 
 // Begin a scope for drawing into `target`.
 // Within this scope, draw content is recorded in within the target's
 // coordinate space. `size` is in physical pixels.
 void
 alia_draw_target_begin(
-    alia_context* ctx, alia_draw_target_id target, alia_vec2f size);
+    alia_ui_context* ctx, alia_draw_target_id target, alia_vec2f size);
 
 // End a draw target scope.
 void
-alia_draw_target_end(alia_context* ctx);
+alia_draw_target_end(alia_ui_context* ctx);
 
 // Draw the contents of another draw target into the active draw target.
 void
 alia_draw_target(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_z_index z_index,
     alia_draw_target_id source,
     alia_box dest,

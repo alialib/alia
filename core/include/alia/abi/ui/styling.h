@@ -123,7 +123,7 @@ alia_style_default(alia_ui_system* ui, alia_style_slot_id slot);
 // of the default. It can be used to perform scoped modifications during UI
 // traversal.
 void*
-alia_style_active(alia_context* ctx, alia_style_slot_id slot);
+alia_style_active(alia_ui_context* ctx, alia_style_slot_id slot);
 
 static inline alia_layout_style*
 alia_layout_style_default(alia_ui_system* ui)
@@ -132,7 +132,7 @@ alia_layout_style_default(alia_ui_system* ui)
 }
 
 static inline alia_layout_style*
-alia_layout_style_active(alia_context* ctx)
+alia_layout_style_active(alia_ui_context* ctx)
 {
     // `Layout` is always the first catalog slot, so its offset in the actives
     // blob is 0. A consequence of this is that Layout-only test fixtures can
@@ -148,7 +148,7 @@ alia_focus_style_default(alia_ui_system* ui)
 }
 
 static inline alia_focus_style*
-alia_focus_style_active(alia_context* ctx)
+alia_focus_style_active(alia_ui_context* ctx)
 {
     return (alia_focus_style*) alia_style_active(ctx, ALIA_STYLE_FOCUS);
 }

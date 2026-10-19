@@ -18,7 +18,7 @@ namespace alia { namespace detail {
 template<layout_like Layout = layout_options, class Control>
 alia_element_id
 labeled_bool_control(
-    context& ctx, char const* label, Layout layout, Control&& control)
+    ui_context& ctx, char const* label, Layout layout, Control&& control)
 {
     alia_box row_box;
     alia_element_id id{};

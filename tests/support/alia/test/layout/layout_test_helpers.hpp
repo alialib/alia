@@ -49,7 +49,7 @@ check_boxes_eq(
 
 inline void
 test_leaf(
-    alia_context& ctx,
+    ui_context& ctx,
     alia_vec2f size,
     layout_flag_set flags = NO_FLAGS,
     alia_box* out = nullptr,
@@ -71,13 +71,13 @@ test_leaf(
 }
 
 inline void
-test_spacer(alia_context& ctx, alia_vec2f size)
+test_spacer(ui_context& ctx, alia_vec2f size)
 {
     test_leaf(ctx, size, NO_FLAGS);
 }
 
 inline void
-test_flow_spring(alia_context& ctx, float min_width = 0.f)
+test_flow_spring(ui_context& ctx, float min_width = 0.f)
 {
     if (is_refresh_event(ctx))
         alia_layout_flow_spring_emit(&ctx, min_width);
@@ -93,10 +93,10 @@ run_layout_case(alia_vec2f assigned, Fn&& fn)
     assert(fixture != nullptr);
 
     layout_test_fixture_run_refresh(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
     layout_test_fixture_resolve(fixture, assigned);
     layout_test_fixture_run_spatial(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
 
     layout_test_fixture_destroy(fixture);
 }
@@ -110,10 +110,10 @@ run_layout_case_with_spacing(float spacing, alia_vec2f assigned, Fn&& fn)
     layout_test_fixture_set_spacing(fixture, spacing);
 
     layout_test_fixture_run_refresh(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
     layout_test_fixture_resolve(fixture, assigned);
     layout_test_fixture_run_spatial(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
 
     layout_test_fixture_destroy(fixture);
 }
@@ -127,10 +127,10 @@ run_layout_case_with_scale(float scale, alia_vec2f assigned, Fn&& fn)
     layout_test_fixture_set_scale(fixture, scale);
 
     layout_test_fixture_run_refresh(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
     layout_test_fixture_resolve(fixture, assigned);
     layout_test_fixture_run_spatial(
-        fixture, [&](alia_context* ctx) { fn(*ctx); });
+        fixture, [&](ui_context* ctx) { fn(*ctx); });
 
     layout_test_fixture_destroy(fixture);
 }

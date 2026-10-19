@@ -13,14 +13,14 @@ namespace alia { namespace impl {
 
 void
 start_transition(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_bitref bits,
     bool current_state,
     alia_animated_transition const& transition)
 {
-    ALIA_ASSERT(ctx && ctx->kernel);
+    ALIA_ASSERT(ctx && ctx->object);
     auto& animation
-        = ctx->kernel->animation.transitions[alia_make_animation_id(bits)];
+        = ctx->object->animation.transitions[alia_make_animation_id(bits)];
     animation.direction = current_state;
     animation.transition_end
         = alia_animation_tick_count(ctx) + transition.duration;
@@ -29,14 +29,14 @@ start_transition(
 
 float
 update_transition(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_bitref bits,
     bool current_state,
     alia_animated_transition const& transition)
 {
-    ALIA_ASSERT(ctx && ctx->kernel);
+    ALIA_ASSERT(ctx && ctx->object);
     auto& animation
-        = ctx->kernel->animation.transitions[alia_make_animation_id(bits)];
+        = ctx->object->animation.transitions[alia_make_animation_id(bits)];
     alia_nanosecond_count ticks_left
         = alia_animation_ticks_left(ctx, animation.transition_end);
     if (current_state != animation.direction)
@@ -74,7 +74,7 @@ update_transition(
     }
     else
     {
-        ctx->kernel->animation.transitions.erase(alia_make_animation_id(bits));
+        ctx->object->animation.transitions.erase(alia_make_animation_id(bits));
         alia_bitref_write_pair(bits, current_state ? 0b11 : 0b10);
         return current_state ? 1.f : 0.f;
     }
@@ -94,7 +94,7 @@ alia_animation_curve const alia_ease_in_out_curve = {0.42, 0, 0.58, 1};
 
 float
 alia_transition_float(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -113,7 +113,7 @@ alia_transition_float(
 
 alia_rgb
 alia_transition_rgb(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -132,7 +132,7 @@ alia_transition_rgb(
 
 alia_rgba
 alia_transition_rgba(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     const alia_animated_transition* transition,
     alia_bitref bits,
     bool current_state,
@@ -229,7 +229,7 @@ alia_float_smoother_update(
 
 float
 alia_smooth_float(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     alia_float_smoother* smoother,
     float target,
     alia_animated_transition const* transition)

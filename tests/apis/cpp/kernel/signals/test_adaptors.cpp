@@ -88,12 +88,12 @@ struct transparent_casting_wrapper
     }
     std::optional<typename Wrapped::value_id_type>
     post_write(
-        alia_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context* ctx, typename Wrapped::value_type value) const override
     {
         return this->wrapped_.post_write(ctx, std::move(value));
     }
     std::optional<typename Wrapped::value_id_type>
-    post_mutation_commit(alia_context* ctx) const override
+    post_mutation_commit(kernel_context* ctx) const override
     {
         return this->wrapped_.post_mutation_commit(ctx);
     }

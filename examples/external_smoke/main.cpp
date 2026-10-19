@@ -62,7 +62,7 @@ setup_demo_fonts(alia_app* app)
 
 void
 emit_text(
-    context& ctx,
+    ui_context& ctx,
     char const* text,
     alia_resolved_font const* font,
     enum alia_palette_ramp_level level)
@@ -78,7 +78,7 @@ emit_text(
 }
 
 void
-the_ui(context& ctx)
+the_ui(ui_context& ctx)
 {
     column(ctx, GROW | pad(24), [&] {
         emit_text(
@@ -101,7 +101,7 @@ the_ui(context& ctx)
 }
 
 void
-the_controller(void* /*user_data*/, alia_context* ctx)
+the_controller(void* /*user_data*/, alia_ui_context* ctx)
 {
     the_ui(*ctx);
 }

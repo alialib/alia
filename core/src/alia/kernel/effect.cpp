@@ -31,7 +31,7 @@ write_effect_run(alia_effect* self)
 extern "C" {
 
 void
-alia_post_effect(alia_context* ctx, alia_effect* effect)
+alia_post_effect(alia_kernel_context* ctx, alia_effect* effect)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->effects);
@@ -47,7 +47,7 @@ alia_post_effect(alia_context* ctx, alia_effect* effect)
 
 void
 alia_post_write(
-    alia_context* ctx,
+    alia_kernel_context* ctx,
     void* dst,
     void const* src,
     size_t size,
@@ -77,7 +77,7 @@ alia_post_write(
 }
 
 void
-alia_run_effects(alia_context* ctx)
+alia_run_effects(alia_kernel_context* ctx)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(ctx->effects);
@@ -93,8 +93,8 @@ alia_run_effects(alia_context* ctx)
     ctx->effects->head = nullptr;
     ctx->effects->tail = nullptr;
 
-    if (any && ctx->kernel)
-        alia_kernel_mark_dirty(ctx->kernel);
+    if (any && ctx->object)
+        alia_kernel_mark_dirty(ctx->object);
 }
 
 } // extern "C"

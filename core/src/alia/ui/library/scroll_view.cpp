@@ -304,7 +304,7 @@ scroll_view_handle_key(
 
 static void
 draw_scrollbar(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id base_id,
     scroll_view_state& data,
     scroll_view_placement const& p,
@@ -364,7 +364,7 @@ draw_scrollbar(
 
 static void
 do_scrollbar_pass(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id base_id,
     scroll_view_state& data,
     scroll_view_placement const& p,
@@ -692,21 +692,21 @@ alia_scrollbar_style_generate(
 
 void
 alia_scroll_view_begin(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_layout_flags_t layout_flags,
     alia_scroll_view_flags_t flags)
 {
-    auto& scope = stack_push<scroll_view_scope>(ctx);
+    auto& scope = stack_push<scroll_view_scope>(&ctx->kernel);
 
     alia_substrate_usage_result result = alia_substrate_use_memory(
-        ctx, sizeof(scroll_view_state), alignof(scroll_view_state));
+        &ctx->kernel, sizeof(scroll_view_state), alignof(scroll_view_state));
     auto* data = reinterpret_cast<scroll_view_state*>(result.ptr);
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
     {
         new (data) scroll_view_state;
     }
     scope.data = data;
-    scope.id = alia_make_element_id(ctx, result);
+    scope.id = alia_make_element_id(&ctx->kernel, result);
 
     static alia_scroll_view_flags_t const scroll_axes
         = ALIA_SCROLL_VIEW_X | ALIA_SCROLL_VIEW_Y;
@@ -807,14 +807,14 @@ alia_scroll_view_begin(
 }
 
 void
-alia_scroll_view_end(alia_context* ctx)
+alia_scroll_view_end(alia_ui_context* ctx)
 {
     // `scroll_view_begin` pushes, in order: scroll_view_scope, then
-    // (non-refresh only) clip, then translation — all on `ctx->stack`.
+    // (non-refresh only) clip, then translation — all on `ctx->kernel.stack`.
     // Pops must be LIFO.
     if (is_refresh_event(*ctx))
     {
-        auto scope = stack_pop<scroll_view_scope>(ctx);
+        auto scope = stack_pop<scroll_view_scope>(&ctx->kernel);
         if (!scope.data)
             return;
         if (scope.node)
@@ -825,7 +825,7 @@ alia_scroll_view_end(alia_context* ctx)
     alia_geometry_pop_translation(ctx);
     alia_geometry_pop_clip_box(ctx);
 
-    auto scope = stack_pop<scroll_view_scope>(ctx);
+    auto scope = stack_pop<scroll_view_scope>(&ctx->kernel);
     if (!scope.data)
         return;
 

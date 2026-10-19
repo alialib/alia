@@ -29,7 +29,7 @@ record_hit(alia_hit_target& target, alia_element_id id, alia_z_index z)
 
 void
 hit_test_rect_region(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_box const* box,
     alia_z_index z_plane,
@@ -48,7 +48,7 @@ extern "C" {
 
 void
 alia_element_box_region(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_box const* region,
     alia_z_index z_plane,
@@ -89,7 +89,7 @@ alia_element_box_region(
 
 void
 alia_element_report_hit(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     alia_element_id id,
     alia_box const* bounding_box,
     alia_z_index z_plane,
@@ -142,7 +142,7 @@ alia_element_report_hit(
 
 void
 alia_element_handle_visibility(
-    alia_context* ctx, alia_element_id id, alia_box const* region)
+    alia_ui_context* ctx, alia_element_id id, alia_box const* region)
 {
     ALIA_ASSERT(ctx);
     ALIA_ASSERT(region);
@@ -162,7 +162,7 @@ alia_element_handle_visibility(
 
 void
 alia_element_override_cursor(
-    alia_context* ctx, alia_element_id id, alia_cursor_t cursor)
+    alia_ui_context* ctx, alia_element_id id, alia_cursor_t cursor)
 {
     ALIA_ASSERT(ctx);
     if (get_event_type(*ctx) == ALIA_EVENT_MOUSE_HIT_TEST)

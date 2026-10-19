@@ -7,8 +7,8 @@
 namespace {
 
 // a single entry in the active-font scope chain - Entries are allocated on
-// `alia_context::stack` and remember the previously active font for popping.
-// The resolved font itself lives in the substrate (produced by
+// `alia_ui_context::stack` and remember the previously active font for
+// popping. The resolved font itself lives in the substrate (produced by
 // `alia_resolve_font`); the scope only borrows it.
 struct font_scope
 {
@@ -49,12 +49,12 @@ alia_typeface_resolve(alia_ui_system* system, alia_typeface_id typeface)
 // FONT RESOLUTION
 
 alia_resolved_font const*
-alia_resolve_font(alia_context* ctx, alia_font font)
+alia_resolve_font(alia_ui_context* ctx, alia_font font)
 {
     ALIA_ASSERT(ctx && ctx->system);
 
     alia_substrate_usage_result const result = alia_substrate_use_memory(
-        ctx, sizeof(alia_resolved_font), alignof(alia_resolved_font));
+        &ctx->kernel, sizeof(alia_resolved_font), alignof(alia_resolved_font));
     alia_resolved_font* const slot = (alia_resolved_font*) result.ptr;
 
     // On INIT/DISCOVERY the slot is fresh (don't read it). On NORMAL it has
@@ -82,19 +82,19 @@ alia_resolve_font(alia_context* ctx, alia_font font)
 // FONT SCOPE
 
 void
-alia_font_push(alia_context* ctx, alia_resolved_font const* font)
+alia_font_push(alia_ui_context* ctx, alia_resolved_font const* font)
 {
     ALIA_ASSERT(ctx && font);
-    auto& scope = alia::stack_push<font_scope>(ctx);
+    auto& scope = alia::stack_push<font_scope>(&ctx->kernel);
     scope.parent = ctx->active_font;
     ctx->active_font = font;
 }
 
 void
-alia_font_pop(alia_context* ctx)
+alia_font_pop(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    auto& scope = alia::stack_pop<font_scope>(ctx);
+    auto& scope = alia::stack_pop<font_scope>(&ctx->kernel);
     ctx->active_font = scope.parent;
 }
 

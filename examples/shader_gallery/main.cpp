@@ -140,7 +140,7 @@ make_notargs_params()
 
 template<class Content>
 void
-with_spacing(context& ctx, float spacing, Content&& content)
+with_spacing(ui_context& ctx, float spacing, Content&& content)
 {
     alia_layout_style* layout_style = alia_layout_style_active(&ctx);
     float old_spacing = layout_style->spacing;
@@ -150,7 +150,7 @@ with_spacing(context& ctx, float spacing, Content&& content)
 }
 
 void
-do_heading(context& ctx, char const* text)
+do_heading(ui_context& ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -166,7 +166,7 @@ template<binding_signal Signal, layout_like Layout = layout_options>
           && std::convertible_to<double, typename Signal::value_type>
 alia_element_id
 slider(
-    context& ctx,
+    ui_context& ctx,
     Signal const& value,
     double minimum,
     double maximum,
@@ -191,7 +191,7 @@ slider(
 
 void
 control_slider_d(
-    context& ctx,
+    ui_context& ctx,
     char const* label,
     double* value,
     double min_v,
@@ -202,19 +202,19 @@ control_slider_d(
 }
 
 void
-control_switch_b(context& ctx, char const* label, bool* value)
+control_switch_b(ui_context& ctx, char const* label, bool* value)
 {
     toggle_switch(ctx, ref(*value), label);
 }
 
 void
-control_checkbox_b(context& ctx, char const* label, bool* value)
+control_checkbox_b(ui_context& ctx, char const* label, bool* value)
 {
     checkbox(ctx, ref(*value), label);
 }
 
 void
-do_theme_controls(context& ctx)
+do_theme_controls(ui_context& ctx)
 {
     concrete_panel(
         ctx, 0, ctx.palette->foundation.background.stronger_1, FILL, [&]() {
@@ -261,7 +261,7 @@ do_theme_controls(context& ctx)
 }
 
 void
-do_notargs_controls(context& ctx)
+do_notargs_controls(ui_context& ctx)
 {
     do_heading(ctx, "VIEW");
     control_slider_d(ctx, "Zoom", &the_controls.zoom, -3.0, 5.0, 0.01);
@@ -300,7 +300,7 @@ do_notargs_controls(context& ctx)
 }
 
 void
-shader_gallery_root(context& ctx)
+shader_gallery_root(ui_context& ctx)
 {
     if (the_theme_dirty_flag)
     {
@@ -365,7 +365,7 @@ shader_gallery_root(context& ctx)
 }
 
 static void
-shader_gallery_root_controller(void* user_data, alia_context* ctx)
+shader_gallery_root_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
     shader_gallery_root(*ctx);

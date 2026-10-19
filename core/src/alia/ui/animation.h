@@ -19,13 +19,13 @@ struct click_flare_bit_layout
 
 void
 fire_click_flare(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     bitpack_ref<click_flare_bit_layout> bits,
     alia_button_t button = ALIA_BUTTON_LEFT);
 
 void
 render_click_flares(
-    alia_context* ctx,
+    alia_ui_context* ctx,
     bitpack_ref<click_flare_bit_layout> bits,
     alia_interaction_status_t state,
     alia_vec2f position,

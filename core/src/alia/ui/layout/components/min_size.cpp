@@ -89,11 +89,11 @@ struct alia_layout_min_size_scope
 };
 
 void
-alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size)
+alia_layout_min_size_begin(alia_ui_context* ctx, alia_vec2f min_size)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_push<alia_layout_min_size_scope>(ctx);
+        auto& scope = stack_push<alia_layout_min_size_scope>(&ctx->kernel);
         auto* node = arena_alloc<min_size_node>(ctx->layout->emission.arena);
         *node = min_size_node{
             .container
@@ -108,11 +108,11 @@ alia_layout_min_size_begin(alia_context* ctx, alia_vec2f min_size)
 }
 
 void
-alia_layout_min_size_end(alia_context* ctx)
+alia_layout_min_size_end(alia_ui_context* ctx)
 {
     if (is_refresh_event(*ctx))
     {
-        auto& scope = stack_pop<alia_layout_min_size_scope>(ctx);
+        auto& scope = stack_pop<alia_layout_min_size_scope>(&ctx->kernel);
         alia_layout_container_deactivate(ctx, &scope.node->container);
     }
 }

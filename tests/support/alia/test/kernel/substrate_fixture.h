@@ -34,7 +34,7 @@ alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture);
 // spec that needs discovery.
 void
 alia_test_substrate_fixture_prepare_refresh_event(
-    alia_test_substrate_fixture* fixture, alia_context* ctx);
+    alia_test_substrate_fixture* fixture, alia_ui_context* ctx);
 
 // Reset traversal state (especially scratch arena allocation offset).
 void

@@ -24,7 +24,7 @@ layout_fixture_create();
 void
 layout_fixture_destroy(struct layout_fixture* fixture);
 
-alia_context*
+alia_ui_context*
 layout_fixture_context(struct layout_fixture* fixture);
 
 alia_layout_system*
@@ -47,17 +47,21 @@ layout_fixture_set_scale(struct layout_fixture* fixture, float scale);
 
 void
 layout_fixture_run_refresh_impl(
-    struct layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    struct layout_fixture* fixture,
+    void (*fn)(alia_ui_context*, void*),
+    void* user);
 
 void
 layout_fixture_resolve(struct layout_fixture* fixture, alia_vec2f available);
 
 void
 layout_fixture_run_spatial_impl(
-    struct layout_fixture* fixture, void (*fn)(alia_context*, void*), void* user);
+    struct layout_fixture* fixture,
+    void (*fn)(alia_ui_context*, void*),
+    void* user);
 
 bool
-alia_layout_context_is_refresh(alia_context* ctx);
+alia_layout_context_is_refresh(alia_ui_context* ctx);
 
 #ifdef __cplusplus
 } // extern "C"
@@ -68,7 +72,7 @@ layout_fixture_run_refresh(struct layout_fixture* fixture, Fn&& fn)
 {
     layout_fixture_run_refresh_impl(
         fixture,
-        [](alia_context* ctx, void* user) {
+        [](alia_ui_context* ctx, void* user) {
             (*static_cast<std::decay_t<Fn>*>(user))(ctx);
         },
         &fn);
@@ -80,7 +84,7 @@ layout_fixture_run_spatial(struct layout_fixture* fixture, Fn&& fn)
 {
     layout_fixture_run_spatial_impl(
         fixture,
-        [](alia_context* ctx, void* user) {
+        [](alia_ui_context* ctx, void* user) {
             (*static_cast<std::decay_t<Fn>*>(user))(ctx);
         },
         &fn);
@@ -101,7 +105,7 @@ layout_test_fixture_destroy(layout_test_fixture* fixture)
     layout_fixture_destroy(fixture);
 }
 
-inline alia_context*
+inline alia_ui_context*
 layout_test_fixture_context(layout_test_fixture* fixture)
 {
     return layout_fixture_context(fixture);

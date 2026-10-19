@@ -7,9 +7,9 @@
 
 ALIA_EXTERN_C_BEGIN
 
+typedef struct alia_ui_context alia_ui_context;
 typedef struct alia_layout_system alia_layout_system;
 typedef struct alia_layout_node alia_layout_node;
-typedef struct alia_context alia_context;
 
 // generation counter for placement data - This is bumped by
 // `alia_layout_placement_clear` and acts as a revision counter for the memory
@@ -45,10 +45,10 @@ alia_layout_placement_resolve(
 // (This is nestable and should be paired with `alia_layout_placement_pop`.)
 void
 alia_layout_placement_push(
-    alia_context* ctx, alia_layout_placement_region region);
+    alia_ui_context* ctx, alia_layout_placement_region region);
 
 void
-alia_layout_placement_pop(alia_context* ctx);
+alia_layout_placement_pop(alia_ui_context* ctx);
 
 ALIA_EXTERN_C_END
 
