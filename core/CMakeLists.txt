@@ -1,5 +1,7 @@
 add_library(alia_core STATIC
     src/alia/base/arena.cpp
+    src/alia/base/memory.cpp
+    src/alia/base/panic.cpp
     src/alia/base/color.cpp
     src/alia/base/stack.cpp
     src/alia/kernel/ids.cpp

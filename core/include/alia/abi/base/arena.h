@@ -8,59 +8,46 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct alia_arena alia_arena;
+// in-place grow callback - `grow` returns the new capacity and must not move
+// `base`. A null `grow` makes an overflow a hard failure.
+typedef struct alia_grow_callback
+{
+    void* user;
+    size_t (*grow)(
+        void* user,
+        void* base,
+        size_t existing_capacity,
+        size_t bytes_requested);
+} alia_grow_callback;
 
+static inline alia_grow_callback
+alia_grow_callback_none(void)
+{
+    return ALIA_BRACED_INIT(alia_grow_callback, NULL, NULL);
+}
+
+// bump cursor for one pass - The memory system owns the backing.
 typedef struct alia_bump_allocator
 {
-    struct alia_arena* arena;
     uint8_t* base;
     size_t capacity;
     size_t offset;
-    size_t peak;
+    alia_grow_callback grow;
 } alia_bump_allocator;
 
-// a callback that can be used to grow the arena (in place)
-typedef size_t (*alia_arena_grow_fn)(
-    void* user, void* base, size_t existing_capacity, size_t bytes_requested);
-
-// a callback that can be used to free the arena
-typedef void (*alia_arena_free_fn)(void* user, void* base, size_t capacity);
-
-typedef struct alia_arena_controller
-{
-    void* user; // user-provided data
-    alia_arena_grow_fn grow;
-    alia_arena_free_fn free;
-} alia_arena_controller;
-
-static inline alia_arena_controller
-alia_arena_no_controller(void)
-{
-    return ALIA_BRACED_INIT(alia_arena_controller, NULL, NULL, NULL);
-}
-
-// LIFECYCLE
-
-alia_struct_spec
-alia_arena_object_spec(void);
-
-alia_arena*
-alia_arena_init(
-    void* object_storage,
-    void* buffer,
+// Bind a caller-owned buffer. The caller frees `base`.
+static inline void
+alia_bump_allocator_bind(
+    alia_bump_allocator* alloc,
+    void* base,
     size_t capacity,
-    alia_arena_controller controller);
-
-void
-alia_arena_destroy(alia_arena* arena);
-
-// BUMP ALLOCATOR
-
-void
-alia_bump_allocator_init(alia_bump_allocator* alloc, alia_arena* arena);
-
-void
-alia_bump_allocator_commit_peak(alia_bump_allocator* alloc);
+    alia_grow_callback grow)
+{
+    alloc->base = (uint8_t*) base;
+    alloc->capacity = capacity;
+    alloc->offset = 0;
+    alloc->grow = grow;
+}
 
 // Allocation gives offsets from the base, but these helpers can be used to
 // convert to/from pointers.
@@ -79,15 +66,15 @@ alia_arena_offset(alia_bump_allocator const* alloc, void const* ptr)
     return (alia_offset) ((uint8_t const*) ptr - (uint8_t const*) alloc->base);
 }
 
-// Handle out-of-memory errors.
-// If this returns, the arena has sufficient capacity to satisfy the request.
+// Grow the bump in place.
+// If this returns, the bump has enough capacity for the request.
 void
 alia_arena_handle_out_of_memory(
     alia_bump_allocator* alloc, size_t bytes_requested);
 
 // Allocate bytes from the allocator.
 // The requested size must be a multiple of ALIA_MIN_ALIGN.
-// Returns an offset from the base of the arena to the allocated bytes.
+// Returns an offset from the base of the bump to the allocated bytes.
 static inline alia_offset
 alia_arena_alloc(alia_bump_allocator* alloc, size_t bytes)
 {
@@ -108,10 +95,6 @@ alia_arena_alloc_aligned(
 
 // NAVIGATION
 
-// Update the peak usage of the allocator (internal; no arena access).
-void
-alia_update_peak_usage(alia_bump_allocator* alloc);
-
 typedef struct alia_arena_marker
 {
     size_t offset;
@@ -126,27 +109,15 @@ alia_arena_mark(alia_bump_allocator* alloc)
 static inline void
 alia_arena_jump(alia_bump_allocator* alloc, alia_arena_marker marker)
 {
-    alia_update_peak_usage(alloc);
     alloc->offset = marker.offset;
 }
 
+// Set the cursor to zero. This does not publish usage.
 static inline void
 alia_arena_reset(alia_bump_allocator* alloc)
 {
-    alia_update_peak_usage(alloc);
     alloc->offset = 0;
 }
-
-// INTROSPECTION
-
-typedef struct alia_arena_stats
-{
-    size_t current_usage;
-    size_t peak_usage;
-} alia_arena_stats;
-
-alia_arena_stats
-alia_arena_get_stats(alia_arena* arena);
 
 ALIA_EXTERN_C_END
 

@@ -2,6 +2,7 @@ add_executable(test_core_c
     runner.c
     base/test_stack.c
     base/test_arena.c
+    base/test_memory.c
     base/test_color.c
     base/geometry/test_affine2.c
     base/geometry/test_box.c

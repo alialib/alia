@@ -1,3 +1,4 @@
+#include <alia/abi/base/memory.h>
 #include <alia/abi/base/object.h>
 #include <alia/abi/kernel/animation.h>
 #include <alia/abi/ui/system/api.h>
@@ -66,7 +67,7 @@ rig_init(animation_rig* rig)
     controller.fn = noop_controller;
     controller.user_data = NULL;
     rig->system = alia_ui_system_init(
-        rig->storage, controller, alia_vec2i_make(64, 64));
+        rig->storage, controller, alia_vec2i_make(64, 64), alia_memory_ops_system());
     TEST_ASSERT(rig->system != NULL);
     rig->ctx.system = rig->system;
     // The kernel object is the first member of `alia_ui_system`.

@@ -2,6 +2,7 @@
 #define ALIA_LAYOUT_SYSTEM_H
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -9,7 +10,8 @@ ALIA_EXTERN_C_BEGIN
 typedef struct alia_layout_system alia_layout_system;
 
 void
-alia_layout_system_init(alia_layout_system* system);
+alia_layout_system_init(
+    alia_layout_system* system, alia_memory_system* memory);
 
 void
 alia_layout_system_resolve(

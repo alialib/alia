@@ -1,6 +1,7 @@
 #ifndef ALIA_RENDERERS_GL_RENDERER_H
 #define ALIA_RENDERERS_GL_RENDERER_H
 
+#include <alia/abi/base/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
@@ -10,6 +11,16 @@
 ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_gl_renderer alia_gl_renderer;
+
+// GL renderer pool name - The value is not a pool ID.
+typedef enum alia_gl_pool
+{
+    ALIA_GL_POOL_RECT_INSTANCES = 0,
+} alia_gl_pool;
+
+// Get the pool ID registered for `name`.
+alia_memory_pool_id
+alia_gl_renderer_pool(alia_gl_renderer* renderer, alia_gl_pool name);
 
 alia_struct_spec
 alia_gl_renderer_object_spec(void);
@@ -35,7 +46,8 @@ alia_gl_renderer_upload_msdf_atlas(
 // Portable / Slang-baked GLSL should declare two std140 UBOs (bindings set
 // via the API): a 32-byte frame block and a user-params block.
 // Legacy hatch shaders may instead use `uniform vec4 alia_shader_region` /
-// `alia_shader_surface` plus `layout(std140) uniform AliaShaderParams { ... }`.
+// `alia_shader_surface` plus `layout(std140) uniform AliaShaderParams { ...
+// }`.
 
 // UTF-8 GLSL ES fragment source FourCC (body-only; version prepended).
 #define ALIA_GL_SHADER_FORMAT ALIA_FOURCC('G', 'L', 'E', 'S')

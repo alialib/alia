@@ -22,8 +22,8 @@ assert_scenario_sanity(
 {
     assert(layout_fixture_root_child(fixture) != nullptr);
 
-    alia_arena_stats stats = layout_fixture_node_arena_stats(fixture);
-    assert(stats.current_usage > 0);
+    alia_memory_pool_stats stats = layout_fixture_node_arena_stats(fixture);
+    assert(stats.used > 0);
     (void) scenario.leaf_count;
 }
 

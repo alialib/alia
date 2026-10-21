@@ -1,6 +1,7 @@
 #include <alia/kernel/flow/dispatch.h>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry/api.h>
@@ -18,14 +19,25 @@ namespace alia {
 void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
+    bool const refresh = events.event->type == ALIA_EVENT_REFRESH;
+    alia_memory_system* memory = &sys.kernel.memory;
+
     alia_layout_context layout = {};
     layout.system = &sys.layout;
-    if (events.event->type == ALIA_EVENT_REFRESH)
+    if (refresh)
+    {
         layout.emission.next_ptr = &sys.layout.root.first_child;
-    alia_bump_allocator_init(&layout.emission.arena, &sys.layout.node_arena);
-    alia_bump_allocator_init(&layout.placement, &sys.layout.placement.arena);
+        layout.emission.arena
+            = alia_memory_open_bump(memory, sys.layout.node_pool);
+    }
+    else
+    {
+        layout.placement
+            = alia_memory_open_bump(memory, sys.layout.placement_pool);
+    }
 
-    alia_stack_reset(&sys.kernel.stack);
+    alia_stack pass_stack
+        = alia_memory_open_stack(memory, sys.kernel.stack_pool);
 
     // TODO: Not this?
     alia_draw_context* draw = (events.event->type == ALIA_EVENT_DRAW)
@@ -33,23 +45,23 @@ invoke_controller(ui_system& sys, event_traversal& events)
                                 : nullptr;
 
     alia_substrate_traversal substrate_traversal;
-    alia_bump_allocator substrate_bump_allocator;
-    alia_bump_allocator_init(
-        &substrate_bump_allocator, &sys.kernel.substrate_discovery_arena);
+    alia_bump_allocator substrate_bump_allocator = alia_memory_open_bump(
+        memory, sys.kernel.substrate_discovery_pool);
     substrate_traversal_init(
         substrate_traversal,
         sys.kernel.substrate,
         &substrate_bump_allocator,
         sys.kernel.refresh_counter,
-        events.event->type == ALIA_EVENT_REFRESH);
+        refresh);
 
     alia_ui_context ctx = {};
     ctx.kernel.object = &sys.kernel;
     ctx.kernel.substrate = &substrate_traversal;
     ctx.kernel.events = &events;
-    ctx.kernel.stack = &sys.kernel.stack;
+    ctx.kernel.stack = &pass_stack;
     ctx.kernel.tick_count = sys.kernel.tick_count;
-    alia_bump_allocator_init(&ctx.kernel.scratch, &sys.kernel.scratch);
+    ctx.kernel.scratch
+        = alia_memory_open_bump(memory, sys.kernel.scratch_pool);
 
     alia_box clip_box = {{0, 0}, alia_vec2i_to_vec2f(sys.surface_size)};
     alia_box* clip_pointer = arena_new<alia_box>(ctx.kernel.scratch);
@@ -99,8 +111,33 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     alia_run_effects(alia_ctx_kernel(&ctx));
 
-    if (events.event->type == ALIA_EVENT_REFRESH)
+    if (refresh)
+    {
         *layout.emission.next_ptr = 0;
+        alia_memory_commit_bump(
+            memory, sys.layout.node_pool, &layout.emission.arena);
+        alia_memory_trim(
+            memory, sys.layout.node_pool, ALIA_MEMORY_RETAIN_USED);
+    }
+    else
+    {
+        alia_memory_discard_bump(memory, sys.layout.placement_pool);
+    }
+
+    alia_memory_commit_bump(
+        memory, sys.kernel.scratch_pool, &ctx.kernel.scratch);
+    alia_memory_trim(
+        memory, sys.kernel.scratch_pool, ALIA_MEMORY_RETAIN_PEAK);
+
+    alia_memory_commit_bump(
+        memory,
+        sys.kernel.substrate_discovery_pool,
+        &substrate_bump_allocator);
+    alia_memory_trim(
+        memory, sys.kernel.substrate_discovery_pool, ALIA_MEMORY_RETAIN_PEAK);
+
+    alia_memory_commit_stack(memory, sys.kernel.stack_pool, &pass_stack);
+    alia_memory_trim(memory, sys.kernel.stack_pool, ALIA_MEMORY_RETAIN_PEAK);
 }
 
 namespace {

@@ -1,29 +1,48 @@
 #ifndef ALIA_ABI_BASE_STACK_H
 #define ALIA_ABI_BASE_STACK_H
 
+#include <alia/abi/base/arena.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
 
-typedef struct alia_stack alia_stack;
 typedef struct alia_stack_vtable alia_stack_vtable;
 
-// LIFECYCLE
+typedef struct alia_stack
+{
+    uint8_t* base;
+    size_t capacity;
+    // write cursor in bytes from base (always aligned to ALIA_MIN_ALIGN)
+    uint32_t top;
+    // size of the top entry in bytes (0 if the stack is empty)
+    uint16_t top_entry_size;
+    // high-water mark of `top` since this cursor was opened
+    size_t peak;
+    alia_grow_callback grow;
+} alia_stack;
 
-alia_struct_spec
-alia_stack_object_spec(void);
+// Bind `s` to a caller-owned buffer. `buffer` must be aligned to
+// ALIA_MAX_ALIGN, and `capacity` must fit in 32 bits. The caller frees
+// `buffer`.
+static inline void
+alia_stack_bind(
+    alia_stack* s, void* buffer, size_t capacity, alia_grow_callback grow)
+{
+    ALIA_ASSERT(s);
+    ALIA_ASSERT(buffer);
+    ALIA_ASSERT(capacity <= (size_t) 0xFFFFFFFFu);
+    ALIA_ASSERT(
+        ((uintptr_t) buffer & (uintptr_t) (ALIA_MAX_ALIGN - 1u)) == 0u);
 
-// Initialize the stack over a caller-provided buffer.
-// The buffer must be large enough to hold the stack and all its entries
-// and it must be aligned to ALIA_MAX_STACK_ALIGN.
-ALIA_API alia_stack*
-alia_stack_init(void* object_storage, void* buffer, size_t capacity);
+    s->base = (uint8_t*) buffer;
+    s->capacity = capacity;
+    s->top = 0;
+    s->top_entry_size = 0;
+    s->peak = 0;
+    s->grow = grow;
+}
 
-// Destroy the stack.
-ALIA_API void
-alia_stack_destroy(alia_stack* s);
-
-// Reset the stack to empty.
+// Reset the stack to empty. The local peak is left alone.
 ALIA_API void
 alia_stack_reset(alia_stack* s);
 

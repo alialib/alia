@@ -2,6 +2,7 @@
 #include <alia/ui/library/popup.hpp>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/base/object.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
@@ -30,7 +31,8 @@ struct surface_rig
         REQUIRE(storage != nullptr);
         alia_ui_controller controller{
             .fn = noop_controller, .user_data = nullptr};
-        system = alia_ui_system_init(storage, controller, size);
+        system = alia_ui_system_init(
+            storage, controller, size, alia_memory_ops_system());
         REQUIRE(system != nullptr);
     }
 
@@ -47,31 +49,21 @@ struct surface_rig
 // scratch arena for geometry clip-box storage
 struct scratch_rig
 {
-    void* storage = nullptr;
     void* buffer = nullptr;
-    alia_arena* arena = nullptr;
     alia_bump_allocator bump{};
 
     scratch_rig()
     {
-        alia_struct_spec spec = alia_arena_object_spec();
-        storage = alia_object_alloc(spec);
-        REQUIRE(storage != nullptr);
         buffer = alia_object_alloc(
             alia_struct_spec{.size = 4096u, .align = ALIA_MAX_ALIGN});
         REQUIRE(buffer != nullptr);
-        arena = alia_arena_init(
-            storage, buffer, 4096u, alia_arena_no_controller());
-        REQUIRE(arena != nullptr);
-        alia_bump_allocator_init(&bump, arena);
+        alia_bump_allocator_bind(
+            &bump, buffer, 4096u, alia_grow_callback_none());
     }
 
     ~scratch_rig()
     {
-        if (arena)
-            alia_arena_destroy(arena);
         alia_object_free(buffer);
-        alia_object_free(storage);
     }
 
     scratch_rig(scratch_rig const&) = delete;

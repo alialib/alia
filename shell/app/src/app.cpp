@@ -1,5 +1,6 @@
 #include <alia/shell/app.h>
 
+#include <alia/abi/base/memory.h>
 #include <alia/abi/base/object.h>
 #include <alia/abi/prelude.h>
 #include <alia/host/host.h>
@@ -143,7 +144,10 @@ alia_app_init(alia_app_config const* config, alia_app* app)
     }
 
     state->ui = alia_ui_system_init(
-        state->ui_storage, alia_shell_ui_controller(state->shell), {0, 0});
+        state->ui_storage,
+        alia_shell_ui_controller(state->shell),
+        {0, 0},
+        alia_memory_ops_system());
     if (!state->ui)
     {
         alia_app_destroy(app);

@@ -4,6 +4,7 @@
 #include <alia/renderers/gl/renderer.h>
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/base/object.h>
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/ui/drawing/primitives.h>
@@ -190,7 +191,10 @@ main()
     }
 
     g_ui = alia_ui_system_init(
-        ui_storage, {embed_controller, nullptr}, {900, 600});
+        ui_storage,
+        {embed_controller, nullptr},
+        {900, 600},
+        alia_memory_ops_system());
     if (!g_ui)
     {
         alia_object_free(ui_storage);

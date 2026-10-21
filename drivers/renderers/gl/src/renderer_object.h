@@ -2,7 +2,7 @@
 
 #include <alia/abi/ui/system/api.h>
 
-#include <alia/base/arena.h>
+#include <alia/abi/base/memory.h>
 
 #include <memory>
 #include <vector>
@@ -47,7 +47,9 @@ struct alia_gl_renderer
     GLint primitive_matrix_location = 0;
     GLint msdf_sampler_location = 0;
     GLuint msdf_atlas_texture = 0;
-    alia_arena rect_instance_arena{};
+    // pool ID for rectangle instances filled during a primitive draw
+    alia_memory_pool_id rect_instance_pool = 0;
+    bool rect_instance_pool_registered = false;
     // shared user-shader geometry - Each registered shader is its own
     // material.
     GLuint user_shader_vao = 0;

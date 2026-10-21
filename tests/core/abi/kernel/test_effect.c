@@ -38,9 +38,7 @@ aligned_free_portable(void* p)
 
 typedef struct effect_rig
 {
-    void* storage;
     void* buffer;
-    alia_arena* arena;
     alia_ui_context ctx;
 } effect_rig;
 
@@ -48,22 +46,18 @@ static void
 effect_rig_init(effect_rig* rig)
 {
     memset(rig, 0, sizeof(*rig));
-    alia_struct_spec spec = alia_arena_object_spec();
-    rig->storage = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(rig->storage != NULL);
     rig->buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, 4096);
     TEST_ASSERT(rig->buffer != NULL);
-    rig->arena = alia_arena_init(
-        rig->storage, rig->buffer, 4096, alia_arena_no_controller());
-    TEST_ASSERT(rig->arena != NULL);
-    alia_bump_allocator_init(&rig->ctx.kernel.scratch, rig->arena);
+    alia_bump_allocator_bind(
+        &rig->ctx.kernel.scratch,
+        rig->buffer,
+        4096,
+        alia_grow_callback_none());
 }
 
 static void
 effect_rig_destroy(effect_rig* rig)
 {
-    alia_arena_destroy(rig->arena);
-    aligned_free_portable(rig->storage);
     aligned_free_portable(rig->buffer);
 }
 

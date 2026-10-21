@@ -51,14 +51,6 @@ test_grow_fn(
     return existing_capacity * 2;
 }
 
-void
-test_free_fn(void* user, void* base, size_t capacity)
-{
-    (void) user;
-    (void) capacity;
-    aligned_free_portable(base);
-}
-
 } // namespace
 
 struct alia_test_substrate_fixture
@@ -67,9 +59,8 @@ struct alia_test_substrate_fixture
     alia_substrate_traversal traversal;
     uint32_t refresh_counter = 0;
 
-    // scratch arena used by substrate discovery-mode allocations
-    alia_arena* arena = nullptr;
-    void* arena_storage = nullptr;
+    // scratch bump used by substrate discovery-mode allocations
+    void* scratch_buffer = nullptr;
     alia_bump_allocator scratch = {};
 
     // minimal event state so discovery mode can mark refresh incomplete
@@ -87,34 +78,19 @@ alia_test_substrate_fixture_create(alia_general_allocator allocator)
     if (!fixture)
         return nullptr;
 
-    // arena storage
-    alia_struct_spec arena_spec = alia_arena_object_spec();
-    fixture->arena_storage
-        = aligned_alloc_portable(arena_spec.align, arena_spec.size);
-    if (!fixture->arena_storage)
-    {
-        std::free(fixture);
-        return nullptr;
-    }
-
-    void* arena_buffer
+    fixture->scratch_buffer
         = aligned_alloc_portable(ALIA_MAX_ALIGN, max_arena_capacity);
-    if (!arena_buffer)
+    if (!fixture->scratch_buffer)
     {
-        aligned_free_portable(fixture->arena_storage);
-        fixture->arena_storage = NULL;
         std::free(fixture);
         return nullptr;
     }
 
-    fixture->arena = alia_arena_init(
-        fixture->arena_storage,
-        arena_buffer,
-        max_arena_capacity / 2u, /* initial_capacity */
-        alia_arena_controller{
-            .user = nullptr, .grow = test_grow_fn, .free = test_free_fn});
-
-    alia_bump_allocator_init(&fixture->scratch, fixture->arena);
+    alia_bump_allocator_bind(
+        &fixture->scratch,
+        fixture->scratch_buffer,
+        max_arena_capacity / 2u,
+        alia_grow_callback{.user = nullptr, .grow = test_grow_fn});
 
     // substrate system + traversal setup
     alia::substrate_system_init(fixture->system, allocator);
@@ -139,16 +115,10 @@ alia_test_substrate_fixture_destroy(alia_test_substrate_fixture* fixture)
     if (fixture->system.root_anchor.block)
         alia::substrate_system_destroy(fixture->system);
 
-    if (fixture->arena)
+    if (fixture->scratch_buffer)
     {
-        alia_arena_destroy(fixture->arena);
-        fixture->arena = nullptr;
-    }
-
-    if (fixture->arena_storage)
-    {
-        aligned_free_portable(fixture->arena_storage);
-        fixture->arena_storage = NULL;
+        aligned_free_portable(fixture->scratch_buffer);
+        fixture->scratch_buffer = nullptr;
     }
 
     std::free(fixture);

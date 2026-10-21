@@ -1,6 +1,7 @@
 #include <alia/abi/ui/layout/placement.h>
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -48,19 +49,20 @@ alia_layout_placement_resolve(
     alia_layout_placement_region const region
         = {.offset = (alia_offset) system->placement.high_water};
 
+    alia_memory_system* memory = system->memory;
     alia_vertical_requirements vertical;
     {
         alia_measurement_context ctx{};
-        alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
+        ctx.scratch = alia_memory_open_bump(memory, system->scratch_pool);
         alia_measure_horizontal(&ctx, ALIA_MAIN_AXIS_X, root);
-        alia_arena_reset(&ctx.scratch);
+        ctx.scratch = alia_memory_open_bump(memory, system->scratch_pool);
         vertical = alia_measure_vertical(
             &ctx, ALIA_MAIN_AXIS_X, root, available_space.x);
     }
     {
         alia_placement_context ctx;
-        alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
-        alia_bump_allocator_init(&ctx.arena, &system->placement.arena);
+        ctx.scratch = alia_memory_open_bump(memory, system->scratch_pool);
+        ctx.arena = alia_memory_open_bump(memory, system->placement_pool);
         ctx.arena.offset = system->placement.high_water;
         alia_assign_boxes(
             &ctx,
@@ -69,7 +71,12 @@ alia_layout_placement_resolve(
             {.min = {0, 0}, .size = available_space},
             vertical.ascent);
         system->placement.high_water = ctx.arena.offset;
-        alia_bump_allocator_commit_peak(&ctx.arena);
+        alia_memory_commit_bump(memory, system->scratch_pool, &ctx.scratch);
+        alia_memory_trim(
+            memory, system->scratch_pool, ALIA_MEMORY_RETAIN_PEAK);
+        alia_memory_commit_bump(memory, system->placement_pool, &ctx.arena);
+        alia_memory_trim(
+            memory, system->placement_pool, ALIA_MEMORY_RETAIN_USED);
     }
 
     return region;

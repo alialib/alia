@@ -1,6 +1,7 @@
 #ifndef ALIA_RENDERERS_D3D11_RENDERER_H
 #define ALIA_RENDERERS_D3D11_RENDERER_H
 
+#include <alia/abi/base/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
@@ -13,6 +14,16 @@ struct ID3D11DeviceContext;
 ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_d3d11_renderer alia_d3d11_renderer;
+
+// D3D11 renderer pool name - The value is not a pool ID.
+typedef enum alia_d3d11_pool
+{
+    ALIA_D3D11_POOL_RECT_INSTANCES = 0,
+} alia_d3d11_pool;
+
+// Get the pool ID registered for `name`.
+alia_memory_pool_id
+alia_d3d11_renderer_pool(alia_d3d11_renderer* renderer, alia_d3d11_pool name);
 
 alia_struct_spec
 alia_d3d11_renderer_object_spec(void);

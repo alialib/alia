@@ -11,6 +11,8 @@
 #include <alia/prelude.hpp>
 #include <alia/ui/drawing/bucket_key.h>
 #include <alia/ui/drawing/system.h>
+
+#include <alia/abi/ui/system/memory.h>
 #include <alia/ui/system/object.h>
 #include <alia/ui/trace_internal.h>
 
@@ -122,12 +124,12 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         .keys = {},
     };
 
+    alia_memory_system* memory = alia_ui_memory(system);
     alia_draw_context draw_context = {
         .buckets = &bucket_table,
-        .arena = {},
+        .arena = alia_memory_open_bump(memory, system->draw.command_pool),
         .target_id = ALIA_DRAW_TARGET_PRIMARY,
     };
-    alia_bump_allocator_init(&draw_context.arena, &system->draw.command_arena);
 
     {
         alia::trace_pass_builder trace(*system, ALIA_TRACE_PASS_DRAW_RECORD);
@@ -135,7 +137,10 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         alia::dispatch_event(*system, draw_event);
     }
 
-    alia_bump_allocator_commit_peak(&draw_context.arena);
+    alia_memory_commit_bump(
+        memory, system->draw.command_pool, &draw_context.arena);
+    alia_memory_trim(
+        memory, system->draw.command_pool, ALIA_MEMORY_RETAIN_PEAK);
 
     std::unordered_set<alia_draw_target_id> targets;
     targets.insert(ALIA_DRAW_TARGET_PRIMARY);

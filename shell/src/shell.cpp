@@ -10,6 +10,7 @@
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/abi/ui/text.h>
 #include <alia/abi/ui/trace.h>
@@ -364,6 +365,8 @@ alia_shell_frame(alia_ui_system* ui)
     alia_ui_trace_frame_begin(ui);
     alia_ui_system_update(ui);
     alia_shell_draw(ui);
+    if (!alia_ui_needs_tick(ui))
+        alia_memory_release_idle(alia_ui_memory(ui));
     alia_ui_trace_frame_end(ui);
 }
 

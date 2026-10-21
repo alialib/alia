@@ -63,15 +63,10 @@ test_block_free(void* user_data, void* ptr, size_t size, size_t alignment)
 struct substrate_fixture
 {
     alia_test_substrate_fixture* fixture = nullptr;
-    alia_stack* stack = nullptr;
-    void* stack_obj_storage = nullptr;
+    alia_stack stack{};
     void* stack_buffer = nullptr;
-    // scratch arena object storage
-    void* scratch_storage = nullptr;
-    // scratch arena buffer
+    // scratch buffer
     void* scratch_buffer = nullptr;
-    // scratch arena
-    alia_arena* scratch_arena = nullptr;
     ui_context ctx{};
 
     substrate_fixture()
@@ -92,7 +87,7 @@ struct substrate_fixture
     reset_traversal()
     {
         alia_test_substrate_fixture_reset_traversal(fixture, true);
-        alia_stack_reset(stack);
+        alia_stack_reset(&stack);
         alia_arena_reset(&ctx.kernel.scratch);
         ctx.kernel.effects = {};
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
@@ -137,62 +132,34 @@ struct substrate_fixture
         fixture = alia_test_substrate_fixture_create(allocator);
         REQUIRE(fixture);
 
-        alia_struct_spec stack_spec = alia_stack_object_spec();
-        stack_obj_storage
-            = aligned_alloc_portable(stack_spec.align, stack_spec.size);
-        REQUIRE(stack_obj_storage);
         stack_buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, 64u * 1024u);
         REQUIRE(stack_buffer);
+        alia_stack_bind(
+            &stack, stack_buffer, 64u * 1024u, alia_grow_callback_none());
 
-        stack = alia_stack_init(stack_obj_storage, stack_buffer, 64u * 1024u);
-        REQUIRE(stack);
-        alia_stack_reset(stack);
-
-        alia_struct_spec arena_spec = alia_arena_object_spec();
-        scratch_storage
-            = aligned_alloc_portable(arena_spec.align, arena_spec.size);
-        REQUIRE(scratch_storage);
         scratch_buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, 64u * 1024u);
         REQUIRE(scratch_buffer);
-        scratch_arena = alia_arena_init(
-            scratch_storage,
-            scratch_buffer,
-            64u * 1024u,
-            alia_arena_no_controller());
-        REQUIRE(scratch_arena);
         ctx = {};
         ctx.kernel.substrate = alia_test_substrate_fixture_traversal(fixture);
-        ctx.kernel.stack = stack;
-        alia_bump_allocator_init(&ctx.kernel.scratch, scratch_arena);
+        ctx.kernel.stack = &stack;
+        alia_bump_allocator_bind(
+            &ctx.kernel.scratch,
+            scratch_buffer,
+            64u * 1024u,
+            alia_grow_callback_none());
         alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
     }
 
     void
     destroy()
     {
-        if (scratch_arena)
-            alia_arena_destroy(scratch_arena);
-        scratch_arena = nullptr;
-
         if (scratch_buffer)
             aligned_free_portable(scratch_buffer);
         scratch_buffer = nullptr;
 
-        if (scratch_storage)
-            aligned_free_portable(scratch_storage);
-        scratch_storage = nullptr;
-
-        if (stack)
-            alia_stack_destroy(stack);
-        stack = nullptr;
-
         if (stack_buffer)
             aligned_free_portable(stack_buffer);
         stack_buffer = nullptr;
-
-        if (stack_obj_storage)
-            aligned_free_portable(stack_obj_storage);
-        stack_obj_storage = nullptr;
 
         if (fixture)
             alia_test_substrate_fixture_destroy(fixture);

@@ -1,6 +1,7 @@
 #ifndef ALIA_ABI_KERNEL_OBJECT_H
 #define ALIA_ABI_KERNEL_OBJECT_H
 
+#include <alia/abi/base/memory.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -14,8 +15,9 @@ alia_kernel_object_spec(void);
 // Initialize a kernel in `object_storage`.
 // `object_storage` must point to at least `alia_kernel_object_spec().size`
 // bytes aligned to `alia_kernel_object_spec().align`.
+// Pools are registered but not initialized until the first pass.
 alia_kernel*
-alia_kernel_init(void* object_storage);
+alia_kernel_init(void* object_storage, alia_memory_ops memory_ops);
 
 // Release resources owned by `kernel` and end its lifetime.
 void

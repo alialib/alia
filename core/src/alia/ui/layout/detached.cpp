@@ -1,5 +1,6 @@
 #include <alia/abi/ui/layout/detached.h>
 
+#include <alia/abi/base/memory.h>
 #include <alia/abi/ui/layout/utilities.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -23,17 +24,20 @@ struct detached_placement_scope
 alia_vec2f
 measure_detached_size(alia_layout_system* system, alia_layout_node* root)
 {
+    alia_memory_system* memory = system->memory;
     alia_measurement_context ctx{};
     ctx.measure_preferred_size = true;
-    alia_bump_allocator_init(&ctx.scratch, &system->scratch_arena);
+    ctx.scratch = alia_memory_open_bump(memory, system->scratch_pool);
     alia_horizontal_requirements const horizontal
         = alia_measure_horizontal(&ctx, ALIA_MAIN_AXIS_X, root);
 
     float const width = horizontal.min_size;
 
-    alia_arena_reset(&ctx.scratch);
+    ctx.scratch = alia_memory_open_bump(memory, system->scratch_pool);
     alia_vertical_requirements const vertical
         = alia_measure_vertical(&ctx, ALIA_MAIN_AXIS_X, root, width);
+    alia_memory_commit_bump(memory, system->scratch_pool, &ctx.scratch);
+    alia_memory_trim(memory, system->scratch_pool, ALIA_MEMORY_RETAIN_PEAK);
 
     return {.x = width, .y = vertical.min_size};
 }

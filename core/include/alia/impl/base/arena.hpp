@@ -11,16 +11,6 @@
 
 namespace alia {
 
-void*
-allocate_virtual_block(std::size_t size);
-
-void
-release_virtual_block(void* block, std::size_t size);
-
-void
-initialize_lazy_commit_arena(
-    alia_arena* arena, std::size_t chunk_reservation_size = 128 * 1024 * 1024);
-
 constexpr std::size_t
 align_up(std::size_t value)
 {

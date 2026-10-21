@@ -67,21 +67,14 @@ static alia_stack_vtable const VT_B = {"B", dummy_describe};
 static void
 test_stack_lifecycle_reset_empty(void)
 {
-    alia_struct_spec spec = alia_stack_object_spec();
-    TEST_ASSERT(spec.size > 0);
-    TEST_ASSERT(spec.align > 0);
-
-    void* obj = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(obj != NULL);
-    memset(obj, 0xCD, spec.size);
-
     size_t cap = 64 * 1024;
     void* buf = aligned_alloc_portable(ALIA_MAX_ALIGN, cap);
     TEST_ASSERT(buf != NULL);
     memset(buf, 0xEF, cap);
 
-    alia_stack* s = alia_stack_init(obj, buf, cap);
-    TEST_ASSERT(s != NULL);
+    alia_stack stack;
+    alia_stack_bind(&stack, buf, cap, alia_grow_callback_none());
+    alia_stack* s = &stack;
 
     // Empty peek should be NULL.
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
@@ -95,24 +88,19 @@ test_stack_lifecycle_reset_empty(void)
     alia_stack_reset(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_destroy(s);
     aligned_free_portable(buf);
-    aligned_free_portable(obj);
 }
 
 static void
 test_stack_push_pop_min_aligned_single(void)
 {
-    alia_struct_spec spec = alia_stack_object_spec();
-    void* obj = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(obj != NULL);
-
     size_t cap = 64 * 1024;
     void* buf = aligned_alloc_portable(ALIA_MAX_ALIGN, cap);
     TEST_ASSERT(buf != NULL);
 
-    alia_stack* s = alia_stack_init(obj, buf, cap);
-    TEST_ASSERT(s != NULL);
+    alia_stack stack;
+    alia_stack_bind(&stack, buf, cap, alia_grow_callback_none());
+    alia_stack* s = &stack;
 
     // Push a min-aligned payload (size multiple of ALIA_MIN_ALIGN).
     uint16_t payload_size = 32;
@@ -143,24 +131,19 @@ test_stack_push_pop_min_aligned_single(void)
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
     TEST_ASSERT(alia_stack_peek_payload(s) == NULL);
 
-    alia_stack_destroy(s);
     aligned_free_portable(buf);
-    aligned_free_portable(obj);
 }
 
 static void
 test_stack_push_aligned_and_prev_chain(void)
 {
-    alia_struct_spec spec = alia_stack_object_spec();
-    void* obj = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(obj != NULL);
-
     size_t cap = 128 * 1024;
     void* buf = aligned_alloc_portable(ALIA_MAX_ALIGN, cap);
     TEST_ASSERT(buf != NULL);
 
-    alia_stack* s = alia_stack_init(obj, buf, cap);
-    TEST_ASSERT(s != NULL);
+    alia_stack stack;
+    alia_stack_bind(&stack, buf, cap, alia_grow_callback_none());
+    alia_stack* s = &stack;
 
     // Entry 1: min-aligned push (fast path)
     uint16_t sz1 = 16; // multiple of ALIA_MIN_ALIGN
@@ -236,24 +219,19 @@ test_stack_push_aligned_and_prev_chain(void)
     alia_stack_pop(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_destroy(s);
     aligned_free_portable(buf);
-    aligned_free_portable(obj);
 }
 
 static void
 test_stack_reset_discards_entries(void)
 {
-    alia_struct_spec spec = alia_stack_object_spec();
-    void* obj = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(obj != NULL);
-
     size_t cap = 64 * 1024;
     void* buf = aligned_alloc_portable(ALIA_MAX_ALIGN, cap);
     TEST_ASSERT(buf != NULL);
 
-    alia_stack* s = alia_stack_init(obj, buf, cap);
-    TEST_ASSERT(s != NULL);
+    alia_stack stack;
+    alia_stack_bind(&stack, buf, cap, alia_grow_callback_none());
+    alia_stack* s = &stack;
 
     // Push a couple entries
     uint8_t* p1 = (uint8_t*) alia_stack_push(s, 16, &VT_A);
@@ -275,9 +253,7 @@ test_stack_reset_discards_entries(void)
     alia_stack_pop(s);
     TEST_ASSERT(alia_stack_peek_header(s) == NULL);
 
-    alia_stack_destroy(s);
     aligned_free_portable(buf);
-    aligned_free_portable(obj);
 }
 
 void

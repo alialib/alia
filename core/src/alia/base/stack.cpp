@@ -1,5 +1,6 @@
 #include <alia/abi/base/stack.h>
 
+#include <alia/abi/panic.h>
 #include <alia/base/stack.h>
 #include <alia/impl/base/arena.hpp>
 
@@ -7,8 +8,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-
-#include <new>
 
 // TODO: Split out into utility files.
 
@@ -32,13 +31,6 @@ alia_align_up_u32(uint32_t v, uint32_t align)
     ALIA_ASSERT(alia_is_pow2_u32(align));
     uint32_t mask = align - 1u;
     return (v + mask) & ~mask;
-}
-
-static inline bool
-alia_is_aligned_ptr(void const* p, uint32_t align)
-{
-    ALIA_ASSERT(alia_is_pow2_u32(align));
-    return (reinterpret_cast<uintptr_t>(p) & uintptr_t(align - 1u)) == 0u;
 }
 
 // Reserve exactly ALIA_MIN_ALIGN bytes at the start of each entry for the
@@ -66,6 +58,37 @@ alia_stack_header_at(uint8_t const* entry_start)
     return reinterpret_cast<alia_stack_entry_header const*>(entry_start);
 }
 
+static void
+stack_update_peak(alia_stack* s)
+{
+    if (s->top > s->peak)
+        s->peak = s->top;
+}
+
+static void
+stack_reserve(alia_stack* s, uint32_t entry_end_off)
+{
+    if (size_t(entry_end_off) <= s->capacity)
+        return;
+
+    if (!s->grow.grow)
+    {
+        alia_panic_info info = {
+            .reason = ALIA_PANIC_OUT_OF_MEMORY,
+            .subsystem = "memory",
+            .msg = "stack exceeded its buffer",
+        };
+        alia_panic_now(&info);
+    }
+
+    size_t const bytes_requested = size_t(entry_end_off) - size_t(s->top);
+    size_t const new_capacity = s->grow.grow(
+        s->grow.user, s->base, s->capacity, bytes_requested);
+    ALIA_ASSERT(new_capacity > s->capacity);
+    s->capacity = new_capacity;
+    ALIA_ASSERT(size_t(entry_end_off) <= s->capacity);
+}
+
 static inline uint8_t*
 alia_stack_top_entry_start(alia_stack const* s)
 {
@@ -77,51 +100,6 @@ alia_stack_top_entry_start(alia_stack const* s)
 // API IMPLEMENTATION
 
 extern "C" {
-alia_struct_spec
-alia_stack_object_spec(void)
-{
-    alia_struct_spec spec;
-    spec.size = sizeof(alia_stack);
-    spec.align = alignof(alia_stack);
-    return spec;
-}
-
-alia_stack*
-alia_stack_init(void* object_storage, void* buffer, size_t capacity)
-{
-    ALIA_ASSERT(object_storage);
-    ALIA_ASSERT(buffer);
-
-    // Capacity must be representable by our 32-bit cursor.
-    ALIA_ASSERT(capacity <= size_t(0xFFFF'FFFFu));
-
-    // Backing buffer must be aligned enough to satisfy all supported
-    // alignments.
-    ALIA_ASSERT(alia_is_aligned_ptr(buffer, ALIA_MAX_ALIGN));
-    ALIA_ASSERT((ALIA_MAX_ALIGN % ALIA_MIN_ALIGN) == 0);
-
-    alia_stack* s = new (object_storage) alia_stack;
-    s->base = static_cast<uint8_t*>(buffer);
-    s->capacity = capacity;
-    s->top = 0;
-    s->top_entry_size = 0;
-    return s;
-}
-
-void
-alia_stack_destroy(alia_stack* s)
-{
-    if (!s)
-        return;
-
-    s->base = nullptr;
-    s->capacity = 0;
-    s->top = 0;
-    s->top_entry_size = 0;
-
-    s->~alia_stack();
-}
-
 void
 alia_stack_reset(alia_stack* s)
 {
@@ -154,9 +132,7 @@ alia_stack_push(
     uint32_t entry_size_u32 = ALIA_STACK_HEADER_AREA + payload_size;
     uint32_t entry_end_off = payload_off + payload_size;
 
-    // Capacity check.
-    // TODO: Handle overflow.
-    ALIA_ASSERT(size_t(entry_end_off) <= s->capacity);
+    stack_reserve(s, entry_end_off);
 
     // Write header.
     alia_stack_entry_header* h = alia_stack_header_at(entry_start);
@@ -169,6 +145,7 @@ alia_stack_push(
     // Advance stack state.
     s->top = entry_end_off;
     s->top_entry_size = uint16_t(entry_size_u32);
+    stack_update_peak(s);
 
     return s->base + payload_off;
 }
@@ -220,9 +197,7 @@ alia_stack_push_aligned(
     ALIA_ASSERT(entry_size_u32 <= ALIA_STACK_MAX_ENTRY_SIZE_U32);
     ALIA_ASSERT(entry_size_u32 <= 0xFFFFu);
 
-    // Capacity check.
-    // TODO: Handle overflow.
-    ALIA_ASSERT(size_t(entry_end_off) <= s->capacity);
+    stack_reserve(s, entry_end_off);
 
     // Write header.
     alia_stack_entry_header* h = alia_stack_header_at(entry_start);
@@ -235,6 +210,7 @@ alia_stack_push_aligned(
     // Advance stack state.
     s->top = entry_end_off;
     s->top_entry_size = uint16_t(entry_size_u32);
+    stack_update_peak(s);
 
     return s->base + payload_off;
 }

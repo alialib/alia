@@ -1,24 +1,32 @@
 #include <alia/ui/layout/system.h>
 
 #include <alia/abi/ui/layout/placement.h>
-#include <alia/impl/base/arena.hpp>
+#include <alia/abi/ui/system/memory.h>
 
 using namespace alia;
 
 extern "C" {
 
 void
-alia_layout_system_init(alia_layout_system* system)
+alia_layout_system_init(alia_layout_system* system, alia_memory_system* memory)
 {
-    initialize_lazy_commit_arena(&system->node_arena);
-    initialize_lazy_commit_arena(&system->scratch_arena);
+    ALIA_ASSERT(system);
+    ALIA_ASSERT(memory);
+
+    system->memory = memory;
     system->root = alia_layout_container{
         .base = {.vtable = nullptr, .next_sibling = nullptr},
         .flags = 0,
         .first_child = 0};
-    initialize_lazy_commit_arena(&system->placement.arena);
     system->placement.generation = 0;
     system->placement.high_water = 0;
+
+    system->node_pool
+        = alia_memory_register_pool(memory, ALIA_MEMORY_POOL_BUMP, 0);
+    system->scratch_pool = alia_memory_register_pool(
+        memory, ALIA_MEMORY_POOL_BUMP, ALIA_MEMORY_RELEASE_ON_IDLE);
+    system->placement_pool
+        = alia_memory_register_pool(memory, ALIA_MEMORY_POOL_BUMP, 0);
 }
 
 void

@@ -2,8 +2,7 @@
 
 #include <alia/abi/kernel/object.h>
 #include <alia/abi/kernel/routing.h>
-#include <alia/base/arena.h>
-#include <alia/base/stack.h>
+#include <alia/base/memory.h>
 #include <alia/kernel/animation.h>
 #include <alia/kernel/substrate.h>
 
@@ -37,10 +36,11 @@ struct alia_kernel
     // active transition and flare animations
     alia::animation_system animation;
 
+    // pool table for this component tree
+    alia_memory_system memory;
+
     // persistent substrate graph
     alia_substrate_system substrate;
-    // arena for substrate discovery within a pass
-    alia_arena substrate_discovery_arena;
 
     // current time in nanoseconds - The origin is arbitrary and the counter
     // may wrap.
@@ -50,15 +50,11 @@ struct alia_kernel
     // belong to one incomplete refresh share a value.
     uint32_t refresh_counter = 0;
 
-    // component stack
-    alia_stack stack;
-    // backing buffer for `stack`
-    void* stack_buffer = nullptr;
-    // size of `stack_buffer` in bytes
-    size_t stack_capacity = 0;
-
-    // backing arena for the pass-local scratch allocator
-    alia_arena scratch;
+    // pool IDs registered with `memory`
+    alia_memory_pool_id stack_pool = 0;
+    alia_memory_pool_id scratch_pool = 0;
+    alia_memory_pool_id substrate_discovery_pool = 0;
+    alia_memory_pool_id substrate_storage_pool = 0;
 
     // pending timer requests, ordered by fire time
     std::priority_queue<
@@ -81,7 +77,7 @@ namespace alia {
 
 // Set up resources for an already constructed kernel.
 void
-init_kernel(alia_kernel& kernel);
+init_kernel(alia_kernel& kernel, alia_memory_ops memory_ops);
 
 // Release resources owned by `kernel`. The object stays alive.
 void

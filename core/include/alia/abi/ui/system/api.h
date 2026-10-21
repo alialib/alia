@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_SYSTEM_API_H
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 
@@ -28,7 +29,8 @@ alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
     alia_ui_controller controller,
-    alia_vec2i surface_size);
+    alia_vec2i surface_size,
+    alia_memory_ops memory_ops);
 
 // Detects changes in UI contents, updates layout, and processes input routing.
 void

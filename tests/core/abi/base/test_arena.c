@@ -48,49 +48,30 @@ test_grow_fn(
     return existing_capacity * 2;
 }
 
-static void
-test_free(void* user, void* base, size_t capacity)
-{
-    (void) user;
-    (void) capacity;
-    aligned_free_portable(base);
-}
-
 typedef struct test_rig
 {
-    void* storage;
-    alia_arena* arena;
+    void* buffer;
     alia_bump_allocator alloc;
 } test_rig;
 
 static void
 test_rig_init(test_rig* rig, size_t initial_capacity)
 {
-    alia_struct_spec spec = alia_arena_object_spec();
-    rig->storage = aligned_alloc_portable(spec.align, spec.size);
-    TEST_ASSERT(rig->storage != NULL);
+    rig->buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, max_arena_capacity);
+    TEST_ASSERT(rig->buffer != NULL);
 
-    void* buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, max_arena_capacity);
-    TEST_ASSERT(buffer != NULL);
-
-    rig->arena = alia_arena_init(
-        rig->storage,
-        buffer,
+    alia_bump_allocator_bind(
+        &rig->alloc,
+        rig->buffer,
         initial_capacity,
-        (alia_arena_controller) {
-            .user = NULL, .grow = test_grow_fn, .free = test_free});
-    TEST_ASSERT(rig->arena != NULL);
-
-    alia_bump_allocator_init(&rig->alloc, rig->arena);
+        (alia_grow_callback) {.user = NULL, .grow = test_grow_fn});
 }
 
 static void
 test_rig_destroy(test_rig* rig)
 {
-    alia_arena_destroy(rig->arena);
-    rig->arena = NULL;
-    aligned_free_portable(rig->storage);
-    rig->storage = NULL;
+    aligned_free_portable(rig->buffer);
+    rig->buffer = NULL;
 }
 
 static alia_bump_allocator*
@@ -105,9 +86,9 @@ test_construct_destruct(void)
     test_rig rig;
     test_rig_init(&rig, 1024);
 
-    alia_arena_stats stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.current_usage == 0);
-    TEST_CHECK(stats.peak_usage == 0);
+    TEST_CHECK(rig.alloc.base == rig.buffer);
+    TEST_CHECK(rig.alloc.capacity == 1024);
+    TEST_CHECK(rig.alloc.offset == 0);
 
     test_rig_destroy(&rig);
 }
@@ -170,41 +151,13 @@ test_mark_jump_reset(void)
     TEST_CHECK(b2 == a2);
 
     // Jump back to `m1`. The next allocation should reuse the address of `a1`.
+    // A jump does not publish usage.
     alia_arena_jump(test_rig_view(&rig), m1);
     alia_offset b1 = alia_arena_alloc(test_rig_view(&rig), 80);
     TEST_CHECK(b1 == a1);
 
-    // Commit peak so get_stats returns it.
-    alia_bump_allocator_commit_peak(test_rig_view(&rig));
-    alia_arena_stats stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 240);
-
-    // Reset the allocator and confirm peak is unchanged (still committed).
+    // Reset clears the cursor and does not publish.
     alia_arena_reset(test_rig_view(&rig));
-    stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 240);
-
-    test_rig_destroy(&rig);
-}
-
-static void
-test_stats(void)
-{
-    test_rig rig;
-    test_rig_init(&rig, 1024);
-
-    (void) alia_arena_alloc(test_rig_view(&rig), 112);
-    (void) alia_arena_alloc(test_rig_view(&rig), 200);
-
-    alia_bump_allocator_commit_peak(test_rig_view(&rig));
-    alia_arena_stats stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 312);
-    TEST_CHECK(rig.alloc.offset == 312);
-
-    alia_arena_reset(test_rig_view(&rig));
-
-    stats = alia_arena_get_stats(rig.arena);
-    TEST_CHECK(stats.peak_usage == 312);
     TEST_CHECK(rig.alloc.offset == 0);
 
     test_rig_destroy(&rig);
@@ -217,5 +170,4 @@ arena_tests(void)
     test_allocation_alignment();
     test_allocation_growth();
     test_mark_jump_reset();
-    test_stats();
 }

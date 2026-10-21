@@ -2,7 +2,7 @@
 
 // Layout test/benchmark support. Not part of the public alia API.
 
-#include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/layout/system.h>
 
@@ -33,7 +33,7 @@ layout_fixture_layout_system(struct layout_fixture* fixture);
 struct alia_layout_node*
 layout_fixture_root_child(struct layout_fixture* fixture);
 
-alia_arena_stats
+alia_memory_pool_stats
 layout_fixture_node_arena_stats(struct layout_fixture* fixture);
 
 void*

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
 #include <alia/abi/ui/drawing/system.h>
-
-#include <alia/base/arena.h>
 
 #include <unordered_map>
 #include <vector>
@@ -20,8 +18,8 @@ struct alia_draw_system
 {
     alia_draw_material_id next_material_id;
     std::vector<alia_draw_material> materials;
-    // Per-frame bump storage for draw commands emitted during the draw pass.
-    alia_arena command_arena;
+    // pool ID for draw commands emitted during the draw pass
+    alia_memory_pool_id command_pool;
 };
 
 struct alia_draw_bucket_table

@@ -2,6 +2,9 @@
 
 #include <alia/abi/base/allocator.h>
 #include <alia/abi/base/arena.h>
+#include <alia/abi/base/memory.h>
+#include <alia/abi/ui/system/memory.h>
+#include <alia/base/memory.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/events.h>
@@ -67,18 +70,11 @@ substrate_free(void* user_data, void* ptr, size_t size, size_t alignment)
         aligned_free_portable(ptr);
 }
 
-void
-reset_node_arena(alia_layout_system& layout)
-{
-    alia_bump_allocator node_alloc;
-    alia_bump_allocator_init(&node_alloc, &layout.node_arena);
-    alia_arena_reset(&node_alloc);
-}
-
 } // namespace
 
 struct layout_fixture
 {
+    alia_memory_system memory{};
     alia_layout_system layout = {};
     alia_stack stack = {};
     void* stack_buffer = nullptr;
@@ -95,9 +91,7 @@ struct layout_fixture
 
     alia_substrate_system substrate_system{};
     alia_substrate_traversal substrate_traversal{};
-    void* substrate_arena_storage = nullptr;
-    void* substrate_arena_buffer = nullptr;
-    alia_arena* substrate_arena = nullptr;
+    void* substrate_scratch_buffer = nullptr;
     alia_bump_allocator substrate_scratch{};
     bool substrate_ready = false;
 };
@@ -121,10 +115,18 @@ wire_context(layout_fixture& fixture, bool refresh)
     fixture.layout_context.system = &fixture.layout;
     fixture.layout_context.emission.next_ptr
         = &fixture.layout.root.first_child;
-    alia_bump_allocator_init(
-        &fixture.layout_context.emission.arena, &fixture.layout.node_arena);
-    alia_bump_allocator_init(
-        &fixture.layout_context.placement, &fixture.layout.placement.arena);
+    if (refresh)
+    {
+        fixture.layout_context.emission.arena = alia_memory_open_bump(
+            &fixture.memory, fixture.layout.node_pool);
+        fixture.layout_context.placement = {};
+    }
+    else
+    {
+        fixture.layout_context.emission.arena = {};
+        fixture.layout_context.placement = alia_memory_open_bump(
+            &fixture.memory, fixture.layout.placement_pool);
+    }
 
     alia_stack_reset(&fixture.stack);
 
@@ -188,7 +190,8 @@ layout_fixture_create()
 
     new (fixture) layout_fixture{};
 
-    alia_layout_system_init(&fixture->layout);
+    alia_memory_system_init(&fixture->memory, alia_memory_ops_system());
+    alia_layout_system_init(&fixture->layout, &fixture->memory);
 
     fixture->stack_buffer
         = aligned_alloc_portable(ALIA_MAX_ALIGN, stack_buffer_size);
@@ -198,31 +201,24 @@ layout_fixture_create()
         return nullptr;
     }
 
-    alia_stack_init(&fixture->stack, fixture->stack_buffer, stack_buffer_size);
+    alia_stack_bind(
+        &fixture->stack,
+        fixture->stack_buffer,
+        stack_buffer_size,
+        alia_grow_callback_none());
 
-    alia_struct_spec arena_spec = alia_arena_object_spec();
-    fixture->substrate_arena_storage
-        = aligned_alloc_portable(arena_spec.align, arena_spec.size);
-    fixture->substrate_arena_buffer
-        = aligned_alloc_portable(ALIA_MAX_ALIGN, substrate_scratch_capacity);
-    if (!fixture->substrate_arena_storage || !fixture->substrate_arena_buffer)
+    fixture->substrate_scratch_buffer = aligned_alloc_portable(
+        ALIA_MAX_ALIGN, substrate_scratch_capacity);
+    if (!fixture->substrate_scratch_buffer)
     {
         layout_fixture_destroy(fixture);
         return nullptr;
     }
-
-    fixture->substrate_arena = alia_arena_init(
-        fixture->substrate_arena_storage,
-        fixture->substrate_arena_buffer,
+    alia_bump_allocator_bind(
+        &fixture->substrate_scratch,
+        fixture->substrate_scratch_buffer,
         substrate_scratch_capacity,
-        alia_arena_no_controller());
-    if (!fixture->substrate_arena)
-    {
-        layout_fixture_destroy(fixture);
-        return nullptr;
-    }
-    alia_bump_allocator_init(
-        &fixture->substrate_scratch, fixture->substrate_arena);
+        alia_grow_callback_none());
 
     alia_general_allocator allocator
         = {.alloc = substrate_alloc,
@@ -253,29 +249,16 @@ layout_fixture_destroy(layout_fixture* fixture)
         fixture->substrate_ready = false;
     }
 
-    if (fixture->substrate_arena)
+    if (fixture->substrate_scratch_buffer)
     {
-        alia_arena_destroy(fixture->substrate_arena);
-        fixture->substrate_arena = nullptr;
-    }
-    if (fixture->substrate_arena_buffer)
-    {
-        aligned_free_portable(fixture->substrate_arena_buffer);
-        fixture->substrate_arena_buffer = nullptr;
-    }
-    if (fixture->substrate_arena_storage)
-    {
-        aligned_free_portable(fixture->substrate_arena_storage);
-        fixture->substrate_arena_storage = nullptr;
+        aligned_free_portable(fixture->substrate_scratch_buffer);
+        fixture->substrate_scratch_buffer = nullptr;
     }
 
-    alia_arena_destroy(&fixture->layout.node_arena);
-    alia_arena_destroy(&fixture->layout.scratch_arena);
-    alia_arena_destroy(&fixture->layout.placement.arena);
+    alia_memory_system_destroy(&fixture->memory);
 
     if (fixture->stack_buffer)
     {
-        alia_stack_destroy(&fixture->stack);
         aligned_free_portable(fixture->stack_buffer);
         fixture->stack_buffer = nullptr;
     }
@@ -301,19 +284,19 @@ layout_fixture_root_child(layout_fixture* fixture)
     return fixture ? fixture->layout.root.first_child : nullptr;
 }
 
-alia_arena_stats
+alia_memory_pool_stats
 layout_fixture_node_arena_stats(layout_fixture* fixture)
 {
     if (!fixture)
-        return alia_arena_stats{};
-    return alia_arena_get_stats(&fixture->layout.node_arena);
+        return alia_memory_pool_stats{};
+    return alia_memory_pool_query(
+        &fixture->memory, fixture->layout.node_pool);
 }
 
 void*
 layout_fixture_placement_arena_identity(layout_fixture* fixture)
 {
-    return fixture ? static_cast<void*>(&fixture->layout.placement.arena)
-                   : nullptr;
+    return fixture ? static_cast<void*>(&fixture->layout.placement) : nullptr;
 }
 
 void
@@ -341,11 +324,16 @@ layout_fixture_run_refresh_impl(
     if (!fixture || !fn)
         return;
 
-    reset_node_arena(fixture->layout);
     fixture->layout.root.first_child = nullptr;
     wire_context(*fixture, true);
     run_with_substrate_root(*fixture, fn, user);
     *fixture->layout_context.emission.next_ptr = nullptr;
+    alia_memory_commit_bump(
+        &fixture->memory,
+        fixture->layout.node_pool,
+        &fixture->layout_context.emission.arena);
+    alia_memory_trim(
+        &fixture->memory, fixture->layout.node_pool, ALIA_MEMORY_RETAIN_USED);
 }
 
 void
@@ -365,6 +353,8 @@ layout_fixture_run_spatial_impl(
 
     wire_context(*fixture, false);
     run_with_substrate_root(*fixture, fn, user);
+    alia_memory_discard_bump(
+        &fixture->memory, fixture->layout.placement_pool);
 }
 
 bool

@@ -41,39 +41,24 @@ effect_aligned_free(void* p)
 // `kernel_context` for tests.
 struct effect_fixture
 {
-    // scratch arena object storage
-    void* storage = nullptr;
-    // scratch arena buffer
+    // scratch buffer
     void* buffer = nullptr;
-    // scratch arena
-    alia_arena* arena = nullptr;
     // kernel context with scratch and effects wired
     kernel_context ctx{};
 
     effect_fixture()
     {
-        alia_struct_spec const spec = alia_arena_object_spec();
-        storage = effect_aligned_alloc(spec.align, spec.size);
-        REQUIRE(storage);
         buffer = effect_aligned_alloc(ALIA_MAX_ALIGN, 64u * 1024u);
         REQUIRE(buffer);
-        arena = alia_arena_init(
-            storage, buffer, 64u * 1024u, alia_arena_no_controller());
-        REQUIRE(arena);
-        alia_bump_allocator_init(&ctx.scratch, arena);
+        alia_bump_allocator_bind(
+            &ctx.scratch, buffer, 64u * 1024u, alia_grow_callback_none());
     }
 
     ~effect_fixture()
     {
-        if (arena)
-            alia_arena_destroy(arena);
-        arena = nullptr;
         if (buffer)
             effect_aligned_free(buffer);
         buffer = nullptr;
-        if (storage)
-            effect_aligned_free(storage);
-        storage = nullptr;
     }
 
     effect_fixture(effect_fixture const&) = delete;

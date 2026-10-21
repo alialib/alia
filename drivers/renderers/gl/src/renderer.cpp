@@ -4,6 +4,8 @@
 #include "renderer_object.h"
 
 #include <alia/abi/base/arena.h>
+#include <alia/abi/panic.h>
+#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/shader.h>
@@ -589,7 +591,11 @@ renderer_init_gpu(alia_ui_system* system, alia_gl_renderer* renderer)
     renderer->msdf_sampler_location = msdf_sampler_location;
     renderer->msdf_atlas_texture = 0;
 
-    alia::initialize_lazy_commit_arena(&renderer->rect_instance_arena);
+    renderer->rect_instance_pool = alia_memory_register_pool(
+        alia_ui_memory(system),
+        ALIA_MEMORY_POOL_BUMP,
+        ALIA_MEMORY_RELEASE_ON_IDLE);
+    renderer->rect_instance_pool_registered = true;
 }
 
 void
@@ -650,8 +656,9 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
 
     check_gl_errors();
 
-    alia_bump_allocator rect_alloc;
-    alia_bump_allocator_init(&rect_alloc, &renderer->rect_instance_arena);
+    alia_memory_system* memory = alia_ui_memory(renderer->system);
+    alia_bump_allocator rect_alloc = alia_memory_open_bump(
+        memory, renderer->rect_instance_pool);
     primitive_instance* primitive_instances
         = alia::arena_alloc_array<primitive_instance>(rect_alloc, boxes.count);
 
@@ -740,6 +747,10 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         sizeof(primitive_instance) * boxes.count,
         primitive_instances,
         GL_STREAM_DRAW);
+
+    alia_memory_commit_bump(memory, renderer->rect_instance_pool, &rect_alloc);
+    alia_memory_trim(
+        memory, renderer->rect_instance_pool, ALIA_MEMORY_RETAIN_PEAK);
 
     check_gl_errors();
 
@@ -1150,10 +1161,35 @@ alia_gl_renderer_upload_msdf_atlas(
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+alia_memory_pool_id
+alia_gl_renderer_pool(alia_gl_renderer* renderer, alia_gl_pool name)
+{
+    ALIA_ASSERT(renderer);
+    switch (name)
+    {
+        case ALIA_GL_POOL_RECT_INSTANCES:
+            return renderer->rect_instance_pool;
+    }
+    alia_panic_info info = {
+        .reason = ALIA_PANIC_API_MISUSE,
+        .subsystem = "memory",
+        .msg = "GL pool name",
+    };
+    alia_panic_now(&info);
+    return 0;
+}
+
 void
 alia_gl_renderer_destroy(alia_gl_renderer* renderer)
 {
     ALIA_ASSERT(renderer);
+
+    if (renderer->rect_instance_pool_registered && renderer->system)
+    {
+        alia_memory_unregister_pool(
+            alia_ui_memory(renderer->system), renderer->rect_instance_pool);
+        renderer->rect_instance_pool_registered = false;
+    }
 
     for (auto& slot : renderer->user_shaders)
     {

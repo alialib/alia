@@ -4,6 +4,8 @@
 void
 arena_tests(void);
 void
+memory_tests(void);
+void
 color_tests(void);
 void
 stack_tests(void);
@@ -46,6 +48,7 @@ TEST_LIST
        {"base/geometry/edge_offsets", edge_offsets_tests},
        {"base/geometry/vec2", vec2_tests},
        {"base/arena", arena_tests},
+       {"base/memory", memory_tests},
        {"base/color", color_tests},
        {"base/stack", stack_tests},
        {"kernel/ids", ids_tests},

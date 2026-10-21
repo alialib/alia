@@ -8,7 +8,8 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/system/renderer.h>
-#include <alia/impl/base/arena.hpp>
+#include <alia/abi/panic.h>
+#include <alia/abi/ui/system/memory.h>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
@@ -25,10 +26,6 @@ ui_has_active_animations(ui_system const& ui)
     return !ui.kernel.animation.transitions.empty()
         || !ui.kernel.animation.flares.empty();
 }
-
-// TODO: Sort this out.
-void*
-allocate_virtual_block(std::size_t size);
 
 alia_nanosecond_count
 steady_clock_now_ns()
@@ -83,7 +80,8 @@ alia_ui_system*
 alia_ui_system_init(
     void* object_storage,
     alia_ui_controller controller,
-    alia_vec2i surface_size)
+    alia_vec2i surface_size,
+    alia_memory_ops memory_ops)
 {
     ALIA_ASSERT(controller.fn != nullptr);
     ALIA_ASSERT(object_storage != nullptr);
@@ -91,12 +89,15 @@ alia_ui_system_init(
     alia_ui_system* ui = new (object_storage) alia_ui_system;
 
     ui->controller = controller;
-    alia::init_kernel(ui->kernel);
+    alia::init_kernel(ui->kernel, memory_ops);
 
-    alia_layout_system_init(&ui->layout);
+    alia_layout_system_init(&ui->layout, alia_kernel_memory(&ui->kernel));
     ui->surface_size = surface_size;
 
-    alia::initialize_lazy_commit_arena(&ui->draw.command_arena);
+    ui->draw.command_pool = alia_memory_register_pool(
+        alia_kernel_memory(&ui->kernel),
+        ALIA_MEMORY_POOL_BUMP,
+        ALIA_MEMORY_RELEASE_ON_IDLE);
 
     ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
@@ -112,6 +113,37 @@ alia_ui_system_init(
     alia_style_generate_defaults(ui, nullptr);
 
     return ui;
+}
+
+alia_memory_system*
+alia_ui_memory(alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    return alia_kernel_memory(&ui->kernel);
+}
+
+alia_memory_pool_id
+alia_ui_pool(alia_ui_system* ui, alia_ui_pool_name name)
+{
+    ALIA_ASSERT(ui);
+    switch (name)
+    {
+        case ALIA_UI_POOL_LAYOUT_NODES:
+            return ui->layout.node_pool;
+        case ALIA_UI_POOL_LAYOUT_SCRATCH:
+            return ui->layout.scratch_pool;
+        case ALIA_UI_POOL_LAYOUT_PLACEMENT:
+            return ui->layout.placement_pool;
+        case ALIA_UI_POOL_DRAW_COMMANDS:
+            return ui->draw.command_pool;
+    }
+    alia_panic_info info = {
+        .reason = ALIA_PANIC_API_MISUSE,
+        .subsystem = "memory",
+        .msg = "UI pool name",
+    };
+    alia_panic_now(&info);
+    return 0;
 }
 
 void

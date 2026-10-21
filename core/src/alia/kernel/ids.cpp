@@ -401,11 +401,9 @@ alia_captured_id_capture_into(alia_id_view root, void* mem, size_t mem_size)
 
     uint8_t* pool_begin = alia_id_view_pool_start(mem);
     alia_bump_allocator bump = {};
-    bump.arena = nullptr;
     bump.base = static_cast<uint8_t*>(mem);
     bump.capacity = mem_size;
     bump.offset = pool_begin - bump.base;
-    bump.peak = bump.offset;
 
     alia_id_capture_context ctx;
     ctx.mode = ALIA_ID_CAPTURE_WRITE;
