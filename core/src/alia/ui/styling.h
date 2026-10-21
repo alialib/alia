@@ -29,7 +29,6 @@ struct style_catalog
     alia_general_allocator allocator{};
 
     style_catalog() = default;
-    ~style_catalog();
 
     style_catalog(style_catalog const&) = delete;
     style_catalog&
@@ -39,8 +38,9 @@ struct style_catalog
 void
 style_catalog_init(style_catalog& catalog, alia_ui_system* ui);
 
+// Release the defaults buffer. The catalog stays alive.
 void
-style_catalog_destroy(style_catalog& catalog);
+style_catalog_release(style_catalog& catalog);
 
 void
 style_catalog_generate_defaults(

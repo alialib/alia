@@ -220,6 +220,7 @@ main()
     void* renderer_storage = alia_object_alloc(renderer_spec);
     if (!renderer_storage)
     {
+        alia_ui_system_destroy(g_ui);
         alia_object_free(ui_storage);
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -234,6 +235,7 @@ main()
         std::fprintf(stderr, "[alia glfw_gl_embed] MSDF text setup failed\n");
         alia_gl_renderer_destroy(g_renderer);
         alia_object_free(renderer_storage);
+        alia_ui_system_destroy(g_ui);
         alia_object_free(ui_storage);
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -269,6 +271,7 @@ main()
     teardown_stock_text();
     alia_gl_renderer_destroy(g_renderer);
     alia_object_free(renderer_storage);
+    alia_ui_system_destroy(g_ui);
     alia_object_free(ui_storage);
     glfwDestroyWindow(window);
     glfwTerminate();

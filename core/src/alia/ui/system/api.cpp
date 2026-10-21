@@ -115,6 +115,17 @@ alia_ui_system_init(
     return ui;
 }
 
+void
+alia_ui_system_destroy(alia_ui_system* ui)
+{
+    if (!ui)
+        return;
+
+    alia::style_catalog_release(ui->styles);
+    alia::release_kernel(ui->kernel);
+    ui->~alia_ui_system();
+}
+
 alia_memory_system*
 alia_ui_memory(alia_ui_system* ui)
 {

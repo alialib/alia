@@ -32,6 +32,11 @@ alia_ui_system_init(
     alia_vec2i surface_size,
     alia_memory_ops memory_ops);
 
+// Release resources owned by `ui` and end its lifetime. The caller frees
+// the storage. Destroy an attached renderer before this.
+void
+alia_ui_system_destroy(alia_ui_system* ui);
+
 // Detects changes in UI contents, updates layout, and processes input routing.
 void
 alia_ui_system_update(alia_ui_system* ui);

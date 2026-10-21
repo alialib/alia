@@ -267,13 +267,8 @@ style_catalog_init(style_catalog& catalog, alia_ui_system* ui)
         nullptr);
 }
 
-style_catalog::~style_catalog()
-{
-    style_catalog_destroy(*this);
-}
-
 void
-style_catalog_destroy(style_catalog& catalog)
+style_catalog_release(style_catalog& catalog)
 {
     if (catalog.defaults && catalog.allocator.free)
     {

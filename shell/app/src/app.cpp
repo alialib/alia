@@ -228,6 +228,9 @@ alia_app_destroy(alia_app* app)
         state->shell = nullptr;
     }
 
+    if (state->ui)
+        alia_ui_system_destroy(state->ui);
+
     if (state->ui_storage)
     {
         alia_object_free(state->ui_storage);

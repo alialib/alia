@@ -413,6 +413,8 @@ substrate_system_init(
 void
 substrate_system_destroy(alia_substrate_system& system)
 {
+    if (!system.root_anchor.block)
+        return;
     block_destroy(&system, system.root_anchor.block);
     system.root_anchor.block = nullptr;
 }

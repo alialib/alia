@@ -77,6 +77,7 @@ rig_init(animation_rig* rig)
 static void
 rig_destroy(animation_rig* rig)
 {
+    alia_ui_system_destroy(rig->system);
     aligned_free_portable(rig->storage);
 }
 

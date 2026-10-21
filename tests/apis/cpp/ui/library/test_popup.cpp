@@ -38,6 +38,7 @@ struct surface_rig
 
     ~surface_rig()
     {
+        alia_ui_system_destroy(system);
         alia_object_free(storage);
     }
 
