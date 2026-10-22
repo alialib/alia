@@ -58,7 +58,6 @@ alia_post_write(
     ALIA_ASSERT(size == 0 || src != nullptr);
 
     alia_bump_allocator* scratch = alia_ctx_scratch(ctx);
-    ALIA_ASSERT(scratch->arena);
     size_t const bytes = alia_min_aligned_size(sizeof(write_effect) + size);
     auto* write = reinterpret_cast<write_effect*>(
         alia_arena_ptr(scratch, alia_arena_alloc(scratch, bytes)));
