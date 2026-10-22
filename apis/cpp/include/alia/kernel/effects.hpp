@@ -41,9 +41,7 @@ void
 post_call(kernel_context ctx, Fn fn, char const* label = nullptr)
 {
     using effect_type = detail::call_effect<std::decay_t<Fn>>;
-    ALIA_ASSERT(ctx);
     alia_bump_allocator* scratch = alia_ctx_scratch(ctx);
-    ALIA_ASSERT(scratch->arena);
 
     size_t const bytes = alia_min_aligned_size(sizeof(effect_type));
     size_t const align = alignof(effect_type) < ALIA_MIN_ALIGN
