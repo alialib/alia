@@ -5,7 +5,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/kernel/effect.h>
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/test/kernel/substrate_fixture.h>
 
@@ -67,7 +67,10 @@ struct substrate_fixture
     void* stack_buffer = nullptr;
     // scratch buffer
     void* scratch_buffer = nullptr;
-    ui_context ctx{};
+    // UI context storage
+    alia_ui_context storage{};
+    // handle for `storage`
+    ui_context ctx{&storage};
 
     substrate_fixture()
     {
@@ -88,9 +91,9 @@ struct substrate_fixture
     {
         alia_test_substrate_fixture_reset_traversal(fixture, true);
         alia_stack_reset(&stack);
-        alia_arena_reset(&ctx.kernel.scratch);
-        ctx.kernel.effects = {};
-        alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
+        alia_arena_reset(&storage.kernel.scratch);
+        storage.kernel.effects = {};
+        alia_test_substrate_fixture_prepare_refresh_event(fixture, ctx);
     }
 
     // Run posted effects and reset the scratch arena for the next posting
@@ -98,9 +101,9 @@ struct substrate_fixture
     void
     run_effects()
     {
-        alia_run_effects(alia_ctx_kernel(&ctx));
-        alia_arena_reset(&ctx.kernel.scratch);
-        ctx.kernel.effects = {};
+        alia_run_effects(alia_ctx_kernel(ctx));
+        alia_arena_reset(&storage.kernel.scratch);
+        storage.kernel.effects = {};
     }
 
     alia_substrate_anchor*
@@ -139,15 +142,17 @@ struct substrate_fixture
 
         scratch_buffer = aligned_alloc_portable(ALIA_MAX_ALIGN, 64u * 1024u);
         REQUIRE(scratch_buffer);
-        ctx = {};
-        ctx.kernel.substrate = alia_test_substrate_fixture_traversal(fixture);
-        ctx.kernel.stack = &stack;
+        storage = {};
+        storage.kernel.substrate
+            = alia_test_substrate_fixture_traversal(fixture);
+        storage.kernel.stack = &stack;
         alia_bump_allocator_bind(
-            &ctx.kernel.scratch,
+            &storage.kernel.scratch,
             scratch_buffer,
             64u * 1024u,
             alia_grow_callback_none());
-        alia_test_substrate_fixture_prepare_refresh_event(fixture, &ctx);
+        ctx = ui_context{&storage};
+        alia_test_substrate_fixture_prepare_refresh_event(fixture, ctx);
     }
 
     void

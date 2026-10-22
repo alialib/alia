@@ -3,7 +3,7 @@
 #include <alia/abi/kernel/routing.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry/api.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/internal_api.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 
 #include <memory>
 
@@ -25,13 +25,13 @@ void
 mark_dirty_component(component_container_ptr const& container);
 
 void
-mark_dirty_component(ui_context& ctx);
+mark_dirty_component(ui_context ctx);
 
 void
 mark_animating_component(component_container_ptr const& container);
 
 void
-mark_animating_component(ui_context& ctx);
+mark_animating_component(ui_context ctx);
 
 void
 mark_animating_component(alia_kernel_context& ctx);

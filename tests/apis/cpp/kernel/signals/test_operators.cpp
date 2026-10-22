@@ -223,13 +223,13 @@ TEST_CASE("writable conditional")
     CHECK(read_signal(s) == 2);
     condition = true;
     CHECK(read_signal(s) == 1);
-    write_signal(&fx.ctx, s, 4);
+    write_signal(fx.ctx, s, 4);
     fx.run();
     CHECK(x == 4);
     CHECK(y == 2);
     CHECK(read_signal(s) == 4);
     condition = false;
-    write_signal(&fx.ctx, s, 3);
+    write_signal(fx.ctx, s, 3);
     fx.run();
     CHECK(x == 4);
     CHECK(y == 3);
@@ -247,8 +247,8 @@ TEST_CASE("field signal")
 
     state_storage<foo> storage;
 
-    auto f_signal = make_state_binding(storage, &fx.ctx);
-    write_signal(&fx.ctx, f_signal, foo{2, "1.5"});
+    auto f_signal = make_state_binding(storage, fx.ctx);
+    write_signal(fx.ctx, f_signal, foo{2, "1.5"});
     fx.run();
 
     auto x_signal = f_signal->*&foo::x;
@@ -261,7 +261,7 @@ TEST_CASE("field signal")
     CHECK(read_signal(x_signal) == 2);
     CHECK(signal_ready_to_write(x_signal));
     auto original_x_id = x_signal.value_id();
-    write_signal(&fx.ctx, x_signal, 1);
+    write_signal(fx.ctx, x_signal, 1);
     fx.run();
     CHECK(storage.value.x == 1);
     CHECK(read_signal(x_signal) == 1);
@@ -278,7 +278,7 @@ TEST_CASE("field signal")
     CHECK(signal_has_value(y_signal));
     CHECK(read_signal(y_signal) == "1.5");
     CHECK(signal_ready_to_write(y_signal));
-    write_signal(&fx.ctx, y_signal, "0.5");
+    write_signal(fx.ctx, y_signal, "0.5");
     fx.run();
     CHECK(storage.value.y == "0.5");
     CHECK(read_signal(y_signal) == "0.5");
@@ -335,8 +335,8 @@ TEST_CASE("field signal with non-identifiable field")
 
     state_storage<outer> storage;
 
-    auto s = make_state_binding(storage, &fx.ctx);
-    write_signal(&fx.ctx, s, outer{{"a", 1}, {"b", 2}});
+    auto s = make_state_binding(storage, fx.ctx);
+    write_signal(fx.ctx, s, outer{{"a", 1}, {"b", 2}});
     fx.run();
 
     auto first = s->*&outer::first;
@@ -346,7 +346,7 @@ TEST_CASE("field signal with non-identifiable field")
     CHECK(read_signal(first).n == 1);
     CHECK((first.value_id() != second.value_id()));
 
-    write_signal(&fx.ctx, first, inner{"c", 3});
+    write_signal(fx.ctx, first, inner{"c", 3});
     fx.run();
     CHECK(storage.value.first.name == "c");
     CHECK(storage.value.first.n == 3);
@@ -411,8 +411,8 @@ TEST_CASE("vector subscript")
 {
     effect_fixture fx;
     std::vector<int> c{2, 0, 3};
-    uint32_t version = 0;
-    auto c_signal = versioned_ref(c, version);
+    uint32_t revision = 0;
+    auto c_signal = ref_with_revision(c, revision);
     auto s = c_signal[value(1)];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
@@ -423,7 +423,7 @@ TEST_CASE("vector subscript")
     CHECK(read_signal(s) == 0);
     CHECK(signal_ready_to_write(s));
     auto original_id = s.value_id();
-    write_signal(&fx.ctx, s, 1);
+    write_signal(fx.ctx, s, 1);
     fx.run();
     CHECK((c == std::vector<int>{2, 1, 3}));
     CHECK((s.value_id() != original_id));
@@ -435,8 +435,8 @@ TEST_CASE("vector subscript")
 TEST_CASE("read-only subscript")
 {
     std::vector<int> const c{2, 0, 3};
-    uint32_t const version = 1;
-    auto s = versioned_ref(c, version)[value(1)];
+    uint32_t const revision = 1;
+    auto s = ref_with_revision(c, revision)[value(1)];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
     static_assert(view_signal<decltype(s)>);
@@ -449,8 +449,8 @@ TEST_CASE("read-only subscript")
 TEST_CASE("subscript with raw index")
 {
     std::vector<int> const c{2, 0, 3};
-    uint32_t const version = 1;
-    auto s = versioned_ref(c, version)[1];
+    uint32_t const revision = 1;
+    auto s = ref_with_revision(c, revision)[1];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
     static_assert(view_signal<decltype(s)>);
@@ -464,8 +464,8 @@ TEST_CASE("vector<bool> subscript")
 {
     effect_fixture fx;
     std::vector<bool> c{true, false, false};
-    uint32_t version = 0;
-    auto s = versioned_ref(c, version)[value(1)];
+    uint32_t revision = 0;
+    auto s = ref_with_revision(c, revision)[value(1)];
 
     static_assert(std::same_as<decltype(s)::value_type, bool>);
     static_assert(view_signal<decltype(s)>);
@@ -474,7 +474,7 @@ TEST_CASE("vector<bool> subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == false);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, true);
+    write_signal(fx.ctx, s, true);
     fx.run();
     CHECK((c == std::vector<bool>{true, true, false}));
 }
@@ -483,8 +483,8 @@ TEST_CASE("map subscript")
 {
     effect_fixture fx;
     std::map<int, int> c{{2, 1}, {0, 3}};
-    uint32_t version = 0;
-    auto s = versioned_ref(c, version)[value(2)];
+    uint32_t revision = 0;
+    auto s = ref_with_revision(c, revision)[value(2)];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
     static_assert(view_signal<decltype(s)>);
@@ -493,7 +493,7 @@ TEST_CASE("map subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 7);
+    write_signal(fx.ctx, s, 7);
     fx.run();
     CHECK((c == std::map<int, int>{{2, 7}, {0, 3}}));
 }
@@ -502,8 +502,8 @@ TEST_CASE("custom ref subscript")
 {
     effect_fixture fx;
     my_array c;
-    uint32_t version = 0;
-    auto s = versioned_ref(c, version)[value(2)];
+    uint32_t revision = 0;
+    auto s = ref_with_revision(c, revision)[value(2)];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
     static_assert(view_signal<decltype(s)>);
@@ -512,7 +512,7 @@ TEST_CASE("custom ref subscript")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 3);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 4);
+    write_signal(fx.ctx, s, 4);
     fx.run();
     CHECK(c[2] == 4);
 }
@@ -520,8 +520,8 @@ TEST_CASE("custom ref subscript")
 TEST_CASE("custom by-value subscript")
 {
     my_const_array const c;
-    uint32_t const version = 1;
-    auto s = versioned_ref(c, version)[value(2)];
+    uint32_t const revision = 1;
+    auto s = ref_with_revision(c, revision)[value(2)];
 
     static_assert(std::same_as<decltype(s)::value_type, int>);
     static_assert(view_signal<decltype(s)>);
@@ -552,8 +552,8 @@ TEST_CASE("subscript with non-identifiable element")
     static_assert(!identifiable<inner>);
 
     std::vector<inner> c{{"a", 1}, {"b", 2}};
-    uint32_t version = 0;
-    auto container = versioned_ref(c, version);
+    uint32_t revision = 0;
+    auto container = ref_with_revision(c, revision);
     auto first = container[0];
     auto second = container[1];
 
@@ -561,7 +561,7 @@ TEST_CASE("subscript with non-identifiable element")
     CHECK(read_signal(first).n == 1);
     CHECK((first.value_id() != second.value_id()));
 
-    write_signal(&fx.ctx, first, inner{"c", 3});
+    write_signal(fx.ctx, first, inner{"c", 3});
     fx.run();
     CHECK(c[0].name == "c");
     CHECK(c[0].n == 3);

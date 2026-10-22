@@ -2,13 +2,13 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/panic.h>
-#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/ui/drawing/system.h>
@@ -1049,8 +1049,8 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     ctx->Unmap(renderer->constants, 0);
 
     alia_memory_system* memory = alia_ui_memory(renderer->system);
-    alia_bump_allocator rect_alloc = alia_memory_open_bump(
-        memory, renderer->rect_instance_pool);
+    alia_bump_allocator rect_alloc
+        = alia_memory_open_bump(memory, renderer->rect_instance_pool);
     auto* instances = alia::arena_alloc_array<primitive_instance>(
         rect_alloc, bucket->count);
 

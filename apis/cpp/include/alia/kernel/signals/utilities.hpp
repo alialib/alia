@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/signals/core.hpp>
 
@@ -133,17 +133,17 @@ struct signal_wrapper : signal<Derived, Value, Capabilities, ValueId>
     }
     std::optional<ValueId>
     post_write(
-        kernel_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context ctx, typename Wrapped::value_type value) const override
     {
         return wrapped_.post_write(ctx, std::move(value));
     }
     std::optional<ValueId>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         return wrapped_.post_clear(ctx);
     }
     std::optional<ValueId>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         return wrapped_.post_mutation_commit(ctx);
     }
@@ -247,12 +247,12 @@ struct casting_signal_wrapper : signal<Derived, Value, Capabilities, ValueId>
         return wrapped_.ready_to_write();
     }
     std::optional<ValueId>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         return wrapped_.post_clear(ctx);
     }
     std::optional<ValueId>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         return wrapped_.post_mutation_commit(ctx);
     }

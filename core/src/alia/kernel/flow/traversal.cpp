@@ -16,9 +16,9 @@ mark_dirty_component(component_container_ptr const& container)
 }
 
 void
-mark_dirty_component(ui_context& ctx)
+mark_dirty_component(ui_context ctx)
 {
-    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(&ctx));
+    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(ctx));
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.
@@ -38,9 +38,9 @@ mark_animating_component(component_container_ptr const& container)
 }
 
 void
-mark_animating_component(ui_context& ctx)
+mark_animating_component(ui_context ctx)
 {
-    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(&ctx));
+    event_traversal& traversal = *alia_ctx_events(alia_ctx_kernel(ctx));
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.

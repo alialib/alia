@@ -81,7 +81,7 @@ TEST_CASE("popup content stays out of the parent layout tree")
 
     auto ui = [](alia_ui_context* ctx) {
         alia::popup(
-            *ctx,
+            alia::ui_context{ctx},
             alia_box_make(
                 alia_vec2f_make(10.f, 10.f), alia_vec2f_make(40.f, 20.f)),
             [&] {
@@ -137,7 +137,7 @@ TEST_CASE("popup places content, resets clip, and raises z")
             alia_ctx_geometry(ctx)->clip.box = incoming_clip;
         }
 
-        alia::popup(*ctx, anchor, [&] {
+        alia::popup(alia::ui_context{ctx}, anchor, [&] {
             if (alia_layout_context_is_refresh(ctx))
             {
                 alia_layout_leaf_emit(

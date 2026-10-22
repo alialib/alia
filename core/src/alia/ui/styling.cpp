@@ -3,6 +3,7 @@
 #include <alia/abi/ui/styling/api.h>
 
 #include <alia/abi/ui/library.h>
+#include <alia/abi/ui/system/api.h>
 #include <alia/impl/base/stack.hpp>
 #include <alia/ui/system/object.h>
 
@@ -115,6 +116,11 @@ pop_text_field(alia_ui_context* ctx, T alia_text_style::* field)
     auto& scope = alia::stack_pop<field_scope<T>>(alia_ctx_kernel(ctx));
     alia_ctx_style(ctx)->text.*field = scope.parent;
 }
+
+struct text_style_scope
+{
+    alia_text_style parent;
+};
 
 void
 generate_toggle_switch_style(
@@ -392,14 +398,17 @@ void
 alia_text_style_push(alia_ui_context* ctx, alia_text_style style)
 {
     ALIA_ASSERT(ctx && style.font);
-    push_style_field(ctx, &alia_style_context::text, style);
+    auto& scope = alia::stack_push<text_style_scope>(alia_ctx_kernel(ctx));
+    scope.parent = alia_ctx_style(ctx)->text;
+    alia_ctx_style(ctx)->text = style;
 }
 
 void
 alia_text_style_pop(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
-    pop_style_field(ctx, &alia_style_context::text);
+    auto& scope = alia::stack_pop<text_style_scope>(alia_ctx_kernel(ctx));
+    alia_ctx_style(ctx)->text = scope.parent;
 }
 
 void
@@ -494,6 +503,7 @@ alia_style_generate_defaults(alia_ui_system* ui, alia_style_seeds const* seeds)
 {
     ALIA_ASSERT(ui);
     alia::style_catalog_generate_defaults(ui->styles, seeds);
+    alia_ui_metrics_changed(ui);
 }
 
 void*

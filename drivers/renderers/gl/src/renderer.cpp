@@ -5,17 +5,17 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/panic.h>
-#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
+#include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/viewport.h>
 #include <alia/impl/base/arena.hpp>
-#include <alia/prelude.hpp>
+#include <alia/impl/base/prelude.hpp>
 
 // TODO: Remove these.
 #include <alia/ui/drawing/system.h>
@@ -657,8 +657,8 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     check_gl_errors();
 
     alia_memory_system* memory = alia_ui_memory(renderer->system);
-    alia_bump_allocator rect_alloc = alia_memory_open_bump(
-        memory, renderer->rect_instance_pool);
+    alia_bump_allocator rect_alloc
+        = alia_memory_open_bump(memory, renderer->rect_instance_pool);
     primitive_instance* primitive_instances
         = alia::arena_alloc_array<primitive_instance>(rect_alloc, boxes.count);
 

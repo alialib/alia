@@ -15,7 +15,7 @@ TEST_CASE("layout horizontal flow single line")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_spacer(ctx, alia_vec2f_make(10.f, 20.f));
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
@@ -33,7 +33,7 @@ TEST_CASE("layout flow inside column")
 {
     alia_box flow_leaf;
     alia_box column_leaf;
-    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](ui_context ctx) {
         column(ctx, [&]() {
             flow(ctx, [&]() {
                 test_spacer(ctx, alia_vec2f_make(10.f, 20.f));
@@ -56,7 +56,7 @@ TEST_CASE("layout flow line wrap")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -72,7 +72,7 @@ TEST_CASE("layout block flow vertical stack")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](ui_context ctx) {
         block_flow(ctx, [&]() {
             test_spacer(ctx, alia_vec2f_make(20.f, 20.f));
             test_leaf(ctx, alia_vec2f_make(10.f, 20.f), FILL, &leaf1);
@@ -90,7 +90,7 @@ TEST_CASE("layout flow justify space between single line")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_SPACE_BETWEEN, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_flow_spring(ctx);
@@ -109,7 +109,7 @@ TEST_CASE("layout flow justify space between full line")
     alia_box leaf2;
     alia_box leaf3;
     alia_box leaf4;
-    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_SPACE_BETWEEN, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_flow_spring(ctx);
@@ -135,7 +135,7 @@ TEST_CASE("layout flow justify space around full line")
     alia_box leaf2;
     alia_box leaf3;
     alia_box leaf4;
-    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_SPACE_AROUND, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_flow_spring(ctx);
@@ -161,7 +161,7 @@ TEST_CASE("layout flow justify space evenly full line")
     alia_box leaf2;
     alia_box leaf3;
     alia_box leaf4;
-    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(70.f, 30.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_SPACE_EVENLY, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_flow_spring(ctx);
@@ -185,7 +185,7 @@ TEST_CASE("layout flow justify end")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_END, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -201,7 +201,7 @@ TEST_CASE("layout flow justify center")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 20.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_CENTER, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -217,7 +217,7 @@ TEST_CASE("layout flow line gap")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](ui_context ctx) {
         flow(ctx, line_gap(10.f), [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -232,7 +232,7 @@ TEST_CASE("layout flow line gap")
 TEST_CASE("layout flow minimum line height")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 50.f), [&](ui_context ctx) {
         flow(ctx, minimum_line_height(30.f), [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
         });
@@ -245,7 +245,7 @@ TEST_CASE("layout block flow justify center")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(50.f, 100.f), [&](ui_context ctx) {
         block_flow(ctx, JUSTIFY_CENTER, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -261,7 +261,7 @@ TEST_CASE("layout block flow wraps against resolved width")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](ui_context ctx) {
         block_flow(ctx, CENTER_X, [&]() {
             test_leaf(ctx, alia_vec2f_make(40.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(40.f, 10.f), NO_FLAGS, &leaf2);
@@ -280,7 +280,7 @@ TEST_CASE("layout flow incomplete line justify")
     alia_box leaf1;
     alia_box leaf2;
     alia_box leaf3;
-    run_layout_case(alia_vec2f_make(45.f, 40.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(45.f, 40.f), [&](ui_context ctx) {
         flow(ctx, JUSTIFY_SPACE_BETWEEN, FILL, [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf1);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf2);
@@ -300,7 +300,7 @@ TEST_CASE("layout flow growth override passthrough")
     alia_box plain_a;
     alia_box plain_b;
     alia_box plain_c;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &plain_a);
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &plain_b);
@@ -311,7 +311,7 @@ TEST_CASE("layout flow growth override passthrough")
     alia_box wrapped_a;
     alia_box wrapped_b;
     alia_box wrapped_c;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &wrapped_a);
             growth_override(ctx, 2.f, [&]() {
@@ -330,7 +330,7 @@ TEST_CASE("layout flow growth override passthrough")
 TEST_CASE("layout flow edge offsets single leaf")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             edge_offsets(
                 ctx, alia_edge_offsets_make_trbl(2.f, 5.f, 2.f, 5.f), [&]() {
@@ -348,7 +348,7 @@ TEST_CASE("layout flow edge offsets between plain leaves")
     alia_box leaf_a;
     alia_box leaf_b;
     alia_box leaf_c;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf_a);
             edge_offsets(
@@ -371,7 +371,7 @@ TEST_CASE("layout flow edge offsets line wrap")
 {
     alia_box leaf_a;
     alia_box leaf_b;
-    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(35.f, 50.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f), NO_FLAGS, &leaf_a);
             edge_offsets(
@@ -391,7 +391,7 @@ TEST_CASE("layout flow edge offsets groups multiple children")
 {
     alia_box leaf1;
     alia_box leaf2;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             edge_offsets(
                 ctx, alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f), [&]() {
@@ -411,22 +411,22 @@ TEST_CASE("layout flow edge offsets groups multiple children")
 TEST_CASE("layout flow edge offsets provide box single line")
 {
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             test_leaf(ctx, alia_vec2f_make(10.f, 10.f));
             if (is_refresh_event(ctx))
             {
                 alia_layout_edge_offsets_begin(
-                    &ctx,
+                    ctx,
                     alia_edge_offsets_make_trbl(0.f, 5.f, 0.f, 5.f),
                     ALIA_PROVIDE_BOX);
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
-                alia_layout_edge_offsets_end(&ctx);
+                alia_layout_edge_offsets_end(ctx);
             }
             else
             {
                 alia_layout_box_array const boxes
-                    = alia_layout_consume_box_array(&ctx);
+                    = alia_layout_consume_box_array(ctx);
                 CHECK(boxes.count == 1);
                 CHECK(check_box_eq(
                     boxes.boxes[0],
@@ -442,22 +442,22 @@ TEST_CASE("layout flow edge offsets provide box single line")
 
 TEST_CASE("layout flow edge offsets provide box wrapped lines")
 {
-    run_layout_case(alia_vec2f_make(40.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(40.f, 50.f), [&](ui_context ctx) {
         flow(ctx, [&]() {
             if (is_refresh_event(ctx))
             {
                 alia_layout_edge_offsets_begin(
-                    &ctx,
+                    ctx,
                     alia_edge_offsets_make_trbl(0.f, 4.f, 0.f, 4.f),
                     ALIA_PROVIDE_BOX);
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
                 test_leaf(ctx, alia_vec2f_make(20.f, 10.f));
-                alia_layout_edge_offsets_end(&ctx);
+                alia_layout_edge_offsets_end(ctx);
             }
             else
             {
                 alia_layout_box_array const boxes
-                    = alia_layout_consume_box_array(&ctx);
+                    = alia_layout_consume_box_array(ctx);
                 CHECK(boxes.count == 2);
                 CHECK(check_box_eq(
                     boxes.boxes[0],

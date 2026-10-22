@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/actions/operators.hpp>
@@ -48,7 +48,7 @@ struct push_back_action : action_interface<Item>
     }
 
     void
-    post(kernel_context* ctx, Item item) const override
+    post(kernel_context ctx, Item item) const override
     {
         auto new_container =
             typename Container::value_type(read_signal(container_));
@@ -95,7 +95,7 @@ struct erase_index_action : action_interface<>
     }
 
     void
-    post(kernel_context* ctx) const override
+    post(kernel_context ctx) const override
     {
         auto new_container =
             typename Container::value_type(read_signal(container_));
@@ -143,7 +143,7 @@ struct erase_key_action : action_interface<>
     }
 
     void
-    post(kernel_context* ctx) const override
+    post(kernel_context ctx) const override
     {
         auto new_container =
             typename Container::value_type(read_signal(container_));

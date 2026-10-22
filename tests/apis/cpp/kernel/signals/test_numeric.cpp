@@ -27,7 +27,7 @@ TEST_CASE("offset")
     CHECK((offset(ref(x), 0.5).value_id() == id_before));
 
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 4);
+    write_signal(fx.ctx, s, 4);
     fx.run();
     CHECK(x == 3.5);
     CHECK((offset(ref(x), 0.5).value_id() != id_before));
@@ -50,7 +50,7 @@ TEST_CASE("scale")
     CHECK((scale(ref(x), 0.5).value_id() == id_before));
 
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 2);
+    write_signal(fx.ctx, s, 2);
     fx.run();
     CHECK(x == 4);
     CHECK((scale(ref(x), 0.5).value_id() != id_before));
@@ -76,7 +76,7 @@ TEST_CASE("round_signal_writes")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 0.4);
+    write_signal(fx.ctx, s, 0.4);
     fx.run();
     CHECK(x == 0.5);
 }

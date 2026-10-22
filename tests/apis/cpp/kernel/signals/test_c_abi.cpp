@@ -74,7 +74,7 @@ TEST_CASE("write_back_c_signal is a no-op when signal isn't written")
     bool x = false;
     auto s = ref(x);
     auto c = to_inline_c_signal<alia_bool_signal>(s);
-    write_back_c_signal(&fx.ctx, s, c);
+    write_back_c_signal(fx.ctx, s, c);
     fx.run();
     CHECK(x == false);
 }
@@ -87,7 +87,7 @@ TEST_CASE("write_back_c_signal posts a written value")
     auto c = to_inline_c_signal<alia_bool_signal>(s);
     c.value = true;
     c.flags |= ALIA_SIGNAL_WRITTEN;
-    write_back_c_signal(&fx.ctx, s, c);
+    write_back_c_signal(fx.ctx, s, c);
     fx.run();
     CHECK(x == true);
 }
@@ -100,7 +100,7 @@ TEST_CASE("write_back_c_signal converts double to float")
     auto c = to_inline_c_signal<alia_double_signal>(s);
     c.value = 2.25;
     c.flags |= ALIA_SIGNAL_WRITTEN;
-    write_back_c_signal(&fx.ctx, s, c);
+    write_back_c_signal(fx.ctx, s, c);
     fx.run();
     CHECK(x == doctest::Approx(2.25f));
 }
@@ -114,7 +114,7 @@ TEST_CASE("write_back_c_signal is a no-op when writes are disabled")
         .flags = ALIA_SIGNAL_READABLE | ALIA_SIGNAL_WRITTEN,
         .value = true,
     };
-    write_back_c_signal(&fx.ctx, s, c);
+    write_back_c_signal(fx.ctx, s, c);
     fx.run();
     CHECK(x == false);
 }
@@ -129,7 +129,7 @@ TEST_CASE("erased binding works with inline C signals")
     CHECK(c.value == false);
     c.value = true;
     c.flags |= ALIA_SIGNAL_WRITTEN;
-    write_back_c_signal(&fx.ctx, s, c);
+    write_back_c_signal(fx.ctx, s, c);
     fx.run();
     CHECK(x == true);
 }

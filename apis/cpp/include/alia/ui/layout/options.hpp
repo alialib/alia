@@ -3,7 +3,7 @@
 #include <alia/abi/base/geometry/edge_offsets.h>
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/ui/layout/flags.hpp>
 
 #include <concepts>
@@ -1518,7 +1518,7 @@ add_default_flush(layout_flag_set flags)
 // entirely at compile time.
 template<class Fn>
 void
-apply_layout(ui_context& ctx, layout_flag_set flags, Fn&& fn)
+apply_layout(ui_context ctx, layout_flag_set flags, Fn&& fn)
 {
     (void) ctx;
     std::forward<Fn>(fn)(flags);
@@ -1526,7 +1526,7 @@ apply_layout(ui_context& ctx, layout_flag_set flags, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, null_flag_set, Fn&& fn)
+apply_layout(ui_context ctx, null_flag_set, Fn&& fn)
 {
     (void) ctx;
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
@@ -1534,29 +1534,29 @@ apply_layout(ui_context& ctx, null_flag_set, Fn&& fn)
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, pad_spec const& p, Fn&& fn)
+apply_layout(ui_context ctx, pad_spec const& p, Fn&& fn)
 {
-    alia_layout_edge_offsets_begin(&ctx, p.offsets, 0);
+    alia_layout_edge_offsets_begin(ctx, p.offsets, 0);
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_edge_offsets_end(&ctx);
+    alia_layout_edge_offsets_end(ctx);
 }
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, width_spec const& w, Fn&& fn)
+apply_layout(ui_context ctx, width_spec const& w, Fn&& fn)
 {
-    alia_layout_min_size_begin(&ctx, detail::min_size_vec(w.value, 0.f));
+    alia_layout_min_size_begin(ctx, detail::min_size_vec(w.value, 0.f));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_min_size_end(&ctx);
+    alia_layout_min_size_end(ctx);
 }
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, height_spec const& h, Fn&& fn)
+apply_layout(ui_context ctx, height_spec const& h, Fn&& fn)
 {
-    alia_layout_min_size_begin(&ctx, detail::min_size_vec(0.f, h.value));
+    alia_layout_min_size_begin(ctx, detail::min_size_vec(0.f, h.value));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_min_size_end(&ctx);
+    alia_layout_min_size_end(ctx);
 }
 
 // Absolute sizes open a `min_size` wrapper. Axis-relative sizes open a
@@ -1564,29 +1564,29 @@ apply_layout(ui_context& ctx, height_spec const& h, Fn&& fn)
 // call `without_size` first (see `spacer`).
 template<class Fn>
 void
-apply_layout(ui_context& ctx, length_spec const& l, Fn&& fn)
+apply_layout(ui_context ctx, length_spec const& l, Fn&& fn)
 {
-    alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(l.value, 0.f));
+    alia_layout_min_axis_size_begin(ctx, detail::min_size_vec(l.value, 0.f));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_min_axis_size_end(&ctx);
+    alia_layout_min_axis_size_end(ctx);
 }
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, breadth_spec const& b, Fn&& fn)
+apply_layout(ui_context ctx, breadth_spec const& b, Fn&& fn)
 {
-    alia_layout_min_axis_size_begin(&ctx, detail::min_size_vec(0.f, b.value));
+    alia_layout_min_axis_size_begin(ctx, detail::min_size_vec(0.f, b.value));
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_min_axis_size_end(&ctx);
+    alia_layout_min_axis_size_end(ctx);
 }
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, growth_spec const& g, Fn&& fn)
+apply_layout(ui_context ctx, growth_spec const& g, Fn&& fn)
 {
-    alia_layout_growth_override_begin(&ctx, g.value);
+    alia_layout_growth_override_begin(ctx, g.value);
     std::forward<Fn>(fn)(layout_flag_set{NO_FLAGS});
-    alia_layout_growth_override_end(&ctx);
+    alia_layout_growth_override_end(ctx);
 }
 
 template<
@@ -1598,7 +1598,7 @@ template<
     class Fn>
 void
 apply_layout(
-    ui_context& ctx,
+    ui_context ctx,
     layout_spec<Flags, Pad, Width, Height, Growth> const& spec,
     Fn&& fn)
 {
@@ -1614,9 +1614,9 @@ apply_layout(
     constexpr bool has_min_axis_size = has_length || has_breadth;
 
     if constexpr (!detail::is_empty_layout_piece_v<Pad>)
-        alia_layout_edge_offsets_begin(&ctx, spec.pad.offsets, 0);
+        alia_layout_edge_offsets_begin(ctx, spec.pad.offsets, 0);
     if constexpr (!detail::is_empty_layout_piece_v<Growth>)
-        alia_layout_growth_override_begin(&ctx, spec.growth.value);
+        alia_layout_growth_override_begin(ctx, spec.growth.value);
     if constexpr (has_min_size)
     {
         float w = 0.f;
@@ -1625,36 +1625,36 @@ apply_layout(
         float h = 0.f;
         if constexpr (has_absolute_height)
             h = spec.height.value;
-        alia_layout_min_size_begin(&ctx, detail::min_size_vec(w, h));
+        alia_layout_min_size_begin(ctx, detail::min_size_vec(w, h));
     }
     if constexpr (has_min_axis_size)
     {
         float const length = has_length ? spec.width.value : 0.f;
         float const breadth = has_breadth ? spec.height.value : 0.f;
         alia_layout_min_axis_size_begin(
-            &ctx, detail::min_size_vec(length, breadth));
+            ctx, detail::min_size_vec(length, breadth));
     }
 
     std::forward<Fn>(fn)(flags);
 
     if constexpr (has_min_axis_size)
-        alia_layout_min_axis_size_end(&ctx);
+        alia_layout_min_axis_size_end(ctx);
     if constexpr (has_min_size)
-        alia_layout_min_size_end(&ctx);
+        alia_layout_min_size_end(ctx);
     if constexpr (!detail::is_empty_layout_piece_v<Growth>)
-        alia_layout_growth_override_end(&ctx);
+        alia_layout_growth_override_end(ctx);
     if constexpr (!detail::is_empty_layout_piece_v<Pad>)
-        alia_layout_edge_offsets_end(&ctx);
+        alia_layout_edge_offsets_end(ctx);
 }
 
 template<class Fn>
 void
-apply_layout(ui_context& ctx, layout_options const& layout, Fn&& fn)
+apply_layout(ui_context ctx, layout_options const& layout, Fn&& fn)
 {
     if (layout.has_pad())
-        alia_layout_edge_offsets_begin(&ctx, layout.pad_offsets, 0);
+        alia_layout_edge_offsets_begin(ctx, layout.pad_offsets, 0);
     if (layout.has_growth())
-        alia_layout_growth_override_begin(&ctx, layout.growth_value);
+        alia_layout_growth_override_begin(ctx, layout.growth_value);
 
     bool const has_size = layout.has_width() || layout.has_height();
     bool const axis_relative
@@ -1665,9 +1665,9 @@ apply_layout(ui_context& ctx, layout_options const& layout, Fn&& fn)
             layout.has_width() ? layout.width_value : 0.f,
             layout.has_height() ? layout.height_value : 0.f);
         if (axis_relative)
-            alia_layout_min_axis_size_begin(&ctx, size);
+            alia_layout_min_axis_size_begin(ctx, size);
         else
-            alia_layout_min_size_begin(&ctx, size);
+            alia_layout_min_size_begin(ctx, size);
     }
 
     // Size lives on the wrapper; do not forward AXIS_RELATIVE_SIZE inward.
@@ -1680,14 +1680,14 @@ apply_layout(ui_context& ctx, layout_options const& layout, Fn&& fn)
     if (has_size)
     {
         if (axis_relative)
-            alia_layout_min_axis_size_end(&ctx);
+            alia_layout_min_axis_size_end(ctx);
         else
-            alia_layout_min_size_end(&ctx);
+            alia_layout_min_size_end(ctx);
     }
     if (layout.has_growth())
-        alia_layout_growth_override_end(&ctx);
+        alia_layout_growth_override_end(ctx);
     if (layout.has_pad())
-        alia_layout_edge_offsets_end(&ctx);
+        alia_layout_edge_offsets_end(ctx);
 }
 
 } // namespace alia

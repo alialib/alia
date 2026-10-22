@@ -32,17 +32,17 @@ struct msdf_text_layout_node
 };
 
 static text_layout_placement_header&
-msdf_consume_text_placement_header(ui_context& ctx)
+msdf_consume_text_placement_header(ui_context ctx)
 {
     return *arena_alloc<text_layout_placement_header>(
-        *alia_layout_placement_arena(&ctx));
+        *alia_layout_placement_arena(ctx));
 }
 
 static text_layout_placement_fragment&
-msdf_consume_text_placement_fragment(ui_context& ctx)
+msdf_consume_text_placement_fragment(ui_context ctx)
 {
     return *arena_alloc<text_layout_placement_fragment>(
-        *alia_layout_placement_arena(&ctx));
+        *alia_layout_placement_arena(ctx));
 }
 
 alia_horizontal_requirements
@@ -436,10 +436,10 @@ alia_layout_node_vtable text_layout_vtable
        text_read_fragment_placements};
 
 // `scale` is logical font size in design pixels; `do_text` applies
-// alia_ctx_geometry(&ctx)->scale once.
+// alia_ctx_geometry(ctx)->scale once.
 bool
 do_text(
-    ui_context& ctx,
+    ui_context ctx,
     alia_z_index z_index,
     alia_srgba8 color,
     float scale,
@@ -449,21 +449,21 @@ do_text(
 {
     bool result = false;
     // TODO: Should this have its own ID?
-    alia_element_id id = alia_element_get_identity(&ctx);
+    alia_element_id id = alia_element_get_identity(ctx);
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
-            auto& emission = alia_ctx_layout(&ctx)->emission;
+            auto& emission = alia_ctx_layout(ctx)->emission;
             msdf_text_layout_node* new_node
                 = arena_alloc<msdf_text_layout_node>(emission.arena);
             new_node->base.vtable = &text_layout_vtable;
             new_node->base.next_sibling = nullptr;
             new_node->flags = raw_code(flags);
             new_node->text = text;
-            new_node->font_size = scale * alia_ctx_geometry(&ctx)->scale;
+            new_node->font_size = scale * alia_ctx_geometry(ctx)->scale;
             new_node->engine = the_msdf_text_engine;
             new_node->font_index = font_index;
-            new_node->spacing = alia_spacing_active(&ctx);
+            new_node->spacing = alia_spacing_active(ctx);
             *emission.next_ptr = &new_node->base;
             emission.next_ptr = &new_node->base.next_sibling;
             break;
@@ -476,7 +476,7 @@ do_text(
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
                 alia_element_box_region(
-                    &ctx,
+                    ctx,
                     id,
                     &box,
                     ALIA_Z_PLANE_CONTENT,
@@ -492,11 +492,11 @@ do_text(
                 auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_msdf_draw_text(
                     the_msdf_text_engine,
-                    &ctx,
+                    ctx,
                     z_index,
                     fragment.text,
                     fragment.length,
-                    scale * alia_ctx_geometry(&ctx)->scale,
+                    scale * alia_ctx_geometry(ctx)->scale,
                     fragment.position,
                     color,
                     fragment.font_index);
@@ -511,7 +511,7 @@ do_text(
                 auto& fragment = msdf_consume_text_placement_fragment(ctx);
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
-                if (alia_element_detect_click(&ctx, id, ALIA_BUTTON_LEFT))
+                if (alia_element_detect_click(ctx, id, ALIA_BUTTON_LEFT))
                 {
                     // TODO: Perform action, abort traversal.
                     result = true;

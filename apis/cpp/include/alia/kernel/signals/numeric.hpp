@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/utilities.hpp>
@@ -55,20 +55,19 @@ struct scaled_signal
         return this->wrapped_.ready_to_write() && scale_factor_.has_value();
     }
     std::optional<typename N::value_type>
-    post_write(
-        kernel_context* ctx, typename N::value_type value) const override
+    post_write(kernel_context ctx, typename N::value_type value) const override
     {
         this->wrapped_.post_write(ctx, value / scale_factor_.read());
         return value;
     }
     std::optional<typename N::value_type>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         (void) this->wrapped_.post_clear(ctx);
         return std::nullopt;
     }
     std::optional<typename N::value_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
         return std::nullopt;
@@ -127,20 +126,19 @@ struct offset_signal
         return this->wrapped_.ready_to_write() && delta_.has_value();
     }
     std::optional<typename N::value_type>
-    post_write(
-        kernel_context* ctx, typename N::value_type value) const override
+    post_write(kernel_context ctx, typename N::value_type value) const override
     {
         this->wrapped_.post_write(ctx, value - delta_.read());
         return value;
     }
     std::optional<typename N::value_type>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         (void) this->wrapped_.post_clear(ctx);
         return std::nullopt;
     }
     std::optional<typename N::value_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         (void) this->wrapped_.post_mutation_commit(ctx);
         return std::nullopt;
@@ -176,8 +174,7 @@ struct rounding_signal_wrapper
         return this->wrapped_.ready_to_write() && step_.has_value();
     }
     std::optional<typename N::value_id_type>
-    post_write(
-        kernel_context* ctx, typename N::value_type value) const override
+    post_write(kernel_context ctx, typename N::value_type value) const override
     {
         auto step = step_.read();
         return this->wrapped_.post_write(

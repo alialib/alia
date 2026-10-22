@@ -12,8 +12,7 @@ typedef struct alia_layout_system alia_layout_system;
 typedef struct alia_layout_node alia_layout_node;
 
 // generation counter for placement data - This is bumped by
-// `alia_layout_placement_clear` and acts as a revision counter for the memory
-// layout of the placement arena.
+// `alia_layout_placement_clear` when the placement arena starts a new epoch.
 typedef uint64_t alia_layout_placement_generation;
 
 // a contiguous slice of the shared placement arena written by one resolution

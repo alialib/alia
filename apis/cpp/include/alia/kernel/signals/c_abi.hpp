@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/abi/kernel/signal.h>
 #include <alia/kernel/signals/core.hpp>
@@ -59,8 +59,7 @@ template<binding_signal Signal, inline_c_signal CSignal>
         inline_c_signal_value_t<CSignal>,
         typename Signal::value_type>
 void
-write_back_c_signal(
-    kernel_context* ctx, Signal const& signal, CSignal const& c)
+write_back_c_signal(kernel_context ctx, Signal const& signal, CSignal const& c)
 {
     if (c.flags & ALIA_SIGNAL_WRITTEN)
     {

@@ -20,12 +20,12 @@ TEST_CASE("copy actions")
     auto a = ref(x) <<= value(2);
     CHECK(a.is_ready());
     CHECK(x == 1);
-    post_action(&fx.ctx, a);
+    post_action(fx.ctx, a);
     fx.run();
     CHECK(x == 2);
     auto liberal = ref(x) <<= 4;
     CHECK(liberal.is_ready());
-    post_action(&fx.ctx, liberal);
+    post_action(fx.ctx, liberal);
     fx.run();
     CHECK(x == 4);
 }
@@ -39,13 +39,13 @@ TEST_CASE("copy actions")
         auto a = ref(x) op value(7);                                          \
         CHECK(a.is_ready());                                                  \
         CHECK(x == 21);                                                       \
-        post_action(&fx.ctx, a);                                              \
+        post_action(fx.ctx, a);                                               \
         fx.run();                                                             \
         CHECK(x == (21 normal_form 7));                                       \
         x = 2;                                                                \
         auto liberal = ref(x) op 6;                                           \
         CHECK(liberal.is_ready());                                            \
-        post_action(&fx.ctx, liberal);                                        \
+        post_action(fx.ctx, liberal);                                         \
         fx.run();                                                             \
         CHECK(x == (2 normal_form 6));                                        \
     }
@@ -74,14 +74,14 @@ TEST_CASE("compound assignment action operators")
             auto a = ref(x) op;                                               \
             CHECK(a.is_ready());                                              \
             CHECK(x == 21);                                                   \
-            post_action(&fx.ctx, a);                                          \
+            post_action(fx.ctx, a);                                           \
             fx.run();                                                         \
             CHECK(x == (21 normal_form 1));                                   \
         }                                                                     \
         {                                                                     \
             auto a = op ref(x);                                               \
             CHECK(a.is_ready());                                              \
-            post_action(&fx.ctx, a);                                          \
+            post_action(fx.ctx, a);                                           \
             fx.run();                                                         \
             CHECK(x == (21 normal_form 2));                                   \
         }                                                                     \
@@ -105,7 +105,7 @@ TEST_CASE("combined actions")
     auto c = ref(y) <<= value(3);
     CHECK_FALSE((a, b).is_ready());
     CHECK((b, c, b).is_ready());
-    post_action(&fx.ctx, (b, c));
+    post_action(fx.ctx, (b, c));
     fx.run();
     CHECK(x == 2);
     CHECK(y == 3);
@@ -117,7 +117,7 @@ TEST_CASE("parameterized combined action")
     int x = 0, y = 0;
     auto a = callback([&](int n) { x += n; });
     auto b = callback([&](int n) { y -= n; });
-    post_action(&fx.ctx, (a, b), 4);
+    post_action(fx.ctx, (a, b), 4);
     fx.run();
     CHECK(x == 4);
     CHECK(y == -4);
@@ -134,20 +134,20 @@ TEST_CASE("action binding")
     auto b = a << value(1);
     CHECK(b.is_ready());
     CHECK_FALSE((b << empty<int>()).is_ready());
-    post_action(&fx.ctx, b, 4);
+    post_action(fx.ctx, b, 4);
     fx.run();
     CHECK(x == -3);
 
     auto c = b << 2;
     CHECK(c.is_ready());
-    post_action(&fx.ctx, c);
+    post_action(fx.ctx, c);
     fx.run();
     CHECK(x == -1);
 
     auto d = a << 3 << 2;
     action<> e = d;
     CHECK(e.is_ready());
-    post_action(&fx.ctx, e);
+    post_action(fx.ctx, e);
     fx.run();
     CHECK(x == 1);
 

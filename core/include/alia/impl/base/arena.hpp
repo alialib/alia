@@ -7,7 +7,7 @@
 
 #include <alia/abi/base/arena.h>
 
-#include <alia/prelude.hpp>
+#include <alia/impl/base/prelude.hpp>
 
 namespace alia {
 

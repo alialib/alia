@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/ui/library.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/signals/c_abi.hpp>
 #include <alia/ui/layout/options.hpp>
 #include <alia/ui/library/labeled.hpp>
@@ -11,13 +11,13 @@ namespace alia {
 // Emit a node expander.
 template<binding_of<bool> Signal, layout_like Layout = layout_options>
 alia_element_id
-node_expander(ui_context& ctx, Signal const& expanded, Layout layout = {})
+node_expander(ui_context ctx, Signal const& expanded, Layout layout = {})
 {
     alia_element_id id{};
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         auto c = to_inline_c_signal<alia_bool_signal>(expanded);
-        id = alia_node_expander(&ctx, &c, raw_code(flags));
-        write_back_c_signal(alia_ctx_kernel(&ctx), expanded, c);
+        id = alia_node_expander(ctx, &c, raw_code(flags));
+        write_back_c_signal(ctx, expanded, c);
     });
     return id;
 }
@@ -26,7 +26,7 @@ node_expander(ui_context& ctx, Signal const& expanded, Layout layout = {})
 template<binding_of<bool> Signal, layout_like Layout = layout_options>
 alia_element_id
 node_expander(
-    ui_context& ctx,
+    ui_context ctx,
     Signal const& expanded,
     char const* label,
     Layout layout = {})

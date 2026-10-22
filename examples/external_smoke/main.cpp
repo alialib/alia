@@ -10,7 +10,7 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/text.h>
 #include <alia/base/color.hpp>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/ui/layout/api.hpp>
@@ -62,7 +62,7 @@ setup_demo_fonts(alia_app* app)
 
 void
 emit_text(
-    ui_context& ctx,
+    ui_context ctx,
     char const* text,
     alia_resolved_font const* font,
     enum alia_palette_ramp_level level)
@@ -70,15 +70,15 @@ emit_text(
     alia_text_style const style = {
         .font = font,
         .color = alia_palette_color_resolve(
-            alia_ctx_palette(&ctx),
+            alia_ctx_palette(ctx),
             alia_palette_color_foundation(
                 ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff)),
     };
-    alia_text(&ctx, 0, alia_text_literal(text), &style);
+    alia_text(ctx, 0, alia_text_literal(text), &style);
 }
 
 void
-the_ui(ui_context& ctx)
+the_ui(ui_context ctx)
 {
     column(ctx, GROW | pad(24), [&] {
         emit_text(
@@ -103,7 +103,7 @@ the_ui(ui_context& ctx)
 void
 the_controller(void* /*user_data*/, alia_ui_context* ctx)
 {
-    the_ui(*ctx);
+    the_ui(ui_context{ctx});
 }
 
 void
@@ -152,6 +152,7 @@ main()
         nullptr,
         nullptr,
         ALIA_LITERAL_FIXED_SPECTRUM);
+    alia_ui_paint_changed(the_system);
     alia_style_generate_defaults(the_system, nullptr);
 
     alia_app_run_loop(&config, &app);

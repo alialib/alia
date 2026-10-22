@@ -3,7 +3,7 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/text.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/layout/options.hpp>
 
@@ -18,7 +18,7 @@ namespace alia { namespace detail {
 template<layout_like Layout = layout_options, class Control>
 alia_element_id
 labeled_bool_control(
-    ui_context& ctx, char const* label, Layout layout, Control&& control)
+    ui_context ctx, char const* label, Layout layout, Control&& control)
 {
     alia_box row_box;
     alia_element_id id{};
@@ -28,9 +28,9 @@ labeled_bool_control(
         [&]() {
             id = std::forward<Control>(control)();
             alia_text(
-                &ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
+                ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
             alia_element_box_region(
-                &ctx,
+                ctx,
                 id,
                 &row_box,
                 ALIA_Z_PLANE_CONTENT,

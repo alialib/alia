@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/core.hpp>
@@ -60,12 +60,12 @@ struct empty_signal
     // Since this is never ready to write, none of this should ever be called.
     // LCOV_EXCL_START
     std::optional<constant_value_tag>
-    post_write(kernel_context*, Value) const override
+    post_write(kernel_context, Value) const override
     {
         return std::nullopt;
     }
     std::optional<constant_value_tag>
-    post_clear(kernel_context*) const override
+    post_clear(kernel_context) const override
     {
         return std::nullopt;
     }
@@ -228,14 +228,14 @@ struct pointer_binding
         return true;
     }
     std::optional<Value>
-    post_write(kernel_context* ctx, Value value) const override
+    post_write(kernel_context ctx, Value value) const override
     {
         Value id = value;
         post_assignment(ctx, v_, std::move(value));
         return id;
     }
     std::optional<Value>
-    post_mutation_commit(kernel_context*) const override
+    post_mutation_commit(kernel_context) const override
     {
         // Value-as-ID signals cannot predict the ID of an arbitrary in-place
         // mutation.
@@ -285,30 +285,31 @@ ref(Value const& x)
     return pointer_view<Value>(&x);
 }
 
-// `versioned_ref(x, version)` creates a binding to `x` that uses `version` as
-// its value ID. Use this for objects that are not `identifiable` (e.g.
-// containers) when you already maintain a revision counter.
+// `ref_with_revision(x, revision)` creates a binding to `x` that uses
+// `revision` as its value ID. Use this for objects that are not
+// `identifiable` (e.g. containers) when you already maintain a revision
+// counter.
 //
-// If `x` and `version` are mutable, the result is a binding, and writes
-// (including destructive movement) increment `version`. If both are const,
+// If `x` and `revision` are mutable, the result is a binding, and writes
+// (including destructive movement) increment `revision`. If both are const,
 // the result is a view.
 
-template<class Value, std::unsigned_integral Version>
-struct versioned_pointer_binding
+template<class Value, std::unsigned_integral Revision>
+struct pointer_binding_with_revision
     : stored_signal<
-          versioned_pointer_binding<Value, Version>,
+          pointer_binding_with_revision<Value, Revision>,
           Value,
           binding_caps<signal_movable, signal_writable, signal_nonempty>,
-          Version>
+          Revision>
 {
-    versioned_pointer_binding(Value* v, Version* version)
-        : v_(v), version_(version)
+    pointer_binding_with_revision(Value* v, Revision* revision)
+        : v_(v), revision_(revision)
     {
     }
-    Version const&
+    Revision const&
     value_id() const
     {
-        return *version_;
+        return *revision_;
     }
     bool
     has_value() const override
@@ -330,53 +331,55 @@ struct versioned_pointer_binding
     {
         return true;
     }
-    std::optional<Version>
-    post_write(kernel_context* ctx, Value value) const override
+    std::optional<Revision>
+    post_write(kernel_context ctx, Value value) const override
     {
-        Version const expected = *version_ + 1;
+        Revision const expected = *revision_ + 1;
         post_call(
             ctx,
-            [v = v_, version = version_, value = std::move(value)]() mutable {
+            [v = v_,
+             revision = revision_,
+             value = std::move(value)]() mutable {
                 *v = std::move(value);
-                ++*version;
+                ++*revision;
             });
         return expected;
     }
-    std::optional<Version>
-    post_mutation_commit(kernel_context* ctx) const override
+    std::optional<Revision>
+    post_mutation_commit(kernel_context ctx) const override
     {
-        Version const expected = *version_ + 1;
-        post_call(ctx, [version = version_]() { ++*version; });
+        Revision const expected = *revision_ + 1;
+        post_call(ctx, [revision = revision_]() { ++*revision; });
         return expected;
     }
 
  private:
     Value* v_;
-    Version* version_;
+    Revision* revision_;
 };
-template<class Value, std::unsigned_integral Version>
-versioned_pointer_binding<Value, Version>
-versioned_ref(Value& x, Version& version)
+template<class Value, std::unsigned_integral Revision>
+pointer_binding_with_revision<Value, Revision>
+ref_with_revision(Value& x, Revision& revision)
 {
-    return versioned_pointer_binding<Value, Version>(&x, &version);
+    return pointer_binding_with_revision<Value, Revision>(&x, &revision);
 }
 
-template<class Value, std::unsigned_integral Version>
-struct versioned_pointer_view
+template<class Value, std::unsigned_integral Revision>
+struct pointer_view_with_revision
     : stored_signal<
-          versioned_pointer_view<Value, Version>,
+          pointer_view_with_revision<Value, Revision>,
           Value,
           view_caps<signal_readable, signal_nonempty>,
-          Version>
+          Revision>
 {
-    versioned_pointer_view(Value const* v, Version const* version)
-        : v_(v), version_(version)
+    pointer_view_with_revision(Value const* v, Revision const* revision)
+        : v_(v), revision_(revision)
     {
     }
-    Version const&
+    Revision const&
     value_id() const
     {
-        return *version_;
+        return *revision_;
     }
     bool
     has_value() const override
@@ -391,13 +394,13 @@ struct versioned_pointer_view
 
  private:
     Value const* v_;
-    Version const* version_;
+    Revision const* revision_;
 };
-template<class Value, std::unsigned_integral Version>
-versioned_pointer_view<Value, Version>
-versioned_ref(Value const& x, Version const& version)
+template<class Value, std::unsigned_integral Revision>
+pointer_view_with_revision<Value, Revision>
+ref_with_revision(Value const& x, Revision const& revision)
 {
-    return versioned_pointer_view<Value, Version>(&x, &version);
+    return pointer_view_with_revision<Value, Revision>(&x, &revision);
 }
 
 // `signalize(x)` turns `x` into a signal if it isn't already one.

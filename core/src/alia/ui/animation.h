@@ -1,7 +1,7 @@
 #ifndef ALIA_UI_UTILITIES_CLICK_FLARES_HPP
 #define ALIA_UI_UTILITIES_CLICK_FLARES_HPP
 
-#include <alia/prelude.hpp>
+#include <alia/impl/base/prelude.hpp>
 
 #include <alia/abi/ui/input/elements.h>
 #include <alia/impl/kernel/animation.hpp>

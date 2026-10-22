@@ -22,8 +22,9 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
-#include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
+#include <alia/impl/base/prelude.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/flow/dispatch.h>
@@ -31,7 +32,6 @@
 #include <alia/kernel/signals/adaptors.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/signals/lambdas.hpp>
-#include <alia/prelude.hpp>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
@@ -140,15 +140,15 @@ make_notargs_params()
 
 template<class Content>
 void
-with_spacing(ui_context& ctx, float spacing, Content&& content)
+with_spacing(ui_context ctx, float spacing, Content&& content)
 {
-    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
+    alia_spacing_push(ctx, spacing * alia_ctx_geometry(ctx)->scale);
     content();
-    alia_spacing_pop(&ctx);
+    alia_spacing_pop(ctx);
 }
 
 void
-do_heading(ui_context& ctx, char const* text)
+do_heading(ui_context ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -164,7 +164,7 @@ template<binding_signal Signal, layout_like Layout = layout_options>
           && std::convertible_to<double, typename Signal::value_type>
 alia_element_id
 slider(
-    ui_context& ctx,
+    ui_context ctx,
     Signal const& value,
     double minimum,
     double maximum,
@@ -177,7 +177,7 @@ slider(
     apply_layout(ctx, layout, [&](layout_flag_set flags) {
         row(ctx, add_default_x_alignment(flags, ALIGN_LEFT), [&]() {
             alia_text(
-                &ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
+                ctx, raw_code(CENTER_Y), alia_text_literal(label), nullptr);
             flow(ctx, GROW, [&]() {
                 id = slider(
                     ctx, value, minimum, maximum, step, CENTER_Y, vertical);
@@ -189,7 +189,7 @@ slider(
 
 void
 control_slider_d(
-    ui_context& ctx,
+    ui_context ctx,
     char const* label,
     double* value,
     double min_v,
@@ -200,24 +200,24 @@ control_slider_d(
 }
 
 void
-control_switch_b(ui_context& ctx, char const* label, bool* value)
+control_switch_b(ui_context ctx, char const* label, bool* value)
 {
     toggle_switch(ctx, ref(*value), label);
 }
 
 void
-control_checkbox_b(ui_context& ctx, char const* label, bool* value)
+control_checkbox_b(ui_context ctx, char const* label, bool* value)
 {
     checkbox(ctx, ref(*value), label);
 }
 
 void
-do_theme_controls(ui_context& ctx)
+do_theme_controls(ui_context ctx)
 {
     concrete_panel(
         ctx,
         0,
-        alia_ctx_palette(&ctx)->foundation.background.stronger_1,
+        alia_ctx_palette(ctx)->foundation.background.stronger_1,
         FILL,
         [&]() {
             edge_offsets(
@@ -263,7 +263,7 @@ do_theme_controls(ui_context& ctx)
 }
 
 void
-do_notargs_controls(ui_context& ctx)
+do_notargs_controls(ui_context ctx)
 {
     do_heading(ctx, "VIEW");
     control_slider_d(ctx, "Zoom", &the_controls.zoom, -3.0, 5.0, 0.01);
@@ -302,7 +302,7 @@ do_notargs_controls(ui_context& ctx)
 }
 
 void
-shader_gallery_root(ui_context& ctx)
+shader_gallery_root(ui_context ctx)
 {
     if (the_theme_dirty_flag)
     {
@@ -317,12 +317,13 @@ shader_gallery_root(ui_context& ctx)
         palette_params.foundation_step_l = 0.06f;
 
         alia_palette_from_accent(
-            &alia_ctx_system(&ctx)->palette,
+            &alia_ctx_system(ctx)->palette,
             &accent,
             &theme_ctx,
             nullptr,
             &palette_params,
             ALIA_LITERAL_HARMONIZE_TO_PRIMARY);
+        alia_ui_paint_changed(alia_ctx_system(ctx));
         the_theme_dirty_flag = false;
     }
 
@@ -333,7 +334,7 @@ shader_gallery_root(ui_context& ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(&ctx)->foundation.background.base,
+                alia_ctx_palette(ctx)->foundation.background.base,
                 FILL,
                 [&]() {
                     column(ctx, GROW, [&]() {
@@ -358,11 +359,11 @@ shader_gallery_root(ui_context& ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(&ctx)->foundation.background.base,
+                alia_ctx_palette(ctx)->foundation.background.base,
                 GROW,
                 [&]() {
                     alia_do_shader(
-                        &ctx,
+                        ctx,
                         0,
                         the_notargs_shader_id,
                         &shader_params,
@@ -378,7 +379,7 @@ static void
 shader_gallery_root_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
-    shader_gallery_root(*ctx);
+    shader_gallery_root(ui_context{ctx});
 }
 
 void

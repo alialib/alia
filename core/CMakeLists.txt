@@ -68,7 +68,8 @@ add_library(alia_core STATIC
     src/alia/ui/palette.cpp
     src/alia/ui/geometry.cpp
     src/alia/ui/icons.cpp
-    src/alia/ui/styling.cpp)
+    src/alia/ui/styling.cpp
+    src/alia/ui/context_ids.cpp)
 target_include_directories(alia_core PUBLIC
     include)
 target_include_directories(alia_core PUBLIC # TODO: PRIVATE

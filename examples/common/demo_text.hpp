@@ -2,7 +2,7 @@
 
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/text.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/shell/app.h>
 #include <alia/ui/layout/flags.hpp>
 
@@ -39,7 +39,7 @@ demo_text_color(enum alia_palette_ramp_level level)
 // Emit text with an already-resolved font (NULL => inherit the active font).
 void
 demo_text(
-    alia::ui_context& ctx,
+    alia::ui_context ctx,
     char const* text,
     alia_resolved_font const* font,
     alia_palette_color color,

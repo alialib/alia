@@ -1,7 +1,7 @@
 #include <alia/abi/base/arena.h>
 
 #include <alia/abi/panic.h>
-#include <alia/prelude.hpp>
+#include <alia/impl/base/prelude.hpp>
 
 #include <cassert>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/id.hpp>
 
 #include <cassert>
@@ -227,21 +227,21 @@ struct signal_interface : untyped_signal_base
     // returned here is only valid until the pass scratch is reset, and it can
     // be `null_id()` if the new value ID is unknown.
     virtual id_view
-    post_write_erased(kernel_context* ctx, Value value) const = 0;
+    post_write_erased(kernel_context ctx, Value value) const = 0;
 
     // Post a clear of the signal and return a type-erased version of the value
     // ID that will be presented after the clear runs. The ID view returned
     // here is only valid until the pass scratch is reset, and it can be
     // `null_id()` if the new value ID is unknown.
     virtual id_view
-    post_clear_erased(kernel_context* ctx) const = 0;
+    post_clear_erased(kernel_context ctx) const = 0;
 
     // Post bookkeeping for an in-place mutation (or steal) performed through
     // `durable_ref()`. Return a type-erased predicted value ID. The ID view
     // is only valid until the pass scratch is reset, and it can be `null_id()`
     // if the new value ID is unknown.
     virtual id_view
-    post_mutation_commit_erased(kernel_context* ctx) const = 0;
+    post_mutation_commit_erased(kernel_context ctx) const = 0;
 };
 
 namespace detail {
@@ -251,7 +251,7 @@ namespace detail {
 // the returned view remains valid for the rest of the pass.
 template<class ValueId>
 id_view
-erase_value_id(kernel_context* ctx, ValueId const& id)
+erase_value_id(kernel_context ctx, ValueId const& id)
 {
     using storage_type = erased_id_storage<ValueId>;
     if constexpr (std::is_empty_v<storage_type>)
@@ -304,22 +304,22 @@ struct signal_base : signal_interface<Value>
     // after the write runs. (If that ID is unknown, `std::nullopt` can be
     // returned.)
     virtual std::optional<ValueId>
-    post_write(kernel_context* ctx, Value value) const = 0;
+    post_write(kernel_context ctx, Value value) const = 0;
 
     // Post a clear and return the value ID that will be presented after the
     // clear runs. (If that ID is unknown, `std::nullopt` can be returned.)
     virtual std::optional<ValueId>
-    post_clear(kernel_context* ctx) const = 0;
+    post_clear(kernel_context ctx) const = 0;
 
     // Post bookkeeping for an in-place mutation (or steal) performed through
     // `durable_ref()`. Return the value ID that will be presented afterward.
     // (If that ID is unknown, `std::nullopt` can be returned.)
     // Requires the signal to currently have a value and be ready to write.
     virtual std::optional<ValueId>
-    post_mutation_commit(kernel_context* ctx) const = 0;
+    post_mutation_commit(kernel_context ctx) const = 0;
 
     id_view
-    post_write_erased(kernel_context* ctx, Value value) const override
+    post_write_erased(kernel_context ctx, Value value) const override
     {
         auto id = post_write(ctx, std::move(value));
         if (!id)
@@ -328,7 +328,7 @@ struct signal_base : signal_interface<Value>
     }
 
     id_view
-    post_clear_erased(kernel_context* ctx) const override
+    post_clear_erased(kernel_context ctx) const override
     {
         auto id = post_clear(ctx);
         if (!id)
@@ -337,7 +337,7 @@ struct signal_base : signal_interface<Value>
     }
 
     id_view
-    post_mutation_commit_erased(kernel_context* ctx) const override
+    post_mutation_commit_erased(kernel_context ctx) const override
     {
         auto id = post_mutation_commit(ctx);
         if (!id)
@@ -362,13 +362,13 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
 // LCOV_EXCL_START
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_CLEAR_INTERFACE()                           \
-    std::optional<ValueId> post_clear(kernel_context*) const override         \
+    std::optional<ValueId> post_clear(kernel_context) const override          \
     {                                                                         \
         return std::nullopt;                                                  \
     }
 
 #define ALIA_DEFINE_UNUSED_SIGNAL_MUTATION_COMMIT_INTERFACE()                 \
-    std::optional<ValueId> post_mutation_commit(kernel_context*)              \
+    std::optional<ValueId> post_mutation_commit(kernel_context)               \
         const override                                                        \
     {                                                                         \
         return std::nullopt;                                                  \
@@ -381,7 +381,7 @@ struct signal : signal_base<Derived, Value, Capabilities, ValueId>
     {                                                                         \
         return false;                                                         \
     }                                                                         \
-    std::optional<ValueId> post_write(kernel_context*, Value) const override  \
+    std::optional<ValueId> post_write(kernel_context, Value) const override   \
     {                                                                         \
         return std::nullopt;                                                  \
     }
@@ -621,22 +621,22 @@ struct signal_ref
         return ref_->ready_to_write();
     }
     id_view
-    post_write_erased(kernel_context* ctx, Value value) const override
+    post_write_erased(kernel_context ctx, Value value) const override
     {
         return ref_->post_write_erased(ctx, std::move(value));
     }
     id_view
-    post_clear_erased(kernel_context* ctx) const override
+    post_clear_erased(kernel_context ctx) const override
     {
         return ref_->post_clear_erased(ctx);
     }
     id_view
-    post_mutation_commit_erased(kernel_context* ctx) const override
+    post_mutation_commit_erased(kernel_context ctx) const override
     {
         return ref_->post_mutation_commit_erased(ctx);
     }
     std::optional<id_view>
-    post_write(kernel_context* ctx, Value value) const override
+    post_write(kernel_context ctx, Value value) const override
     {
         id_view const id = post_write_erased(ctx, std::move(value));
         if (alia_id_view_is_null(id))
@@ -644,7 +644,7 @@ struct signal_ref
         return id;
     }
     std::optional<id_view>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         id_view const id = post_clear_erased(ctx);
         if (alia_id_view_is_null(id))
@@ -652,7 +652,7 @@ struct signal_ref
         return id;
     }
     std::optional<id_view>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         id_view const id = post_mutation_commit_erased(ctx);
         if (alia_id_view_is_null(id))
@@ -768,7 +768,7 @@ signal_ready_to_write(Signal const& signal)
 // `std::nullopt`.
 template<sink_signal Signal, class Value>
 std::optional<typename Signal::value_id_type>
-write_signal(kernel_context* ctx, Signal const& signal, Value value)
+write_signal(kernel_context ctx, Signal const& signal, Value value)
 {
     if (signal.ready_to_write())
     {
@@ -860,7 +860,7 @@ capture_signal_value(Signal const& signal)
 template<class T, class Signal>
 void
 commit_signal_capture_mutation(
-    kernel_context* ctx,
+    kernel_context ctx,
     by_ref_signal_capture<T> const& captured,
     Signal const& signal)
 {
@@ -873,7 +873,7 @@ commit_signal_capture_mutation(
 template<class T, class Signal>
 void
 commit_signal_capture_mutation(
-    kernel_context* ctx,
+    kernel_context ctx,
     by_value_signal_capture<T> const& captured,
     Signal const& signal)
 {
@@ -887,7 +887,7 @@ commit_signal_capture_mutation(
 // is a no-op and returns `std::nullopt`.
 template<signal_with<binding_caps<signal_durable, signal_writable>> Signal>
 std::optional<typename Signal::value_id_type>
-commit_signal_mutation(kernel_context* ctx, Signal const& signal)
+commit_signal_mutation(kernel_context ctx, Signal const& signal)
 {
     if (signal.has_value() && signal.ready_to_write())
         return signal.post_mutation_commit(ctx);
@@ -901,7 +901,7 @@ commit_signal_mutation(kernel_context* ctx, Signal const& signal)
 // `std::nullopt`.
 template<signal_with<sink_caps<signal_clearable>> Signal>
 std::optional<typename Signal::value_id_type>
-clear_signal(kernel_context* ctx, Signal const& signal)
+clear_signal(kernel_context ctx, Signal const& signal)
 {
     if (signal.ready_to_write())
         return signal.post_clear(ctx);

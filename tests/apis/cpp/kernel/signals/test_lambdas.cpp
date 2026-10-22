@@ -90,7 +90,7 @@ TEST_CASE("lambda_binding")
     CHECK(s.value_id() == 1);
 
     auto id_before = s.value_id();
-    write_signal(&fx.ctx, s, 0);
+    write_signal(fx.ctx, s, 0);
     fx.run();
     CHECK(x == 0);
     CHECK(read_signal(s) == 0);

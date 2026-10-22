@@ -18,7 +18,7 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/layout.hpp>
 #include <alia/kernel/signals/basic.hpp>
@@ -63,15 +63,15 @@ char const* lorem_ipsum
 
 template<class Content>
 void
-with_spacing(ui_context& ctx, float spacing, Content&& content)
+with_spacing(ui_context ctx, float spacing, Content&& content)
 {
-    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
+    alia_spacing_push(ctx, spacing * alia_ctx_geometry(ctx)->scale);
     content();
-    alia_spacing_pop(&ctx);
+    alia_spacing_pop(ctx);
 }
 
 void
-do_heading(ui_context& ctx, char const* text)
+do_heading(ui_context ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -81,7 +81,7 @@ do_heading(ui_context& ctx, char const* text)
 }
 
 void
-do_subheading(ui_context& ctx, char const* text)
+do_subheading(ui_context ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -91,22 +91,22 @@ do_subheading(ui_context& ctx, char const* text)
 }
 
 void
-do_draw_target_demo(ui_context& ctx)
+do_draw_target_demo(ui_context ctx)
 {
     do_subheading(ctx, "Draw Target");
 
     static alia_draw_target_id target = ALIA_DRAW_TARGET_PRIMARY;
-    if (target == ALIA_DRAW_TARGET_PRIMARY && alia_ctx_system(&ctx))
-        target = alia_draw_target_create(alia_ctx_system(&ctx));
+    if (target == ALIA_DRAW_TARGET_PRIMARY && alia_ctx_system(ctx))
+        target = alia_draw_target_create(alia_ctx_system(ctx));
 
     alia_vec2f const size{160.f, 96.f};
     if (get_event_category(ctx) == ALIA_CATEGORY_REFRESH)
     {
-        alia_layout_leaf_emit(&ctx, alia_layout_content_metrics_make(size), 0);
+        alia_layout_leaf_emit(ctx, alia_layout_content_metrics_make(size), 0);
         return;
     }
 
-    alia_box const box = alia_layout_consume_box(&ctx);
+    alia_box const box = alia_layout_consume_box(ctx);
     if (get_event_category(ctx) != ALIA_CATEGORY_DRAWING)
         return;
     if (box.size.x < 1.f || box.size.y < 1.f)
@@ -115,26 +115,26 @@ do_draw_target_demo(ui_context& ctx)
     if (target == ALIA_DRAW_TARGET_PRIMARY)
     {
         alia_draw_rounded_box(
-            &ctx, 0, box, alia_srgba8{220, 40, 40, 255}, 12.f);
+            ctx, 0, box, alia_srgba8{220, 40, 40, 255}, 12.f);
         return;
     }
 
-    alia_draw_target_begin(&ctx, target, box.size);
+    alia_draw_target_begin(ctx, target, box.size);
     alia_draw_rounded_box(
-        &ctx, 0, {{0.f, 0.f}, box.size}, alia_srgba8{40, 40, 255, 255}, 12.f);
+        ctx, 0, {{0.f, 0.f}, box.size}, alia_srgba8{40, 40, 255, 255}, 12.f);
     alia_draw_rounded_box(
-        &ctx,
+        ctx,
         1,
         {{20.f, 20.f}, {box.size.x - 40.f, box.size.y - 40.f}},
         alia_srgba8{255, 255, 255, 220},
         8.f);
-    alia_draw_target_end(&ctx);
+    alia_draw_target_end(ctx);
 
-    alia_draw_target(&ctx, 2, target, box, 0.85f);
+    alia_draw_target(ctx, 2, target, box, 0.85f);
 }
 
 void
-do_controls(ui_context& ctx)
+do_controls(ui_context ctx)
 {
     do_heading(ctx, "GEOMETRY");
 
@@ -146,7 +146,7 @@ do_controls(ui_context& ctx)
 }
 
 void
-do_content(ui_context& ctx, layout_options layout = {})
+do_content(ui_context ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_heading(ctx, "GAPS");
@@ -252,7 +252,7 @@ do_content(ui_context& ctx, layout_options layout = {})
                         ctx,
                         0,
                         alia_edge_offsets_make_uniform(8.f),
-                        alia_ctx_palette(&ctx)->primary.subtle,
+                        alia_ctx_palette(ctx)->primary.subtle,
                         [&]() {
                             alia_palette_color const on_subtle
                                 = ALIA_PALETTE_COLOR(primary.on_subtle, 0xff);
@@ -273,14 +273,14 @@ do_content(ui_context& ctx, layout_options layout = {})
 }
 
 void
-the_demo(ui_context& ctx)
+the_demo(ui_context ctx)
 {
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
+                alia_ctx_palette(ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -291,15 +291,15 @@ the_demo(ui_context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(&ctx)->foundation.background.base,
+                    alia_ctx_palette(ctx)->foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {
                             scroll_view(ctx, GROW, [&]() {
                                 alia_geometry_push_scale(
-                                    &ctx, content_magnification);
+                                    ctx, content_magnification);
                                 do_content(ctx, pad(40));
-                                alia_geometry_pop_scale(&ctx);
+                                alia_geometry_pop_scale(ctx);
                             });
                         });
                     });
@@ -312,7 +312,7 @@ static void
 the_demo_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
-    the_demo(*ctx);
+    the_demo(ui_context{ctx});
 }
 
 void
@@ -382,6 +382,7 @@ main()
             nullptr,
             nullptr,
             ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_ui_paint_changed(the_system);
         alia_style_generate_defaults(the_system, nullptr);
         theme_initialized = true;
     }

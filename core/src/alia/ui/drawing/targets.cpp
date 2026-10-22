@@ -5,9 +5,9 @@
 #include <alia/abi/ui/system/renderer.h>
 
 #include <alia/abi/kernel/substrate.h>
-#include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/ui/system/object.h>
 
 namespace {

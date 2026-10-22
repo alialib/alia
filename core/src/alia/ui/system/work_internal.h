@@ -11,8 +11,7 @@ alia_nanosecond_count
 steady_clock_now_ns();
 
 void
-process_due_timers(
-    ui_system& ui, alia_nanosecond_count now, uint64_t cycle);
+process_due_timers(ui_system& ui, alia_nanosecond_count now, uint64_t cycle);
 
 bool
 evaluate_refresh_hook_policy(ui_system& ui, alia_ui_refresh_hook_policy mode);

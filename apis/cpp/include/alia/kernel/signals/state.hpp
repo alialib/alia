@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/kernel/object.h>
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/basic.hpp>
 #include <alia/kernel/substrate.hpp>
@@ -15,7 +15,7 @@ namespace alia {
 
 // `state_storage<Value>` is designed to be stored persistently in the
 // component tree to represent application state or other data that needs to be
-// tracked similarly. It contains a 'version' number that counts changes and
+// tracked similarly. It contains a 'revision' number that counts changes and
 // serves as a signal value ID, and it also takes care of marking the component
 // tree as 'dirty' when it's updated.
 template<class Value>
@@ -23,22 +23,22 @@ struct state_storage
 {
     // TODO: Make these private?
     Value value{};
-    uint32_t version = 0;
+    uint32_t revision = 0;
 
     bool
     is_initialized() const
     {
-        return version != 0;
+        return revision != 0;
     }
 
     bool
     has_value() const
     {
-        return (version & 1u) != 0;
+        return (revision & 1u) != 0;
     }
 
     void
-    set(Value v, kernel_context* ctx)
+    set(Value v, kernel_context ctx)
     {
         value = std::move(v);
         set_valid_flag();
@@ -46,7 +46,7 @@ struct state_storage
     }
 
     void
-    clear(kernel_context* ctx)
+    clear(kernel_context ctx)
     {
         clear_valid_flag();
         handle_tracked_change(ctx);
@@ -56,13 +56,13 @@ struct state_storage
     untracked_nonconst_ref()
     {
         set_valid_flag();
-        inc_version();
+        inc_revision();
         return value;
     }
 
     // Record that the resident value was mutated in place (or stolen).
     void
-    record_mutation(kernel_context* ctx)
+    record_mutation(kernel_context ctx)
     {
         handle_tracked_change(ctx);
     }
@@ -71,32 +71,32 @@ struct state_storage
     untracked_clear()
     {
         clear_valid_flag();
-        inc_version();
+        inc_revision();
     }
 
  private:
     void
     set_valid_flag()
     {
-        version |= 1u;
+        revision |= 1u;
     }
 
     void
     clear_valid_flag()
     {
-        version &= ~1u;
+        revision &= ~1u;
     }
 
     void
-    inc_version()
+    inc_revision()
     {
-        version += 2u;
+        revision += 2u;
     }
 
     void
-    handle_tracked_change(kernel_context* ctx)
+    handle_tracked_change(kernel_context ctx)
     {
-        inc_version();
+        inc_revision();
         if (ctx && alia_ctx_object(ctx))
             alia_kernel_mark_dirty(alia_ctx_object(ctx));
     }
@@ -110,7 +110,7 @@ struct state_binding
           binding_caps<signal_movable, signal_clearable>,
           uint32_t>
 {
-    state_binding(state_storage<Value>* data, kernel_context* ctx)
+    state_binding(state_storage<Value>* data, kernel_context ctx)
         : data_(data), ctx_(ctx)
     {
     }
@@ -124,7 +124,7 @@ struct state_binding
     uint32_t
     value_id() const
     {
-        return data_->version;
+        return data_->revision;
     }
 
     Value const&
@@ -146,9 +146,9 @@ struct state_binding
     }
 
     std::optional<uint32_t>
-    post_write(kernel_context* ctx, Value value) const override
+    post_write(kernel_context ctx, Value value) const override
     {
-        uint32_t const expected = (data_->version | 1u) + 2u;
+        uint32_t const expected = (data_->revision | 1u) + 2u;
         post_call(
             ctx,
             [data = data_,
@@ -160,18 +160,18 @@ struct state_binding
     }
 
     std::optional<uint32_t>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
-        uint32_t const expected = (data_->version & ~1u) + 2u;
+        uint32_t const expected = (data_->revision & ~1u) + 2u;
         post_call(
             ctx, [data = data_, sys_ctx = ctx_]() { data->clear(sys_ctx); });
         return expected;
     }
 
     std::optional<uint32_t>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
-        uint32_t const expected = (data_->version | 1u) + 2u;
+        uint32_t const expected = (data_->revision | 1u) + 2u;
         post_call(ctx, [data = data_, sys_ctx = ctx_]() {
             data->record_mutation(sys_ctx);
         });
@@ -180,12 +180,12 @@ struct state_binding
 
  private:
     state_storage<Value>* data_;
-    kernel_context* ctx_;
+    kernel_context ctx_;
 };
 
 template<class Value>
 state_binding<Value>
-make_state_binding(state_storage<Value>& data, kernel_context* ctx)
+make_state_binding(state_storage<Value>& data, kernel_context ctx)
 {
     return state_binding<Value>(&data, ctx);
 }
@@ -196,7 +196,7 @@ make_state_binding(state_storage<Value>& data, kernel_context* ctx)
 // explicitly written to it.
 template<class Initial>
 auto
-use_state(kernel_context* ctx, Initial&& initial)
+use_state(kernel_context ctx, Initial&& initial)
 {
     auto initial_signal = signalize(std::forward<Initial>(initial));
     using Value = typename decltype(initial_signal)::value_type;

@@ -79,7 +79,7 @@ demo_set_typefaces(
 
 void
 demo_text(
-    alia::ui_context& ctx,
+    alia::ui_context ctx,
     char const* text,
     alia_resolved_font const* font,
     alia_palette_color color,
@@ -87,7 +87,7 @@ demo_text(
 {
     alia_text_style const style = {
         .font = font,
-        .color = alia_palette_color_resolve(alia_ctx_palette(&ctx), color),
+        .color = alia_palette_color_resolve(alia_ctx_palette(ctx), color),
     };
-    alia_text(&ctx, alia::raw_code(flags), alia_text_literal(text), &style);
+    alia_text(ctx, alia::raw_code(flags), alia_text_literal(text), &style);
 }

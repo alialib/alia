@@ -82,8 +82,8 @@ stack_reserve(alia_stack* s, uint32_t entry_end_off)
     }
 
     size_t const bytes_requested = size_t(entry_end_off) - size_t(s->top);
-    size_t const new_capacity = s->grow.grow(
-        s->grow.user, s->base, s->capacity, bytes_requested);
+    size_t const new_capacity
+        = s->grow.grow(s->grow.user, s->base, s->capacity, bytes_requested);
     ALIA_ASSERT(new_capacity > s->capacity);
     s->capacity = new_capacity;
     ALIA_ASSERT(size_t(entry_end_off) <= s->capacity);

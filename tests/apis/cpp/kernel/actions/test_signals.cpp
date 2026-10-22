@@ -22,7 +22,7 @@ TEST_CASE("add_write_action")
 
     CHECK_FALSE(written);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 1);
+    write_signal(fx.ctx, s, 1);
     fx.run();
     CHECK(x == 1);
     CHECK(written);

@@ -4,7 +4,7 @@
 
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/effect.h>
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <doctest/doctest.h>
 
@@ -43,15 +43,17 @@ struct effect_fixture
 {
     // scratch buffer
     void* buffer = nullptr;
-    // kernel context with scratch and effects wired
-    kernel_context ctx{};
+    // kernel context storage
+    alia_kernel_context storage{};
+    // handle for `storage`
+    kernel_context ctx{&storage};
 
     effect_fixture()
     {
         buffer = effect_aligned_alloc(ALIA_MAX_ALIGN, 64u * 1024u);
         REQUIRE(buffer);
         alia_bump_allocator_bind(
-            &ctx.scratch, buffer, 64u * 1024u, alia_grow_callback_none());
+            &storage.scratch, buffer, 64u * 1024u, alia_grow_callback_none());
     }
 
     ~effect_fixture()
@@ -70,9 +72,9 @@ struct effect_fixture
     void
     run()
     {
-        alia_run_effects(&ctx);
-        alia_arena_reset(&ctx.scratch);
-        ctx.effects = {};
+        alia_run_effects(ctx);
+        alia_arena_reset(&storage.scratch);
+        storage.effects = {};
     }
 };
 

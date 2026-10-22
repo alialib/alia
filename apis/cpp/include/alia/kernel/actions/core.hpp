@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/effects.hpp>
 
 #include <concepts>
@@ -37,7 +37,7 @@ struct action_interface : untyped_action_interface
 
     // Read any inputs and post the desired effects.
     virtual void
-    post(kernel_context* ctx, Args... args) const = 0;
+    post(kernel_context ctx, Args... args) const = 0;
 };
 
 // `action_type<T>` is true iff `T` is an Alia action type.
@@ -61,7 +61,7 @@ action_is_ready(action_interface<Args...> const& action)
 template<class... Args>
 void
 post_action(
-    kernel_context* ctx, action_interface<Args...> const& action, Args... args)
+    kernel_context ctx, action_interface<Args...> const& action, Args... args)
 {
     if (action.is_ready())
         action.post(ctx, std::move(args)...);
@@ -89,7 +89,7 @@ struct action_ref : action_interface<Args...>
     }
 
     void
-    post(kernel_context* ctx, Args... args) const override
+    post(kernel_context ctx, Args... args) const override
     {
         action_->post(ctx, std::move(args)...);
     }

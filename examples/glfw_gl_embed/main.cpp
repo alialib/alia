@@ -214,6 +214,7 @@ main()
             nullptr,
             nullptr,
             ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_ui_paint_changed(g_ui);
     }
 
     alia_struct_spec const renderer_spec = alia_gl_renderer_object_spec();

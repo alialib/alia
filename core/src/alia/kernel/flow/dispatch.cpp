@@ -6,8 +6,8 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/styling/catalog.h>
-#include <alia/context.h>
 #include <alia/impl/base/arena.hpp>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/ui/system/object.h>
 
@@ -45,8 +45,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
                                 : nullptr;
 
     alia_substrate_traversal substrate_traversal;
-    alia_bump_allocator substrate_bump_allocator = alia_memory_open_bump(
-        memory, sys.kernel.substrate_discovery_pool);
+    alia_bump_allocator substrate_bump_allocator
+        = alia_memory_open_bump(memory, sys.kernel.substrate_discovery_pool);
     substrate_traversal_init(
         substrate_traversal,
         sys.kernel.substrate,
@@ -98,6 +98,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
     ctx.layout = &layout;
     ctx.draw = draw;
     ctx.palette = &sys.palette;
+    ctx.id.metrics = alia_id_view_make_u64(sys.metrics_revision);
+    ctx.id.paint = alia_id_view_make_u64(sys.paint_revision);
 
     alia_substrate_begin_block(
         alia_ctx_kernel(&ctx),
@@ -126,8 +128,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
 
     alia_memory_commit_bump(
         memory, sys.kernel.scratch_pool, &ctx.kernel.scratch);
-    alia_memory_trim(
-        memory, sys.kernel.scratch_pool, ALIA_MEMORY_RETAIN_PEAK);
+    alia_memory_trim(memory, sys.kernel.scratch_pool, ALIA_MEMORY_RETAIN_PEAK);
 
     alia_memory_commit_bump(
         memory,

@@ -15,7 +15,7 @@ TEST_CASE("latch-like action")
     effect_fixture fx;
     // Test that actions have latch-like semantics.
     int x = 2, y = 3;
-    post_action(&fx.ctx, (ref(x) <<= ref(y), ref(y) <<= ref(x)));
+    post_action(fx.ctx, (ref(x) <<= ref(y), ref(y) <<= ref(x)));
     fx.run();
     CHECK(x == 3);
     CHECK(y == 2);
@@ -30,7 +30,7 @@ TEST_CASE("action_ref")
 
     action_ref<> r = b;
     CHECK(r.is_ready());
-    post_action(&fx.ctx, r);
+    post_action(fx.ctx, r);
     fx.run();
     CHECK(x == 2);
 
@@ -39,7 +39,7 @@ TEST_CASE("action_ref")
     action_ref<> s = r;
     CHECK(s.is_ready());
     CHECK(action_is_ready(s));
-    post_action(&fx.ctx, s);
+    post_action(fx.ctx, s);
     fx.run();
     CHECK(x == 2);
 

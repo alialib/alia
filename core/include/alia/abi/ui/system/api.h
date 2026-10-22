@@ -61,6 +61,16 @@ alia_ui_set_magnification(alia_ui_system* ui, float magnification);
 float
 alia_ui_get_magnification(alia_ui_system* ui);
 
+// Record that `ui`'s metrics inputs have changed.
+// The next pass will see a new paint ID.
+void
+alia_ui_metrics_changed(alia_ui_system* ui);
+
+// Record that `ui`'s paint inputs have changed.
+// The next pass will see a new paint ID.
+void
+alia_ui_paint_changed(alia_ui_system* ui);
+
 ALIA_EXTERN_C_END
 
 #endif /* ALIA_ABI_UI_SYSTEM_API_H */

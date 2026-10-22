@@ -13,7 +13,7 @@
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/actions/basic.hpp>
 #include <alia/kernel/actions/operators.hpp>
 #include <alia/kernel/macros.hpp>
@@ -50,7 +50,7 @@ char const* lorem_ipsum
       "dictum massa. Maecenas et euismod lorem, ut dapibus eros.";
 
 void
-do_heading(ui_context& ctx, char const* text)
+do_heading(ui_context ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -60,7 +60,7 @@ do_heading(ui_context& ctx, char const* text)
 }
 
 void
-do_subheading(ui_context& ctx, char const* text)
+do_subheading(ui_context ctx, char const* text)
 {
     demo_text(
         ctx,
@@ -72,15 +72,13 @@ do_subheading(ui_context& ctx, char const* text)
 template<class Spacing, class Magnification>
 void
 do_controls(
-    ui_context& ctx,
-    Spacing const& spacing,
-    Magnification const& magnification)
+    ui_context ctx, Spacing const& spacing, Magnification const& magnification)
 {
     do_heading(ctx, "SETTINGS");
 
     do_subheading(ctx, "Typography");
     {
-        auto typography_index = use_state(alia_ctx_kernel(&ctx), 0);
+        auto typography_index = use_state(ctx, 0);
         radio_button(ctx, typography_index, 0, "Roboto");
         radio_button(ctx, typography_index, 1, "Source Sans 3");
         if (read_signal(typography_index) == 0)
@@ -107,71 +105,60 @@ do_controls(
 }
 
 void
-do_toggle_switch_demo(ui_context& ctx)
+do_toggle_switch_demo(ui_context ctx)
 {
     do_heading(ctx, "TOGGLE SWITCHES");
 
-    toggle_switch(ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting One");
-    toggle_switch(ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting Two");
-    toggle_switch(
-        ctx, use_state(alia_ctx_kernel(&ctx), false), "Setting Three");
+    toggle_switch(ctx, use_state(ctx, false), "Setting One");
+    toggle_switch(ctx, use_state(ctx, false), "Setting Two");
+    toggle_switch(ctx, use_state(ctx, false), "Setting Three");
 }
 
 void
-do_radio_button_demo(ui_context& ctx)
+do_radio_button_demo(ui_context ctx)
 {
     do_heading(ctx, "RADIO BUTTONS");
 
-    auto radio_index = use_state(alia_ctx_kernel(&ctx), 0);
+    auto radio_index = use_state(ctx, 0);
     radio_button(ctx, radio_index, 0, "Option One");
     radio_button(ctx, radio_index, 1, "Option Two");
     radio_button(ctx, radio_index, 2, "Option Three");
 }
 
 void
-do_checkbox_demo(ui_context& ctx)
+do_checkbox_demo(ui_context ctx)
 {
     do_heading(ctx, "CHECKBOXES");
 
-    checkbox(
-        ctx, use_state(alia_ctx_kernel(&ctx), false), "Initially Unchecked");
-    checkbox(ctx, use_state(alia_ctx_kernel(&ctx), true), "Initially Checked");
-    checkbox(
-        ctx,
-        disable_writes(use_state(alia_ctx_kernel(&ctx), false)),
-        "Disabled/Unchecked");
-    checkbox(
-        ctx,
-        disable_writes(use_state(alia_ctx_kernel(&ctx), true)),
-        "Disabled/Checked");
+    checkbox(ctx, use_state(ctx, false), "Initially Unchecked");
+    checkbox(ctx, use_state(ctx, true), "Initially Checked");
+    checkbox(ctx, disable_writes(use_state(ctx, false)), "Disabled/Unchecked");
+    checkbox(ctx, disable_writes(use_state(ctx, true)), "Disabled/Checked");
 }
 
 void
-do_node_expander_demo(ui_context& ctx)
+do_node_expander_demo(ui_context ctx)
 {
     do_heading(ctx, "NODE EXPANDER");
 
-    node_expander(ctx, use_state(alia_ctx_kernel(&ctx), false), "Expandable");
-    node_expander(
-        ctx,
-        disable_writes(use_state(alia_ctx_kernel(&ctx), true)),
-        "Disabled");
+    node_expander(ctx, use_state(ctx, false), "Expandable");
+    node_expander(ctx, disable_writes(use_state(ctx, true)), "Disabled");
 }
 
 void
-do_slider_demo(ui_context& ctx)
+do_slider_demo(ui_context ctx)
 {
     do_heading(ctx, "SLIDERS");
 
-    slider(ctx, use_state(alia_ctx_kernel(&ctx), 5.f), 0.0, 10.0, 1.0);
+    slider(ctx, use_state(ctx, 5.f), 0.0, 10.0, 1.0);
 }
 
 void
-do_collapsible_demo(ui_context& ctx)
+do_collapsible_demo(ui_context ctx)
 {
     do_heading(ctx, "COLLAPSIBLE");
 
-    auto collapsed = use_state(alia_ctx_kernel(&ctx), false);
+    auto collapsed = use_state(ctx, false);
     node_expander(ctx, collapsed, "Collapsible");
 
     alia::collapsible(ctx, collapsed, [&]() {
@@ -186,13 +173,13 @@ do_collapsible_demo(ui_context& ctx)
 }
 
 void
-do_button_demo(ui_context& ctx)
+do_button_demo(ui_context ctx)
 {
     do_heading(ctx, "BUTTONS");
 
-    auto clicks = use_state(alia_ctx_kernel(&ctx), 0);
-    auto n = use_state(alia_ctx_kernel(&ctx), 0);
-    auto m = use_state(alia_ctx_kernel(&ctx), 3);
+    auto clicks = use_state(ctx, 0);
+    auto n = use_state(ctx, 0);
+    auto m = use_state(ctx, 3);
 
     {
         char label[64];
@@ -250,12 +237,12 @@ do_button_demo(ui_context& ctx)
 }
 
 void
-do_dropdown_demo(ui_context& ctx)
+do_dropdown_demo(ui_context ctx)
 {
     do_heading(ctx, "DROPDOWN");
 
-    auto open = use_state(alia_ctx_kernel(&ctx), false);
-    auto selected = use_state(alia_ctx_kernel(&ctx), 0);
+    auto open = use_state(ctx, false);
+    auto selected = use_state(ctx, 0);
     char const* const items[] = {"First", "Second", "Third"};
 
     {
@@ -281,13 +268,13 @@ do_dropdown_demo(ui_context& ctx)
             width(120));
     });
 
-    ALIA_IF_ (&ctx, read_signal(open))
+    ALIA_IF_ (ctx, read_signal(open))
     {
         popup(ctx, trigger_box, [&]() {
             concrete_panel(
                 ctx,
-                alia_z(&ctx, ALIA_Z_PLANE_BACKGROUND),
-                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
+                alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+                alia_ctx_palette(ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     column(ctx, pad(6), [&]() {
@@ -306,7 +293,7 @@ do_dropdown_demo(ui_context& ctx)
 }
 
 void
-do_text_sample(ui_context& ctx)
+do_text_sample(ui_context ctx)
 {
     do_heading(ctx, "TEXT");
     flow(ctx, FILL, [&]() {
@@ -329,7 +316,7 @@ do_text_sample(ui_context& ctx)
 }
 
 void
-do_content(ui_context& ctx, layout_options layout = {})
+do_content(ui_context ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_toggle_switch_demo(ctx);
@@ -354,25 +341,25 @@ do_content(ui_context& ctx, layout_options layout = {})
 
 template<class Content>
 void
-with_spacing(ui_context& ctx, float spacing, Content&& content)
+with_spacing(ui_context ctx, float spacing, Content&& content)
 {
-    alia_spacing_push(&ctx, spacing * alia_ctx_geometry(&ctx)->scale);
+    alia_spacing_push(ctx, spacing * alia_ctx_geometry(ctx)->scale);
     content();
-    alia_spacing_pop(&ctx);
+    alia_spacing_pop(ctx);
 }
 
 void
-the_demo(ui_context& ctx)
+the_demo(ui_context ctx)
 {
-    auto spacing = use_state(alia_ctx_kernel(&ctx), 6.f);
-    auto magnification = use_state(alia_ctx_kernel(&ctx), 1.f);
+    auto spacing = use_state(ctx, 6.f);
+    auto magnification = use_state(ctx, 1.f);
 
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(&ctx)->foundation.background.stronger_2,
+                alia_ctx_palette(ctx)->foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -385,18 +372,18 @@ the_demo(ui_context& ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(&ctx)->foundation.background.base,
+                    alia_ctx_palette(ctx)->foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {
                             scroll_view(ctx, GROW, [&]() {
                                 alia_layout_edge_offsets_begin(
-                                    &ctx, {20, 20, 20, 20}, ALIA_FILL);
+                                    ctx, {20, 20, 20, 20}, ALIA_FILL);
                                 alia_geometry_push_scale(
-                                    &ctx, read_signal(magnification));
+                                    ctx, read_signal(magnification));
                                 do_content(ctx);
-                                alia_geometry_pop_scale(&ctx);
-                                alia_layout_edge_offsets_end(&ctx);
+                                alia_geometry_pop_scale(ctx);
+                                alia_layout_edge_offsets_end(ctx);
                             });
                         });
                     });
@@ -409,7 +396,7 @@ static void
 the_demo_controller(void* user_data, alia_ui_context* ctx)
 {
     (void) user_data;
-    the_demo(*ctx);
+    the_demo(ui_context{ctx});
 }
 
 void
@@ -471,6 +458,7 @@ main()
             nullptr,
             nullptr,
             ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_ui_paint_changed(the_system);
         alia_style_generate_defaults(the_system, nullptr);
         theme_initialized = true;
     }

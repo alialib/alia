@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_CONTEXT_H
 
 #include <alia/abi/kernel/context.h>
+#include <alia/abi/kernel/ids.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/geometry/types.h>
 #include <alia/abi/ui/palette.h>
@@ -13,6 +14,17 @@ typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_input_state alia_input_state;
 typedef struct alia_layout_context alia_layout_context;
 typedef struct alia_draw_context alia_draw_context;
+
+// metrics and paint IDs for one UI pass
+typedef struct alia_context_ids
+{
+    // metrics ID - ambient inputs that affect measurement, such as the font,
+    // spacing, style sizes, and the system metrics revision
+    alia_id_view metrics;
+    // paint ID - ambient inputs that affect only drawing, such as colors and
+    // the system paint revision
+    alia_id_view paint;
+} alia_context_ids;
 
 // `alia_ui_context` is the pass-local context for a UI traversal.
 // Its first member is the kernel context, so the two share the same address.
@@ -32,6 +44,8 @@ typedef struct alia_ui_context
     // NULL when this pass is not drawing
     alia_draw_context* draw;
     alia_palette* palette;
+    // context IDs for this pass
+    alia_context_ids id;
 } alia_ui_context;
 
 static inline alia_kernel_context*

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/signals/core.hpp>
@@ -37,7 +37,7 @@ struct write_action_signal
     }
     std::optional<typename Wrapped::value_id_type>
     post_write(
-        kernel_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context ctx, typename Wrapped::value_type value) const override
     {
         post_action(ctx, on_write_, value);
         return this->wrapped_.post_write(ctx, std::move(value));

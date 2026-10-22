@@ -113,7 +113,7 @@ alia_text_literal(char const* text)
 // Construct a text input signal from bytes tagged with a revision counter. The
 // app bumps `revision` whenever the referenced bytes change.
 static inline alia_text_input_signal
-alia_text_revision(char const* text, size_t length, uint64_t revision)
+alia_text_with_revision(char const* text, size_t length, uint64_t revision)
 {
     return alia_text_input_signal_make(
         text, length, alia_id_view_make_u64(revision));

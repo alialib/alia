@@ -3,7 +3,7 @@
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/palette.h>
 #include <alia/abi/ui/text.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/kernel/actions/core.hpp>
 #include <alia/ui/layout/options.hpp>
 
@@ -80,12 +80,12 @@ to_c_chrome(button_chrome chrome)
 
 struct button_variant_scope
 {
-    ui_context& ctx;
+    ui_context ctx;
     alia_button_style saved{};
 
-    button_variant_scope(ui_context& ctx_, button_variant variant) : ctx(ctx_)
+    button_variant_scope(ui_context ctx_, button_variant variant) : ctx(ctx_)
     {
-        alia_button_style* style = alia_button_style_active(&ctx);
+        alia_button_style* style = alia_button_style_active(ctx);
         saved = *style;
         alia_button_style_apply_swatch(
             style, to_c_swatch(variant.swatch), to_c_chrome(variant.chrome));
@@ -93,7 +93,7 @@ struct button_variant_scope
 
     ~button_variant_scope()
     {
-        *alia_button_style_active(&ctx) = saved;
+        *alia_button_style_active(ctx) = saved;
     }
 
     button_variant_scope(button_variant_scope const&) = delete;
@@ -106,7 +106,7 @@ struct button_variant_scope
 // Run `content` while the active button style matches `variant`.
 template<class Content>
 void
-with_button_variant(ui_context& ctx, button_variant variant, Content&& content)
+with_button_variant(ui_context ctx, button_variant variant, Content&& content)
 {
     detail::button_variant_scope const scope(ctx, variant);
     std::forward<Content>(content)();
@@ -117,16 +117,16 @@ with_button_variant(ui_context& ctx, button_variant variant, Content&& content)
 template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
-    ui_context& ctx,
+    ui_context ctx,
     alia_button_flags_t flags,
     Layout layout,
     Content&& content)
 {
     alia_button_result_t result = ALIA_BUTTON_RESULT_NONE;
     apply_layout(ctx, layout, [&](layout_flag_set layout_flags) {
-        result = alia_button_begin(&ctx, flags, raw_code(layout_flags));
+        result = alia_button_begin(ctx, flags, raw_code(layout_flags));
         std::forward<Content>(content)();
-        alia_button_end(&ctx);
+        alia_button_end(ctx);
     });
     return result;
 }
@@ -134,7 +134,7 @@ button(
 template<layout_like Layout = layout_options, class Content>
 alia_button_result_t
 button(
-    ui_context& ctx,
+    ui_context ctx,
     alia_button_flags_t flags,
     Layout layout,
     button_variant variant,
@@ -152,10 +152,7 @@ button(
 template<layout_like Layout = layout_options, class Content>
 void
 button(
-    ui_context& ctx,
-    action<> const& on_click,
-    Layout layout,
-    Content&& content)
+    ui_context ctx, action<> const& on_click, Layout layout, Content&& content)
 {
     alia_button_flags_t flags = 0;
     if (!action_is_ready(on_click))
@@ -163,14 +160,14 @@ button(
     if (button(ctx, flags, layout, std::forward<Content>(content))
         == ALIA_BUTTON_RESULT_ACTIVATED)
     {
-        post_action(alia_ctx_kernel(&ctx), on_click);
+        post_action(ctx, on_click);
     }
 }
 
 template<layout_like Layout = layout_options, class Content>
 void
 button(
-    ui_context& ctx,
+    ui_context ctx,
     action<> const& on_click,
     Layout layout,
     button_variant variant,
@@ -185,33 +182,33 @@ button(
 template<layout_like Layout = layout_options>
 void
 button(
-    ui_context& ctx,
+    ui_context ctx,
     char const* label,
     action<> const& on_click,
     Layout layout = {})
 {
     button(ctx, on_click, layout, [&] {
-        alia_text(&ctx, 0, alia_text_literal(label), nullptr);
+        alia_text(ctx, 0, alia_text_literal(label), nullptr);
     });
 }
 
 template<layout_like Layout = layout_options>
 void
 button(
-    ui_context& ctx,
+    ui_context ctx,
     char const* label,
     action<> const& on_click,
     Layout layout,
     button_variant variant)
 {
     button(ctx, on_click, layout, variant, [&] {
-        alia_text(&ctx, 0, alia_text_literal(label), nullptr);
+        alia_text(ctx, 0, alia_text_literal(label), nullptr);
     });
 }
 
 inline void
 button(
-    ui_context& ctx,
+    ui_context ctx,
     char const* label,
     action<> const& on_click,
     button_variant variant)

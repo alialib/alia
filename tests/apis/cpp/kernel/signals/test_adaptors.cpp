@@ -88,12 +88,12 @@ struct transparent_casting_wrapper
     }
     std::optional<typename Wrapped::value_id_type>
     post_write(
-        kernel_context* ctx, typename Wrapped::value_type value) const override
+        kernel_context ctx, typename Wrapped::value_type value) const override
     {
         return this->wrapped_.post_write(ctx, std::move(value));
     }
     std::optional<typename Wrapped::value_id_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         return this->wrapped_.post_mutation_commit(ctx);
     }
@@ -115,7 +115,7 @@ TEST_CASE("fake_readability")
          == null_id()));
     CHECK_FALSE(signal_has_value(s));
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 1);
+    write_signal(fx.ctx, s, 1);
     fx.run();
     CHECK(x == 1);
 }
@@ -146,7 +146,7 @@ TEST_CASE("casting_signal_wrapper")
     CHECK((s.value_id() == wrapped.value_id()));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 2);
+    write_signal(fx.ctx, s, 2);
     fx.run();
     CHECK(x == 2);
 }
@@ -164,7 +164,7 @@ TEST_CASE("signal_cast")
     CHECK(signal_has_value(s));
     CHECK(read_signal(s) == 1.0);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 0.0);
+    write_signal(fx.ctx, s, 0.0);
     fx.run();
     CHECK(x == 0);
 
@@ -193,7 +193,7 @@ TEST_CASE("add_default")
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 1);
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 2);
+        write_signal(fx.ctx, s, 2);
         fx.run();
         CHECK(p == 2);
     }
@@ -204,7 +204,7 @@ TEST_CASE("add_default")
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 0);
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 2);
+        write_signal(fx.ctx, s, 2);
         fx.run();
         CHECK(p == 2);
     }
@@ -214,7 +214,7 @@ TEST_CASE("add_default")
         auto s = add_default(fake_readability(ref(p)), empty<int>());
         CHECK_FALSE(signal_has_value(s));
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 2);
+        write_signal(fx.ctx, s, 2);
         fx.run();
         CHECK(p == 2);
     }
@@ -283,7 +283,7 @@ TEST_CASE("simplify_id")
         // scale already uses the result as its value ID.
         CHECK(s.value_id() == scaled.value_id());
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 2);
+        write_signal(fx.ctx, s, 2);
         fx.run();
         CHECK(x == 4);
     }
@@ -322,19 +322,20 @@ TEST_CASE("override_id")
 
     {
         int x = 1;
-        uint32_t version = 0;
-        auto s = override_id(ref(x), [&version] { return make_id(version); });
+        uint32_t revision = 0;
+        auto s
+            = override_id(ref(x), [&revision] { return make_id(revision); });
         static_assert(view_signal<decltype(s)>);
         static_assert(sink_signal<decltype(s)>);
         CHECK(signal_has_value(s));
         CHECK(read_signal(s) == 1);
         CHECK((s.value_id() == make_id(uint32_t{0})));
 
-        write_signal(&fx.ctx, s, 2);
+        write_signal(fx.ctx, s, 2);
         fx.run();
         CHECK(x == 2);
         CHECK((s.value_id() == make_id(uint32_t{0})));
-        version = 1;
+        revision = 1;
         CHECK((s.value_id() == make_id(uint32_t{1})));
     }
 
@@ -357,16 +358,16 @@ TEST_CASE("signal value movement")
 
     copy_count = 0;
     movable_object y;
-    uint64_t y_version = 0;
+    uint64_t y_revision = 0;
     movable_object x(4);
-    // Use a versioned sink so ID prediction doesn't copy the payload.
-    post_action(&fx.ctx, versioned_ref(y, y_version) <<= ref(x));
+    // Use a sink with a revision so ID prediction doesn't copy the payload.
+    post_action(fx.ctx, ref_with_revision(y, y_revision) <<= ref(x));
     fx.run();
     CHECK(copy_count == 1);
     CHECK(y.n == 4);
 
     copy_count = 0;
-    post_action(&fx.ctx, versioned_ref(y, y_version) <<= move(ref(x)));
+    post_action(fx.ctx, ref_with_revision(y, y_revision) <<= move(ref(x)));
     fx.run();
     CHECK(copy_count == 0);
     CHECK(y.n == 4);
@@ -417,7 +418,7 @@ TEST_CASE("mask a binding")
     CHECK(read_signal(s) == 1);
     CHECK((s.value_id() == d.value_id()));
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 0);
+    write_signal(fx.ctx, s, 0);
     fx.run();
     CHECK(x == 0);
 
@@ -473,7 +474,7 @@ TEST_CASE("mask/disable_writes")
     CHECK(read_signal(unmasked) == 1);
     CHECK((unmasked.value_id() == wrapped.value_id()));
     CHECK(signal_ready_to_write(unmasked));
-    write_signal(&fx.ctx, unmasked, 0);
+    write_signal(fx.ctx, unmasked, 0);
     fx.run();
     CHECK(x == 0);
 
@@ -513,7 +514,7 @@ TEST_CASE("mask/disable_reads")
     CHECK(read_signal(unmasked) == 1);
     CHECK((unmasked.value_id() == wrapped.value_id()));
     CHECK(signal_ready_to_write(unmasked));
-    write_signal(&fx.ctx, unmasked, 0);
+    write_signal(fx.ctx, unmasked, 0);
     fx.run();
     CHECK(x == 0);
 
@@ -522,7 +523,7 @@ TEST_CASE("mask/disable_reads")
     static_assert(sink_signal<decltype(disabled)>);
     CHECK_FALSE(signal_has_value(disabled));
     CHECK(signal_ready_to_write(disabled));
-    write_signal(&fx.ctx, disabled, 0);
+    write_signal(fx.ctx, disabled, 0);
     fx.run();
     CHECK(x == 0);
 
@@ -530,7 +531,7 @@ TEST_CASE("mask/disable_reads")
     auto empty_flag = mask_reads(ref(x), empty<bool>());
     CHECK_FALSE(signal_has_value(empty_flag));
     CHECK(signal_ready_to_write(empty_flag));
-    write_signal(&fx.ctx, empty_flag, 2);
+    write_signal(fx.ctx, empty_flag, 2);
     fx.run();
     CHECK(x == 2);
 
@@ -556,7 +557,7 @@ TEST_CASE("unwrap a binding")
         CHECK(read_signal(s) == 1);
         CHECK((s.value_id() == d.value_id()));
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 0);
+        write_signal(fx.ctx, s, 0);
         fx.run();
         CHECK(x.has_value());
         CHECK(*x == 0);
@@ -569,7 +570,7 @@ TEST_CASE("unwrap a binding")
             (static_cast<untyped_signal_base const&>(s).value_id_erased()
              == null_id()));
         CHECK(signal_ready_to_write(s));
-        write_signal(&fx.ctx, s, 0);
+        write_signal(fx.ctx, s, 0);
         fx.run();
         CHECK(x.has_value());
         CHECK(*x == 0);
@@ -577,7 +578,7 @@ TEST_CASE("unwrap a binding")
     {
         auto x = std::optional<int>(1);
         auto s = unwrap(alia::ref(x));
-        clear_signal(&fx.ctx, s);
+        clear_signal(fx.ctx, s);
         fx.run();
         CHECK_FALSE(x.has_value());
     }
@@ -610,7 +611,7 @@ TEST_CASE("radio signal")
         CHECK(signal_has_value(radio));
         CHECK_FALSE(read_signal(radio));
         CHECK(signal_ready_to_write(radio));
-        write_signal(&fx.ctx, radio, true);
+        write_signal(fx.ctx, radio, true);
         fx.run();
         CHECK(selected == 1);
     }

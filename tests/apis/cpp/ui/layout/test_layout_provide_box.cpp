@@ -15,7 +15,7 @@ TEST_CASE("layout row provide box")
 {
     alia_box container;
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](ui_context ctx) {
         row(ctx, provide_box(container), [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
         });
@@ -30,7 +30,7 @@ TEST_CASE("layout column provide box")
 {
     alia_box container;
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 80.f), [&](ui_context ctx) {
         column(ctx, provide_box(container), [&]() {
             test_leaf(ctx, alia_vec2f_make(40.f, 20.f), NO_FLAGS, &leaf);
         });
@@ -45,7 +45,7 @@ TEST_CASE("layout flow provide box")
 {
     alia_box container;
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 30.f), [&](ui_context ctx) {
         flow(ctx, provide_box(container), [&]() {
             test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
         });
@@ -60,20 +60,20 @@ TEST_CASE("layout edge offsets provide box")
 {
     alia_box outer;
     alia_box leaf;
-    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](alia_ui_context& ctx) {
+    run_layout_case(alia_vec2f_make(100.f, 100.f), [&](ui_context ctx) {
         if (is_refresh_event(ctx))
         {
             alia_layout_edge_offsets_begin(
-                &ctx,
+                ctx,
                 alia_edge_offsets_make_trbl(10.f, 10.f, 10.f, 10.f),
                 ALIA_PROVIDE_BOX);
             test_leaf(ctx, alia_vec2f_make(50.f, 50.f));
-            alia_layout_edge_offsets_end(&ctx);
+            alia_layout_edge_offsets_end(ctx);
         }
         else
         {
             alia_layout_box_array const boxes
-                = alia_layout_consume_box_array(&ctx);
+                = alia_layout_consume_box_array(ctx);
             CHECK(boxes.count == 1);
             outer = boxes.boxes[0];
             test_leaf(ctx, alia_vec2f_make(50.f, 50.f), FILL, &leaf);

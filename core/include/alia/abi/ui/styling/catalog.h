@@ -80,8 +80,9 @@ alia_style_slot_set_generator(
     void* user_data);
 
 // Run all slot generators to fill out the system defaults blob.
-// If seeds is `NULL`, the system's current seeds are used (or the default
+// If `seeds` is `NULL`, the system's current seeds are used (or the default
 // seeds if no seeds have been set yet).
+// This calls `alia_ui_metrics_changed` internally.
 void
 alia_style_generate_defaults(
     alia_ui_system* ui, alia_style_seeds const* seeds);

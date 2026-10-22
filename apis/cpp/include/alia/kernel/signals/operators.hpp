@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/signals/adaptors.hpp>
@@ -89,7 +89,7 @@ struct field_signal
         return structure_.has_value() && structure_.ready_to_write();
     }
     std::optional<value_id_type>
-    post_write(kernel_context* ctx, Field x) const override
+    post_write(kernel_context ctx, Field x) const override
     {
         if constexpr (
             signal_with<
@@ -135,7 +135,7 @@ struct field_signal
         }
     }
     std::optional<value_id_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         if constexpr (
             signal_with<
@@ -430,8 +430,7 @@ struct signal_mux
             && (condition_.read() ? t_.ready_to_write() : f_.ready_to_write());
     }
     std::optional<typename T::value_type>
-    post_write(
-        kernel_context* ctx, typename T::value_type value) const override
+    post_write(kernel_context ctx, typename T::value_type value) const override
     {
         typename T::value_type id = value;
         if (condition_.read())
@@ -441,7 +440,7 @@ struct signal_mux
         return id;
     }
     std::optional<typename T::value_type>
-    post_clear(kernel_context* ctx) const override
+    post_clear(kernel_context ctx) const override
     {
         if (condition_.read())
             (void) t_.post_clear(ctx);
@@ -450,7 +449,7 @@ struct signal_mux
         return std::nullopt;
     }
     std::optional<typename T::value_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         if (condition_.read())
             (void) t_.post_mutation_commit(ctx);
@@ -695,7 +694,7 @@ struct subscript_signal
             && container_.ready_to_write();
     }
     std::optional<value_id_type>
-    post_write(kernel_context* ctx, value_type x) const override
+    post_write(kernel_context ctx, value_type x) const override
     {
         if constexpr (!sink_signal<ContainerSignal>)
             return std::nullopt;
@@ -752,7 +751,7 @@ struct subscript_signal
         }
     }
     std::optional<value_id_type>
-    post_mutation_commit(kernel_context* ctx) const override
+    post_mutation_commit(kernel_context ctx) const override
     {
         if constexpr (
             subscript_returns_reference<

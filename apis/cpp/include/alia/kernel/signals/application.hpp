@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/impl/events.hpp>
 #include <alia/kernel/signals/core.hpp>
@@ -388,7 +388,7 @@ struct lazy_bidirectional_apply_signal
         return arg_.ready_to_write();
     }
     std::optional<typename Arg::value_id_type>
-    post_write(kernel_context* ctx, Result value) const override
+    post_write(kernel_context ctx, Result value) const override
     {
         return arg_.post_write(ctx, reverse_(std::move(value)));
     }
@@ -436,7 +436,7 @@ struct apply_result_data
 {
     apply_status status = apply_status::UNCOMPUTED;
     // identity of the cached result - Incremented whenever inputs change.
-    uint32_t version = 0;
+    uint32_t revision = 0;
     Value value{};
     std::exception_ptr error;
 };
@@ -445,7 +445,7 @@ template<class Value>
 void
 reset_apply_result(apply_result_data<Value>& data)
 {
-    ++data.version;
+    ++data.revision;
     data.status = apply_status::UNCOMPUTED;
     data.error = nullptr;
 }
@@ -453,7 +453,7 @@ reset_apply_result(apply_result_data<Value>& data)
 template<class Result, class Arg>
 void
 process_apply_arg(
-    kernel_context* ctx,
+    kernel_context ctx,
     apply_result_data<Result>& data,
     bool& args_ready,
     Arg const& arg)
@@ -480,14 +480,14 @@ process_apply_arg(
 
 template<class Result>
 void
-process_apply_args(kernel_context*, apply_result_data<Result>&, bool&)
+process_apply_args(kernel_context, apply_result_data<Result>&, bool&)
 {
 }
 
 template<class Result, class Arg, class... Rest>
 void
 process_apply_args(
-    kernel_context* ctx,
+    kernel_context ctx,
     apply_result_data<Result>& data,
     bool& args_ready,
     Arg const& arg,
@@ -500,7 +500,7 @@ process_apply_args(
 template<class Value, class Function, class... Args>
 void
 process_apply_body(
-    kernel_context* ctx,
+    kernel_context ctx,
     apply_result_data<Value>& data,
     bool args_ready,
     Function&& f,
@@ -545,7 +545,7 @@ struct apply_signal
     uint32_t
     value_id() const
     {
-        return data_->version;
+        return data_->revision;
     }
     bool
     has_value() const override
@@ -571,7 +571,7 @@ struct apply_signal
 
 template<class Function, view_signal... Args>
 auto
-apply(kernel_context* ctx, Function&& f, Args const&... args)
+apply(kernel_context ctx, Function&& f, Args const&... args)
 {
     using result_type = std::decay_t<decltype(detail::invoke_on_signals(
         std::forward<Function>(f), args...))>;
@@ -589,7 +589,7 @@ template<class Function>
 auto
 lift(Function f)
 {
-    return [f = std::move(f)](kernel_context* ctx, auto const&... args) {
+    return [f = std::move(f)](kernel_context ctx, auto const&... args) {
         return apply(ctx, f, args...);
     };
 }

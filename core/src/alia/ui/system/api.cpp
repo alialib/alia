@@ -5,11 +5,11 @@
 #include <alia/ui/system/work_internal.h>
 #include <alia/ui/trace_internal.h>
 
+#include <alia/abi/panic.h>
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
-#include <alia/abi/ui/system/renderer.h>
-#include <alia/abi/panic.h>
 #include <alia/abi/ui/system/memory.h>
+#include <alia/abi/ui/system/renderer.h>
 #include <alia/kernel/flow/dispatch.h>
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
@@ -190,7 +190,10 @@ alia_ui_surface_set_dpi(alia_ui_system* ui, float dpi)
 {
     ALIA_ASSERT(ui);
     if (ui->dpi != dpi)
+    {
         ui->kernel.dirty = true;
+        ++ui->metrics_revision;
+    }
     ui->dpi = dpi;
 }
 
@@ -206,7 +209,10 @@ alia_ui_set_magnification(alia_ui_system* ui, float magnification)
 {
     ALIA_ASSERT(ui);
     if (ui->magnification != magnification)
+    {
         ui->kernel.dirty = true;
+        ++ui->metrics_revision;
+    }
     ui->magnification = magnification;
 }
 
@@ -215,6 +221,20 @@ alia_ui_get_magnification(alia_ui_system* ui)
 {
     ALIA_ASSERT(ui);
     return ui->magnification;
+}
+
+void
+alia_ui_metrics_changed(alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    ++ui->metrics_revision;
+}
+
+void
+alia_ui_paint_changed(alia_ui_system* ui)
+{
+    ALIA_ASSERT(ui);
+    ++ui->paint_revision;
 }
 
 void

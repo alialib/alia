@@ -3,7 +3,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/prelude.h>
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <new>
 #include <type_traits>
@@ -38,7 +38,7 @@ struct call_effect
 // storage and must remain valid to invoke at commit time.
 template<class Fn>
 void
-post_call(kernel_context* ctx, Fn fn, char const* label = nullptr)
+post_call(kernel_context ctx, Fn fn, char const* label = nullptr)
 {
     using effect_type = detail::call_effect<std::decay_t<Fn>>;
     ALIA_ASSERT(ctx);
@@ -60,7 +60,7 @@ post_call(kernel_context* ctx, Fn fn, char const* label = nullptr)
 template<class T>
 void
 post_assignment(
-    kernel_context* ctx, T* dst, T value, char const* label = nullptr)
+    kernel_context ctx, T* dst, T value, char const* label = nullptr)
 {
     ALIA_ASSERT(dst);
     post_call(

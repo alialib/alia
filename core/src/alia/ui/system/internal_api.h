@@ -1,7 +1,5 @@
 #pragma once
 
-#include <alia/context.h>
-
 #include <alia/ui/system/object.h>
 
 extern "C" {

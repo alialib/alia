@@ -3,12 +3,12 @@
 #include <alia/abi/base/allocator.h>
 #include <alia/abi/base/arena.h>
 #include <alia/abi/base/memory.h>
-#include <alia/abi/ui/system/memory.h>
-#include <alia/base/memory.h>
 #include <alia/abi/base/stack.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry/api.h>
+#include <alia/abi/ui/system/memory.h>
+#include <alia/base/memory.h>
 #include <alia/base/stack.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/substrate.h>
@@ -117,8 +117,8 @@ wire_context(layout_fixture& fixture, bool refresh)
         = &fixture.layout.root.first_child;
     if (refresh)
     {
-        fixture.layout_context.emission.arena = alia_memory_open_bump(
-            &fixture.memory, fixture.layout.node_pool);
+        fixture.layout_context.emission.arena
+            = alia_memory_open_bump(&fixture.memory, fixture.layout.node_pool);
         fixture.layout_context.placement = {};
     }
     else
@@ -207,8 +207,8 @@ layout_fixture_create()
         stack_buffer_size,
         alia_grow_callback_none());
 
-    fixture->substrate_scratch_buffer = aligned_alloc_portable(
-        ALIA_MAX_ALIGN, substrate_scratch_capacity);
+    fixture->substrate_scratch_buffer
+        = aligned_alloc_portable(ALIA_MAX_ALIGN, substrate_scratch_capacity);
     if (!fixture->substrate_scratch_buffer)
     {
         layout_fixture_destroy(fixture);
@@ -289,8 +289,7 @@ layout_fixture_node_arena_stats(layout_fixture* fixture)
 {
     if (!fixture)
         return alia_memory_pool_stats{};
-    return alia_memory_pool_query(
-        &fixture->memory, fixture->layout.node_pool);
+    return alia_memory_pool_query(&fixture->memory, fixture->layout.node_pool);
 }
 
 void*
@@ -353,8 +352,7 @@ layout_fixture_run_spatial_impl(
 
     wire_context(*fixture, false);
     run_with_substrate_root(*fixture, fn, user);
-    alia_memory_discard_bump(
-        &fixture->memory, fixture->layout.placement_pool);
+    alia_memory_discard_bump(&fixture->memory, fixture->layout.placement_pool);
 }
 
 bool

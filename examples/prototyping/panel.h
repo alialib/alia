@@ -3,7 +3,7 @@
 template<class Content>
 void
 concrete_panel(
-    ui_context& ctx,
+    ui_context ctx,
     alia_z_index z_index,
     alia_srgb8 color,
     layout_flag_set flags,
@@ -14,7 +14,7 @@ concrete_panel(
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
             alia_draw_rounded_box(
-                &ctx, z_index, panel_box, alia_srgba8_from_srgb8(color), 0.0f);
+                ctx, z_index, panel_box, alia_srgba8_from_srgb8(color), 0.0f);
         }
 
         std::forward<Content>(content)();
@@ -24,7 +24,7 @@ concrete_panel(
 template<class Content, class LayoutMods>
 void
 panel(
-    ui_context& ctx,
+    ui_context ctx,
     alia_z_index z_index,
     alia_srgb8 color,
     LayoutMods mods,

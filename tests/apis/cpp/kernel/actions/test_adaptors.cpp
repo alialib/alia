@@ -16,7 +16,7 @@ TEST_CASE("actionize an action")
     int x = 0;
     auto a = actionize(ref(x) <<= 1);
     CHECK(a.is_ready());
-    post_action(&fx.ctx, a);
+    post_action(fx.ctx, a);
     fx.run();
     CHECK(x == 1);
 }
@@ -27,7 +27,7 @@ TEST_CASE("actionize a lambda")
     int x = 0;
     auto a = actionize([&] { x = 1; });
     CHECK(a.is_ready());
-    post_action(&fx.ctx, a);
+    post_action(fx.ctx, a);
     fx.run();
     CHECK(x == 1);
 }
@@ -44,7 +44,7 @@ TEST_CASE("only_if_ready on an unready input action")
 
     auto combined = (a, only_if_ready(b));
     CHECK(combined.is_ready());
-    post_action(&fx.ctx, combined);
+    post_action(fx.ctx, combined);
     fx.run();
     CHECK(a_ran);
 }
@@ -61,7 +61,7 @@ TEST_CASE("only_if_ready on a ready input action")
 
     auto combined = (a, only_if_ready(b));
     CHECK(combined.is_ready());
-    post_action(&fx.ctx, combined);
+    post_action(fx.ctx, combined);
     fx.run();
     CHECK(a_ran);
     CHECK(x == 1);
@@ -78,7 +78,7 @@ TEST_CASE("mask an action")
 
     auto masked_on = mask(a, value(true));
     CHECK(masked_on.is_ready());
-    post_action(&fx.ctx, masked_on);
+    post_action(fx.ctx, masked_on);
     fx.run();
     CHECK(a_ran);
 }

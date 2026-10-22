@@ -2,7 +2,7 @@
 
 #include <alia/abi/ui/library.h>
 #include <alia/base/flags.hpp>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/ui/layout/options.hpp>
 
 #include <utility>
@@ -22,21 +22,21 @@ ALIA_SCROLL_VIEW_FLAGS(ALIA_DEFINE_SCROLL_VIEW_FLAG)
 template<layout_like Layout = layout_options, class Content>
 void
 scroll_view(
-    ui_context& ctx,
+    ui_context ctx,
     scroll_view_flag_set flags,
     Layout layout,
     Content&& content)
 {
     apply_layout(ctx, layout, [&](layout_flag_set layout_flags) {
-        alia_scroll_view_begin(&ctx, raw_code(layout_flags), raw_code(flags));
+        alia_scroll_view_begin(ctx, raw_code(layout_flags), raw_code(flags));
         std::forward<Content>(content)();
-        alia_scroll_view_end(&ctx);
+        alia_scroll_view_end(ctx);
     });
 }
 
 template<layout_like Layout = layout_options, class Content>
 void
-scroll_view(ui_context& ctx, Layout layout, Content&& content)
+scroll_view(ui_context ctx, Layout layout, Content&& content)
 {
     scroll_view(
         ctx,
@@ -47,14 +47,14 @@ scroll_view(ui_context& ctx, Layout layout, Content&& content)
 
 template<class Content>
 void
-scroll_view(ui_context& ctx, scroll_view_flag_set flags, Content&& content)
+scroll_view(ui_context ctx, scroll_view_flag_set flags, Content&& content)
 {
     scroll_view(ctx, flags, default_layout, std::forward<Content>(content));
 }
 
 template<class Content>
 void
-scroll_view(ui_context& ctx, Content&& content)
+scroll_view(ui_context ctx, Content&& content)
 {
     scroll_view(
         ctx,

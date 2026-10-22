@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/effects.hpp>
 #include <alia/kernel/signals/core.hpp>
@@ -139,7 +139,7 @@ struct lambda_binding_signal
         return true;
     }
     std::optional<Value>
-    post_write(kernel_context* ctx, Value value) const override
+    post_write(kernel_context ctx, Value value) const override
     {
         Value id = value;
         post_call(ctx, [set = set_, value = std::move(value)]() mutable {

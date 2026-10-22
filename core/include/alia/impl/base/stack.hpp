@@ -3,7 +3,7 @@
 #include <alia/abi/base/stack.h>
 #include <alia/abi/kernel/context.h>
 
-#include <alia/prelude.hpp>
+#include <alia/impl/base/prelude.hpp>
 
 namespace alia {
 

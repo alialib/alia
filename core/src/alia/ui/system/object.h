@@ -7,7 +7,7 @@
 #include <alia/abi/ui/input/state.h>
 #include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/text.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/object.h>
 #include <alia/ui/layout/system.h>
@@ -57,6 +57,10 @@ struct alia_ui_system
     alia_layout_system layout;
 
     alia_palette palette;
+    // incremented when sizing inputs such as DPI or magnification change
+    uint64_t metrics_revision = 0;
+    // incremented when paint inputs such as the palette change
+    uint64_t paint_revision = 0;
 
     alia::style_catalog styles;
 
@@ -80,3 +84,9 @@ struct alia_ui_system
 };
 
 } // extern "C"
+
+namespace alia {
+
+using ui_system = alia_ui_system;
+
+} // namespace alia

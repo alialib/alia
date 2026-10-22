@@ -1,6 +1,6 @@
 #pragma once
 
-#include <alia/context.hpp>
+#include <alia/impl/context.hpp>
 
 #include <alia/kernel/actions/core.hpp>
 #include <alia/kernel/signals/basic.hpp>
@@ -35,7 +35,7 @@ struct action_pair<First, Second, action_interface<Args...>>
     }
 
     void
-    post(kernel_context* ctx, Args... args) const override
+    post(kernel_context ctx, Args... args) const override
     {
         first_.post(ctx, args...);
         second_.post(ctx, args...);
@@ -77,7 +77,7 @@ struct bound_action<Action, Signal, action_interface<BoundArg, Args...>>
     }
 
     void
-    post(kernel_context* ctx, Args... args) const override
+    post(kernel_context ctx, Args... args) const override
     {
         auto captured = capture_signal_value(signal_);
         action_.post(ctx, captured.take(), std::move(args)...);
@@ -127,7 +127,7 @@ struct copy_action : action_interface<>
     }
 
     void
-    post(kernel_context* ctx) const override
+    post(kernel_context ctx) const override
     {
         auto captured = capture_signal_value(source_);
         sink_.post_write(ctx, captured.take());

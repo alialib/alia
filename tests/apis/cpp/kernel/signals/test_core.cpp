@@ -225,7 +225,7 @@ TEST_CASE("nonempty sugar and propagation")
     int x = 2;
     auto r = ref(x);
     nonempty_binding<int> nb = r;
-    write_signal(&fx.ctx, nb, 3);
+    write_signal(fx.ctx, nb, 3);
     fx.run();
     CHECK(x == 3);
 }
@@ -304,7 +304,7 @@ TEST_CASE("signal_ref")
     CHECK((s.value_id() == to_id_view(y.value_id())));
     CHECK(read_signal(s) == 1);
     CHECK(signal_ready_to_write(s));
-    write_signal(&fx.ctx, s, 0);
+    write_signal(fx.ctx, s, 0);
     fx.run();
     CHECK(x == 0);
     CHECK(read_signal(s) == 0);

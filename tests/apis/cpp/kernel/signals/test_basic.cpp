@@ -39,7 +39,7 @@ TEST_CASE("ref binding write")
     auto s = ref(x);
     static_assert(nonempty_binding_signal<decltype(s)>);
     CHECK(read_signal(s) == 1);
-    write_signal(&fx.ctx, s, 7);
+    write_signal(fx.ctx, s, 7);
     fx.run();
     CHECK(x == 7);
     CHECK(read_signal(s) == 7);
@@ -82,7 +82,7 @@ TEST_CASE("erased view and binding")
     int x = 2;
     auto r = ref(x);
     binding<int> b = r;
-    write_signal(&fx.ctx, b, 4);
+    write_signal(fx.ctx, b, 4);
     fx.run();
     CHECK(x == 4);
 }
@@ -95,12 +95,12 @@ TEST_CASE("default_initialized")
     CHECK(std::is_same_v<decltype(s.value_id()), constant_value_tag>);
 }
 
-TEST_CASE("versioned_ref binding")
+TEST_CASE("ref_with_revision binding")
 {
     effect_fixture fx;
     std::vector<int> items{1, 2};
-    uint32_t version = 0;
-    auto s = versioned_ref(items, version);
+    uint32_t revision = 0;
+    auto s = ref_with_revision(items, revision);
 
     static_assert(!identifiable<std::vector<int>>);
     static_assert(view_signal<decltype(s)>);
@@ -110,21 +110,21 @@ TEST_CASE("versioned_ref binding")
     CHECK((read_signal(s) == std::vector<int>{1, 2}));
     CHECK(s.value_id() == 0u);
 
-    write_signal(&fx.ctx, s, std::vector<int>{3, 4, 5});
+    write_signal(fx.ctx, s, std::vector<int>{3, 4, 5});
     fx.run();
     CHECK((items == std::vector<int>{3, 4, 5}));
-    CHECK(version == 1);
+    CHECK(revision == 1);
     CHECK(s.value_id() == 1u);
 
-    version = 7;
+    revision = 7;
     CHECK(s.value_id() == 7u);
 }
 
-TEST_CASE("versioned_ref const view")
+TEST_CASE("ref_with_revision const view")
 {
     std::vector<int> const items{1, 2};
-    uint32_t const version = 5;
-    auto s = versioned_ref(items, version);
+    uint32_t const revision = 5;
+    auto s = ref_with_revision(items, revision);
 
     static_assert(view_signal<decltype(s)>);
     static_assert(!sink_signal<decltype(s)>);

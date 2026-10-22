@@ -1,5 +1,5 @@
 #include <alia/abi/ui/geometry/api.h>
-#include <alia/context.h>
+#include <alia/impl/context.hpp>
 
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
