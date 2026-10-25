@@ -144,14 +144,9 @@ main()
 
     alia_theme_accent accent;
     alia_theme_accent_from_color(&accent, hex_color("94c1fd"));
-    alia_theme_context theme_ctx = alia_theme_context_default(true);
-    alia_palette_from_accent(
-        &the_system->palette,
-        &accent,
-        &theme_ctx,
-        nullptr,
-        nullptr,
-        ALIA_LITERAL_FIXED_SPECTRUM);
+    alia_palette_conditions conditions = alia_palette_conditions_default(true);
+    alia_palette_generate_from_accent(
+        &the_system->palette, &accent, &conditions, nullptr, nullptr);
     alia_ui_paint_changed(the_system);
     alia_style_generate_defaults(the_system, nullptr);
 

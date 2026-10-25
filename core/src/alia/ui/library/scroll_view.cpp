@@ -681,7 +681,7 @@ alia_scrollbar_style_generate(
         .glyph_color
         = ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff),
         .highlight = ALIA_PALETTE_COLOR(primary.subtle, 0x40),
-        .width = 24.f * s.scale,
+        .width = 15.f * s.scale,
         .button_length = 0.f * s.scale,
         .minimum_thumb_length = 20.f * s.scale,
         .thumb_corner_radius = 0.f * s.scale * s.roundness,

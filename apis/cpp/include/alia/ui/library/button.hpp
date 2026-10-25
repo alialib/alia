@@ -188,7 +188,9 @@ button(
     Layout layout = {})
 {
     button(ctx, on_click, layout, [&] {
-        alia_text(ctx, 0, alia_text_literal(label), nullptr);
+        // Use `FLUSH` here to reduce the padding between the button and the
+        // label.
+        alia_text(ctx, raw_code(FLUSH), alia_text_literal(label), nullptr);
     });
 }
 
@@ -202,7 +204,7 @@ button(
     button_variant variant)
 {
     button(ctx, on_click, layout, variant, [&] {
-        alia_text(ctx, 0, alia_text_literal(label), nullptr);
+        alia_text(ctx, raw_code(FLUSH), alia_text_literal(label), nullptr);
     });
 }
 

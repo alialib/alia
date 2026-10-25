@@ -305,6 +305,14 @@ enum alia_color_op_kind
     ALIA_COLOR_OP_REPLACE,
     // composite `color` over the base using a linear blend
     ALIA_COLOR_OP_BLEND,
+    // shift lightness relative to the UI light/dark mode and scale chroma -
+    // Positive `l` moves the color towards the foreground color.
+    ALIA_COLOR_OP_STRENGTHEN,
+    // move lightness and chroma partway toward the current background color
+    // and take the background color's hue - `l` and `c` are fractions
+    // specifying how far to move towards the background L and C values
+    // (0 - not at all, 255 - all the way).
+    ALIA_COLOR_OP_FADE,
 };
 
 // one interaction response applied to a base palette color
@@ -316,11 +324,20 @@ typedef struct alia_color_op
     {
         struct
         {
-            // added to OKLab lightness, in units of 1/255
+            // lightness delta, in units of 1/255 - `ALIA_COLOR_OP_ADJUST` adds
+            // this to OKLab lightness. `ALIA_COLOR_OP_STRENGTHEN` treats
+            // positive as stronger (away from the page).
             int8_t l;
             // OKLab chroma scale - 255 leaves chroma unchanged. 0 removes it.
             uint8_t c_scale;
         } adjust;
+        struct
+        {
+            // fraction of the lightness movement toward the background
+            uint8_t l;
+            // fraction of the chroma movement toward the background
+            uint8_t c;
+        } fade;
         // replacement or blend source
         alia_palette_color color;
     };
@@ -345,6 +362,67 @@ alia_color_op_adjust(int8_t l, uint8_t c_scale)
     op.kind = ALIA_COLOR_OP_ADJUST;
     op.adjust.l = l;
     op.adjust.c_scale = c_scale;
+    return op;
+}
+
+static inline int8_t
+alia_color_op_magnitude(uint8_t amount)
+{
+    return amount > 127 ? (int8_t) 127 : (int8_t) amount;
+}
+
+// Return an op that lightens the base by `amount` and scales chroma by
+// `c_scale`. `amount` is in units of 1/255. `c_scale` matches
+// `alia_color_op_adjust`.
+static inline alia_color_op
+alia_color_op_lighten(uint8_t amount, uint8_t c_scale)
+{
+    return alia_color_op_adjust(alia_color_op_magnitude(amount), c_scale);
+}
+
+// Return an op that darkens the base by `amount` and scales chroma by
+// `c_scale`. Same units as `alia_color_op_lighten`.
+static inline alia_color_op
+alia_color_op_darken(uint8_t amount, uint8_t c_scale)
+{
+    return alia_color_op_adjust(
+        (int8_t) -alia_color_op_magnitude(amount), c_scale);
+}
+
+// Return an op that moves the base towards the foreground color by `amount`
+// and scales chroma by `c_scale`. Same units as `alia_color_op_lighten`.
+static inline alia_color_op
+alia_color_op_strengthen(uint8_t amount, uint8_t c_scale)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_STRENGTHEN;
+    op.adjust.l = alia_color_op_magnitude(amount);
+    op.adjust.c_scale = c_scale;
+    return op;
+}
+
+// Return an op that moves the base toward the background color by `amount` and
+// scales chroma by `c_scale`. Same units as `alia_color_op_lighten`.
+static inline alia_color_op
+alia_color_op_weaken(uint8_t amount, uint8_t c_scale)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_STRENGTHEN;
+    op.adjust.l = (int8_t) -alia_color_op_magnitude(amount);
+    op.adjust.c_scale = c_scale;
+    return op;
+}
+
+// Return an op that fades lightness and chroma toward the page and takes the
+// page's hue. `l` and `c` are fractions of the remaining gap. 0 stays and
+// 255 arrives.
+static inline alia_color_op
+alia_color_op_fade(uint8_t l, uint8_t c)
+{
+    alia_color_op op;
+    op.kind = ALIA_COLOR_OP_FADE;
+    op.fade.l = l;
+    op.fade.c = c;
     return op;
 }
 
@@ -381,6 +459,22 @@ typedef struct alia_responsive_color
     alia_color_op disabled;
 } alia_responsive_color;
 
+// Return a responsive color that fades `base` toward the page when disabled.
+// Hover and active leave `base` unchanged.
+static inline alia_responsive_color
+alia_responsive_color_faded(alia_palette_color base)
+{
+    // fraction of the gap closed - Lightness partway, chroma all the way.
+    uint8_t const l = 0xa0;
+    uint8_t const c = 0xff;
+    alia_responsive_color color;
+    color.base = base;
+    color.hovered = alia_color_op_none();
+    color.active = alia_color_op_none();
+    color.disabled = alia_color_op_fade(l, c);
+    return color;
+}
+
 // Resolve `op` applied to `base` against `p`.
 alia_srgba8
 alia_color_op_resolve(
@@ -393,36 +487,68 @@ alia_srgba8
 alia_responsive_color_resolve(
     alia_palette const* p, alia_responsive_color color, uint8_t status);
 
-// Theme generation expands an accent through OKLCH seeds into an sRGB
-// palette. Apps can hold and edit values at any stage before the next step.
+// Palette generation is a two-phase process that turns an accent color into
+// theme colors and then expands them into a full theme palette. Each phase
+// is parameterized, and tweaking of both intermediate and final outputs is
+// supported.
 
-// primary accent for theme generation
+// primary accent for theme color generation
 typedef struct alia_theme_accent
 {
     alia_oklch primary;
 } alia_theme_accent;
 
-// surface environment for theme generation
-typedef struct alia_surface_env
+// conditions for evaluating a palette - These are external constraints and
+// contextual factors that affect palette generation. (i.e., These are the
+// non-stylistic inputs.)
+typedef struct alia_palette_conditions
 {
     bool is_dark_mode;
     // elevation step affecting background and text lightness
     int elevation;
-} alia_surface_env;
-
-// context for expanding an accent into seeds and palette
-typedef struct alia_theme_context
-{
-    alia_surface_env surface;
-    // minimum contrast ratio for on-solid pairs - A value of 0 uses generator
-    // defaults.
+    // minimum contrast ratio for on-solid pairs - This can be 0 to use the
+    // built-in default.
     float contrast_target;
-} alia_theme_context;
+} alia_palette_conditions;
 
-// OKLCH seeds expanded from an accent before sRGB palette generation
-typedef struct alia_palette_seeds
+// one value for light mode and one for dark mode
+typedef struct alia_light_dark_pair
+{
+    float light;
+    float dark;
+} alia_light_dark_pair;
+
+// recipe for generating theme colors from an accent color
+typedef struct alia_theme_colors_recipe
+{
+    // base background lightness
+    alia_light_dark_pair bg_l;
+    // background lightness change per elevation step
+    float bg_elevation_step;
+    // background chroma
+    alia_light_dark_pair bg_c;
+
+    // base text lightness
+    alia_light_dark_pair text_l;
+    // text chroma
+    float text_c;
+
+    // accent fill lightness - Hue and chroma come from the accent.
+    alia_light_dark_pair accent_l;
+    // chroma used when an accent is built from a hue alone
+    float accent_c_default;
+
+    // shared lightness for danger, warning, success, and info
+    alia_light_dark_pair alert_l;
+    // shared chroma for the alert hues
+    float alert_c;
+} alia_theme_colors_recipe;
+
+// OKLCH colors chosen for the theme
+typedef struct alia_theme_colors
 {
     alia_oklch bg;
+    alia_oklch structural;
     alia_oklch text;
     alia_oklch primary;
     alia_oklch secondary;
@@ -430,112 +556,91 @@ typedef struct alia_palette_seeds
     alia_oklch warning;
     alia_oklch danger;
     alia_oklch info;
-} alia_palette_seeds;
+} alia_theme_colors;
 
-// parameters controlling accent-to-seed expansion
-typedef struct alia_seed_params
+// how literal hues relate to the primary hue
+enum alia_palette_literal_policy
 {
-    float primary_l_default;
-    float primary_c_default;
+    // fixed hue table
+    ALIA_PALETTE_LITERAL_FIXED_SPECTRUM = 0,
+    // harmonized relative to the primary palette color - Each literal hue is
+    // shifted so that it is a multiple of 15 degrees away from the primary
+    // hue.
+    ALIA_PALETTE_LITERAL_HARMONIZE_TO_PRIMARY,
+};
 
-    float elevation_bg_l_base_dark;
-    float elevation_bg_l_per_step_dark;
-    float elevation_bg_l_base_light;
-    float elevation_bg_l_per_step_light;
-    float elevation_bg_c;
-    float elevation_text_l_dark;
-    float elevation_text_l_light;
-    float elevation_text_c;
-
-    float secondary_l_offset;
-    float secondary_c_offset;
-
-    float alert_l_dark;
-    float alert_l_light;
-    float alert_c;
-    float alert_hue_danger_deg;
-    float alert_hue_warning_deg;
-    float alert_hue_success_deg;
-    float alert_hue_info_deg;
-    float alert_warning_l_offset;
-} alia_seed_params;
-
-// parameters controlling seed-to-palette expansion
-typedef struct alia_palette_params
+// recipe for expanding one OKLCH color into a ramp or a swatch
+typedef struct alia_palette_expansion
 {
     float foundation_step_l;
-    float structural_l_offset;
-    float structural_c_offset;
 
-    float swatch_subtle_l_dark;
-    float swatch_subtle_l_light;
-    float swatch_text_l_dark;
-    float swatch_text_l_light;
-    float swatch_on_solid_l_dark;
-    float swatch_on_solid_l_light;
+    // soft-fill lightness
+    alia_light_dark_pair swatch_subtle_l;
+    // emphasized-text lightness
+    alia_light_dark_pair swatch_text_l;
+    // dark ink used when the solid is light
+    float on_solid_l_for_light_solid;
+    // light ink used when the solid is dark
+    float on_solid_l_for_dark_solid;
     float swatch_outline_c_scale;
     float swatch_text_c_scale;
     float swatch_subtle_c;
 
-    float literal_l_dark;
-    float literal_l_light;
+    // literal hue lightness
+    alia_light_dark_pair literal_l;
     float literal_c;
-} alia_palette_params;
+    // literal hue placement relative to the primary
+    enum alia_palette_literal_policy literal_policy;
+} alia_palette_expansion;
 
-// how literal hue swatches are generated
-enum alia_literal_policy
-{
-    ALIA_LITERAL_FIXED_SPECTRUM = 0,
-    ALIA_LITERAL_HARMONIZE_TO_PRIMARY,
-};
+// Return default palette conditions for a given UI lightness mode.
+alia_palette_conditions
+alia_palette_conditions_default(bool is_dark_mode);
 
-// Return a default theme context for `is_dark_mode`.
-alia_theme_context
-alia_theme_context_default(bool is_dark_mode);
-
-// Return the default seed expansion parameters.
-alia_seed_params
-alia_seed_params_default(void);
+// Return the default recipe for generating theme colors.
+alia_theme_colors_recipe
+alia_theme_colors_recipe_default(void);
 
 // Return the default palette expansion parameters.
-alia_palette_params
-alia_palette_params_default(void);
+alia_palette_expansion
+alia_palette_expansion_default(void);
 
 // Fill `out` with an accent derived from `hue`.
 void
 alia_theme_accent_from_hue(
-    alia_theme_accent* out, float hue, alia_seed_params const* params);
+    alia_theme_accent* out, float hue, alia_theme_colors_recipe const* recipe);
 
 // Fill `out` with an accent derived from `color`.
 void
 alia_theme_accent_from_color(alia_theme_accent* out, alia_srgb8 color);
 
-// Expand `accent` into OKLCH seeds in `out`.
+// Fill `out` with theme colors derived from `accent`.
+// `recipe` can be null to use the default.
 void
-alia_palette_seeds_from_accent(
-    alia_palette_seeds* out,
+alia_theme_colors_generate(
+    alia_theme_colors* out,
     alia_theme_accent const* accent,
-    alia_theme_context const* ctx,
-    alia_seed_params const* params);
+    alia_palette_conditions const* conditions,
+    alia_theme_colors_recipe const* recipe);
 
-// Expand `seeds` into an sRGB palette in `out`.
+// Expand `colors` into an sRGB palette in `out`.
+// `expansion` can be null to use the default.
 void
-alia_palette_from_seeds(
+alia_palette_generate(
     alia_palette* out,
-    alia_palette_seeds const* seeds,
-    alia_theme_context const* ctx,
-    alia_palette_params const* params,
-    enum alia_literal_policy literals);
+    alia_theme_colors const* colors,
+    alia_palette_expansion const* expansion,
+    alia_palette_conditions const* conditions);
 
-// Expand `accent` into an sRGB palette in `out`.
+// Generate theme colors from `accent` and expand them into an sRGB palette in
+// `out`. `recipe` and `expansion` can be null to use the defaults.
 void
-alia_palette_from_accent(
+alia_palette_generate_from_accent(
     alia_palette* out,
     alia_theme_accent const* accent,
-    alia_theme_context const* ctx,
-    alia_seed_params const* seed_params,
-    alia_palette_params const* palette_params,
-    enum alia_literal_policy literals);
+    alia_palette_conditions const* conditions,
+    alia_theme_colors_recipe const* recipe,
+    alia_palette_expansion const* expansion);
 
 ALIA_EXTERN_C_END
 

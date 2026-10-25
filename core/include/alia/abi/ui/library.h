@@ -17,14 +17,10 @@ ALIA_EXTERN_C_BEGIN
 // toggle switch style (catalog slot ALIA_STYLE_TOGGLE_SWITCH)
 typedef struct alia_toggle_switch_style
 {
-    alia_palette_color off_track;
-    alia_palette_color on_track;
-    alia_palette_color off_dot;
-    alia_palette_color on_dot;
-    alia_palette_color off_track_disabled;
-    alia_palette_color on_track_disabled;
-    alia_palette_color off_dot_disabled;
-    alia_palette_color on_dot_disabled;
+    alia_responsive_color off_track;
+    alia_responsive_color on_track;
+    alia_responsive_color off_dot;
+    alia_responsive_color on_dot;
     alia_palette_color highlight;
 
     // geometry (logical px unless noted)
@@ -78,11 +74,15 @@ alia_toggle_switch(
 // slider style (catalog slot ALIA_STYLE_SLIDER)
 typedef struct alia_slider_style
 {
-    alia_palette_color track_color;
-    alia_palette_color thumb_color;
+    // track behind the value
+    alia_responsive_color track_color;
+    // track from the minimum through the thumb
+    alia_responsive_color track_fill;
+    alia_responsive_color thumb_color;
     alia_palette_color highlight;
 
-    // total allocated size for the slider leaf, logical px
+    // minimum leaf size, logical px - FILL stretches the track past
+    // `layout_width`.
     float layout_width;
     float layout_height;
 
@@ -114,10 +114,8 @@ alia_slider_style_active(alia_ui_context* ctx)
 // radio button style (catalog slot ALIA_STYLE_RADIO_BUTTON)
 typedef struct alia_radio_button_style
 {
-    alia_palette_color outline;
-    alia_palette_color dot;
-    alia_palette_color outline_disabled;
-    alia_palette_color dot_disabled;
+    alia_responsive_color outline;
+    alia_responsive_color dot;
     alia_palette_color highlight;
 
     // size of the radio button, logical px
@@ -158,11 +156,11 @@ alia_radio_button_style_active(alia_ui_context* ctx)
         ctx, ALIA_STYLE_RADIO_BUTTON);
 }
 
-// checkbox colors for a single interaction state
+// checkbox colors for one checkedness
 typedef struct alia_checkbox_state_style
 {
-    alia_palette_color outline;
-    alia_palette_color fill;
+    alia_responsive_color outline;
+    alia_responsive_color fill;
 } alia_checkbox_state_style;
 
 // checkbox style (catalog slot ALIA_STYLE_CHECKBOX)
@@ -171,11 +169,7 @@ typedef struct alia_checkbox_style
     alia_checkbox_state_style unchecked;
     alia_checkbox_state_style checked;
 
-    alia_checkbox_state_style disabled_unchecked;
-    alia_checkbox_state_style disabled_checked;
-
-    alia_palette_color checkmark;
-    alia_palette_color disabled_checkmark;
+    alia_responsive_color checkmark;
 
     alia_palette_color highlight;
 
@@ -228,8 +222,7 @@ alia_checkbox_style_active(alia_ui_context* ctx)
 // node expander style (catalog slot ALIA_STYLE_NODE_EXPANDER)
 typedef struct alia_node_expander_style
 {
-    alia_palette_color triangle;
-    alia_palette_color disabled_triangle;
+    alia_responsive_color triangle;
     alia_palette_color highlight;
 
     // layout size, logical px - The control does not stretch the glyph beyond

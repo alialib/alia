@@ -19,10 +19,12 @@
 #include <alia/kernel/macros.hpp>
 #include <alia/kernel/signals/adaptors.hpp>
 #include <alia/kernel/signals/basic.hpp>
+#include <alia/kernel/signals/lambdas.hpp>
 #include <alia/kernel/signals/state.hpp>
 #include <alia/ui/layout/api.hpp>
 #include <alia/ui/library.hpp>
 #include <alia/ui/system/object.h>
+#include <alia/ui/text.hpp>
 
 using namespace alia;
 using namespace alia::operators;
@@ -33,9 +35,24 @@ static alia_srgb8 const primary_colors[] = {
     hex_color("#a52e45"),
 };
 static int primary_index = 0;
+static bool light_theme = false;
+static bool theme_dirty = false;
 
 alia_ui_system* the_system;
 static alia_ui_tracer the_tracer;
+
+static void
+apply_gallery_theme()
+{
+    alia_theme_accent accent;
+    alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
+    alia_palette_conditions conditions
+        = alia_palette_conditions_default(!light_theme);
+    alia_palette_generate_from_accent(
+        &the_system->palette, &accent, &conditions, nullptr, nullptr);
+    alia_ui_paint_changed(the_system);
+    theme_dirty = false;
+}
 
 #include "common/demo_text.hpp"
 #include "prototyping/allocation_probe.h"
@@ -49,59 +66,102 @@ char const* lorem_ipsum
     = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin sed "
       "dictum massa. Maecenas et euismod lorem, ut dapibus eros.";
 
+// Inset `content` vertically without the symmetric leaf margin.
+template<class Content>
+void
+with_vertical_insets(
+    ui_context ctx, float top, float bottom, Content&& content)
+{
+    alia_layout_edge_offsets_begin(
+        ctx, alia_edge_offsets{0.f, 0.f, top, bottom}, 0);
+    std::forward<Content>(content)();
+    alia_layout_edge_offsets_end(ctx);
+}
+
 void
 do_heading(ui_context ctx, char const* text)
 {
-    demo_text(
-        ctx,
-        text,
-        &demo_get_fonts().heading_18,
-        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
+    // Sit close to the section content. The separator above carries the break.
+    with_vertical_insets(ctx, 4.f, 2.f, [&] {
+        demo_text(
+            ctx,
+            text,
+            &demo_get_fonts().heading_18,
+            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2),
+            FLUSH);
+    });
 }
 
 void
 do_subheading(ui_context ctx, char const* text)
 {
-    demo_text(
-        ctx,
-        text,
-        &demo_get_fonts().heading_14,
-        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_1));
+    with_vertical_insets(ctx, 14.f, 2.f, [&] {
+        demo_text(
+            ctx,
+            text,
+            &demo_get_fonts().heading_14,
+            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_1),
+            FLUSH);
+    });
 }
 
-template<class Spacing, class Magnification>
+void
+do_section_separator(ui_context ctx)
+{
+    with_vertical_insets(ctx, 12.f, 6.f, [&] { separator(ctx, FLUSH); });
+}
+
+void
+apply_gallery_typeface(int typography_index)
+{
+    if (typography_index == 0)
+    {
+        demo_set_typefaces(
+            the_app,
+            alia_font_roboto_regular_index,
+            alia_font_roboto_bold_index,
+            1.00f);
+    }
+    else
+    {
+        demo_set_typefaces(
+            the_app,
+            alia_font_source_sans_regular_index,
+            alia_font_source_sans_bold_index,
+            1.08f);
+    }
+}
+
+template<class Spacing, class Magnification, class Typography>
 void
 do_controls(
-    ui_context ctx, Spacing const& spacing, Magnification const& magnification)
+    ui_context ctx,
+    Spacing const& spacing,
+    Magnification const& magnification,
+    Typography const& typography)
 {
     do_heading(ctx, "SETTINGS");
 
     do_subheading(ctx, "Typography");
-    {
-        auto typography_index = use_state(ctx, 0);
-        radio_button(ctx, typography_index, 0, "Roboto");
-        radio_button(ctx, typography_index, 1, "Source Sans 3");
-        if (read_signal(typography_index) == 0)
-        {
-            demo_set_typefaces(
-                the_app,
-                alia_font_roboto_regular_index,
-                alia_font_roboto_bold_index);
-        }
-        else
-        {
-            demo_set_typefaces(
-                the_app,
-                alia_font_source_sans_regular_index,
-                alia_font_source_sans_bold_index);
-        }
-    }
+    radio_button(ctx, typography, 0, "Roboto");
+    radio_button(ctx, typography, 1, "Source Sans 3");
+
+    do_subheading(ctx, "Appearance");
+    toggle_switch(
+        ctx,
+        lambda_binding(
+            [] { return light_theme; },
+            [](bool value) {
+                light_theme = value;
+                theme_dirty = true;
+            }),
+        "Light");
 
     do_subheading(ctx, "Spacing");
-    slider(ctx, spacing, 0.0, 24.0, 1.0);
+    slider(ctx, spacing, 0.0, 24.0, 1.0, FILL);
 
     do_subheading(ctx, "Magnification");
-    slider(ctx, magnification, 0.25, 3.0, 0.001);
+    slider(ctx, magnification, 0.25, 3.0, 0.001, FILL);
 }
 
 void
@@ -111,7 +171,8 @@ do_toggle_switch_demo(ui_context ctx)
 
     toggle_switch(ctx, use_state(ctx, false), "Setting One");
     toggle_switch(ctx, use_state(ctx, false), "Setting Two");
-    toggle_switch(ctx, use_state(ctx, false), "Setting Three");
+    toggle_switch(ctx, disable_writes(use_state(ctx, false)), "Disabled Off");
+    toggle_switch(ctx, disable_writes(use_state(ctx, true)), "Disabled On");
 }
 
 void
@@ -150,7 +211,7 @@ do_slider_demo(ui_context ctx)
 {
     do_heading(ctx, "SLIDERS");
 
-    slider(ctx, use_state(ctx, 5.f), 0.0, 10.0, 1.0);
+    slider(ctx, use_state(ctx, 5.f), 0.0, 10.0, 1.0, FILL);
 }
 
 void
@@ -159,15 +220,36 @@ do_collapsible_demo(ui_context ctx)
     do_heading(ctx, "COLLAPSIBLE");
 
     auto collapsed = use_state(ctx, false);
-    node_expander(ctx, collapsed, "Collapsible");
+    grid(ctx, [&](auto grid_handle) {
+        alia_box box;
+        grid_row(ctx, grid_handle, provide_box(box), [&]() {
+            auto id = node_expander(ctx, collapsed);
 
-    alia::collapsible(ctx, collapsed, [&]() {
-        flow(ctx, FILL, [&]() {
-            demo_text(
+            text(
                 ctx,
-                lorem_ipsum,
-                &demo_get_fonts().body_14,
-                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                "Lorem Ipsum",
+                CENTER_Y | pad({-alia_spacing_active(ctx), 0, 0, 0}));
+
+            alia_element_box_region(
+                ctx,
+                id,
+                &box,
+                ALIA_Z_PLANE_CONTENT,
+                ALIA_HIT_TEST_MOUSE,
+                ALIA_CURSOR_DEFAULT);
+        });
+        grid_row(ctx, grid_handle, [&]() {
+            spacer(ctx);
+            collapsible(ctx, collapsed, GROW, [&]() {
+                flow(ctx, [&]() {
+                    demo_text(
+                        ctx,
+                        lorem_ipsum,
+                        &demo_get_fonts().body_14,
+                        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
+                        FLUSH);
+                });
+            });
         });
     });
 }
@@ -274,7 +356,7 @@ do_dropdown_demo(ui_context ctx)
             concrete_panel(
                 ctx,
                 alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
-                alia_ctx_palette(ctx)->foundation.background.stronger_2,
+                alia_ctx_palette(ctx)->foundation.background.stronger_1,
                 FILL,
                 [&]() {
                     column(ctx, pad(6), [&]() {
@@ -320,21 +402,21 @@ do_content(ui_context ctx, layout_options layout = {})
 {
     column(ctx, layout, [&]() {
         do_toggle_switch_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_button_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_dropdown_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_node_expander_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_radio_button_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_checkbox_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_slider_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_collapsible_demo(ctx);
-        separator(ctx);
+        do_section_separator(ctx);
         do_text_sample(ctx);
     });
 }
@@ -351,23 +433,32 @@ with_spacing(ui_context ctx, float spacing, Content&& content)
 void
 the_demo(ui_context ctx)
 {
+    if (theme_dirty)
+        apply_gallery_theme();
+
     auto spacing = use_state(ctx, 6.f);
     auto magnification = use_state(ctx, 1.f);
+    auto typography = use_state(ctx, 0);
+    apply_gallery_typeface(read_signal(typography));
 
+    alia_font_push(ctx, &demo_get_fonts().body_14);
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
-            concrete_panel(
-                ctx,
-                0,
-                alia_ctx_palette(ctx)->foundation.background.stronger_2,
-                FILL,
-                [&]() {
-                    with_spacing(ctx, 6, [&] {
-                        column(ctx, pad(20), [&]() {
-                            do_controls(ctx, spacing, magnification);
+            column(ctx, width(300), [&] {
+                concrete_panel(
+                    ctx,
+                    0,
+                    alia_ctx_palette(ctx)->foundation.background.stronger_1,
+                    GROW | FILL,
+                    [&]() {
+                        with_spacing(ctx, 6, [&] {
+                            column(ctx, pad(20), [&]() {
+                                do_controls(
+                                    ctx, spacing, magnification, typography);
+                            });
                         });
                     });
-                });
+            });
             with_spacing(ctx, read_signal(spacing), [&] {
                 concrete_panel(
                     ctx,
@@ -390,6 +481,7 @@ the_demo(ui_context ctx)
             });
         });
     });
+    alia_font_pop(ctx);
 }
 
 static void
@@ -435,7 +527,6 @@ main()
     if (alia_app_init(&config, &app) != 0)
         return 1;
 
-    static bool light_theme = false;
     the_system = alia_app_ui(&app);
 
     alia_ui_tracer_init(&the_tracer);
@@ -444,24 +535,8 @@ main()
     alia_app_setup_stock_text(&app);
     demo_setup_fonts(&app);
 
-    static bool theme_initialized = false;
-    if (!theme_initialized)
-    {
-        alia_theme_accent accent;
-        alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
-        alia_theme_context theme_ctx
-            = alia_theme_context_default(!light_theme);
-        alia_palette_from_accent(
-            &the_system->palette,
-            &accent,
-            &theme_ctx,
-            nullptr,
-            nullptr,
-            ALIA_LITERAL_FIXED_SPECTRUM);
-        alia_ui_paint_changed(the_system);
-        alia_style_generate_defaults(the_system, nullptr);
-        theme_initialized = true;
-    }
+    apply_gallery_theme();
+    alia_style_generate_defaults(the_system, nullptr);
 
     alia_app_run_loop(&config, &app);
 #ifndef __EMSCRIPTEN__

@@ -29,7 +29,7 @@ checkbox(
     ui_context ctx, Signal const& value, char const* label, Layout layout = {})
 {
     return detail::labeled_bool_control(
-        ctx, label, layout, [&] { return checkbox(ctx, value); });
+        ctx, label, layout, [&] { return checkbox(ctx, value, CENTER_Y); });
 }
 
 } // namespace alia

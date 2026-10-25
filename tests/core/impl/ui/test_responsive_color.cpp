@@ -158,6 +158,106 @@ TEST_CASE("responsive color ops")
     }
 }
 
+TEST_CASE("strengthen follows the page ramp")
+{
+    alia_palette_color const gray = alia_palette_color_make(SLOT_GRAY, 255);
+    alia_palette_color const red = alia_palette_color_make(SLOT_RED, 255);
+
+    alia_palette light = test_palette();
+    light.foundation.background.base = alia_srgb8_make(255, 255, 255);
+    light.foundation.background.stronger_1 = alia_srgb8_make(180, 180, 180);
+
+    alia_palette dark = test_palette();
+    dark.foundation.background.base = alia_srgb8_make(20, 20, 20);
+    dark.foundation.background.stronger_1 = alia_srgb8_make(80, 80, 80);
+
+    alia_srgba8 const rest
+        = alia_color_op_resolve(&light, gray, alia_color_op_none());
+
+    // Light mode: weaker is lighter, stronger is darker.
+    {
+        alia_srgba8 const weakened = alia_color_op_resolve(
+            &light, gray, alia_color_op_weaken(40, 255));
+        alia_srgba8 const strengthened = alia_color_op_resolve(
+            &light, gray, alia_color_op_strengthen(40, 255));
+        CHECK(weakened.r > rest.r);
+        CHECK(strengthened.r < rest.r);
+    }
+
+    // Dark mode: weaker is darker, stronger is lighter.
+    {
+        alia_srgba8 const weakened = alia_color_op_resolve(
+            &dark, gray, alia_color_op_weaken(40, 255));
+        alia_srgba8 const strengthened = alia_color_op_resolve(
+            &dark, gray, alia_color_op_strengthen(40, 255));
+        CHECK(weakened.r < rest.r);
+        CHECK(strengthened.r > rest.r);
+    }
+
+    // Zero chroma removes the hue in either mode.
+    {
+        alia_srgba8 const saturated
+            = alia_color_op_resolve(&light, red, alia_color_op_none());
+        alia_srgba8 const grayed
+            = alia_color_op_resolve(&dark, red, alia_color_op_weaken(40, 0));
+        CHECK(channel_spread(grayed) < channel_spread(saturated));
+    }
+
+    alia_responsive_color const faded
+        = alia_responsive_color_faded(alia_palette_color_make(SLOT_RED, 255));
+    CHECK(faded.hovered.kind == ALIA_COLOR_OP_NONE);
+    CHECK(faded.active.kind == ALIA_COLOR_OP_NONE);
+    CHECK(faded.disabled.kind == ALIA_COLOR_OP_FADE);
+    CHECK(faded.disabled.fade.l == 160);
+    CHECK(faded.disabled.fade.c == 255);
+}
+
+TEST_CASE("fade approaches the page without crossing it")
+{
+    alia_palette_color const gray = alia_palette_color_make(SLOT_GRAY, 255);
+    alia_palette_color const red = alia_palette_color_make(SLOT_RED, 255);
+
+    alia_palette light = test_palette();
+    light.foundation.background.base = alia_srgb8_make(255, 255, 255);
+
+    alia_srgba8 const rest
+        = alia_color_op_resolve(&light, gray, alia_color_op_none());
+    alia_srgba8 const halfway
+        = alia_color_op_resolve(&light, gray, alia_color_op_fade(128, 0));
+    alia_srgba8 const arrived
+        = alia_color_op_resolve(&light, gray, alia_color_op_fade(255, 255));
+    CHECK(halfway.r > rest.r);
+    CHECK(arrived.r > halfway.r);
+    CHECK(arrived.r == arrived.g);
+    CHECK(arrived.g == arrived.b);
+
+    // Chroma moves to the page and the hue is taken from the page, so a red
+    // control on a blue page becomes blue. A full fade lands on the page.
+    alia_palette tinted = light;
+    tinted.foundation.background.base = alia_srgb8_make(0, 0, 255);
+    alia_srgba8 const joined
+        = alia_color_op_resolve(&tinted, red, alia_color_op_fade(0, 255));
+    CHECK(joined.b > joined.r);
+    CHECK(joined.b > joined.g);
+    alia_srgba8 const dissolved
+        = alia_color_op_resolve(&tinted, red, alia_color_op_fade(255, 255));
+    CHECK(dissolved.r < 8);
+    CHECK(dissolved.g < 8);
+    CHECK(dissolved.b > 248);
+
+    // A gray control picks up the page's chroma instead of staying neutral.
+    alia_srgba8 const tinted_gray
+        = alia_color_op_resolve(&tinted, gray, alia_color_op_fade(0, 255));
+    CHECK(tinted_gray.b > tinted_gray.r);
+    CHECK(channel_spread(tinted_gray) > channel_spread(rest));
+
+    alia_palette dark = test_palette();
+    dark.foundation.background.base = alia_srgb8_make(20, 20, 20);
+    alia_srgba8 const toward_dark
+        = alia_color_op_resolve(&dark, gray, alia_color_op_fade(255, 0));
+    CHECK(toward_dark.r < rest.r);
+}
+
 TEST_CASE("button chrome uses responsive colors")
 {
     alia_button_style style;

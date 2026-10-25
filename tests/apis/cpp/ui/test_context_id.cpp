@@ -127,8 +127,7 @@ struct collapse_pass
 
     collapse_pass(collapse_pass const&) = delete;
     collapse_pass&
-    operator=(collapse_pass const&)
-        = delete;
+    operator=(collapse_pass const&) = delete;
 
     template<class Body>
     void
@@ -159,8 +158,7 @@ TEST_CASE("context id collapse")
 
     host.pass.ctx.id.metrics = alia_id_view_make_u64(1);
     host.pass.ctx.id.paint = alia_id_view_make_u64(4);
-    alia_id_view const outer_metrics
-        = alia_context_metrics_id(&host.pass.ctx);
+    alia_id_view const outer_metrics = alia_context_metrics_id(&host.pass.ctx);
     alia_id_view const outer_paint = alia_context_paint_id(&host.pass.ctx);
 
     alia_id_view published_metrics{};
@@ -173,28 +171,31 @@ TEST_CASE("context id collapse")
             CHECK((published_paint == alia_id_view_make_u64(1)));
             alia_context_metrics_id_push(
                 &host.pass.ctx, alia_id_view_make_u64(7));
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == alia_id_view_make_u64(7)));
+            CHECK(
+                (alia_context_metrics_id(&host.pass.ctx)
+                 == alia_id_view_make_u64(7)));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
             alia_context_metrics_id_pop(&host.pass.ctx);
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) == published_metrics));
         });
         CHECK((alia_context_metrics_id(&host.pass.ctx) == outer_metrics));
         CHECK((alia_context_paint_id(&host.pass.ctx) == outer_paint));
 
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == alia_id_view_make_u64(1)));
-            CHECK((alia_context_paint_id(&host.pass.ctx)
-                   == alia_id_view_make_u64(1)));
+            CHECK(
+                (alia_context_metrics_id(&host.pass.ctx)
+                 == alia_id_view_make_u64(1)));
+            CHECK(
+                (alia_context_paint_id(&host.pass.ctx)
+                 == alia_id_view_make_u64(1)));
         });
     });
 
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) == published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
         });
     });
@@ -202,8 +203,8 @@ TEST_CASE("context id collapse")
     host.pass.ctx.id.paint = alia_id_view_make_u64(5);
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) == published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) != published_paint));
             published_paint = alia_context_paint_id(&host.pass.ctx);
         });
@@ -216,8 +217,8 @@ TEST_CASE("context id collapse")
     host.pass.ctx.id.metrics = alia_id_view_make_u64(9);
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) == published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
         });
     });
@@ -226,8 +227,8 @@ TEST_CASE("context id collapse")
         host.fixture, &host.pass.ctx);
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   != published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) != published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
             published_metrics = alia_context_metrics_id(&host.pass.ctx);
         });
@@ -238,16 +239,16 @@ TEST_CASE("context id collapse")
         long_metrics, static_cast<uint32_t>(sizeof(long_metrics) - 1));
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   != published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) != published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
             published_metrics = alia_context_metrics_id(&host.pass.ctx);
         });
     });
     host.visit([&] {
         context_id_collapse(ui_context{&host.pass.ctx}, [&] {
-            CHECK((alia_context_metrics_id(&host.pass.ctx)
-                   == published_metrics));
+            CHECK((
+                alia_context_metrics_id(&host.pass.ctx) == published_metrics));
             CHECK((alia_context_paint_id(&host.pass.ctx) == published_paint));
         });
     });

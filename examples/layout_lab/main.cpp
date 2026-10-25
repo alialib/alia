@@ -373,15 +373,10 @@ main()
     {
         alia_theme_accent accent;
         alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
-        alia_theme_context theme_ctx
-            = alia_theme_context_default(!light_theme);
-        alia_palette_from_accent(
-            &the_system->palette,
-            &accent,
-            &theme_ctx,
-            nullptr,
-            nullptr,
-            ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_palette_conditions conditions
+            = alia_palette_conditions_default(!light_theme);
+        alia_palette_generate_from_accent(
+            &the_system->palette, &accent, &conditions, nullptr, nullptr);
         alia_ui_paint_changed(the_system);
         alia_style_generate_defaults(the_system, nullptr);
         theme_initialized = true;

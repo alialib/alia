@@ -98,12 +98,11 @@ render_checkbox(
     bool const disabled
         = (interaction_status & ALIA_INTERACTION_STATUS_DISABLED) != 0;
     alia_checkbox_state_style const* state_style
-        = disabled
-            ? (checked ? &style->disabled_checked : &style->disabled_unchecked)
-            : (checked ? &style->checked : &style->unchecked);
-    alia_srgba8 const outline
-        = alia_palette_color_resolve(p, state_style->outline);
-    alia_srgba8 const fill = alia_palette_color_resolve(p, state_style->fill);
+        = checked ? &style->checked : &style->unchecked;
+    alia_srgba8 const outline = alia_responsive_color_resolve(
+        p, state_style->outline, interaction_status);
+    alia_srgba8 const fill = alia_responsive_color_resolve(
+        p, state_style->fill, interaction_status);
 
     alia_draw_box(
         ctx,
@@ -133,8 +132,8 @@ render_checkbox(
 
     if (checkmark_opacity > 0.f)
     {
-        alia_srgba8 checkmark_color = alia_palette_color_resolve(
-            p, disabled ? style->disabled_checkmark : style->checkmark);
+        alia_srgba8 checkmark_color = alia_responsive_color_resolve(
+            p, style->checkmark, interaction_status);
         checkmark_color.a
             = uint8_t(float(checkmark_color.a) * checkmark_opacity);
         draw_checkbox_checkmark(ctx, box, checkmark_color, style);
@@ -169,44 +168,41 @@ alia_checkbox_style_generate(
     *out = alia_checkbox_style{
         .unchecked =
             {
-                .outline = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
-                .fill = ALIA_PALETTE_COLOR(foundation.background.base, 0x00),
+                .outline = alia_responsive_color_faded(ALIA_PALETTE_COLOR(
+                    foundation.structural.weaker_2, 0xff)),
+                .fill = alia_responsive_color_faded(
+                    ALIA_PALETTE_COLOR(foundation.background.base, 0x00)),
             },
         .checked =
             {
-                .outline = ALIA_PALETTE_COLOR(primary.solid, 0xff),
-                .fill = ALIA_PALETTE_COLOR(primary.solid, 0xff),
-            },
-        .disabled_unchecked =
-            {
-                .outline
-                = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
-                .fill = ALIA_PALETTE_COLOR(foundation.background.base, 0x00),
-            },
-        .disabled_checked =
-            {
-                .outline
-                = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
-                .fill = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xa0),
+                .outline = alia_responsive_color_faded(
+                    ALIA_PALETTE_COLOR(primary.solid, 0xff)),
+                .fill = alia_responsive_color_faded(
+                    ALIA_PALETTE_COLOR(primary.solid, 0xff)),
             },
 
-        .checkmark = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
-        .disabled_checkmark
-        = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
+        .checkmark = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.background.base, 0xff)),
 
         .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
 
-        .layout_width = 40.f * s.scale,
-        .layout_height = 40.f * s.scale,
-        .box_size = 22.f * s.scale,
-        .box_corner_radius = 5.f * s.scale * s.roundness,
-        .border_width = 3.f * s.scale,
-        .checkmark_size = 18.f * s.scale,
+        // Leaf is the box, with a little room around it. The hover halo
+        // paints outside this box.
+        .layout_width = 28.f * s.scale,
+        .layout_height = 28.f * s.scale,
+        .box_size = 20.f * s.scale,
+        .box_corner_radius = 4.f * s.scale * s.roundness,
+        .border_width = 2.f * s.scale,
+        .checkmark_size = 14.f * s.scale,
         .checkmark_font_index = 0,
         .checkmark_codepoint = 0,
         .highlight_radius = 21.f * s.scale,
         .flare_radius = 21.f * s.scale,
     };
+
+    // The empty fill stays empty. Fading it toward the page would paint a
+    // wash.
+    out->unchecked.fill.disabled = alia_color_op_none();
 
     alia_ui_icon icon{};
     if (ui && alia_ui_icon_get(ui, ALIA_UI_ICON_CHECK, &icon))

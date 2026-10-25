@@ -63,41 +63,6 @@ render_toggle_switch(
         ctx, style->track_corner_radius_fraction * style->track_height);
     float const dot_y = toggle_switch_min.y + layout_h * 0.5f;
 
-    if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
-    {
-        alia_srgb8 const track_srgb
-            = state ? alia_palette_srgb_at(p, style->on_track_disabled.index)
-                    : alia_palette_srgb_at(p, style->off_track_disabled.index);
-        alia_srgb8 const dot_srgb
-            = state ? alia_palette_srgb_at(p, style->on_dot_disabled.index)
-                    : alia_palette_srgb_at(p, style->off_dot_disabled.index);
-
-        alia_vec2f const track_min{
-            toggle_switch_min.x + (layout_w - track_w) * 0.5f,
-            toggle_switch_min.y + (layout_h - track_h) * 0.5f};
-        alia_draw_rounded_box(
-            ctx,
-            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
-            alia_box{track_min, alia_vec2f{track_w, track_h}},
-            alia_srgba8_from_srgb8(track_srgb),
-            track_corner);
-
-        float const dot_x_logical
-            = state ? style->dot_center_x_on : style->dot_center_x_off;
-        /* Same radii as animated end states: off -> dot_radius_off, on ->
-         * dot_radius_on */
-        float const dot_radius_logical
-            = state ? style->dot_radius_on : style->dot_radius_off;
-        alia_draw_circle(
-            ctx,
-            alia_z(ctx, ALIA_Z_PLANE_CONTENT),
-            {toggle_switch_min.x + alia_px(ctx, dot_x_logical), dot_y},
-            alia_px(ctx, dot_radius_logical),
-            alia_srgba8_from_srgb8(dot_srgb));
-
-        return;
-    }
-
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
     float toggle_position = alia_transition_float(
@@ -114,16 +79,23 @@ render_toggle_switch(
     float const dot_x_logical = alia_lerp(
         style->dot_center_x_off, style->dot_center_x_on, toggle_position);
 
-    alia_srgb8 const off_dot = alia_palette_srgb_at(p, style->off_dot.index);
-    alia_srgb8 const on_dot = alia_palette_srgb_at(p, style->on_dot.index);
-    alia_srgb8 const dot_color
-        = alia_lerp_srgb8_via_oklch(off_dot, on_dot, toggle_position);
+    alia_srgba8 const off_dot_rgba
+        = alia_responsive_color_resolve(p, style->off_dot, interaction_status);
+    alia_srgba8 const on_dot_rgba
+        = alia_responsive_color_resolve(p, style->on_dot, interaction_status);
+    alia_srgb8 const dot_color = alia_lerp_srgb8_via_oklch(
+        alia_srgb8_make(off_dot_rgba.r, off_dot_rgba.g, off_dot_rgba.b),
+        alia_srgb8_make(on_dot_rgba.r, on_dot_rgba.g, on_dot_rgba.b),
+        toggle_position);
 
-    alia_srgb8 const off_track
-        = alia_palette_srgb_at(p, style->off_track.index);
-    alia_srgb8 const on_track = alia_palette_srgb_at(p, style->on_track.index);
-    alia_srgb8 const track_color
-        = alia_lerp_srgb8_via_oklch(off_track, on_track, toggle_position);
+    alia_srgba8 const off_track_rgba = alia_responsive_color_resolve(
+        p, style->off_track, interaction_status);
+    alia_srgba8 const on_track_rgba = alia_responsive_color_resolve(
+        p, style->on_track, interaction_status);
+    alia_srgb8 const track_color = alia_lerp_srgb8_via_oklch(
+        alia_srgb8_make(off_track_rgba.r, off_track_rgba.g, off_track_rgba.b),
+        alia_srgb8_make(on_track_rgba.r, on_track_rgba.g, on_track_rgba.b),
+        toggle_position);
 
     alia_vec2f const track_min{
         toggle_switch_min.x + (layout_w - track_w) * 0.5f,
@@ -192,20 +164,17 @@ alia_toggle_switch_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_toggle_switch_style{
-        .off_track = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff),
-        .on_track = ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff),
-        .off_dot = ALIA_PALETTE_COLOR(foundation.structural.stronger_2, 0xff),
-        .on_dot = ALIA_PALETTE_COLOR(primary.outline, 0xff),
-        .off_track_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_4, 0xff),
-        .on_track_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0xff),
-        .off_dot_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff),
-        .on_dot_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
+        .off_track = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0xff)),
+        .on_track = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0xff)),
+        .off_dot = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.stronger_2, 0xff)),
+        .on_dot = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
         .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x20),
-        .layout_width = 55.f * s.scale,
+        // The knob is larger than the track and hangs past its ends.
+        .layout_width = 52.f * s.scale,
         .layout_height = 30.f * s.scale,
         .track_width = 26.f * s.scale,
         .track_height = 12.f * s.scale,

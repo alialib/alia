@@ -14,10 +14,9 @@ namespace alia {
 
 namespace impl {
 
-template<class Content>
+template<class Options, class Content>
 void
-consume_provided_box(
-    ui_context ctx, container_options const& options, Content&& content)
+consume_provided_box(ui_context ctx, Options const& options, Content&& content)
 {
     if (options.has_provide_box() && !is_refresh_event(ctx))
         *options.box = alia_layout_consume_box(ctx);
@@ -314,26 +313,70 @@ block_flow(ui_context ctx, Content&& content)
 
 // GRID
 
-template<layout_like Layout = layout_options, class Content>
+template<
+    grid_container_like Container = grid_options,
+    layout_like Layout = layout_options,
+    class Content>
+void
+grid(ui_context ctx, Container container, Layout layout, Content&& content)
+{
+    grid_options const options = as_grid_options(container);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        alia_layout_grid_handle handle
+            = alia_layout_grid_begin(ctx, grid_begin_flags(flags, options));
+        impl::consume_provided_box(
+            ctx, options, [&] { std::forward<Content>(content)(handle); });
+        alia_layout_grid_end(ctx);
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!grid_container_like<Layout>)
 void
 grid(ui_context ctx, Layout layout, Content&& content)
 {
-    apply_layout(ctx, layout, [&](layout_flag_set flags) {
-        alia_layout_grid_handle handle
-            = alia_layout_grid_begin(ctx, raw_code(flags));
-        std::forward<Content>(content)(handle);
-        alia_layout_grid_end(ctx);
-    });
+    grid(ctx, default_grid, layout, std::forward<Content>(content));
+}
+
+template<grid_container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+grid(ui_context ctx, Container container, Content&& content)
+{
+    grid(ctx, container, default_layout, std::forward<Content>(content));
 }
 
 template<class Content>
 void
 grid(ui_context ctx, Content&& content)
 {
-    grid(ctx, default_layout, std::forward<Content>(content));
+    grid(ctx, default_grid, default_layout, std::forward<Content>(content));
 }
 
-template<layout_like Layout = layout_options, class Content>
+template<
+    grid_row_container_like Container = grid_row_options,
+    layout_like Layout = layout_options,
+    class Content>
+void
+grid_row(
+    ui_context ctx,
+    alia_layout_grid_handle grid,
+    Container container,
+    Layout layout,
+    Content&& content)
+{
+    grid_row_options const options = as_grid_row_options(container);
+    apply_layout(ctx, layout, [&](layout_flag_set flags) {
+        alia_layout_grid_row_begin(
+            ctx, grid, grid_row_begin_flags(flags, options));
+        impl::consume_provided_box(
+            ctx, options, [&] { std::forward<Content>(content)(); });
+        alia_layout_grid_row_end(ctx);
+    });
+}
+
+template<layout_like Layout, class Content>
+    requires(!grid_row_container_like<Layout>)
 void
 grid_row(
     ui_context ctx,
@@ -341,18 +384,33 @@ grid_row(
     Layout layout,
     Content&& content)
 {
-    apply_layout(ctx, layout, [&](layout_flag_set flags) {
-        alia_layout_grid_row_begin(ctx, grid, raw_code(flags));
-        std::forward<Content>(content)();
-        alia_layout_grid_row_end(ctx);
-    });
+    grid_row(
+        ctx, grid, default_grid_row, layout, std::forward<Content>(content));
+}
+
+template<grid_row_container_like Container, class Content>
+    requires(!layout_like<Container>)
+void
+grid_row(
+    ui_context ctx,
+    alia_layout_grid_handle grid,
+    Container container,
+    Content&& content)
+{
+    grid_row(
+        ctx, grid, container, default_layout, std::forward<Content>(content));
 }
 
 template<class Content>
 void
 grid_row(ui_context ctx, alia_layout_grid_handle grid, Content&& content)
 {
-    grid_row(ctx, grid, default_layout, std::forward<Content>(content));
+    grid_row(
+        ctx,
+        grid,
+        default_grid_row,
+        default_layout,
+        std::forward<Content>(content));
 }
 
 // SIMPLE WRAPPERS - Note that these can usually be invoked implicitly via

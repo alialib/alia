@@ -235,6 +235,12 @@ grid_row_assign_boxes(
         baseline,
         {grid.scratch->total_width, scratch.height},
         scratch.ascent);
+    if ((grid_row.container.flags & ALIA_PROVIDE_BOX) != 0)
+    {
+        alia_box* provided_box = arena_alloc<alia_box>(ctx->arena);
+        provided_box->min = alia_vec2f_add(box.min, placement.min);
+        provided_box->size = placement.size;
+    }
     float current_x = box.min.x + placement.min.x;
     float const total_extra_space
         = (std::max) (0.f, placement.size.x - grid.scratch->total_width);

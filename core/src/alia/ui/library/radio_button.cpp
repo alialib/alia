@@ -75,28 +75,8 @@ render_radio_button(
     float const dot_radius_max_px = alia_px(ctx, style->dot_radius);
     float const border_width_px = alia_px(ctx, style->border_width);
 
-    if (interaction_status & ALIA_INTERACTION_STATUS_DISABLED)
-    {
-        alia_srgb8 const outline_srgb
-            = alia_palette_srgb_at(p, style->outline_disabled.index);
-        alia_srgb8 const dot_srgb
-            = alia_palette_srgb_at(p, style->dot_disabled.index);
-
-        draw_radio_button_ring(
-            ctx, center, ring_radius_px, border_width_px, outline_srgb);
-
-        if (selected)
-        {
-            alia_draw_circle(
-                ctx,
-                alia_z(ctx, ALIA_Z_PLANE_CONTENT),
-                center,
-                dot_radius_max_px,
-                alia_srgba8_from_srgb8(dot_srgb));
-        }
-
-        return;
-    }
+    bool const is_disabled
+        = (interaction_status & ALIA_INTERACTION_STATUS_DISABLED) != 0;
 
     static alia_animated_transition const transition
         = {alia_default_curve, milliseconds(200)};
@@ -108,13 +88,23 @@ render_radio_button(
         1.f,
         0.f);
 
+    alia_srgba8 const outline_rgba
+        = alia_responsive_color_resolve(p, style->outline, interaction_status);
+    alia_srgba8 const dot_rgba
+        = alia_responsive_color_resolve(p, style->dot, interaction_status);
     alia_srgb8 const outline_srgb
-        = alia_palette_srgb_at(p, style->outline.index);
-    alia_srgb8 const dot_srgb = alia_palette_srgb_at(p, style->dot.index);
+        = alia_srgb8_make(outline_rgba.r, outline_rgba.g, outline_rgba.b);
+    alia_srgb8 const dot_srgb
+        = alia_srgb8_make(dot_rgba.r, dot_rgba.g, dot_rgba.b);
+    // The ring joins the dot as the control becomes selected.
+    alia_srgb8 const ring_srgb
+        = alia_lerp_srgb8_via_oklch(outline_srgb, dot_srgb, smoothed_state);
 
-    if ((interaction_status
-         & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
-        != 0)
+    if (!is_disabled
+        && (interaction_status
+            & (ALIA_INTERACTION_STATUS_ACTIVE
+               | ALIA_INTERACTION_STATUS_HOVERED))
+               != 0)
     {
         alia_draw_circle(
             ctx,
@@ -124,16 +114,19 @@ render_radio_button(
             alia_palette_color_resolve(p, style->highlight));
     }
 
-    render_click_flares(
-        ctx,
-        ALIA_NESTED_BITPACK(data.bits, click_flare),
-        interaction_status,
-        center,
-        dot_srgb,
-        alia_px(ctx, style->flare_radius));
+    if (!is_disabled)
+    {
+        render_click_flares(
+            ctx,
+            ALIA_NESTED_BITPACK(data.bits, click_flare),
+            interaction_status,
+            center,
+            dot_srgb,
+            alia_px(ctx, style->flare_radius));
+    }
 
     draw_radio_button_ring(
-        ctx, center, ring_radius_px, border_width_px, outline_srgb);
+        ctx, center, ring_radius_px, border_width_px, ring_srgb);
 
     float const dot_radius_px = dot_radius_max_px * smoothed_state;
     if (dot_radius_px > 0.f)
@@ -159,19 +152,19 @@ alia_radio_button_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_radio_button_style{
-        .outline = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
-        .dot = ALIA_PALETTE_COLOR(primary.outline, 0xff),
-        .outline_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff),
-        .dot_disabled
-        = ALIA_PALETTE_COLOR(foundation.structural.stronger_1, 0xff),
+        .outline = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)),
+        .dot = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
         .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
-        .layout_width = 40.f * s.scale,
-        .layout_height = 40.f * s.scale,
-        .ring_radius = 12.f * s.scale,
-        .dot_radius = 6.f * s.scale,
+        // Leaf is the ring, with a little room around it. The hover halo
+        // paints outside this box.
+        .layout_width = 28.f * s.scale,
+        .layout_height = 28.f * s.scale,
+        .ring_radius = 11.f * s.scale,
+        .dot_radius = 5.f * s.scale,
         .highlight_radius = 18.f * s.scale,
-        .border_width = 3.f * s.scale,
+        .border_width = 2.f * s.scale,
         .flare_radius = 18.f * s.scale,
     };
 }

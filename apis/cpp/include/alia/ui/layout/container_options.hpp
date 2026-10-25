@@ -450,6 +450,168 @@ operator|(minimum_line_height_spec, minimum_line_height_spec) = delete;
 provide_box_spec
 operator|(provide_box_spec, provide_box_spec) = delete;
 
+// container-policy options for a grid - Column and row gaps will land here.
+struct grid_options
+{
+    enum present_bits : std::uint8_t
+    {
+        provide_box_bit = 1 << 0,
+    };
+
+    // presence mask for optional fields
+    std::uint8_t present = 0;
+    // destination for the grid's assigned box
+    alia_box* box = nullptr;
+
+    bool
+    has_provide_box() const
+    {
+        return (present & provide_box_bit) != 0;
+    }
+};
+
+// empty grid container options
+inline grid_options const default_grid{};
+
+inline grid_options
+as_grid_options(grid_options const& options)
+{
+    return options;
+}
+
+inline grid_options
+as_grid_options(provide_box_spec const& p)
+{
+    grid_options options;
+    options.present = grid_options::provide_box_bit;
+    options.box = p.box;
+    return options;
+}
+
+// concept for types that can be converted to `grid_options`
+template<class T>
+concept grid_container_like = requires(T const& t) {
+    { as_grid_options(t) } -> std::same_as<grid_options>;
+};
+
+inline grid_options&
+operator|=(grid_options& options, provide_box_spec const& p)
+{
+    options.present |= grid_options::provide_box_bit;
+    options.box = p.box;
+    return options;
+}
+
+inline grid_options&
+operator|=(grid_options& options, grid_options const& other)
+{
+    if (other.has_provide_box())
+    {
+        options.present |= grid_options::provide_box_bit;
+        options.box = other.box;
+    }
+    return options;
+}
+
+inline grid_options
+operator|(grid_options options, grid_options const& other)
+{
+    return options |= other;
+}
+
+inline grid_options
+operator|(grid_options options, provide_box_spec const& p)
+{
+    return options |= p;
+}
+
+inline grid_options
+operator|(provide_box_spec const& p, grid_options const& options)
+{
+    return as_grid_options(p) | options;
+}
+
+// container-policy options for a grid row
+struct grid_row_options
+{
+    enum present_bits : std::uint8_t
+    {
+        provide_box_bit = 1 << 0,
+    };
+
+    // presence mask for optional fields
+    std::uint8_t present = 0;
+    // destination for the row's assigned box
+    alia_box* box = nullptr;
+
+    bool
+    has_provide_box() const
+    {
+        return (present & provide_box_bit) != 0;
+    }
+};
+
+// empty grid-row container options
+inline grid_row_options const default_grid_row{};
+
+inline grid_row_options
+as_grid_row_options(grid_row_options const& options)
+{
+    return options;
+}
+
+inline grid_row_options
+as_grid_row_options(provide_box_spec const& p)
+{
+    grid_row_options options;
+    options.present = grid_row_options::provide_box_bit;
+    options.box = p.box;
+    return options;
+}
+
+// concept for types that can be converted to `grid_row_options`
+template<class T>
+concept grid_row_container_like = requires(T const& t) {
+    { as_grid_row_options(t) } -> std::same_as<grid_row_options>;
+};
+
+inline grid_row_options&
+operator|=(grid_row_options& options, provide_box_spec const& p)
+{
+    options.present |= grid_row_options::provide_box_bit;
+    options.box = p.box;
+    return options;
+}
+
+inline grid_row_options&
+operator|=(grid_row_options& options, grid_row_options const& other)
+{
+    if (other.has_provide_box())
+    {
+        options.present |= grid_row_options::provide_box_bit;
+        options.box = other.box;
+    }
+    return options;
+}
+
+inline grid_row_options
+operator|(grid_row_options options, grid_row_options const& other)
+{
+    return options |= other;
+}
+
+inline grid_row_options
+operator|(grid_row_options options, provide_box_spec const& p)
+{
+    return options |= p;
+}
+
+inline grid_row_options
+operator|(provide_box_spec const& p, grid_row_options const& options)
+{
+    return as_grid_row_options(p) | options;
+}
+
 // Build the ABI flag word for a container begin from placement flags and
 // container-policy options.
 inline alia_layout_flags_t
@@ -457,6 +619,27 @@ container_begin_flags(
     layout_flag_set placement, container_options const& options)
 {
     alia_layout_flags_t code = raw_code(placement) | raw_code(options.flags);
+    if (options.has_provide_box())
+        code |= ALIA_PROVIDE_BOX;
+    return code;
+}
+
+// Build the ABI flag word for a grid or grid row from placement flags and
+// `provide_box`.
+inline alia_layout_flags_t
+grid_begin_flags(layout_flag_set placement, grid_options const& options)
+{
+    alia_layout_flags_t code = raw_code(placement);
+    if (options.has_provide_box())
+        code |= ALIA_PROVIDE_BOX;
+    return code;
+}
+
+inline alia_layout_flags_t
+grid_row_begin_flags(
+    layout_flag_set placement, grid_row_options const& options)
+{
+    alia_layout_flags_t code = raw_code(placement);
     if (options.has_provide_box())
         code |= ALIA_PROVIDE_BOX;
     return code;

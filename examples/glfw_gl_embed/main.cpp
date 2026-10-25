@@ -206,14 +206,10 @@ main()
     {
         alia_theme_accent accent;
         alia_theme_accent_from_color(&accent, {70, 140, 255});
-        alia_theme_context theme_ctx = alia_theme_context_default(true);
-        alia_palette_from_accent(
-            &g_ui->palette,
-            &accent,
-            &theme_ctx,
-            nullptr,
-            nullptr,
-            ALIA_LITERAL_FIXED_SPECTRUM);
+        alia_palette_conditions conditions
+            = alia_palette_conditions_default(true);
+        alia_palette_generate_from_accent(
+            &g_ui->palette, &accent, &conditions, nullptr, nullptr);
         alia_ui_paint_changed(g_ui);
     }
 

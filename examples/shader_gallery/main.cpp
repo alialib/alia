@@ -310,19 +310,19 @@ shader_gallery_root(ui_context ctx)
         alia_theme_accent_from_color(
             &accent, the_seed_primaries[the_seed_index]);
 
-        alia_theme_context theme_ctx
-            = alia_theme_context_default(!the_light_theme_flag);
+        alia_palette_conditions conditions
+            = alia_palette_conditions_default(!the_light_theme_flag);
 
-        alia_palette_params palette_params = alia_palette_params_default();
-        palette_params.foundation_step_l = 0.06f;
+        alia_palette_expansion expansion = alia_palette_expansion_default();
+        expansion.foundation_step_l = 0.06f;
+        expansion.literal_policy = ALIA_PALETTE_LITERAL_HARMONIZE_TO_PRIMARY;
 
-        alia_palette_from_accent(
+        alia_palette_generate_from_accent(
             &alia_ctx_system(ctx)->palette,
             &accent,
-            &theme_ctx,
+            &conditions,
             nullptr,
-            &palette_params,
-            ALIA_LITERAL_HARMONIZE_TO_PRIMARY);
+            &expansion);
         alia_ui_paint_changed(alia_ctx_system(ctx));
         the_theme_dirty_flag = false;
     }

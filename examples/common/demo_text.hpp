@@ -27,7 +27,10 @@ demo_setup_fonts(alia_app* app);
 // among faces in a richer atlas).
 void
 demo_set_typefaces(
-    alia_app* app, size_t body_font_index, size_t heading_font_index);
+    alia_app* app,
+    size_t body_font_index,
+    size_t heading_font_index,
+    float scale);
 
 static inline alia_palette_color
 demo_text_color(enum alia_palette_ramp_level level)

@@ -43,13 +43,12 @@ button_style_apply_filled(
 {
     alia_palette_color const solid = alia_palette_color_swatch(
         swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0xff);
-    // Sink the fill. -10 and -20 are about -0.04 and -0.08 lightness.
     style->fill = responsive_color_make(
         solid,
-        alia_color_op_adjust(-10, 255),
-        alia_color_op_adjust(-20, 255),
+        alia_color_op_darken(10, 255),
+        alia_color_op_darken(20, 255),
         alia_color_op_replace(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)));
+            ALIA_PALETTE_COLOR(foundation.background.stronger_2, 0xff)));
 
     style->label = responsive_color_make(
         alia_palette_color_swatch(
@@ -65,7 +64,6 @@ button_style_apply_filled(
         alia_color_op_none(),
         alia_color_op_none(),
         alia_color_op_none());
-    style->corner_radius = 0.f;
 }
 
 static void
@@ -99,11 +97,7 @@ button_style_apply_outline(
         alia_color_op_none(),
         alia_color_op_none(),
         alia_color_op_replace(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)));
-
-    // Keep a slight round on outline chrome (filled uses square corners).
-    if (style->corner_radius <= 0.f)
-        style->corner_radius = 6.f;
+            ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff)));
 }
 
 } // namespace alia
@@ -120,9 +114,9 @@ alia_button_style_generate(
     *out = alia_button_style{};
     out->padding_x = s.spacing * 1.4f * s.scale;
     out->padding_y = s.spacing * 0.7f * s.scale;
-    out->corner_radius = 0.f;
     out->border_width = 1.5f * s.scale;
     button_style_apply_filled(out, ALIA_PALETTE_SWATCH_PRIMARY);
+    out->corner_radius = 6.f * s.scale * s.roundness;
 }
 
 void

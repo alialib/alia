@@ -77,9 +77,8 @@ render_node_expander(
         = node_expander_triangle_box(ctx, placement, style);
     alia_vec2f const center = node_expander_center(placement);
 
-    alia_srgba8 const triangle_rgba
-        = is_disabled ? alia_palette_color_resolve(p, style->disabled_triangle)
-                      : alia_palette_color_resolve(p, style->triangle);
+    alia_srgba8 const triangle_rgba = alia_responsive_color_resolve(
+        p, style->triangle, interaction_status);
 
     alia_draw_equilateral_triangle(
         ctx,
@@ -127,13 +126,13 @@ alia_node_expander_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_node_expander_style{
-        .triangle = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
-        .disabled_triangle
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_4, 0xff),
+        .triangle = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.base, 0xff)),
         .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x30),
 
-        .layout_width = 32.f * s.scale,
-        .layout_height = 32.f * s.scale,
+        // Leaf is the triangle, with a little room around it.
+        .layout_width = 24.f * s.scale,
+        .layout_height = 24.f * s.scale,
 
         .triangle_side = 16.f * s.scale,
 

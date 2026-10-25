@@ -174,17 +174,38 @@ render_slider(
     alia_vec2f const track_size = get_track_size(box, axis, ctx, s);
     alia_box const track_box{track_min, track_size};
 
-    // TODO: Should the track use interaction status?
+    float const track_radius = alia_px(ctx, s->track_thickness) * 0.5f;
     alia_srgba8 const track_rgba
-        = alia_palette_color_resolve(p, s->track_color);
+        = alia_responsive_color_resolve(p, s->track_color, thumb_status);
 
     alia_draw_rounded_box(
-        ctx, alia_z(ctx, ALIA_Z_PLANE_BACKGROUND), track_box, track_rgba, 0.f);
+        ctx,
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+        track_box,
+        track_rgba,
+        track_radius);
 
     alia_vec2f const thumb_center
         = get_thumb_center(box, axis, ctx, s, minimum, maximum, value);
-    alia_srgb8 const thumb_srgb
-        = alia_palette_srgb_at(p, s->thumb_color.index);
+
+    float const fill_len = axis == 0 ? (thumb_center.x - track_min.x)
+                                     : (thumb_center.y - track_min.y);
+    if (fill_len > 0.5f)
+    {
+        alia_box fill_box = track_box;
+        if (axis == 0)
+            fill_box.size.x = fill_len;
+        else
+            fill_box.size.y = fill_len;
+        alia_draw_rounded_box(
+            ctx,
+            alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+            fill_box,
+            alia_responsive_color_resolve(p, s->track_fill, thumb_status),
+            track_radius);
+    }
+    alia_srgba8 const thumb_rgba
+        = alia_responsive_color_resolve(p, s->thumb_color, thumb_status);
 
     float const thumb_r = alia_px(ctx, s->thumb_radius);
 
@@ -199,7 +220,7 @@ render_slider(
         alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         thumb_center,
         thumb_r,
-        alia_srgba8_from_srgb8(thumb_srgb));
+        thumb_rgba);
 
     if ((thumb_status
          & (ALIA_INTERACTION_STATUS_ACTIVE | ALIA_INTERACTION_STATUS_HOVERED))
@@ -235,11 +256,14 @@ alia_slider_style_generate(
 {
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_slider_style{
-        .track_color
-        = ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff),
-        .thumb_color = ALIA_PALETTE_COLOR(primary.outline, 0xff),
+        .track_color = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff)),
+        .track_fill
+        = alia_responsive_color_faded(ALIA_PALETTE_COLOR(primary.solid, 0xff)),
+        .thumb_color = alia_responsive_color_faded(
+            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
         .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
-        .layout_width = 320.f * s.scale,
+        .layout_width = 96.f * s.scale,
         .layout_height = 32.f * s.scale,
         .track_thickness = 6.f * s.scale,
         .thumb_radius = 10.f * s.scale,

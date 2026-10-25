@@ -39,3 +39,21 @@ TEST_CASE("container begin flags OR placement and policy bits")
     CHECK((code & ALIA_JUSTIFY_SPACE_BETWEEN) != 0);
     CHECK((code & ALIA_PROVIDE_BOX) != 0);
 }
+
+TEST_CASE("grid options carry provide_box")
+{
+    alia_box box;
+    grid_options const grid = default_grid | provide_box(box);
+    CHECK(grid.has_provide_box());
+    CHECK(grid.box == &box);
+
+    grid_row_options const row = provide_box(box) | default_grid_row;
+    CHECK(row.has_provide_box());
+    CHECK(row.box == &box);
+
+    CHECK((grid_begin_flags(GROW, grid) & ALIA_PROVIDE_BOX) != 0);
+    CHECK((grid_begin_flags(GROW, grid) & ALIA_GROW) != 0);
+    CHECK(
+        (grid_row_begin_flags(NO_FLAGS, default_grid_row) & ALIA_PROVIDE_BOX)
+        == 0);
+}

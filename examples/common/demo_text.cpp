@@ -29,7 +29,7 @@ fill_resolved_font(
 }
 
 void
-refresh_resolved_fonts(size_t body_index, size_t heading_index)
+refresh_resolved_fonts(size_t body_index, size_t heading_index, float scale)
 {
     ALIA_ASSERT(g_app);
     alia_ui_system* ui = alia_app_ui(g_app);
@@ -38,16 +38,19 @@ refresh_resolved_fonts(size_t body_index, size_t heading_index)
     ALIA_ASSERT(heading_index < alia_app_typeface_count(g_app));
 
     fill_resolved_font(
-        ui, alia_app_typeface(g_app, body_index), 14.f, &g_fonts.body_14);
+        ui,
+        alia_app_typeface(g_app, body_index),
+        14.f * scale,
+        &g_fonts.body_14);
     fill_resolved_font(
         ui,
         alia_app_typeface(g_app, heading_index),
-        14.f,
+        14.f * scale,
         &g_fonts.heading_14);
     fill_resolved_font(
         ui,
         alia_app_typeface(g_app, heading_index),
-        18.f,
+        18.f * scale,
         &g_fonts.heading_18);
 }
 
@@ -65,16 +68,19 @@ demo_setup_fonts(alia_app* app)
     ALIA_ASSERT(app);
     g_app = app;
     refresh_resolved_fonts(
-        alia_font_roboto_regular_index, alia_font_roboto_bold_index);
+        alia_font_roboto_regular_index, alia_font_roboto_bold_index, 1.0f);
 }
 
 void
 demo_set_typefaces(
-    alia_app* app, size_t body_font_index, size_t heading_font_index)
+    alia_app* app,
+    size_t body_font_index,
+    size_t heading_font_index,
+    float scale)
 {
     ALIA_ASSERT(app);
     g_app = app;
-    refresh_resolved_fonts(body_font_index, heading_font_index);
+    refresh_resolved_fonts(body_font_index, heading_font_index, scale);
 }
 
 void

@@ -56,6 +56,26 @@ TEST_CASE("layout flow provide box")
         leaf, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(20.f, 10.f)));
 }
 
+TEST_CASE("layout grid provide box")
+{
+    alia_box grid_box;
+    alia_box row_box;
+    alia_box leaf;
+    run_layout_case(alia_vec2f_make(100.f, 50.f), [&](ui_context ctx) {
+        grid(ctx, provide_box(grid_box), [&](alia_layout_grid_handle handle) {
+            grid_row(ctx, handle, provide_box(row_box), ALIGN_RIGHT, [&]() {
+                test_leaf(ctx, alia_vec2f_make(20.f, 10.f), NO_FLAGS, &leaf);
+            });
+        });
+    });
+    CHECK(check_box_eq(
+        grid_box, alia_vec2f_make(0.f, 0.f), alia_vec2f_make(100.f, 50.f)));
+    CHECK(check_box_eq(
+        row_box, alia_vec2f_make(80.f, 0.f), alia_vec2f_make(20.f, 10.f)));
+    CHECK(check_box_eq(
+        leaf, alia_vec2f_make(80.f, 0.f), alia_vec2f_make(20.f, 10.f)));
+}
+
 TEST_CASE("layout edge offsets provide box")
 {
     alia_box outer;

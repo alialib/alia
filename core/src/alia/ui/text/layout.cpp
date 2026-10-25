@@ -173,9 +173,10 @@ text_emit_flow_fragments(
     alia_text_engine* engine = text.engine;
 
     // A run scope carries this node's horizontal edge spacing into the flow.
+    // `FLUSH` clears it, matching the leaf path.
+    float const spacing = text_effective_spacing(text);
     alia_flow_emit_run_push_control(
-        emitter,
-        alia_edge_offsets{.left = text.spacing, .right = text.spacing});
+        emitter, alia_edge_offsets{.left = spacing, .right = spacing});
 
     int const count = engine->vtable->segment_count(engine, text.block);
     for (int i = 0; i < count; ++i)
