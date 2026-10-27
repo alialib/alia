@@ -92,7 +92,8 @@ invoke_controller(ui_system& sys, event_traversal& events)
     ctx.style.text.font = nullptr;
     // Resolve the default text color for the system palette.
     ctx.style.text.color = alia_palette_color_resolve(
-        &sys.palette, ALIA_PALETTE_COLOR(foundation.text.base, 0xff));
+        alia_palette_colors(&sys.palette),
+        ALIA_PALETTE_COLOR(foundation.text.base, 0xff));
     alia_style_apply_seeds(&ctx.style, &sys.styles.seeds);
     ctx.input = &sys.input;
     ctx.layout = &layout;

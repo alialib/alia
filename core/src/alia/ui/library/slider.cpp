@@ -208,12 +208,16 @@ render_slider(
         = alia_responsive_color_resolve(p, s->thumb_color, thumb_status);
 
     float const thumb_r = alia_px(ctx, s->thumb_radius);
-
-    // TODO: Add blur (legacy Skia blur shadow). Backend not ready.
-    // float const blur_sigma = 4.0f;
-    // float const x_drop = 2.0f;
-    // float const y_drop = 2.0f;
-    // alia_draw_blurred_box(...)
+    float const drop = alia_px(ctx, 1.f);
+    alia_srgba8 shadow = thumb_rgba;
+    shadow.a = p->glow_alpha;
+    alia_draw_circle(
+        ctx,
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+        alia_vec2f{thumb_center.x + drop, thumb_center.y + drop},
+        thumb_r,
+        shadow,
+        alia_px(ctx, 4.f));
 
     alia_draw_circle(
         ctx,
@@ -231,7 +235,7 @@ render_slider(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             thumb_center,
             alia_px(ctx, s->highlight_radius),
-            alia_palette_color_resolve(p, s->highlight));
+            alia_palette_highlight_resolve(p, s->highlight));
     }
 
     // TODO: Draw focus
@@ -262,7 +266,8 @@ alia_slider_style_generate(
         = alia_responsive_color_faded(ALIA_PALETTE_COLOR(primary.solid, 0xff)),
         .thumb_color = alia_responsive_color_faded(
             ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
+        .highlight
+        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
         .layout_width = 96.f * s.scale,
         .layout_height = 32.f * s.scale,
         .track_thickness = 6.f * s.scale,

@@ -84,7 +84,7 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
     {
         alia_vec2i const size = alia_ui_surface_get_size(alia_ctx_system(ctx));
         alia_srgba8 const bg = alia_srgba8_from_srgb8(
-            alia_ctx_palette(ctx)->foundation.background.base);
+            alia_ctx_palette(ctx)->colors.foundation.background.base);
         alia_draw_box(
             ctx,
             0,
@@ -98,7 +98,7 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
         {
             char const* const label = "Hello GLFW+GL";
             alia_srgba8 const text_color = alia_srgba8_from_srgb8(
-                alia_ctx_palette(ctx)->foundation.text.base);
+                alia_ctx_palette(ctx)->colors.foundation.text.base);
             alia_msdf_draw_text(
                 g_text_engine,
                 ctx,

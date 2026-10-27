@@ -115,8 +115,8 @@ render_checkbox(
 
     if (!disabled)
     {
-        alia_srgb8 const flare_srgb
-            = alia_palette_srgb_at(p, style->highlight.index);
+        alia_srgb8 const flare_srgb = alia_palette_srgb_at(
+            alia_palette_colors(p), style->highlight.index);
         render_click_flares(
             ctx,
             ALIA_NESTED_BITPACK(data.bits, click_flare),
@@ -148,7 +148,7 @@ render_checkbox(
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_color_resolve(p, style->highlight));
+            alia_palette_highlight_resolve(p, style->highlight));
     }
 }
 
@@ -184,7 +184,8 @@ alia_checkbox_style_generate(
         .checkmark = alia_responsive_color_faded(
             ALIA_PALETTE_COLOR(foundation.background.base, 0xff)),
 
-        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
+        .highlight = ALIA_PALETTE_COLOR(
+            primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
 
         // Leaf is the box, with a little room around it. The hover halo
         // paints outside this box.

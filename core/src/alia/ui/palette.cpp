@@ -13,39 +13,39 @@ alia_palette_flat_index_ok()
     if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
             + 0u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
             + (size_t) ALIA_PALETTE_RAMP_LEVEL_BASE
-        != offsetof(alia_palette, foundation.background.base) / slot)
+        != offsetof(alia_color_table, foundation.background.base) / slot)
         return false;
     if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
             + 1u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
             + (size_t) ALIA_PALETTE_RAMP_LEVEL_WEAKER_2
-        != offsetof(alia_palette, foundation.structural.weaker_2) / slot)
+        != offsetof(alia_color_table, foundation.structural.weaker_2) / slot)
         return false;
     if (ALIA_PALETTE_INDEX_FOUNDATION_BASE
             + 2u * ALIA_PALETTE_FOUNDATION_RAMP_STRIDE
             + (size_t) ALIA_PALETTE_RAMP_LEVEL_BASE
-        != offsetof(alia_palette, foundation.text.base) / slot)
+        != offsetof(alia_color_table, foundation.text.base) / slot)
         return false;
     // semantic swatch: base + swatch * stride + part
     if (ALIA_PALETTE_INDEX_SWATCH_BASE
             + (size_t) ALIA_PALETTE_SWATCH_PRIMARY * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_OUTLINE
-        != offsetof(alia_palette, primary.outline) / slot)
+        != offsetof(alia_color_table, primary.outline) / slot)
         return false;
     if (ALIA_PALETTE_INDEX_SWATCH_BASE
             + (size_t) ALIA_PALETTE_SWATCH_INFO * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_SOLID
-        != offsetof(alia_palette, info.solid) / slot)
+        != offsetof(alia_color_table, info.solid) / slot)
         return false;
     // literal: base + literal * stride + part
     if (ALIA_PALETTE_INDEX_LITERAL_BASE
             + (size_t) ALIA_PALETTE_LITERAL_RED * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_OUTLINE
-        != offsetof(alia_palette, colors.red.outline) / slot)
+        != offsetof(alia_color_table, colors.red.outline) / slot)
         return false;
     if (ALIA_PALETTE_INDEX_LITERAL_BASE
             + (size_t) ALIA_PALETTE_LITERAL_PINK * ALIA_PALETTE_SWATCH_STRIDE
             + (size_t) ALIA_PALETTE_SWATCH_PART_TEXT
-        != offsetof(alia_palette, colors.pink.text) / slot)
+        != offsetof(alia_color_table, colors.pink.text) / slot)
         return false;
     return true;
 }
@@ -53,8 +53,11 @@ static_assert(
     alia_palette_flat_index_ok(),
     "palette flat index math must match struct layout");
 static_assert(
-    sizeof(alia_palette) == ALIA_PALETTE_SLOT_COUNT * sizeof(alia_srgb8),
-    "palette union must match flat[ALIA_PALETTE_SLOT_COUNT]");
+    sizeof(alia_color_table) == ALIA_PALETTE_SLOT_COUNT * sizeof(alia_srgb8),
+    "color table must match flat[ALIA_PALETTE_SLOT_COUNT]");
+static_assert(
+    offsetof(alia_palette, colors) == 0,
+    "color table must be the first member of the palette");
 
 static inline float
 alia_deg_to_rad(float degrees)
@@ -112,6 +115,9 @@ alia_theme_colors_recipe_default(void)
 
         .alert_l = {.light = 0.48f, .dark = 0.68f},
         .alert_c = 0.20f,
+
+        .glow_l = {.light = 0.30f, .dark = 0.25f},
+        .highlight_l = {.light = 0.05f, .dark = 0.12f},
     };
 }
 
@@ -360,45 +366,82 @@ generate_literals(
     }
 }
 
+// Get the alpha of a paint at lightness `fg_l` that moves the page by `step`
+// toward that paint. `step` is positive. The sign follows `fg_l - bg_l`.
+// Compositing at alpha `a` mixes linear luminance, and OKLab lightness tracks
+// the cube root of that, so the cube ratio is the alpha that lands on `bg_l +
+// step`.
+static uint8_t
+overlay_alpha_for(float bg_l, float fg_l, float step)
+{
+    float const toward_fg = fg_l >= bg_l ? step : -step;
+    float const target = bg_l + toward_fg;
+    float const bg3 = bg_l * bg_l * bg_l;
+    float const denom = fg_l * fg_l * fg_l - bg3;
+    float a = denom != 0.f ? (target * target * target - bg3) / denom : 0.f;
+    if (a < 0.f)
+        a = 0.f;
+    if (a > 1.f)
+        a = 1.f;
+    return (uint8_t) (a * 255.f + 0.5f);
+}
+
 void
 alia_palette_generate(
     alia_palette* out,
     alia_theme_colors const* colors,
     alia_palette_expansion const* expansion,
-    alia_palette_conditions const* conditions)
+    alia_palette_conditions const* conditions,
+    alia_theme_colors_recipe const* recipe)
 {
     ALIA_ASSERT(colors);
     ALIA_ASSERT(conditions);
     alia_palette_expansion resolved
         = expansion ? *expansion : alia_palette_expansion_default();
+    alia_theme_colors_recipe const resolved_recipe
+        = recipe ? *recipe : alia_theme_colors_recipe_default();
+    alia_color_table* table = &out->colors;
 
     generate_ramp(
-        &out->foundation.background, colors->bg, conditions, &resolved);
+        &table->foundation.background, colors->bg, conditions, &resolved);
     generate_ramp(
-        &out->foundation.structural,
+        &table->foundation.structural,
         colors->structural,
         conditions,
         &resolved);
-    generate_ramp(&out->foundation.text, colors->text, conditions, &resolved);
+    generate_ramp(
+        &table->foundation.text, colors->text, conditions, &resolved);
 
     generate_swatch_from_oklch(
-        &out->focus, colors->primary, conditions, &resolved);
+        &table->focus, colors->primary, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->selection, colors->secondary, conditions, &resolved);
+        &table->selection, colors->secondary, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->primary, colors->primary, conditions, &resolved);
+        &table->primary, colors->primary, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->secondary, colors->secondary, conditions, &resolved);
+        &table->secondary, colors->secondary, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->success, colors->success, conditions, &resolved);
+        &table->success, colors->success, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->warning, colors->warning, conditions, &resolved);
+        &table->warning, colors->warning, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->danger, colors->danger, conditions, &resolved);
+        &table->danger, colors->danger, conditions, &resolved);
     generate_swatch_from_oklch(
-        &out->info, colors->info, conditions, &resolved);
+        &table->info, colors->info, conditions, &resolved);
 
-    generate_literals(&out->colors, colors, conditions, &resolved);
+    generate_literals(&table->colors, colors, conditions, &resolved);
+
+    out->page = colors->bg;
+    bool const dark = alia_is_dark_mode(conditions);
+    out->stronger_sign = dark ? 1 : -1;
+    float const glow_l
+        = dark ? resolved_recipe.glow_l.dark : resolved_recipe.glow_l.light;
+    float const highlight_l = dark ? resolved_recipe.highlight_l.dark
+                                   : resolved_recipe.highlight_l.light;
+    out->glow_alpha = overlay_alpha_for(colors->bg.l, colors->text.l, glow_l);
+    out->highlight_alpha
+        = overlay_alpha_for(colors->bg.l, colors->primary.l, highlight_l);
+    out->conditions = *conditions;
 }
 
 static float
@@ -440,17 +483,6 @@ blend_over(alia_srgba8 dst_s, alia_srgba8 src_s)
         });
 }
 
-// +1 when stronger steps are lighter than the page (dark mode).
-static int
-stronger_oklab_sign(alia_palette const* p)
-{
-    alia_oklab const base = alia_oklab_from_rgb(
-        alia_rgb_from_srgb8(p->foundation.background.base));
-    alia_oklab const stronger = alia_oklab_from_rgb(
-        alia_rgb_from_srgb8(p->foundation.background.stronger_1));
-    return stronger.l >= base.l ? 1 : -1;
-}
-
 static int8_t
 clamp_i8(int value)
 {
@@ -467,8 +499,7 @@ static alia_srgba8
 fade_toward_page(
     alia_palette const* p, alia_srgba8 base, uint8_t l_frac, uint8_t c_frac)
 {
-    alia_oklch const page
-        = alia_oklch_from_srgb8(p->foundation.background.base);
+    alia_oklch const page = p->page;
     alia_oklch const color
         = alia_oklch_from_srgb8(alia_srgb8_make(base.r, base.g, base.b));
     float const l_t = (float) l_frac / 255.f;
@@ -486,7 +517,8 @@ alia_srgba8
 alia_color_op_resolve(
     alia_palette const* p, alia_palette_color base, alia_color_op op)
 {
-    alia_srgba8 const base_rgba = alia_palette_color_resolve(p, base);
+    alia_srgba8 const base_rgba
+        = alia_palette_color_resolve(alia_palette_colors(p), base);
     switch (op.kind)
     {
         case ALIA_COLOR_OP_ADJUST:
@@ -494,15 +526,17 @@ alia_color_op_resolve(
         case ALIA_COLOR_OP_STRENGTHEN:
             return adjust_oklab(
                 base_rgba,
-                clamp_i8((int) op.adjust.l * stronger_oklab_sign(p)),
+                clamp_i8((int) op.adjust.l * p->stronger_sign),
                 op.adjust.c_scale);
         case ALIA_COLOR_OP_FADE:
             return fade_toward_page(p, base_rgba, op.fade.l, op.fade.c);
         case ALIA_COLOR_OP_REPLACE:
-            return alia_palette_color_resolve(p, op.color);
+            return alia_palette_color_resolve(
+                alia_palette_colors(p), op.color);
         case ALIA_COLOR_OP_BLEND:
             return blend_over(
-                base_rgba, alia_palette_color_resolve(p, op.color));
+                base_rgba,
+                alia_palette_color_resolve(alia_palette_colors(p), op.color));
         case ALIA_COLOR_OP_NONE:
         default:
             return base_rgba;
@@ -519,7 +553,7 @@ alia_responsive_color_resolve(
         return alia_color_op_resolve(p, color.base, color.active);
     if (status & ALIA_INTERACTION_STATUS_HOVERED)
         return alia_color_op_resolve(p, color.base, color.hovered);
-    return alia_palette_color_resolve(p, color.base);
+    return alia_palette_color_resolve(alia_palette_colors(p), color.base);
 }
 
 static_assert(sizeof(alia_color_op) <= 4, "color op should stay a few bytes");
@@ -534,7 +568,7 @@ alia_palette_generate_from_accent(
 {
     alia_theme_colors colors;
     alia_theme_colors_generate(&colors, accent, conditions, recipe);
-    alia_palette_generate(out, &colors, expansion, conditions);
+    alia_palette_generate(out, &colors, expansion, conditions, recipe);
 }
 
 } // extern "C"

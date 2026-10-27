@@ -74,13 +74,13 @@ typedef struct alia_literal_palette
     alia_swatch pink;
 } alia_literal_palette;
 
-// flat table size for `alia_palette` - The named layout occupies a prefix of
-// this. The remaining slots are unused by the palette generator.
+// flat table size for `alia_color_table` - The named layout occupies a prefix
+// of this. The remaining slots are unused by the palette generator.
 #define ALIA_PALETTE_SLOT_COUNT 256
 
-// `alia_palette` is the theme color table: a named layout overlaid on a flat
-// sRGB array for indexed access from styles.
-typedef union alia_palette
+// `alia_color_table` is the named sRGB layout overlaid on a flat array for
+// indexed access from styles.
+typedef union alia_color_table
 {
     struct
     {
@@ -99,7 +99,7 @@ typedef union alia_palette
         alia_literal_palette colors;
     };
     alia_srgb8 flat[ALIA_PALETTE_SLOT_COUNT];
-} alia_palette;
+} alia_color_table;
 
 #define ALIA_PALETTE_SLOT_SIZE (sizeof(alia_srgb8))
 
@@ -112,14 +112,15 @@ typedef union alia_palette
 
 // flat index of the first foundation ramp slot
 #define ALIA_PALETTE_INDEX_FOUNDATION_BASE                                    \
-    ((size_t) (offsetof(alia_palette, foundation.background)                  \
+    ((size_t) (offsetof(alia_color_table, foundation.background)              \
                / ALIA_PALETTE_SLOT_SIZE))
 // flat index of the first semantic swatch slot
 #define ALIA_PALETTE_INDEX_SWATCH_BASE                                        \
-    ((size_t) (offsetof(alia_palette, focus) / ALIA_PALETTE_SLOT_SIZE))
+    ((size_t) (offsetof(alia_color_table, focus) / ALIA_PALETTE_SLOT_SIZE))
 // flat index of the first literal swatch slot
 #define ALIA_PALETTE_INDEX_LITERAL_BASE                                       \
-    ((size_t) (offsetof(alia_palette, colors.red) / ALIA_PALETTE_SLOT_SIZE))
+    ((size_t) (offsetof(alia_color_table, colors.red)                         \
+               / ALIA_PALETTE_SLOT_SIZE))
 
 // level within a foundation ramp (weaker_4 .. base .. stronger_4)
 enum alia_palette_ramp_level
@@ -231,9 +232,9 @@ alia_palette_color_make(uint8_t index, uint8_t alpha)
     return c;
 }
 
-// flat index of a named palette slot
+// flat index of a named color-table slot
 #define ALIA_PALETTE_INDEX(path)                                              \
-    ((uint8_t) (offsetof(alia_palette, path) / ALIA_PALETTE_SLOT_SIZE))
+    ((uint8_t) (offsetof(alia_color_table, path) / ALIA_PALETTE_SLOT_SIZE))
 
 // palette color from a named slot and alpha
 #define ALIA_PALETTE_COLOR(path, alpha)                                       \
@@ -272,25 +273,27 @@ alia_palette_color_literal(
         alia_palette_index_literal(literal, part), alpha);
 }
 
-// Return the sRGB color at `index` in `p`.
+// Return the sRGB color at `index` in `colors`.
 static inline alia_srgb8
-alia_palette_srgb_at(alia_palette const* p, uint8_t index)
+alia_palette_srgb_at(alia_color_table const* colors, uint8_t index)
 {
-    return p->flat[index];
+    return colors->flat[index];
 }
 
-// Resolve `index` and `alpha` against `p` to sRGBA.
+// Resolve `index` and `alpha` against `colors` to sRGBA.
 static inline alia_srgba8
-alia_palette_color_at(alia_palette const* p, uint8_t index, uint8_t alpha)
+alia_palette_color_at(
+    alia_color_table const* colors, uint8_t index, uint8_t alpha)
 {
-    return alia_srgba8_from_srgb8_alpha(p->flat[index], alpha);
+    return alia_srgba8_from_srgb8_alpha(colors->flat[index], alpha);
 }
 
-// Resolve `c` against `p` to sRGBA.
+// Resolve `c` against `colors` to sRGBA.
 static inline alia_srgba8
-alia_palette_color_resolve(alia_palette const* p, alia_palette_color c)
+alia_palette_color_resolve(
+    alia_color_table const* colors, alia_palette_color c)
 {
-    return alia_palette_color_at(p, c.index, c.alpha);
+    return alia_palette_color_at(colors, c.index, c.alpha);
 }
 
 // operation applied to a base palette color for one interaction state
@@ -475,28 +478,66 @@ alia_responsive_color_faded(alia_palette_color base)
     return color;
 }
 
-// Resolve `op` applied to `base` against `p`.
-alia_srgba8
-alia_color_op_resolve(
-    alia_palette const* p, alia_palette_color base, alia_color_op op);
-
-// Resolve `color` for an interaction `status`.
-// `status` uses the `ALIA_INTERACTION_STATUS_*` bits. Disabled wins, then
-// active, then hovered. Focus is ignored.
-alia_srgba8
-alia_responsive_color_resolve(
-    alia_palette const* p, alia_responsive_color color, uint8_t status);
-
-// Palette generation is a two-phase process that turns an accent color into
-// theme colors and then expands them into a full theme palette. Each phase
-// is parameterized, and tweaking of both intermediate and final outputs is
-// supported.
-
-// primary accent for theme color generation
-typedef struct alia_theme_accent
+// fill and border of a box, with one shared gradient angle
+typedef struct alia_responsive_box_paint
 {
-    alia_oklch primary;
-} alia_theme_accent;
+    // fill at the start of the gradient
+    alia_responsive_color fill;
+    // fill at the end of the gradient
+    alia_responsive_color fill_end;
+    // border at the start of the gradient
+    alia_responsive_color border;
+    // border at the end of the gradient
+    alia_responsive_color border_end;
+    // when true, gradients are enabled for fill and border
+    bool gradient;
+    // gradient angle, in shape-local degrees - Zero points to the right, and
+    // positive angles run clockwise. The border gradient uses this same angle,
+    // and only when the border stops differ. Unused when `gradient` is false.
+    float angle;
+    // outline width, logical px - 0 means filled-only.
+    float border_width;
+} alia_responsive_box_paint;
+
+// Return a solid paint. Each end stop copies its start.
+static inline alia_responsive_box_paint
+alia_responsive_box_paint_solid(
+    alia_responsive_color fill,
+    alia_responsive_color border,
+    float border_width)
+{
+    alia_responsive_box_paint paint;
+    paint.fill = fill;
+    paint.fill_end = fill;
+    paint.border = border;
+    paint.border_end = border;
+    paint.gradient = false;
+    paint.angle = 0.f;
+    paint.border_width = border_width;
+    return paint;
+}
+
+// Return a gradient paint. `angle` is shape-local degrees. Zero points to
+// the right, and positive angles run clockwise.
+static inline alia_responsive_box_paint
+alia_responsive_box_paint_gradient(
+    alia_responsive_color fill,
+    alia_responsive_color fill_end,
+    alia_responsive_color border,
+    alia_responsive_color border_end,
+    float angle,
+    float border_width)
+{
+    alia_responsive_box_paint paint;
+    paint.fill = fill;
+    paint.fill_end = fill_end;
+    paint.border = border;
+    paint.border_end = border_end;
+    paint.gradient = true;
+    paint.angle = angle;
+    paint.border_width = border_width;
+    return paint;
+}
 
 // conditions for evaluating a palette - These are external constraints and
 // contextual factors that affect palette generation. (i.e., These are the
@@ -510,6 +551,104 @@ typedef struct alia_palette_conditions
     // built-in default.
     float contrast_target;
 } alia_palette_conditions;
+
+// `alia_palette` combines the actual color table with the conditions that it
+// was generated under and some pre-calculated quantities related to it.
+typedef struct alia_palette
+{
+    // named sRGB slots
+    alia_color_table colors;
+    // conditions this palette was generated with
+    alia_palette_conditions conditions;
+    // background base in OKLCH
+    alia_oklch page;
+    // +1 when stronger steps are lighter than the page
+    int8_t stronger_sign;
+    // baseline alpha for a foreground-lightness glow on the page
+    uint8_t glow_alpha;
+    // baseline alpha for an accent-lightness highlight on the page
+    uint8_t highlight_alpha;
+} alia_palette;
+
+// weight of one highlight baseline - Stored in `alia_palette_color.alpha` for
+// hover rings. Since alpha values are 8-bit, this determines the resolution
+// and range in which you can define a highlight weight.
+#define ALIA_HIGHLIGHT_WEIGHT_ONE 64
+
+// Return the color table inside `palette`.
+static inline alia_color_table const*
+alia_palette_colors(alia_palette const* palette)
+{
+    return &palette->colors;
+}
+
+// Resolve `color` as a hover highlight. `color.alpha` is a weight in units of
+// `ALIA_HIGHLIGHT_WEIGHT_ONE`, where that value is `palette->highlight_alpha`.
+static inline alia_srgba8
+alia_palette_highlight_resolve(
+    alia_palette const* palette, alia_palette_color color)
+{
+    alia_srgba8 rgba
+        = alia_palette_color_resolve(alia_palette_colors(palette), color);
+    unsigned const unit = ALIA_HIGHLIGHT_WEIGHT_ONE;
+    unsigned const a
+        = ((unsigned) palette->highlight_alpha * color.alpha + unit / 2u)
+        / unit;
+    rgba.a = (uint8_t) (a > 255u ? 255u : a);
+    return rgba;
+}
+
+// Resolve `op` applied to `base` against `p`.
+alia_srgba8
+alia_color_op_resolve(
+    alia_palette const* p, alia_palette_color base, alia_color_op op);
+
+// Resolve `color` for an interaction `status`.
+// `status` uses the `ALIA_INTERACTION_STATUS_*` bits. Disabled wins, then
+// active, then hovered. Focus is ignored.
+alia_srgba8
+alia_responsive_color_resolve(
+    alia_palette const* p, alia_responsive_color color, uint8_t status);
+
+// colors of a resolved box paint - Width stays in logical px.
+typedef struct alia_resolved_box_paint
+{
+    alia_srgba8 fill;
+    alia_srgba8 fill_end;
+    alia_srgba8 border;
+    alia_srgba8 border_end;
+    bool gradient;
+    float angle;
+    float border_width;
+} alia_resolved_box_paint;
+
+// Resolve `paint` for an interaction `status`.
+static inline alia_resolved_box_paint
+alia_responsive_box_paint_resolve(
+    alia_palette const* p, alia_responsive_box_paint paint, uint8_t status)
+{
+    alia_resolved_box_paint out;
+    out.fill = alia_responsive_color_resolve(p, paint.fill, status);
+    out.fill_end = alia_responsive_color_resolve(p, paint.fill_end, status);
+    out.border = alia_responsive_color_resolve(p, paint.border, status);
+    out.border_end
+        = alia_responsive_color_resolve(p, paint.border_end, status);
+    out.gradient = paint.gradient;
+    out.angle = paint.angle;
+    out.border_width = paint.border_width;
+    return out;
+}
+
+// Palette generation is a two-phase process that turns an accent color into
+// theme colors and then expands them into a full theme palette. Each phase
+// is parameterized, and tweaking of both intermediate and final outputs is
+// supported.
+
+// primary accent for theme color generation
+typedef struct alia_theme_accent
+{
+    alia_oklch primary;
+} alia_theme_accent;
 
 // one value for light mode and one for dark mode
 typedef struct alia_light_dark_pair
@@ -542,6 +681,16 @@ typedef struct alia_theme_colors_recipe
     alia_light_dark_pair alert_l;
     // shared chroma for the alert hues
     float alert_c;
+
+    // OKLab lightness step of a glow toward the text, per mode - Positive.
+    // Generation applies the sign of `text_l - bg_l`. The dark step is larger
+    // so the alpha does not collapse on a dark page.
+    alia_light_dark_pair glow_l;
+
+    // OKLab lightness step of a highlight toward the accent, per mode -
+    // Positive. Generation applies the sign of `accent_l - bg_l`. The dark
+    // step is larger for the same reason as `glow_l`.
+    alia_light_dark_pair highlight_l;
 } alia_theme_colors_recipe;
 
 // OKLCH colors chosen for the theme
@@ -623,14 +772,17 @@ alia_theme_colors_generate(
     alia_palette_conditions const* conditions,
     alia_theme_colors_recipe const* recipe);
 
-// Expand `colors` into an sRGB palette in `out`.
-// `expansion` can be null to use the default.
+// Expand `colors` into an sRGB palette in `out` and cache the page, the
+// stronger-step sign, the glow alpha, and the highlight alpha. `expansion`
+// and `recipe` can be null to use the defaults. `recipe` supplies `glow_l`
+// and `highlight_l`.
 void
 alia_palette_generate(
     alia_palette* out,
     alia_theme_colors const* colors,
     alia_palette_expansion const* expansion,
-    alia_palette_conditions const* conditions);
+    alia_palette_conditions const* conditions,
+    alia_theme_colors_recipe const* recipe);
 
 // Generate theme colors from `accent` and expand them into an sRGB palette in
 // `out`. `recipe` and `expansion` can be null to use the defaults.

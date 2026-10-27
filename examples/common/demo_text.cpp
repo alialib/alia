@@ -93,7 +93,8 @@ demo_text(
 {
     alia_text_style const style = {
         .font = font,
-        .color = alia_palette_color_resolve(alia_ctx_palette(ctx), color),
+        .color = alia_palette_color_resolve(
+            alia_palette_colors(alia_ctx_palette(ctx)), color),
     };
     alia_text(ctx, alia::raw_code(flags), alia_text_literal(text), &style);
 }

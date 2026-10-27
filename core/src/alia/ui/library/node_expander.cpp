@@ -100,11 +100,11 @@ render_node_expander(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_color_resolve(p, style->highlight));
+            alia_palette_highlight_resolve(p, style->highlight));
     }
 
     alia_srgb8 const flare_srgb
-        = alia_palette_srgb_at(p, style->highlight.index);
+        = alia_palette_srgb_at(alia_palette_colors(p), style->highlight.index);
     render_click_flares(
         ctx,
         ALIA_NESTED_BITPACK(data.bits, click_flare),
@@ -128,7 +128,8 @@ alia_node_expander_style_generate(
     *out = alia_node_expander_style{
         .triangle = alia_responsive_color_faded(
             ALIA_PALETTE_COLOR(foundation.structural.base, 0xff)),
-        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x30),
+        .highlight
+        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
 
         // Leaf is the triangle, with a little room around it.
         .layout_width = 24.f * s.scale,

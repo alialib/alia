@@ -43,12 +43,17 @@ button_style_apply_filled(
 {
     alia_palette_color const solid = alia_palette_color_swatch(
         swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0xff);
-    style->fill = responsive_color_make(
+    alia_responsive_color const fill = responsive_color_make(
         solid,
         alia_color_op_darken(10, 255),
         alia_color_op_darken(20, 255),
         alia_color_op_replace(
             ALIA_PALETTE_COLOR(foundation.background.stronger_2, 0xff)));
+    alia_responsive_color const border = responsive_color_make(
+        solid,
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_none());
 
     style->label = responsive_color_make(
         alia_palette_color_swatch(
@@ -58,19 +63,14 @@ button_style_apply_filled(
         alia_color_op_replace(
             ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff)));
 
-    style->border_width = 0.f;
-    style->border = responsive_color_make(
-        solid,
-        alia_color_op_none(),
-        alia_color_op_none(),
-        alia_color_op_none());
+    style->paint = alia_responsive_box_paint_solid(fill, border, 0.f);
 }
 
 static void
 button_style_apply_outline(
     alia_button_style* style, enum alia_palette_swatch swatch)
 {
-    style->fill = responsive_color_make(
+    alia_responsive_color const fill = responsive_color_make(
         alia_palette_color_swatch(
             swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0x00),
         alia_color_op_replace(alia_palette_color_swatch(
@@ -87,17 +87,53 @@ button_style_apply_outline(
         alia_color_op_replace(
             ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff)));
 
-    if (style->border_width <= 0.f)
-        style->border_width = 1.5f;
+    float border_width = style->paint.border_width;
+    if (border_width <= 0.f)
+        border_width = 1.5f;
 
     // The stroke stays put on hover and press. Disabled swaps to a neutral.
-    style->border = responsive_color_make(
+    alia_responsive_color const border = responsive_color_make(
         alia_palette_color_swatch(
             swatch, ALIA_PALETTE_SWATCH_PART_OUTLINE, 0xff),
         alia_color_op_none(),
         alia_color_op_none(),
         alia_color_op_replace(
             ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff)));
+
+    style->paint = alia_responsive_box_paint_solid(fill, border, border_width);
+}
+
+static void
+button_style_apply_gradient(
+    alia_button_style* style, enum alia_palette_swatch swatch)
+{
+    alia_color_op const hovered = alia_color_op_darken(10, 255);
+    alia_color_op const active = alia_color_op_darken(20, 255);
+    alia_color_op const disabled = alia_color_op_replace(
+        ALIA_PALETTE_COLOR(foundation.background.stronger_2, 0xff));
+    alia_responsive_color const fill = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_SOLID, 0xff),
+        hovered,
+        active,
+        disabled);
+    alia_responsive_color const fill_end = responsive_color_make(
+        alia_palette_color_swatch(swatch, ALIA_PALETTE_SWATCH_PART_TEXT, 0xff),
+        hovered,
+        active,
+        disabled);
+
+    style->label = responsive_color_make(
+        alia_palette_color_swatch(
+            swatch, ALIA_PALETTE_SWATCH_PART_ON_SOLID, 0xff),
+        alia_color_op_none(),
+        alia_color_op_none(),
+        alia_color_op_replace(
+            ALIA_PALETTE_COLOR(foundation.text.weaker_2, 0xff)));
+
+    // Top to bottom. A zero-width border leaves the AA fringe on the fill.
+    style->paint = alia_responsive_box_paint_gradient(
+        fill, fill_end, fill, fill_end, 90.f, 0.f);
 }
 
 } // namespace alia
@@ -114,7 +150,6 @@ alia_button_style_generate(
     *out = alia_button_style{};
     out->padding_x = s.spacing * 1.4f * s.scale;
     out->padding_y = s.spacing * 0.7f * s.scale;
-    out->border_width = 1.5f * s.scale;
     button_style_apply_filled(out, ALIA_PALETTE_SWATCH_PRIMARY);
     out->corner_radius = 6.f * s.scale * s.roundness;
 }
@@ -128,6 +163,8 @@ alia_button_style_apply_swatch(
     ALIA_ASSERT(style);
     if (chrome == ALIA_BUTTON_CHROME_OUTLINE)
         button_style_apply_outline(style, swatch);
+    else if (chrome == ALIA_BUTTON_CHROME_GRADIENT)
+        button_style_apply_gradient(style, swatch);
     else
         button_style_apply_filled(style, swatch);
 }
@@ -203,16 +240,21 @@ alia_button_begin(
                 alia_palette const* palette = alia_ctx_palette(ctx);
                 float const corner = alia_px(ctx, style->corner_radius);
                 alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_BACKGROUND);
+                alia_resolved_box_paint const paint
+                    = alia_responsive_box_paint_resolve(
+                        palette, style->paint, interaction_status);
                 alia_draw_box(
                     ctx,
                     z,
                     scope.box,
-                    {.fill_color = alia_responsive_color_resolve(
-                         palette, style->fill, interaction_status),
+                    {.fill_color = paint.fill,
                      .corner_radius = corner,
-                     .border_width = alia_px(ctx, style->border_width),
-                     .border_color = alia_responsive_color_resolve(
-                         palette, style->border, interaction_status)});
+                     .border_width = alia_px(ctx, paint.border_width),
+                     .border_color = paint.border,
+                     .fill_end_color = paint.fill_end,
+                     .border_end_color = paint.border_end,
+                     .gradient = paint.gradient,
+                     .gradient_angle = paint.angle});
                 break;
             }
             default:

@@ -327,14 +327,16 @@ draw_scrollbar(
         ctx,
         z,
         sb,
-        alia_palette_color_resolve(palette, data.style.track_color),
+        alia_palette_color_resolve(
+            alia_palette_colors(palette), data.style.track_color),
         0.f);
 
     alia_draw_rounded_box(
         ctx,
         z,
         thumb,
-        alia_palette_color_resolve(palette, data.style.thumb_color),
+        alia_palette_color_resolve(
+            alia_palette_colors(palette), data.style.thumb_color),
         data.style.thumb_corner_radius);
 
     if ((thumb_status
@@ -345,19 +347,20 @@ draw_scrollbar(
             ctx,
             z,
             thumb,
-            alia_palette_color_resolve(palette, data.style.highlight),
+            alia_palette_color_resolve(
+                alia_palette_colors(palette), data.style.highlight),
             data.style.thumb_corner_radius);
     }
 
-    alia_srgba8 const button
-        = alia_palette_color_resolve(palette, data.style.button_color);
+    alia_srgba8 const button = alia_palette_color_resolve(
+        alia_palette_colors(palette), data.style.button_color);
     alia_draw_rounded_box(ctx, z, btn0, button, 0.f);
     alia_draw_rounded_box(ctx, z, btn1, button, 0.f);
 
     float const rotation0 = axis == 0 ? 270.f : 0.f;
     float const rotation1 = axis == 0 ? 90.f : 180.f;
-    alia_srgba8 const glyph
-        = alia_palette_color_resolve(palette, data.style.glyph_color);
+    alia_srgba8 const glyph = alia_palette_color_resolve(
+        alia_palette_colors(palette), data.style.glyph_color);
     alia_draw_equilateral_triangle(ctx, z, btn0, glyph, rotation0);
     alia_draw_equilateral_triangle(ctx, z, btn1, glyph, rotation1);
 }

@@ -19,11 +19,18 @@ test_palette(void)
 {
     alia_palette palette;
     std::memset(&palette, 0, sizeof(palette));
-    palette.flat[SLOT_WHITE] = alia_srgb8_make(255, 255, 255);
-    palette.flat[SLOT_BLACK] = alia_srgb8_make(0, 0, 0);
-    palette.flat[SLOT_RED] = alia_srgb8_make(200, 40, 40);
-    palette.flat[SLOT_GRAY] = alia_srgb8_make(128, 128, 128);
+    palette.colors.flat[SLOT_WHITE] = alia_srgb8_make(255, 255, 255);
+    palette.colors.flat[SLOT_BLACK] = alia_srgb8_make(0, 0, 0);
+    palette.colors.flat[SLOT_RED] = alia_srgb8_make(200, 40, 40);
+    palette.colors.flat[SLOT_GRAY] = alia_srgb8_make(128, 128, 128);
     return palette;
+}
+
+static void
+set_page(alia_palette* palette, alia_srgb8 page, int8_t stronger_sign)
+{
+    palette->page = alia_oklch_from_srgb8(page);
+    palette->stronger_sign = stronger_sign;
 }
 
 static int
@@ -164,12 +171,10 @@ TEST_CASE("strengthen follows the page ramp")
     alia_palette_color const red = alia_palette_color_make(SLOT_RED, 255);
 
     alia_palette light = test_palette();
-    light.foundation.background.base = alia_srgb8_make(255, 255, 255);
-    light.foundation.background.stronger_1 = alia_srgb8_make(180, 180, 180);
+    set_page(&light, alia_srgb8_make(255, 255, 255), -1);
 
     alia_palette dark = test_palette();
-    dark.foundation.background.base = alia_srgb8_make(20, 20, 20);
-    dark.foundation.background.stronger_1 = alia_srgb8_make(80, 80, 80);
+    set_page(&dark, alia_srgb8_make(20, 20, 20), 1);
 
     alia_srgba8 const rest
         = alia_color_op_resolve(&light, gray, alia_color_op_none());
@@ -218,7 +223,7 @@ TEST_CASE("fade approaches the page without crossing it")
     alia_palette_color const red = alia_palette_color_make(SLOT_RED, 255);
 
     alia_palette light = test_palette();
-    light.foundation.background.base = alia_srgb8_make(255, 255, 255);
+    set_page(&light, alia_srgb8_make(255, 255, 255), -1);
 
     alia_srgba8 const rest
         = alia_color_op_resolve(&light, gray, alia_color_op_none());
@@ -234,7 +239,7 @@ TEST_CASE("fade approaches the page without crossing it")
     // Chroma moves to the page and the hue is taken from the page, so a red
     // control on a blue page becomes blue. A full fade lands on the page.
     alia_palette tinted = light;
-    tinted.foundation.background.base = alia_srgb8_make(0, 0, 255);
+    set_page(&tinted, alia_srgb8_make(0, 0, 255), -1);
     alia_srgba8 const joined
         = alia_color_op_resolve(&tinted, red, alia_color_op_fade(0, 255));
     CHECK(joined.b > joined.r);
@@ -252,7 +257,7 @@ TEST_CASE("fade approaches the page without crossing it")
     CHECK(channel_spread(tinted_gray) > channel_spread(rest));
 
     alia_palette dark = test_palette();
-    dark.foundation.background.base = alia_srgb8_make(20, 20, 20);
+    set_page(&dark, alia_srgb8_make(20, 20, 20), 1);
     alia_srgba8 const toward_dark
         = alia_color_op_resolve(&dark, gray, alia_color_op_fade(255, 0));
     CHECK(toward_dark.r < rest.r);
@@ -262,28 +267,30 @@ TEST_CASE("button chrome uses responsive colors")
 {
     alia_button_style style;
     alia_button_style_generate(&style, NULL);
-    CHECK(style.fill.hovered.kind == ALIA_COLOR_OP_ADJUST);
-    CHECK(style.fill.hovered.adjust.l == -10);
-    CHECK(style.fill.hovered.adjust.c_scale == 255);
-    CHECK(style.fill.active.kind == ALIA_COLOR_OP_ADJUST);
-    CHECK(style.fill.active.adjust.l == -20);
-    CHECK(style.fill.active.adjust.c_scale == 255);
-    CHECK(style.fill.disabled.kind == ALIA_COLOR_OP_REPLACE);
+    CHECK(style.paint.fill.hovered.kind == ALIA_COLOR_OP_ADJUST);
+    CHECK(style.paint.fill.hovered.adjust.l == -10);
+    CHECK(style.paint.fill.hovered.adjust.c_scale == 255);
+    CHECK(style.paint.fill.active.kind == ALIA_COLOR_OP_ADJUST);
+    CHECK(style.paint.fill.active.adjust.l == -20);
+    CHECK(style.paint.fill.active.adjust.c_scale == 255);
+    CHECK(style.paint.fill.disabled.kind == ALIA_COLOR_OP_REPLACE);
+    CHECK(style.paint.fill_end.base.index == style.paint.fill.base.index);
+    CHECK(!style.paint.gradient);
     CHECK(style.label.hovered.kind == ALIA_COLOR_OP_NONE);
     CHECK(style.label.active.kind == ALIA_COLOR_OP_NONE);
     CHECK(style.label.disabled.kind == ALIA_COLOR_OP_REPLACE);
-    CHECK(style.border_width == 0.f);
-    CHECK(style.border.hovered.kind == ALIA_COLOR_OP_NONE);
-    CHECK(style.border.active.kind == ALIA_COLOR_OP_NONE);
-    CHECK(style.border.disabled.kind == ALIA_COLOR_OP_NONE);
+    CHECK(style.paint.border_width == 0.f);
+    CHECK(style.paint.border.hovered.kind == ALIA_COLOR_OP_NONE);
+    CHECK(style.paint.border.active.kind == ALIA_COLOR_OP_NONE);
+    CHECK(style.paint.border.disabled.kind == ALIA_COLOR_OP_NONE);
 
     alia_button_style_apply_swatch(
         &style, ALIA_PALETTE_SWATCH_DANGER, ALIA_BUTTON_CHROME_OUTLINE);
-    CHECK(style.fill.base.alpha == 0);
-    CHECK(style.fill.hovered.kind == ALIA_COLOR_OP_REPLACE);
-    CHECK(style.fill.hovered.color.alpha == 0x20);
-    CHECK(style.fill.active.color.alpha == 0x40);
-    CHECK(style.fill.hovered.color.index == style.fill.base.index);
+    CHECK(style.paint.fill.base.alpha == 0);
+    CHECK(style.paint.fill.hovered.kind == ALIA_COLOR_OP_REPLACE);
+    CHECK(style.paint.fill.hovered.color.alpha == 0x20);
+    CHECK(style.paint.fill.active.color.alpha == 0x40);
+    CHECK(style.paint.fill.hovered.color.index == style.paint.fill.base.index);
     CHECK(style.label.hovered.kind == ALIA_COLOR_OP_NONE);
     CHECK(style.label.active.kind == ALIA_COLOR_OP_NONE);
     CHECK(style.label.disabled.kind == ALIA_COLOR_OP_REPLACE);
@@ -291,12 +298,41 @@ TEST_CASE("button chrome uses responsive colors")
         style.label.base.index
         == alia_palette_index_swatch(
             ALIA_PALETTE_SWATCH_DANGER, ALIA_PALETTE_SWATCH_PART_TEXT));
-    CHECK(style.border.hovered.kind == ALIA_COLOR_OP_NONE);
-    CHECK(style.border.active.kind == ALIA_COLOR_OP_NONE);
-    CHECK(style.border.disabled.kind == ALIA_COLOR_OP_REPLACE);
+    CHECK(style.paint.border.hovered.kind == ALIA_COLOR_OP_NONE);
+    CHECK(style.paint.border.active.kind == ALIA_COLOR_OP_NONE);
+    CHECK(style.paint.border.disabled.kind == ALIA_COLOR_OP_REPLACE);
     CHECK(
-        style.border.base.index
+        style.paint.border.base.index
         == alia_palette_index_swatch(
             ALIA_PALETTE_SWATCH_DANGER, ALIA_PALETTE_SWATCH_PART_OUTLINE));
-    CHECK(style.border_width == 1.5f);
+    CHECK(style.paint.border_width == 1.5f);
+}
+
+TEST_CASE("highlight alpha follows the accent")
+{
+    alia_theme_accent accent;
+    alia_theme_accent_from_hue(&accent, 4.5f, NULL);
+    alia_palette_conditions const light_mode
+        = alia_palette_conditions_default(false);
+    alia_palette_conditions const dark_mode
+        = alia_palette_conditions_default(true);
+    alia_palette light;
+    alia_palette dark;
+    alia_palette_generate_from_accent(
+        &light, &accent, &light_mode, NULL, NULL);
+    alia_palette_generate_from_accent(&dark, &accent, &dark_mode, NULL, NULL);
+
+    CHECK(light.highlight_alpha > dark.highlight_alpha);
+    CHECK(light.highlight_alpha > 0);
+    CHECK(dark.highlight_alpha > 0);
+
+    alia_palette_color const ring = alia_palette_color_make(
+        alia_palette_index_swatch(
+            ALIA_PALETTE_SWATCH_PRIMARY, ALIA_PALETTE_SWATCH_PART_OUTLINE),
+        ALIA_HIGHLIGHT_WEIGHT_ONE);
+    CHECK(
+        alia_palette_highlight_resolve(&light, ring).a
+        == light.highlight_alpha);
+    CHECK(
+        alia_palette_highlight_resolve(&dark, ring).a == dark.highlight_alpha);
 }

@@ -111,7 +111,7 @@ render_radio_button(
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_color_resolve(p, style->highlight));
+            alia_palette_highlight_resolve(p, style->highlight));
     }
 
     if (!is_disabled)
@@ -156,7 +156,8 @@ alia_radio_button_style_generate(
             ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)),
         .dot = alia_responsive_color_faded(
             ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x18),
+        .highlight
+        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
         // Leaf is the ring, with a little room around it. The hover halo
         // paints outside this box.
         .layout_width = 28.f * s.scale,

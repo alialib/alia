@@ -132,14 +132,59 @@ struct PSIn
     nointerpolation float4 data_a : TEXCOORD4;
     float2 uv_msdf : TEXCOORD5;
     nointerpolation float msdf_sdf_scale : TEXCOORD6;
+    float4 border_lab : TEXCOORD7;
 };
+
+static const int k_gradient_fill = 256;
+static const int k_gradient_border = 512;
+
+float3 srgb_to_linear_vs(float3 srgb)
+{
+    float3 low = srgb / 12.92;
+    float3 high = pow((srgb + 0.055) / 1.055, 2.4);
+    float3 mask = step(0.04045, srgb);
+    return lerp(low, high, mask);
+}
+
+float4 srgba_to_linear_vs(float4 srgba)
+{
+    return float4(srgb_to_linear_vs(srgba.rgb) * srgba.a, srgba.a);
+}
+
+float4 unpack_srgba(float packed_as_float)
+{
+    uint packed_bits = asuint(packed_as_float);
+    return float4(
+        float(packed_bits & 255u),
+        float((packed_bits >> 8u) & 255u),
+        float((packed_bits >> 16u) & 255u),
+        float((packed_bits >> 24u) & 255u)) / 255.0;
+}
+
+float3 linear_to_oklab(float3 c)
+{
+    float l = dot(c, float3(0.4122214708, 0.5363325363, 0.0514459929));
+    float m = dot(c, float3(0.2119034982, 0.6806995451, 0.1073969566));
+    float s = dot(c, float3(0.0883024619, 0.2817188376, 0.6299787005));
+    float3 lms = float3(
+        pow(max(l, 0.0), 1.0 / 3.0),
+        pow(max(m, 0.0), 1.0 / 3.0),
+        pow(max(s, 0.0), 1.0 / 3.0));
+    return float3(
+        dot(lms, float3(0.2104542553, 0.7936177850, -0.0040720468)),
+        dot(lms, float3(1.9779984951, -2.4285922050, 0.4505937099)),
+        dot(lms, float3(0.0259040371, 0.7827717662, -0.8086757660)));
+}
+
+float4 oklab_stop(float4 srgba)
+{
+    return float4(linear_to_oklab(srgb_to_linear_vs(srgba.rgb)), srgba.a);
+}
 
 PSIn vs_main(VSIn input)
 {
     PSIn o;
-    o.primitive_type = input.i_primitive_type;
-    o.data_a = input.i_data_a;
-    o.color = input.i_color;
+    o.border_lab = float4(0.0, 0.0, 0.0, 0.0);
 
     if (input.i_primitive_type == 3)
     {
@@ -149,6 +194,9 @@ PSIn vs_main(VSIn input)
         o.world = float2(0.0, 0.0);
         o.center = float2(0.0, 0.0);
         o.half_size = float2(0.0, 0.0);
+        o.primitive_type = input.i_primitive_type;
+        o.data_a = input.i_data_a;
+        o.color = srgba_to_linear_vs(input.i_color);
 
         float2 uv_min = input.i_data_a.xy;
         float2 uv_sz = input.i_data_a.zw;
@@ -160,14 +208,49 @@ PSIn vs_main(VSIn input)
     }
     else
     {
-        float2 scaled = input.a_pos * (input.i_size + float2(2.0, 2.0))
-                      + input.i_pos - float2(1.0, 1.0);
+        float sigma = input.i_data_b.z;
+        float pad = sigma > 0.0 ? max(1.0, 3.0 * sigma) : 1.0;
+        float2 scaled = input.a_pos * (input.i_size + float2(2.0 * pad, 2.0 * pad))
+                      + input.i_pos - float2(pad, pad);
         o.pos = mul(u_projection, float4(scaled, 0.0, 1.0));
         o.world = scaled;
         o.center = input.i_pos + input.i_size * 0.5;
         o.half_size = input.i_size * 0.5;
+        o.data_a = float4(input.i_data_a.xyz, sigma);
         o.uv_msdf = float2(0.0, 0.0);
         o.msdf_sdf_scale = 0.0;
+
+        o.primitive_type = input.i_primitive_type;
+        bool fill_grad = (input.i_primitive_type & k_gradient_fill) != 0;
+        bool border_grad = (input.i_primitive_type & k_gradient_border) != 0;
+
+        float2 local = scaled - o.center;
+        float angle = input.i_data_b.y;
+        float2 dir = float2(cos(angle), sin(angle));
+        float span = dot(abs(dir), o.half_size);
+        float t = span > 0.0
+                    ? 0.5 + 0.5 * dot(local, dir) / span
+                    : 0.0;
+
+        if (fill_grad)
+        {
+            o.color = lerp(
+                oklab_stop(input.i_color),
+                oklab_stop(unpack_srgba(input.i_data_a.w)),
+                t);
+        }
+        else
+        {
+            o.color = srgba_to_linear_vs(input.i_color);
+        }
+
+        if (border_grad)
+        {
+            o.border_lab = lerp(
+                oklab_stop(unpack_srgba(input.i_data_a.z)),
+                oklab_stop(unpack_srgba(input.i_data_b.x)),
+                t);
+        }
     }
     return o;
 }
@@ -234,54 +317,86 @@ float median_msdf(float3 v)
     return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
 }
 
+float3 oklab_to_linear(float3 c)
+{
+    float l_ = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+    float m_ = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+    float s_ = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+    float l = l_ * l_ * l_;
+    float m = m_ * m_ * m_;
+    float s = s_ * s_ * s_;
+    return float3(
+        +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s);
+}
+
+float4 premul_oklab(float4 lab_a)
+{
+    float3 rgb = clamp(oklab_to_linear(lab_a.xyz), 0.0, 1.0);
+    float a = clamp(lab_a.w, 0.0, 1.0);
+    return float4(rgb * a, a);
+}
+
+float shape_coverage(float d, float sigma)
+{
+    // Sigma is flat across the quad, so the untaken side does not run.
+    const float aa = 0.5;
+    if (sigma > 0.0)
+    {
+        return 1.0 / (1.0 + exp(1.6 * d / sigma));
+    }
+    return saturate(smoothstep(aa, -aa, d));
+}
+
+float4 shade_shape(PSIn input, float d)
+{
+    bool fill_grad = (input.primitive_type & k_gradient_fill) != 0;
+    bool border_grad = (input.primitive_type & k_gradient_border) != 0;
+    float4 fill = fill_grad ? premul_oklab(input.color) : input.color;
+    // A zero-width border leaves the antialiased fringe on the fill.
+    if (input.data_a.y <= 0.0)
+        return fill * shape_coverage(d, input.data_a.w);
+    float4 border = border_grad ? premul_oklab(input.border_lab)
+                                : unpack_border_color_linear(input.data_a.z);
+    float band = smoothstep(-0.5, 0.5, d + input.data_a.y);
+    return lerp(fill, border, band) * shape_coverage(d, input.data_a.w);
+}
+
 float4 ps_main(PSIn input) : SV_TARGET
 {
-    float aa = 0.5;
-    float4 color = srgba_to_linear(input.color);
-
-    if (input.primitive_type == 3)
+    if ((input.primitive_type & 255) == 3)
     {
         float3 msd = u_msdf.Sample(u_msdf_samp, input.uv_msdf).rgb;
         float sd = median_msdf(msd) - 0.5;
         float screen_px_distance = input.msdf_sdf_scale * sd;
         float opacity = saturate(screen_px_distance + 0.5);
-        return color * opacity;
+        return input.color * opacity;
     }
 
     float2 local = input.world - input.center;
+    int primitive = input.primitive_type & 255;
 
-    if (input.primitive_type == 0)
+    if (primitive == 0)
     {
         float corner = min(
             input.data_a.x, min(input.half_size.x, input.half_size.y));
-        float border_width = input.data_a.y;
-        float4 border_color = unpack_border_color_linear(input.data_a.z);
         float d = sd_round_rect(local, input.half_size, corner);
-        float alpha_inner = smoothstep(-aa, aa, d + border_width);
-        float alpha_outer = saturate(smoothstep(aa, -aa, d));
-        float4 mix_color = lerp(color, border_color, alpha_inner);
-        return mix_color * alpha_outer;
+        return shade_shape(input, d);
     }
 
-    if (input.primitive_type == 1)
+    if (primitive == 1)
     {
         float R = min(input.half_size.x, input.half_size.y);
         float d = sd_equilateral_triangle(
             rotate_point_clockwise(local, -input.data_a.x), R);
-        float alpha = saturate(smoothstep(aa, -aa, d));
-        return color * alpha;
+        return shade_shape(input, d);
     }
 
-    if (input.primitive_type == 2)
+    if (primitive == 2)
     {
-        float squircle_radius = input.data_a.x;
-        float border_width = input.data_a.y;
-        float4 border_color = unpack_border_color_linear(input.data_a.z);
-        float d = sd_squircle(local, squircle_radius);
-        float alpha_inner = smoothstep(-aa, aa, d + border_width);
-        float alpha_outer = saturate(smoothstep(aa, -aa, d));
-        float4 mix_color = lerp(color, border_color, alpha_inner);
-        return mix_color * alpha_outer;
+        float d = sd_squircle(local, input.data_a.x);
+        return shade_shape(input, d);
     }
 
     return float4(0, 0, 0, 0);
@@ -293,7 +408,7 @@ struct primitive_instance
 {
     float min[2];
     float size[2];
-    float color[4];
+    uint8_t color[4];
     int primitive_type;
     float data_a[4];
     float data_b[4];
@@ -423,7 +538,7 @@ renderer_init_gpu(alia_d3d11_renderer* renderer)
          1},
         {"I_COLOR",
          0,
-         DXGI_FORMAT_R32G32B32A32_FLOAT,
+         DXGI_FORMAT_R8G8B8A8_UNORM,
          1,
          16,
          D3D11_INPUT_PER_INSTANCE_DATA,
@@ -432,21 +547,21 @@ renderer_init_gpu(alia_d3d11_renderer* renderer)
          0,
          DXGI_FORMAT_R32_SINT,
          1,
-         32,
+         20,
          D3D11_INPUT_PER_INSTANCE_DATA,
          1},
         {"I_DATA_A",
          0,
          DXGI_FORMAT_R32G32B32A32_FLOAT,
          1,
-         36,
+         24,
          D3D11_INPUT_PER_INSTANCE_DATA,
          1},
         {"I_DATA_B",
          0,
          DXGI_FORMAT_R32G32B32A32_FLOAT,
          1,
-         52,
+         40,
          D3D11_INPUT_PER_INSTANCE_DATA,
          1},
     };
@@ -1054,12 +1169,45 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     auto* instances = alia::arena_alloc_array<primitive_instance>(
         rect_alloc, bucket->count);
 
-    auto pack_border_color = [](alia_srgba8 c) -> float {
+    auto pack_color = [](alia_srgba8 c) -> float {
         uint32_t packed = uint32_t(c.r) | (uint32_t(c.g) << 8u)
                         | (uint32_t(c.b) << 16u) | (uint32_t(c.a) << 24u);
         float f;
         std::memcpy(&f, &packed, sizeof(f));
         return f;
+    };
+
+    float const degrees_to_radians = 3.14159265358979323846f / 180.0f;
+
+    auto pack_shape = [&](primitive_instance& inst,
+                          alia_shape_style const& style,
+                          float geometry,
+                          float rotation_radians) {
+        inst.data_a[0] = geometry;
+        inst.data_a[1] = style.border_width;
+        inst.data_a[2] = pack_color(style.border_color);
+        inst.data_a[3] = pack_color(style.fill_end_color);
+        inst.data_b[0] = pack_color(style.border_end_color);
+        inst.data_b[2] = style.sigma;
+        if (style.gradient)
+        {
+            inst.primitive_type |= ALIA_PRIMITIVE_FLAG_GRADIENT_FILL;
+            if (style.border_width > 0.f
+                && (style.border_color.r != style.border_end_color.r
+                    || style.border_color.g != style.border_end_color.g
+                    || style.border_color.b != style.border_end_color.b
+                    || style.border_color.a != style.border_end_color.a))
+            {
+                inst.primitive_type |= ALIA_PRIMITIVE_FLAG_GRADIENT_BORDER;
+            }
+            inst.data_b[1]
+                = style.gradient_angle * degrees_to_radians
+                + rotation_radians;
+        }
+        else
+        {
+            inst.data_b[1] = 0.f;
+        }
     };
 
     UINT written = 0;
@@ -1073,34 +1221,38 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         inst.min[1] = primitive->box.min.y;
         inst.size[0] = primitive->box.size.x;
         inst.size[1] = primitive->box.size.y;
-        inst.color[0] = primitive->color.r / 255.f;
-        inst.color[1] = primitive->color.g / 255.f;
-        inst.color[2] = primitive->color.b / 255.f;
-        inst.color[3] = primitive->color.a / 255.f;
-        inst.primitive_type = int(primitive->primitive_type);
+        inst.color[0] = primitive->color.r;
+        inst.color[1] = primitive->color.g;
+        inst.color[2] = primitive->color.b;
+        inst.color[3] = primitive->color.a;
+        inst.primitive_type
+            = int(primitive->primitive_type & ALIA_PRIMITIVE_TYPE_MASK);
         std::memset(inst.data_a, 0, sizeof(inst.data_a));
         std::memset(inst.data_b, 0, sizeof(inst.data_b));
 
-        switch (primitive->primitive_type)
+        switch (primitive->primitive_type & ALIA_PRIMITIVE_TYPE_MASK)
         {
             case ALIA_PRIMITIVE_BOX:
-                inst.data_a[0] = primitive->payload.box.corner_radius;
-                inst.data_a[1] = primitive->payload.box.border_width;
-                inst.data_a[2]
-                    = pack_border_color(primitive->payload.box.border_color);
+                pack_shape(
+                    inst,
+                    primitive->payload.box.style,
+                    primitive->payload.box.corner_radius,
+                    0.f);
                 break;
             case ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE: {
-                float const degrees_to_radians
-                    = 3.14159265358979323846f / 180.0f;
-                inst.data_a[0] = primitive->payload.triangle.rotation_degrees
-                               * degrees_to_radians;
+                float const radians
+                    = primitive->payload.triangle.rotation_degrees
+                    * degrees_to_radians;
+                pack_shape(
+                    inst, primitive->payload.triangle.style, radians, radians);
                 break;
             }
             case ALIA_PRIMITIVE_SQUIRCLE:
-                inst.data_a[0] = primitive->payload.squircle.radius;
-                inst.data_a[1] = primitive->payload.squircle.border_width;
-                inst.data_a[2] = pack_border_color(
-                    primitive->payload.squircle.border_color);
+                pack_shape(
+                    inst,
+                    primitive->payload.squircle.style,
+                    primitive->payload.squircle.radius,
+                    0.f);
                 break;
             case ALIA_PRIMITIVE_MSDF_GLYPH:
                 inst.data_a[0] = primitive->payload.msdf_glyph.uv_rect[0];

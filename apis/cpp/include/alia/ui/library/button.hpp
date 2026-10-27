@@ -29,6 +29,7 @@ enum class button_chrome
 {
     filled,
     outline,
+    gradient,
 };
 
 // swatch and chrome pair describing a button variant
@@ -74,6 +75,8 @@ to_c_chrome(button_chrome chrome)
             return ALIA_BUTTON_CHROME_FILLED;
         case button_chrome::outline:
             return ALIA_BUTTON_CHROME_OUTLINE;
+        case button_chrome::gradient:
+            return ALIA_BUTTON_CHROME_GRADIENT;
     }
     return ALIA_BUTTON_CHROME_FILLED;
 }

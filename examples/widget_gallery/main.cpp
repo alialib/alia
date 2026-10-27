@@ -315,6 +315,11 @@ do_button_demo(ui_context ctx)
             "Outline Danger",
             actions::noop(),
             {swatch::danger, button_chrome::outline});
+        button(
+            ctx,
+            "Gradient",
+            actions::noop(),
+            {swatch::danger, button_chrome::gradient});
     });
 }
 
@@ -356,7 +361,7 @@ do_dropdown_demo(ui_context ctx)
             concrete_panel(
                 ctx,
                 alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
-                alia_ctx_palette(ctx)->foundation.background.stronger_1,
+                alia_ctx_palette(ctx)->colors.foundation.background.stronger_1,
                 FILL,
                 [&]() {
                     column(ctx, pad(6), [&]() {
@@ -448,7 +453,8 @@ the_demo(ui_context ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(ctx)->foundation.background.stronger_1,
+                    alia_ctx_palette(ctx)
+                        ->colors.foundation.background.stronger_1,
                     GROW | FILL,
                     [&]() {
                         with_spacing(ctx, 6, [&] {
@@ -463,7 +469,7 @@ the_demo(ui_context ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(ctx)->foundation.background.base,
+                    alia_ctx_palette(ctx)->colors.foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {

@@ -1,6 +1,7 @@
 #include <alia/ui/animation.h>
 
 #include <alia/abi/kernel/animation.h>
+#include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/impl/events.hpp>
@@ -37,6 +38,20 @@ fire_click_flare(
     }
 }
 
+// peak flare strength relative to the highlight baseline
+static float const flare_peak_scale = 2.25f;
+
+static uint8_t
+flare_alpha(float intensity, float peak)
+{
+    float const a = intensity * peak;
+    if (a <= 0.f)
+        return 0;
+    if (a >= 255.f)
+        return 255;
+    return (uint8_t) (a + 0.5f);
+}
+
 void
 render_click_flares(
     alia_ui_context* ctx,
@@ -46,6 +61,9 @@ render_click_flares(
     alia_srgb8 color,
     float radius)
 {
+    float const peak
+        = (float) alia_ctx_palette(ctx)->highlight_alpha * flare_peak_scale;
+
     // TODO: Don't hardcode the maximum number of flares.
     alia_nanosecond_count flare_ticks_left[8];
     {
@@ -75,7 +93,7 @@ render_click_flares(
                 position,
                 radius * radius_scale_factor,
                 alia_srgba8_from_srgb8_alpha(
-                    color, uint8_t(intensity * 0x36)));
+                    color, flare_alpha(intensity, peak)));
         }
     }
 
@@ -95,7 +113,7 @@ render_click_flares(
                 position,
                 radius,
                 alia_srgba8_from_srgb8_alpha(
-                    color, uint8_t(intensity * 0x36)));
+                    color, flare_alpha(intensity, peak)));
         }
     }
 
@@ -116,7 +134,8 @@ render_click_flares(
             alia_z(ctx, ALIA_Z_PLANE_EFFECT),
             position,
             scale_factor * radius,
-            alia_srgba8_from_srgb8_alpha(color, uint8_t(scale_factor * 0x36)));
+            alia_srgba8_from_srgb8_alpha(
+                color, flare_alpha(scale_factor, peak)));
     }
 }
 

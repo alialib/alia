@@ -54,8 +54,8 @@ alia_separator(
     {
         alia_separator_style const* const style
             = alia_separator_style_active(ctx);
-        alia_srgba8 const color
-            = alia_palette_color_resolve(alia_ctx_palette(ctx), style->color);
+        alia_srgba8 const color = alia_palette_color_resolve(
+            alia_palette_colors(alia_ctx_palette(ctx)), style->color);
         alia_draw_box(
             ctx,
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),

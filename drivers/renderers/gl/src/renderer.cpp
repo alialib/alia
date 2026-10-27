@@ -45,9 +45,12 @@ flat out vec2 v_rect_center;
 flat out vec2 v_rect_half_size;
 flat out int v_primitive_type;
 flat out vec4 v_data_a;
-flat out vec4 v_data_b;
 out vec2 v_uv_msdf;
 flat out float v_msdf_sdf_scale;
+out vec4 v_border_lab;
+
+const int k_gradient_fill = 256;
+const int k_gradient_border = 512;
 
 vec3 srgb_to_linear(vec3 srgb) {
     vec3 low = srgb / 12.92;
@@ -58,6 +61,33 @@ vec3 srgb_to_linear(vec3 srgb) {
 
 vec4 srgba_to_linear(vec4 srgba) {
     return vec4(srgb_to_linear(srgba.rgb) * srgba.a, srgba.a);
+}
+
+vec4 unpack_srgba(float packed_as_float) {
+    uint packed_bits = floatBitsToUint(packed_as_float);
+    return vec4(float(packed_bits & 255u),
+                float((packed_bits >> 8u) & 255u),
+                float((packed_bits >> 16u) & 255u),
+                float((packed_bits >> 24u) & 255u))
+         / 255.0;
+}
+
+vec3 linear_to_oklab(vec3 c) {
+    float l = dot(c, vec3(0.4122214708, 0.5363325363, 0.0514459929));
+    float m = dot(c, vec3(0.2119034982, 0.6806995451, 0.1073969566));
+    float s = dot(c, vec3(0.0883024619, 0.2817188376, 0.6299787005));
+    vec3 lms = vec3(
+        pow(max(l, 0.0), 1.0 / 3.0),
+        pow(max(m, 0.0), 1.0 / 3.0),
+        pow(max(s, 0.0), 1.0 / 3.0));
+    return vec3(
+        dot(lms, vec3(0.2104542553, 0.7936177850, -0.0040720468)),
+        dot(lms, vec3(1.9779984951, -2.4285922050, 0.4505937099)),
+        dot(lms, vec3(0.0259040371, 0.7827717662, -0.8086757660)));
+}
+
+vec4 oklab_stop(vec4 srgba) {
+    return vec4(linear_to_oklab(srgb_to_linear(srgba.rgb)), srgba.a);
 }
 
 void main() {
@@ -72,7 +102,7 @@ void main() {
 
         v_primitive_type = i_primitive_type;
         v_data_a = i_data_a;
-        v_data_b = i_data_b;
+        v_border_lab = vec4(0.0);
 
         vec2 uv_min = vec2(i_data_a[0], i_data_a[1]);
         vec2 uv_sz = vec2(i_data_a[2], i_data_a[3]);
@@ -82,20 +112,45 @@ void main() {
             uv_min.y + (1.0 - a_pos.y) * uv_sz.y);
         v_msdf_sdf_scale = i_data_b[0];
     } else {
-        vec2 scaled = a_pos * (i_size + vec2(2.0f)) + i_pos - vec2(1.0f);
+        float sigma = i_data_b.z;
+        float pad = sigma > 0.0 ? max(1.0, 3.0 * sigma) : 1.0;
+        vec2 scaled = a_pos * (i_size + vec2(2.0 * pad)) + i_pos - vec2(pad);
         gl_Position = u_projection * vec4(scaled, 0.0, 1.0);
 
-        v_color = srgba_to_linear(i_color);
         v_pos = scaled;
         v_rect_center = i_pos + i_size * 0.5;
         v_rect_half_size = i_size * 0.5;
-
-        v_primitive_type = i_primitive_type;
-        v_data_a = i_data_a;
-        v_data_b = i_data_b;
-
+        v_data_a = vec4(i_data_a.xyz, sigma);
         v_uv_msdf = vec2(0.0);
         v_msdf_sdf_scale = 0.0;
+
+        v_primitive_type = i_primitive_type;
+        bool fill_grad = (i_primitive_type & k_gradient_fill) != 0;
+        bool border_grad = (i_primitive_type & k_gradient_border) != 0;
+
+        vec2 local = scaled - v_rect_center;
+        float angle = i_data_b.y;
+        vec2 dir = vec2(cos(angle), sin(angle));
+        float span = dot(abs(dir), v_rect_half_size);
+        float t = span > 0.0
+                    ? 0.5 + 0.5 * dot(local, dir) / span
+                    : 0.0;
+
+        if (fill_grad) {
+            v_color = mix(
+                oklab_stop(i_color), oklab_stop(unpack_srgba(i_data_a.w)), t);
+        } else {
+            v_color = srgba_to_linear(i_color);
+        }
+
+        if (border_grad) {
+            v_border_lab = mix(
+                oklab_stop(unpack_srgba(i_data_a.z)),
+                oklab_stop(unpack_srgba(i_data_b.x)),
+                t);
+        } else {
+            v_border_lab = vec4(0.0);
+        }
     }
 }
 )";
@@ -107,13 +162,16 @@ flat in vec2 v_rect_center;
 flat in vec2 v_rect_half_size;
 flat in int v_primitive_type;
 flat in vec4 v_data_a;
-flat in vec4 v_data_b;
 in vec2 v_uv_msdf;
 flat in float v_msdf_sdf_scale;
+in vec4 v_border_lab;
 
 out vec4 frag_color;
 
 uniform sampler2D u_msdf;
+
+const int k_gradient_fill = 256;
+const int k_gradient_border = 512;
 
 float median_msdf(vec3 v) {
     return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
@@ -140,6 +198,25 @@ vec4 unpack_border_color_linear(float packed_as_float) {
                float((packed_bits >> 24u) & 255u))
           / 255.0;
     return srgba_to_linear(border_srgba);
+}
+
+vec3 oklab_to_linear(vec3 c) {
+    float l_ = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+    float m_ = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+    float s_ = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+    float l = l_ * l_ * l_;
+    float m = m_ * m_ * m_;
+    float s = s_ * s_ * s_;
+    return vec3(
+        +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s);
+}
+
+vec4 premul_oklab(vec4 lab_a) {
+    vec3 rgb = clamp(oklab_to_linear(lab_a.xyz), 0.0, 1.0);
+    float a = clamp(lab_a.w, 0.0, 1.0);
+    return vec4(rgb * a, a);
 }
 
 float sd_round_rect(vec2 p, vec2 b, float r)
@@ -183,33 +260,43 @@ float sd_squircle(vec2 p, float R)
     return sqrt(sqrt(x2 * x2 + y2 * y2)) - R;
 }
 
-// Output linear premultiplied color. Encoding happens on write to the sRGB
-// primary target (same blend-then-encode order as the D3D11 renderer).
-vec4 apply_aa_and_postprocess(vec4 color, float aa_alpha) {
-    return color * aa_alpha;
+float shape_coverage(float d, float sigma) {
+    // UI is always in physical pixels, so the hard edge antialiases at 0.5px.
+    // Sigma is flat across the quad, so the untaken side does not run.
+    const float aa = 0.5;
+    if (sigma > 0.0) {
+        return 1.0 / (1.0 + exp(1.6 * d / sigma));
+    }
+    return smoothstep(aa, -aa, d);
+}
+
+vec4 shade_shape(float d) {
+    bool fill_grad = (v_primitive_type & k_gradient_fill) != 0;
+    bool border_grad = (v_primitive_type & k_gradient_border) != 0;
+    vec4 fill = fill_grad ? premul_oklab(v_color) : v_color;
+    // A zero-width border leaves the antialiased fringe on the fill.
+    if (v_data_a.y <= 0.0)
+        return fill * shape_coverage(d, v_data_a.w);
+    vec4 border = border_grad ? premul_oklab(v_border_lab)
+                              : unpack_border_color_linear(v_data_a.z);
+    float band = smoothstep(-0.5, 0.5, d + v_data_a.y);
+    return mix(fill, border, band) * shape_coverage(d, v_data_a.w);
 }
 
 vec4 sample_primitive(vec2 p)
 {
     vec2 local_p = v_pos - v_rect_center;
+    int primitive = v_primitive_type & 255;
 
-    // UI is always in physical pixels, so AA is 0.5px.
-    float aa = 0.5;
-
-    switch (v_primitive_type)
+    switch (primitive)
     {
         // ALIA_PRIMITIVE_BOX
         case 0:
         {
             float corner_radius = min(
                 v_data_a.x, min(v_rect_half_size.x, v_rect_half_size.y));
-            float border_width = v_data_a.y;
-            vec4 border_color = unpack_border_color_linear(v_data_a.z);
             float d = sd_round_rect(local_p, v_rect_half_size, corner_radius);
-            float alpha_inner = smoothstep(-aa, aa, d + border_width);
-            float alpha_outer = smoothstep(aa, -aa, d);
-            vec4 mix_color = mix(v_color, border_color, alpha_inner);
-            return apply_aa_and_postprocess(mix_color, alpha_outer);
+            return shade_shape(d);
         }
         // ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE
         case 1:
@@ -217,20 +304,13 @@ vec4 sample_primitive(vec2 p)
             float R = min(v_rect_half_size.x, v_rect_half_size.y);
             float d = sd_equilateral_triangle(
                 rotate_point_clockwise(local_p, -v_data_a.x), R);
-            float alpha = smoothstep(aa, -aa, d);
-            return apply_aa_and_postprocess(v_color, alpha);
+            return shade_shape(d);
         }
         // ALIA_PRIMITIVE_SQUIRCLE
         case 2:
         {
-            float squircle_radius = v_data_a.x;
-            float border_width = v_data_a.y;
-            vec4 border_color = unpack_border_color_linear(v_data_a.z);
-            float d = sd_squircle(local_p, squircle_radius);
-            float alpha_inner = smoothstep(-aa, aa, d + border_width);
-            float alpha_outer = smoothstep(aa, -aa, d);
-            vec4 mix_color = mix(v_color, border_color, alpha_inner);
-            return apply_aa_and_postprocess(mix_color, alpha_outer);
+            float d = sd_squircle(local_p, v_data_a.x);
+            return shade_shape(d);
         }
         // ALIA_PRIMITIVE_MSDF_GLYPH
         case 3:
@@ -239,7 +319,7 @@ vec4 sample_primitive(vec2 p)
             float sd = median_msdf(msd) - 0.5;
             float screen_px_distance = v_msdf_sdf_scale * sd;
             float opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-            return apply_aa_and_postprocess(v_color, opacity);
+            return v_color * opacity;
         }
         default:
             return vec4(0.0);
@@ -662,12 +742,46 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     primitive_instance* primitive_instances
         = alia::arena_alloc_array<primitive_instance>(rect_alloc, boxes.count);
 
-    auto pack_border_color = [](alia_srgba8 c) -> float {
+    auto pack_color = [](alia_srgba8 c) -> float {
         uint32_t packed = uint32_t(c.r) | (uint32_t(c.g) << 8u)
                         | (uint32_t(c.b) << 16u) | (uint32_t(c.a) << 24u);
         float f;
         std::memcpy(&f, &packed, sizeof(f));
         return f;
+    };
+
+    float const degrees_to_radians = 3.14159265358979323846f / 180.0f;
+
+    auto pack_shape = [&](primitive_instance* instance,
+                          alia_shape_style const& style,
+                          float geometry,
+                          float rotation_radians) {
+        instance->data_a[0] = geometry;
+        instance->data_a[1] = style.border_width;
+        instance->data_a[2] = pack_color(style.border_color);
+        instance->data_a[3] = pack_color(style.fill_end_color);
+        instance->data_b[0] = pack_color(style.border_end_color);
+        instance->data_b[2] = style.sigma;
+        if (style.gradient)
+        {
+            instance->primitive_type |= ALIA_PRIMITIVE_FLAG_GRADIENT_FILL;
+            if (style.border_width > 0.f
+                && (style.border_color.r != style.border_end_color.r
+                    || style.border_color.g != style.border_end_color.g
+                    || style.border_color.b != style.border_end_color.b
+                    || style.border_color.a != style.border_end_color.a))
+            {
+                instance->primitive_type
+                    |= ALIA_PRIMITIVE_FLAG_GRADIENT_BORDER;
+            }
+            instance->data_b[1]
+                = style.gradient_angle * degrees_to_radians
+                + rotation_radians;
+        }
+        else
+        {
+            instance->data_b[1] = 0.f;
+        }
     };
 
     {
@@ -679,40 +793,38 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
             instance->min = primitive_cmd->box.min;
             instance->size = primitive_cmd->box.size;
             instance->color = primitive_cmd->color;
-            instance->primitive_type = int(primitive_cmd->primitive_type);
+            instance->primitive_type = int(
+                primitive_cmd->primitive_type & ALIA_PRIMITIVE_TYPE_MASK);
             std::memset(instance->data_a, 0, sizeof(instance->data_a));
             std::memset(instance->data_b, 0, sizeof(instance->data_b));
 
-            switch (primitive_cmd->primitive_type)
+            switch (primitive_cmd->primitive_type & ALIA_PRIMITIVE_TYPE_MASK)
             {
-                case ALIA_PRIMITIVE_BOX: {
-                    instance->data_a[0]
-                        = primitive_cmd->payload.box.corner_radius;
-                    instance->data_a[1]
-                        = primitive_cmd->payload.box.border_width;
-                    instance->data_a[2] = pack_border_color(
-                        primitive_cmd->payload.box.border_color);
-                    instance->data_a[3] = 0.0f;
+                case ALIA_PRIMITIVE_BOX:
+                    pack_shape(
+                        instance,
+                        primitive_cmd->payload.box.style,
+                        primitive_cmd->payload.box.corner_radius,
+                        0.f);
                     break;
-                }
                 case ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE: {
-                    float const degrees_to_radians
-                        = 3.14159265358979323846f / 180.0f;
-                    instance->data_a[0]
+                    float const radians
                         = primitive_cmd->payload.triangle.rotation_degrees
                         * degrees_to_radians;
+                    pack_shape(
+                        instance,
+                        primitive_cmd->payload.triangle.style,
+                        radians,
+                        radians);
                     break;
                 }
-                case ALIA_PRIMITIVE_SQUIRCLE: {
-                    instance->data_a[0]
-                        = primitive_cmd->payload.squircle.radius;
-                    instance->data_a[1]
-                        = primitive_cmd->payload.squircle.border_width;
-                    instance->data_a[2] = pack_border_color(
-                        primitive_cmd->payload.squircle.border_color);
-                    instance->data_a[3] = 0.0f;
+                case ALIA_PRIMITIVE_SQUIRCLE:
+                    pack_shape(
+                        instance,
+                        primitive_cmd->payload.squircle.style,
+                        primitive_cmd->payload.squircle.radius,
+                        0.f);
                     break;
-                }
                 case ALIA_PRIMITIVE_MSDF_GLYPH: {
                     instance->data_a[0]
                         = primitive_cmd->payload.msdf_glyph.uv_rect[0];
@@ -724,9 +836,6 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                         = primitive_cmd->payload.msdf_glyph.uv_rect[3];
                     instance->data_b[0]
                         = primitive_cmd->payload.msdf_glyph.sdf_scale;
-                    instance->data_b[1] = 0.0f;
-                    instance->data_b[2] = 0.0f;
-                    instance->data_b[3] = 0.0f;
                     break;
                 }
             }

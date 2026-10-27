@@ -252,7 +252,7 @@ do_content(ui_context ctx, layout_options layout = {})
                         ctx,
                         0,
                         alia_edge_offsets_make_uniform(8.f),
-                        alia_ctx_palette(ctx)->primary.subtle,
+                        alia_ctx_palette(ctx)->colors.primary.subtle,
                         [&]() {
                             alia_palette_color const on_subtle
                                 = ALIA_PALETTE_COLOR(primary.on_subtle, 0xff);
@@ -280,7 +280,7 @@ the_demo(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->foundation.background.stronger_2,
+                alia_ctx_palette(ctx)->colors.foundation.background.stronger_2,
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -291,7 +291,7 @@ the_demo(ui_context ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(ctx)->foundation.background.base,
+                    alia_ctx_palette(ctx)->colors.foundation.background.base,
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {

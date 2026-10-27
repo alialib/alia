@@ -111,18 +111,16 @@ render_toggle_switch(
         = toggle_switch_min.x + alia_px(ctx, dot_x_logical);
     alia_vec2f const dot_center{dot_center_x, dot_y};
 
-    // TODO: Add blur.
-    // float const blur_sigma = 4.0f;
-    // float const x_drop = 2.0f;
-    // float const y_drop = 2.0f;
-    // alia_draw_blurred_box(
-    //     ctx,
-    //     alia_z(ctx, ALIA_Z_PLANE_SHADOW),
-    //     {dot_center_x + x_drop,
-    //      dot_y + y_drop},
-    //     dot_radius,
-    //     alia_rgba_from_rgb_alpha(alia_rgb_from_srgb8(dot_color), 0.8f),
-    //     blur_sigma);
+    float const drop = alia_px(ctx, 1.f);
+    alia_srgba8 const shadow
+        = alia_srgba8_from_srgb8_alpha(dot_color, p->glow_alpha);
+    alia_draw_circle(
+        ctx,
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+        alia_vec2f{dot_center.x + drop, dot_center.y + drop},
+        dot_radius,
+        shadow,
+        alia_px(ctx, 2.f));
 
     alia_draw_circle(
         ctx,
@@ -140,7 +138,7 @@ render_toggle_switch(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             dot_center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_color_resolve(p, style->highlight));
+            alia_palette_highlight_resolve(p, style->highlight));
     }
 
     render_click_flares(
@@ -172,7 +170,8 @@ alia_toggle_switch_style_generate(
             ALIA_PALETTE_COLOR(foundation.structural.stronger_2, 0xff)),
         .on_dot = alia_responsive_color_faded(
             ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight = ALIA_PALETTE_COLOR(primary.outline, 0x20),
+        .highlight
+        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
         // The knob is larger than the track and hangs past its ends.
         .layout_width = 52.f * s.scale,
         .layout_height = 30.f * s.scale,

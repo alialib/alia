@@ -61,7 +61,8 @@ shell_draw_foundation_underlay(alia_ui_context* ctx)
     alia_box const surface_box
         = {{0.f, 0.f}, alia_vec2i_to_vec2f(ui->surface_size)};
     alia_srgba8 const fill
-        = alia_srgba8_from_srgb8(ui->palette.foundation.background.base);
+        = alia_srgba8_from_srgb8(
+            ui->palette.colors.foundation.background.base);
     alia_draw_box(
         ctx,
         0,

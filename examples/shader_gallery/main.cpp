@@ -217,7 +217,7 @@ do_theme_controls(ui_context ctx)
     concrete_panel(
         ctx,
         0,
-        alia_ctx_palette(ctx)->foundation.background.stronger_1,
+        alia_ctx_palette(ctx)->colors.foundation.background.stronger_1,
         FILL,
         [&]() {
             edge_offsets(
@@ -334,7 +334,7 @@ shader_gallery_root(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->foundation.background.base,
+                alia_ctx_palette(ctx)->colors.foundation.background.base,
                 FILL,
                 [&]() {
                     column(ctx, GROW, [&]() {
@@ -359,7 +359,7 @@ shader_gallery_root(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->foundation.background.base,
+                alia_ctx_palette(ctx)->colors.foundation.background.base,
                 GROW,
                 [&]() {
                     alia_do_shader(

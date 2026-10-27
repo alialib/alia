@@ -21,6 +21,8 @@ typedef struct alia_toggle_switch_style
     alia_responsive_color on_track;
     alia_responsive_color off_dot;
     alia_responsive_color on_dot;
+    // hover ring - Use  `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
+    // palette's recommended highlight alpha.
     alia_palette_color highlight;
 
     // geometry (logical px unless noted)
@@ -79,6 +81,8 @@ typedef struct alia_slider_style
     // track from the minimum through the thumb
     alia_responsive_color track_fill;
     alia_responsive_color thumb_color;
+    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
+    // palette's recommended highlight alpha.
     alia_palette_color highlight;
 
     // minimum leaf size, logical px - FILL stretches the track past
@@ -116,6 +120,8 @@ typedef struct alia_radio_button_style
 {
     alia_responsive_color outline;
     alia_responsive_color dot;
+    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
+    // palette's recommended highlight alpha.
     alia_palette_color highlight;
 
     // size of the radio button, logical px
@@ -171,6 +177,8 @@ typedef struct alia_checkbox_style
 
     alia_responsive_color checkmark;
 
+    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
+    // palette's recommended highlight alpha.
     alia_palette_color highlight;
 
     // size of the checkbox leaf, logical px
@@ -223,6 +231,8 @@ alia_checkbox_style_active(alia_ui_context* ctx)
 typedef struct alia_node_expander_style
 {
     alia_responsive_color triangle;
+    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
+    // palette's recommended highlight alpha.
     alia_palette_color highlight;
 
     // layout size, logical px - The control does not stretch the glyph beyond
@@ -305,15 +315,10 @@ alia_scrollbar_style_active(alia_ui_context* ctx)
 // button style (catalog slot ALIA_STYLE_BUTTON)
 typedef struct alia_button_style
 {
-    // fill paint - An alpha-0 base is allowed for outline-only buttons.
-    alia_responsive_color fill;
+    // fill and border paint
+    alia_responsive_box_paint paint;
     // label color
     alia_responsive_color label;
-
-    // outline width, logical px - 0 means filled-only (no stroke).
-    float border_width;
-    // border paint
-    alia_responsive_color border;
 
     // geometry, logical px
     float padding_x;
@@ -333,10 +338,12 @@ enum
 {
     ALIA_BUTTON_CHROME_FILLED = 0,
     ALIA_BUTTON_CHROME_OUTLINE = 1,
+    // filled swatch fading toward its subtle stop
+    ALIA_BUTTON_CHROME_GRADIENT = 2,
 };
 
-// Rewrite chrome colors for `swatch` and `chrome`. Geometry fields other than
-// `border_width` (for outline) are left unchanged.
+// Rewrite chrome colors for `swatch` and `chrome`. Padding and corner radius
+// are left unchanged. Outline sets `paint.border_width` when it is 0.
 void
 alia_button_style_apply_swatch(
     alia_button_style* style,

@@ -70,7 +70,7 @@ emit_text(
     alia_text_style const style = {
         .font = font,
         .color = alia_palette_color_resolve(
-            alia_ctx_palette(ctx),
+            alia_palette_colors(alia_ctx_palette(ctx)),
             alia_palette_color_foundation(
                 ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff)),
     };
