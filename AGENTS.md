@@ -30,7 +30,10 @@ as its own argument. Right now most development is done around the
 
 # Comments
 
-In general, prefer to put comments above the code that they refer to.
+In general, prefer to put comments above the code that they refer to. Please
+try to match the human writing style used elsewhere in this code. Don't use
+non-ASCII symbols. Use complete sentences rather than sentence fragments
+connected by semicolons.
 
 If you are documenting a function, please use the imperative. For example:
 "Reset `sys` to its default state."

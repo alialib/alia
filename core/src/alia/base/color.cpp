@@ -378,7 +378,9 @@ alia_srgb8_from_unclamped_oklch(alia_oklch lch)
     lch.c = clamp01(lch.c);
     lch.l = clamp01(lch.l);
     alia_oklab lab = alia_oklab_from_oklch(lch);
-    return alia_srgb8_from_oklab(/*alia_oklab_clip_chroma_to_srgb(lab)*/ lab);
+    // Map into sRGB by reducing chroma at fixed L so contrast searches and
+    // UI emit see monotonic luminance instead of hard channel clipping.
+    return alia_srgb8_from_oklab(alia_oklab_clip_chroma_to_srgb(lab));
 }
 
 // alpha / compositing (linear premultiplied)
@@ -431,6 +433,23 @@ alia_lerp_srgb8_via_oklch(alia_srgb8 a, alia_srgb8 b, float t)
     alia_oklab lerped_oklab = alia_oklab_from_oklch(lerped_oklch);
     alia_oklab clipped_oklab = alia_oklab_clip_chroma_to_srgb(lerped_oklab);
     return alia_srgb8_from_oklab(clipped_oklab);
+}
+
+float
+alia_oklch_overlay_alpha(float bg_l, float fg_l, float step)
+{
+    if (step < 0.f)
+        step = 0.f;
+    if (step == 0.f)
+        return 0.f;
+
+    float const toward_fg = fg_l >= bg_l ? step : -step;
+    float const target = bg_l + toward_fg;
+    float const bg3 = bg_l * bg_l * bg_l;
+    float const denom = fg_l * fg_l * fg_l - bg3;
+    if (denom == 0.f)
+        return 0.f;
+    return clamp01((target * target * target - bg3) / denom);
 }
 
 alia_oklch

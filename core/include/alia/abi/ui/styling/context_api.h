@@ -1,5 +1,5 @@
-#ifndef ALIA_ABI_UI_STYLING_API_H
-#define ALIA_ABI_UI_STYLING_API_H
+#ifndef ALIA_ABI_UI_STYLING_CONTEXT_API_H
+#define ALIA_ABI_UI_STYLING_CONTEXT_API_H
 
 #include <alia/abi/ui/context.h>
 
@@ -13,7 +13,8 @@ alia_font_push(alia_ui_context* ctx, alia_resolved_font const* font);
 void
 alia_font_pop(alia_ui_context* ctx);
 
-// Return the active font. Asserts if none has been pushed.
+// Return the active font.
+// This requires that a font has already been set on the context.
 static inline alia_resolved_font const*
 alia_font_active(alia_ui_context* ctx)
 {
@@ -71,14 +72,14 @@ alia_spacing_active(alia_ui_context* ctx)
 
 // Make `color` the active focus color until the matching pop.
 void
-alia_focus_color_push(alia_ui_context* ctx, alia_palette_color color);
+alia_focus_color_push(alia_ui_context* ctx, alia_srgba8 color);
 
 // Restore the focus color from the matching pop.
 void
 alia_focus_color_pop(alia_ui_context* ctx);
 
 // Return the active focus color.
-static inline alia_palette_color
+static inline alia_srgba8
 alia_focus_color_active(alia_ui_context* ctx)
 {
     ALIA_ASSERT(ctx);
@@ -119,4 +120,4 @@ alia_focus_ring_active(alia_ui_context* ctx)
 
 ALIA_EXTERN_C_END
 
-#endif /* ALIA_ABI_UI_STYLING_API_H */
+#endif /* ALIA_ABI_UI_STYLING_CONTEXT_API_H */

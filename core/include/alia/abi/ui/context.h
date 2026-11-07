@@ -5,8 +5,7 @@
 #include <alia/abi/kernel/ids.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/geometry/types.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling/context.h>
+#include <alia/abi/ui/styling/context_types.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -43,7 +42,6 @@ typedef struct alia_ui_context
     alia_layout_context* layout;
     // NULL when this pass is not drawing
     alia_draw_context* draw;
-    alia_palette* palette;
     // context IDs for this pass
     alia_context_ids id;
 } alia_ui_context;
@@ -88,12 +86,6 @@ static inline alia_draw_context*
 alia_ctx_draw(alia_ui_context* ctx)
 {
     return ctx->draw;
-}
-
-static inline alia_palette*
-alia_ctx_palette(alia_ui_context* ctx)
-{
-    return ctx->palette;
 }
 
 ALIA_EXTERN_C_END

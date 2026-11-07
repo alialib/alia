@@ -4,7 +4,7 @@
 // <alia/abi/ui/text.h>. Kept for optional layout experiments / shader gallery.
 
 #include <alia/abi/ui/layout/utilities/flow.h>
-#include <alia/abi/ui/styling/api.h>
+#include <alia/abi/ui/styling/context_api.h>
 
 struct text_layout_placement_header
 {

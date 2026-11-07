@@ -10,6 +10,7 @@
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/abi/ui/text.h>
@@ -60,9 +61,8 @@ shell_draw_foundation_underlay(alia_ui_context* ctx)
     alia_ui_system* ui = alia_ctx_system(ctx);
     alia_box const surface_box
         = {{0.f, 0.f}, alia_vec2i_to_vec2f(ui->surface_size)};
-    alia_srgba8 const fill
-        = alia_srgba8_from_srgb8(
-            ui->palette.colors.foundation.background.base);
+    alia_srgba8 const fill = alia_palette_color_srgba(
+        &ui->styling.environment.palette, ALIA_STYLE_COLOR_SURFACE);
     alia_draw_box(
         ctx,
         0,
@@ -74,7 +74,8 @@ shell_draw_foundation_underlay(alia_ui_context* ctx)
 }
 
 // Return true when `mods` is a Ctrl zoom chord.
-// Shift is optional; Alt/Win/Meta are rejected so system chords stay free.
+// Shift is optional. Alt, Win, and Meta are rejected so system chords stay
+// free.
 bool
 shell_is_ctrl_zoom_chord(alia_kmods_t mods)
 {

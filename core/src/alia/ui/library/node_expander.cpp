@@ -8,10 +8,11 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/ui/animation.h>
 
 using namespace alia::operators;
@@ -58,7 +59,7 @@ render_node_expander(
     alia_interaction_status_t interaction_status,
     alia_node_expander_style const* style)
 {
-    alia_palette const* p = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
     bool const is_disabled
         = (interaction_status & ALIA_INTERACTION_STATUS_DISABLED) != 0;
@@ -77,8 +78,8 @@ render_node_expander(
         = node_expander_triangle_box(ctx, placement, style);
     alia_vec2f const center = node_expander_center(placement);
 
-    alia_srgba8 const triangle_rgba = alia_responsive_color_resolve(
-        p, style->triangle, interaction_status);
+    alia_srgba8 const triangle_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->triangle, interaction_status);
 
     alia_draw_equilateral_triangle(
         ctx,
@@ -100,11 +101,14 @@ render_node_expander(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_highlight_resolve(p, style->highlight));
+            alia_color_program_resolve(env, style->steps, style->highlight));
     }
 
+    alia_srgba8 flare_rgba
+        = alia_color_program_resolve(env, style->steps, style->highlight);
+    flare_rgba.a = 255;
     alia_srgb8 const flare_srgb
-        = alia_palette_srgb_at(alia_palette_colors(p), style->highlight.index);
+        = alia_srgb8_make(flare_rgba.r, flare_rgba.g, flare_rgba.b);
     render_click_flares(
         ctx,
         ALIA_NESTED_BITPACK(data.bits, click_flare),
@@ -117,33 +121,40 @@ render_node_expander(
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_node_expander_style_generate(
-    alia_node_expander_style* out, alia_style_seeds const* seeds)
+    alia_node_expander_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_node_expander_style{
-        .triangle = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.base, 0xff)),
-        .highlight
-        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
+    *out = alia_node_expander_style{};
 
-        // Leaf is the triangle, with a little room around it.
-        .layout_width = 24.f * s.scale,
-        .layout_height = 24.f * s.scale,
+    out->triangle = emit_responsive(
+        emitter,
+        {.rest = sample(neutral),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
+    out->highlight
+        = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
 
-        .triangle_side = 16.f * s.scale,
+    // Leaf is the triangle, with a little room around it.
+    out->layout_width = 24.f * s.scale;
+    out->layout_height = 24.f * s.scale;
+    out->triangle_side = 16.f * s.scale;
+    // triangle "right" -> "down" rotation
+    out->collapsed_rotation_degrees = 90.f;
+    out->expanded_rotation_degrees = 180.f;
+    out->highlight_radius = 16.f * s.scale;
+    out->flare_radius = 16.f * s.scale;
 
-        // triangle "right" -> "down" rotation
-        .collapsed_rotation_degrees = 90.f,
-        .expanded_rotation_degrees = 180.f,
-
-        .highlight_radius = 16.f * s.scale,
-        .flare_radius = 16.f * s.scale,
-    };
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 alia_element_id

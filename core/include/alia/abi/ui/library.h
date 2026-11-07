@@ -7,8 +7,10 @@
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/layout/flags.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling/catalog.h>
+#include <alia/abi/ui/styling/color_program.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/paint.h>
+#include <alia/abi/ui/styling/style_catalog.h>
 
 #include <stdint.h>
 
@@ -17,13 +19,16 @@ ALIA_EXTERN_C_BEGIN
 // toggle switch style (catalog slot ALIA_STYLE_TOGGLE_SWITCH)
 typedef struct alia_toggle_switch_style
 {
-    alia_responsive_color off_track;
-    alia_responsive_color on_track;
-    alia_responsive_color off_dot;
-    alia_responsive_color on_dot;
-    // hover ring - Use  `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
-    // palette's recommended highlight alpha.
-    alia_palette_color highlight;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
+    alia_responsive_color_program off_track;
+    alia_responsive_color_program on_track;
+    alia_responsive_color_program off_dot;
+    alia_responsive_color_program on_dot;
+    // hover ring - Resolve with `alia_color_program_resolve`. Recipes usually
+    // end in `OVERLAY / SET A`.
+    alia_color_program_ref highlight;
 
     // geometry (logical px unless noted)
     float layout_width;
@@ -48,9 +53,13 @@ typedef struct alia_toggle_switch_style
 
 // Fill `out` with the toggle switch style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_toggle_switch_style_generate(
-    alia_toggle_switch_style* out, alia_style_seeds const* seeds);
+    alia_toggle_switch_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_toggle_switch_style*
 alia_toggle_switch_style_default(alia_ui_system* ui)
@@ -76,14 +85,17 @@ alia_toggle_switch(
 // slider style (catalog slot ALIA_STYLE_SLIDER)
 typedef struct alia_slider_style
 {
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
     // track behind the value
-    alia_responsive_color track_color;
+    alia_responsive_color_program track_color;
     // track from the minimum through the thumb
-    alia_responsive_color track_fill;
-    alia_responsive_color thumb_color;
-    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
-    // palette's recommended highlight alpha.
-    alia_palette_color highlight;
+    alia_responsive_color_program track_fill;
+    alia_responsive_color_program thumb_color;
+    // hover ring - Resolve with `alia_color_program_resolve`. Recipes usually
+    // end in `OVERLAY / SET A`.
+    alia_color_program_ref highlight;
 
     // minimum leaf size, logical px - FILL stretches the track past
     // `layout_width`.
@@ -99,9 +111,13 @@ typedef struct alia_slider_style
 
 // Fill `out` with the slider style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_slider_style_generate(
-    alia_slider_style* out, alia_style_seeds const* seeds);
+    alia_slider_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_slider_style*
 alia_slider_style_default(alia_ui_system* ui)
@@ -118,11 +134,14 @@ alia_slider_style_active(alia_ui_context* ctx)
 // radio button style (catalog slot ALIA_STYLE_RADIO_BUTTON)
 typedef struct alia_radio_button_style
 {
-    alia_responsive_color outline;
-    alia_responsive_color dot;
-    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
-    // palette's recommended highlight alpha.
-    alia_palette_color highlight;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
+    alia_responsive_color_program outline;
+    alia_responsive_color_program dot;
+    // hover ring - Resolve with `alia_color_program_resolve`. Recipes usually
+    // end in `OVERLAY / SET A`.
+    alia_color_program_ref highlight;
 
     // size of the radio button, logical px
     float layout_width;
@@ -144,9 +163,13 @@ typedef struct alia_radio_button_style
 
 // Fill `out` with the radio button style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_radio_button_style_generate(
-    alia_radio_button_style* out, alia_style_seeds const* seeds);
+    alia_radio_button_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_radio_button_style*
 alia_radio_button_style_default(alia_ui_system* ui)
@@ -165,21 +188,23 @@ alia_radio_button_style_active(alia_ui_context* ctx)
 // checkbox colors for one checkedness
 typedef struct alia_checkbox_state_style
 {
-    alia_responsive_color outline;
-    alia_responsive_color fill;
+    alia_responsive_color_program outline;
+    alia_responsive_color_program fill;
 } alia_checkbox_state_style;
 
 // checkbox style (catalog slot ALIA_STYLE_CHECKBOX)
 typedef struct alia_checkbox_style
 {
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
     alia_checkbox_state_style unchecked;
     alia_checkbox_state_style checked;
 
-    alia_responsive_color checkmark;
+    alia_responsive_color_program checkmark;
 
-    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
-    // palette's recommended highlight alpha.
-    alia_palette_color highlight;
+    // hover ring highlight color program
+    alia_color_program_ref highlight;
 
     // size of the checkbox leaf, logical px
     float layout_width;
@@ -209,11 +234,14 @@ typedef struct alia_checkbox_style
 // If `ui` is not `NULL`, the checkmark glyph is taken from the UI icon
 // registry (via `ALIA_UI_ICON_CHECK`).
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_checkbox_style_generate(
     alia_checkbox_style* out,
     alia_ui_system* ui,
-    alia_style_seeds const* seeds);
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_checkbox_style*
 alia_checkbox_style_default(alia_ui_system* ui)
@@ -230,13 +258,15 @@ alia_checkbox_style_active(alia_ui_context* ctx)
 // node expander style (catalog slot ALIA_STYLE_NODE_EXPANDER)
 typedef struct alia_node_expander_style
 {
-    alia_responsive_color triangle;
-    // hover ring - Use `ALIA_HIGHLIGHT_WEIGHT_ONE` for the alpha to get the
-    // palette's recommended highlight alpha.
-    alia_palette_color highlight;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
+    alia_responsive_color_program triangle;
+    // hover ring highlight color program
+    alia_color_program_ref highlight;
 
     // layout size, logical px - The control does not stretch the glyph beyond
-    // this allocated leaf; the glyph is centered in the leaf.
+    // this allocated leaf. The glyph is centered in the leaf.
     float layout_width;
     float layout_height;
 
@@ -255,9 +285,13 @@ typedef struct alia_node_expander_style
 
 // Fill `out` with the node expander style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_node_expander_style_generate(
-    alia_node_expander_style* out, alia_style_seeds const* seeds);
+    alia_node_expander_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_node_expander_style*
 alia_node_expander_style_default(alia_ui_system* ui)
@@ -276,11 +310,14 @@ alia_node_expander_style_active(alia_ui_context* ctx)
 // scrollbar style (catalog slot ALIA_STYLE_SCROLLBAR)
 typedef struct alia_scrollbar_style
 {
-    alia_palette_color track_color;
-    alia_palette_color thumb_color;
-    alia_palette_color button_color;
-    alia_palette_color glyph_color;
-    alia_palette_color highlight;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
+    alia_color_program_ref track_color;
+    alia_color_program_ref thumb_color;
+    alia_color_program_ref button_color;
+    alia_color_program_ref glyph_color;
+    alia_color_program_ref highlight;
 
     // geometry, logical px
     float width;
@@ -294,9 +331,13 @@ typedef struct alia_scrollbar_style
 
 // Fill `out` with the scrollbar style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_scrollbar_style_generate(
-    alia_scrollbar_style* out, alia_style_seeds const* seeds);
+    alia_scrollbar_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_scrollbar_style*
 alia_scrollbar_style_default(alia_ui_system* ui)
@@ -315,10 +356,12 @@ alia_scrollbar_style_active(alia_ui_context* ctx)
 // button style (catalog slot ALIA_STYLE_BUTTON)
 typedef struct alia_button_style
 {
-    // fill and border paint
-    alia_responsive_box_paint paint;
-    // label color
-    alia_responsive_color label;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+    // fill and border paint programs
+    alia_responsive_box_paint_program paint;
+    // label color program
+    alia_responsive_color_program label;
 
     // geometry, logical px
     float padding_x;
@@ -328,9 +371,13 @@ typedef struct alia_button_style
 
 // Fill `out` with the default (primary filled) button style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin in the buffer.
 void
 alia_button_style_generate(
-    alia_button_style* out, alia_style_seeds const* seeds);
+    alia_button_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 typedef uint32_t alia_button_chrome_t;
 
@@ -338,17 +385,37 @@ enum
 {
     ALIA_BUTTON_CHROME_FILLED = 0,
     ALIA_BUTTON_CHROME_OUTLINE = 1,
-    // filled swatch fading toward its subtle stop
+    // filled accent fading toward accent-text lightness
     ALIA_BUTTON_CHROME_GRADIENT = 2,
 };
 
-// Rewrite chrome colors for `swatch` and `chrome`. Padding and corner radius
-// are left unchanged. Outline sets `paint.border_width` when it is 0.
+// factory recipe for a standard button chrome variant
+typedef struct alia_button_recipe
+{
+    alia_button_chrome_t chrome;
+    // ignored for outline chrome
+    alia_color_tone_t tone;
+    // accent hue source (slot or immediate degrees)
+    alia_style_channel_ref hue;
+    // accent chroma source (slot or immediate OKLCH C)
+    alia_style_channel_ref chroma;
+} alia_button_recipe;
+
+// Return the default recipe (primary filled, match tone).
+alia_button_recipe
+alia_button_recipe_default(void);
+
+// Update a button style's colors according to `recipe`.
+// Padding and corner radius are left untouched.
+// If `recipe->chrome` is `ALIA_BUTTON_CHROME_OUTLINE`,
+// `style->paint.border_width` is set according to `seeds->outline_width`.
+// Programs are re-emitted into `emitter`, and `style->steps` is retargeted.
 void
-alia_button_style_apply_swatch(
+alia_button_style_apply_recipe(
     alia_button_style* style,
-    enum alia_palette_swatch swatch,
-    alia_button_chrome_t chrome);
+    alia_button_recipe const* recipe,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_button_style*
 alia_button_style_default(alia_ui_system* ui)
@@ -365,7 +432,10 @@ alia_button_style_active(alia_ui_context* ctx)
 // separator style (catalog slot ALIA_STYLE_SEPARATOR)
 typedef struct alia_separator_style
 {
-    alia_palette_color color;
+    // step array for this style's color programs
+    alia_color_program_step const* steps;
+
+    alia_color_program_ref color;
     // thickness, logical px - Note that this is technically the minimum size
     // along both layout axes, but separators default to stretching along the
     // cross axis, so this is effectively the size along the main container
@@ -375,9 +445,13 @@ typedef struct alia_separator_style
 
 // Fill `out` with the separator style for `seeds`.
 // Seeds can be `NULL` to use the default seeds.
+// Programs are emitted into `emitter`.
+// `out->steps` is set to the emitter region origin.
 void
 alia_separator_style_generate(
-    alia_separator_style* out, alia_style_seeds const* seeds);
+    alia_separator_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter);
 
 static inline alia_separator_style*
 alia_separator_style_default(alia_ui_system* ui)
@@ -408,16 +482,16 @@ typedef uint8_t alia_button_result_t;
 enum
 {
     ALIA_BUTTON_RESULT_NONE = 0,
-    // primary activation (left click; keyboard activate later)
+    // primary activation (left click, or keyboard activate later)
     ALIA_BUTTON_RESULT_ACTIVATED = 1,
     // secondary / context activation (right click)
     ALIA_BUTTON_RESULT_CONTEXT = 2,
 };
 
-// Emit a button container. Content goes between begin/end.
+// Emit a button container. Content goes between begin and end.
 // Return what happened on this pass. `begin` temporarily overrides the active
 // text style color to match the button label colors for the current
-// interaction state. Outer layout spacing matches leaves; pass `ALIA_FLUSH` to
+// interaction state. Outer layout spacing matches leaves. Pass `ALIA_FLUSH` to
 // suppress it.
 alia_button_result_t
 alia_button_begin(
@@ -459,7 +533,7 @@ alia_node_expander(
     alia_bool_signal* expanded,
     alia_layout_flags_t layout_flags);
 
-// Emit a separator leaf (layout + draw only; not hittable).
+// Emit a separator leaf (layout and draw only, not hittable).
 // `content_size` is in logical px. A component `<= 0` uses the active style
 // thickness on that axis. For axis-relative sizing, set
 // `ALIA_AXIS_RELATIVE_SIZE` and pass (length, breadth).

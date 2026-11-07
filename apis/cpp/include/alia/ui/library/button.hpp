@@ -1,28 +1,17 @@
 #pragma once
 
 #include <alia/abi/ui/library.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/color_program.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/text.h>
 #include <alia/impl/context.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/kernel/actions/core.hpp>
 #include <alia/ui/layout/options.hpp>
 
 #include <utility>
 
 namespace alia {
-
-// semantic palette swatch for button chrome variants
-enum class swatch
-{
-    focus,
-    selection,
-    primary,
-    secondary,
-    success,
-    warning,
-    danger,
-    info,
-};
 
 // button chrome style
 enum class button_chrome
@@ -32,39 +21,28 @@ enum class button_chrome
     gradient,
 };
 
-// swatch and chrome pair describing a button variant
+inline alia_style_channel_ref
+channel_from_slot(alia_style_color_slot slot)
+{
+    return alia_style_channel_from_slot(slot);
+}
+
+inline alia_style_channel_ref
+channel_value(float value)
+{
+    return alia_style_channel_from_value(value);
+}
+
+// factory recipe describing a standard button chrome variant
 struct button_variant
 {
-    swatch swatch{};
     button_chrome chrome = button_chrome::filled;
+    color::tone tone = color::tone::match;
+    alia_style_channel_ref hue = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY);
+    alia_style_channel_ref chroma = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY);
 };
 
 namespace detail {
-
-inline alia_palette_swatch
-to_c_swatch(swatch s)
-{
-    switch (s)
-    {
-        case swatch::focus:
-            return ALIA_PALETTE_SWATCH_FOCUS;
-        case swatch::selection:
-            return ALIA_PALETTE_SWATCH_SELECTION;
-        case swatch::primary:
-            return ALIA_PALETTE_SWATCH_PRIMARY;
-        case swatch::secondary:
-            return ALIA_PALETTE_SWATCH_SECONDARY;
-        case swatch::success:
-            return ALIA_PALETTE_SWATCH_SUCCESS;
-        case swatch::warning:
-            return ALIA_PALETTE_SWATCH_WARNING;
-        case swatch::danger:
-            return ALIA_PALETTE_SWATCH_DANGER;
-        case swatch::info:
-            return ALIA_PALETTE_SWATCH_INFO;
-    }
-    return ALIA_PALETTE_SWATCH_PRIMARY;
-}
 
 inline alia_button_chrome_t
 to_c_chrome(button_chrome chrome)
@@ -81,28 +59,16 @@ to_c_chrome(button_chrome chrome)
     return ALIA_BUTTON_CHROME_FILLED;
 }
 
-struct button_variant_scope
+inline alia_button_recipe
+to_c_recipe(button_variant const& variant)
 {
-    ui_context ctx;
-    alia_button_style saved{};
-
-    button_variant_scope(ui_context ctx_, button_variant variant) : ctx(ctx_)
-    {
-        alia_button_style* style = alia_button_style_active(ctx);
-        saved = *style;
-        alia_button_style_apply_swatch(
-            style, to_c_swatch(variant.swatch), to_c_chrome(variant.chrome));
-    }
-
-    ~button_variant_scope()
-    {
-        *alia_button_style_active(ctx) = saved;
-    }
-
-    button_variant_scope(button_variant_scope const&) = delete;
-    button_variant_scope&
-    operator=(button_variant_scope const&) = delete;
-};
+    alia_button_recipe recipe{};
+    recipe.chrome = to_c_chrome(variant.chrome);
+    recipe.tone = (alia_color_tone_t) variant.tone;
+    recipe.hue = variant.hue;
+    recipe.chroma = variant.chroma;
+    return recipe;
+}
 
 } // namespace detail
 
@@ -111,8 +77,17 @@ template<class Content>
 void
 with_button_variant(ui_context ctx, button_variant variant, Content&& content)
 {
-    detail::button_variant_scope const scope(ctx, variant);
+    alia_button_style* style = alia_button_style_active(ctx);
+    alia_button_style const saved = *style;
+    // Emit a pass-local override into the open scratch bump.
+    // (The program steps are allocated in the pass's scratch space.)
+    alia_color_program_emitter emitter = alia_color_program_emitter_begin(
+        alia_ctx_scratch(alia_ctx_kernel(ctx)));
+    alia_button_recipe const recipe = detail::to_c_recipe(variant);
+    alia_button_style_apply_recipe(
+        style, &recipe, &alia_ctx_style(ctx)->environment->seeds, &emitter);
     std::forward<Content>(content)();
+    *alia_button_style_active(ctx) = saved;
 }
 
 // Emit a button container.

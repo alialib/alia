@@ -13,7 +13,8 @@
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/msdf.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/palette_generation.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/ui/system/internal_api.h>
@@ -84,7 +85,7 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
     {
         alia_vec2i const size = alia_ui_surface_get_size(alia_ctx_system(ctx));
         alia_srgba8 const bg = alia_srgba8_from_srgb8(
-            alia_ctx_palette(ctx)->colors.foundation.background.base);
+            alia_palette_color_srgb(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_SURFACE));
         alia_draw_box(
             ctx,
             0,
@@ -98,7 +99,7 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
         {
             char const* const label = "Hello GLFW+GL";
             alia_srgba8 const text_color = alia_srgba8_from_srgb8(
-                alia_ctx_palette(ctx)->colors.foundation.text.base);
+                alia_palette_color_srgb(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_TEXT));
             alia_msdf_draw_text(
                 g_text_engine,
                 ctx,
@@ -204,12 +205,9 @@ main()
     }
 
     {
-        alia_theme_accent accent;
-        alia_theme_accent_from_color(&accent, {70, 140, 255});
-        alia_palette_conditions conditions
-            = alia_palette_conditions_default(true);
-        alia_palette_generate_from_accent(
-            &g_ui->palette, &accent, &conditions, nullptr, nullptr);
+        alia_palette_recipe recipe = alia_palette_recipe_default();
+        alia_palette_recipe_seed_color(&recipe, {70, 140, 255});
+        alia_palette_generate(&g_ui->styling.environment.palette, &recipe, true);
         alia_ui_paint_changed(g_ui);
     }
 

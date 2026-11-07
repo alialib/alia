@@ -4,8 +4,10 @@
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/animation/unit_cubic_bezier.h>
+#include <alia/ui/system/object.h>
 
 #include <algorithm>
 
@@ -38,18 +40,15 @@ fire_click_flare(
     }
 }
 
-// peak flare strength relative to the highlight baseline
-static float const flare_peak_scale = 2.25f;
-
 static uint8_t
 flare_alpha(float intensity, float peak)
 {
     float const a = intensity * peak;
     if (a <= 0.f)
         return 0;
-    if (a >= 255.f)
+    if (a >= 1.f)
         return 255;
-    return (uint8_t) (a + 0.5f);
+    return (uint8_t) (a * 255.f + 0.5f);
 }
 
 void
@@ -61,8 +60,14 @@ render_click_flares(
     alia_srgb8 color,
     float radius)
 {
+    alia_style_environment const* const env = alia_ctx_style(ctx)->environment;
+    // Peak flare coverage is the highlight overlay baseline times FLARE_PEAK.
     float const peak
-        = (float) alia_ctx_palette(ctx)->highlight_alpha * flare_peak_scale;
+        = alia_style_overlay_alpha(
+              env,
+              ALIA_STYLE_COLOR_PRIMARY,
+              alia_style_var(env, ALIA_STYLE_VAR_HIGHLIGHT_L))
+        * alia_style_var(env, ALIA_STYLE_VAR_FLARE_PEAK);
 
     // TODO: Don't hardcode the maximum number of flares.
     alia_nanosecond_count flare_ticks_left[8];

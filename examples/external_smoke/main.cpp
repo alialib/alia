@@ -5,8 +5,9 @@
 #include <alia/shell/app.h>
 
 #include <alia/abi/base/color.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling/catalog.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/palette_generation.h>
+#include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/text.h>
 #include <alia/base/color.hpp>
@@ -65,14 +66,11 @@ emit_text(
     ui_context ctx,
     char const* text,
     alia_resolved_font const* font,
-    enum alia_palette_ramp_level level)
+    alia_srgba8 color)
 {
     alia_text_style const style = {
         .font = font,
-        .color = alia_palette_color_resolve(
-            alia_palette_colors(alia_ctx_palette(ctx)),
-            alia_palette_color_foundation(
-                ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff)),
+        .color = color,
     };
     alia_text(ctx, 0, alia_text_literal(text), &style);
 }
@@ -80,12 +78,10 @@ emit_text(
 void
 the_ui(ui_context ctx)
 {
+    alia_srgba8 const ink
+        = alia_palette_color_srgba(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_TEXT);
     column(ctx, GROW | pad(24), [&] {
-        emit_text(
-            ctx,
-            "External nest smoke",
-            &heading_font,
-            ALIA_PALETTE_RAMP_LEVEL_STRONGER_2);
+        emit_text(ctx, "External nest smoke", &heading_font, ink);
 
         emit_text(
             ctx,
@@ -93,7 +89,7 @@ the_ui(ui_context ctx)
             "Sans after stock UI icons and Roboto. The checkbox checkmark "
             "should still draw from the icon registry.",
             &body_font,
-            ALIA_PALETTE_RAMP_LEVEL_BASE);
+            ink);
 
         static bool checked = true;
         checkbox(ctx, ref(checked), "Stock check icon still works");
@@ -142,11 +138,10 @@ main()
         return 1;
     setup_demo_fonts(&app);
 
-    alia_theme_accent accent;
-    alia_theme_accent_from_color(&accent, hex_color("94c1fd"));
-    alia_palette_conditions conditions = alia_palette_conditions_default(true);
-    alia_palette_generate_from_accent(
-        &the_system->palette, &accent, &conditions, nullptr, nullptr);
+    alia_palette_recipe recipe = alia_palette_recipe_default();
+    alia_palette_recipe_seed_color(&recipe, hex_color("94c1fd"));
+    alia_palette_generate(
+        &the_system->styling.environment.palette, &recipe, true);
     alia_ui_paint_changed(the_system);
     alia_style_generate_defaults(the_system, nullptr);
 

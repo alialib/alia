@@ -65,10 +65,14 @@ add_library(alia_core STATIC
     src/alia/ui/system/input_processing.cpp
     src/alia/ui/system/tracer.cpp
     src/alia/ui/system/work.cpp
-    src/alia/ui/palette.cpp
+    src/alia/ui/styling/palette.cpp
+    src/alia/ui/styling/descriptors.cpp
+    src/alia/ui/styling/color_program.cpp
+    src/alia/ui/styling/style_catalog.cpp
+    src/alia/ui/styling/context_api.cpp
+    src/alia/ui/styling/environment.cpp
     src/alia/ui/geometry.cpp
     src/alia/ui/icons.cpp
-    src/alia/ui/styling.cpp
     src/alia/ui/context_ids.cpp)
 target_include_directories(alia_core PUBLIC
     include)

@@ -14,6 +14,8 @@ typedef enum alia_ui_pool_name
     ALIA_UI_POOL_LAYOUT_SCRATCH,
     ALIA_UI_POOL_LAYOUT_PLACEMENT,
     ALIA_UI_POOL_DRAW_COMMANDS,
+    // durable style defaults and color-program steps
+    ALIA_UI_POOL_STYLES,
 } alia_ui_pool_name;
 
 // Return the pool ID registered for `name`.

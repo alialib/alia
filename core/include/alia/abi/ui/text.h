@@ -9,7 +9,7 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/flags.h>
-#include <alia/abi/ui/styling/api.h>
+#include <alia/abi/ui/styling/context_api.h>
 
 #include <string.h>
 

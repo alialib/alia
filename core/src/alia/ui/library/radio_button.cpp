@@ -8,9 +8,10 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/ui/animation.h>
 
 using namespace alia::operators;
@@ -68,7 +69,7 @@ render_radio_button(
     alia_interaction_status_t interaction_status,
     alia_radio_button_style const* style)
 {
-    alia_palette const* p = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
     alia_vec2f const center = radio_button_center(placement);
     float const ring_radius_px = alia_px(ctx, style->ring_radius);
@@ -88,10 +89,10 @@ render_radio_button(
         1.f,
         0.f);
 
-    alia_srgba8 const outline_rgba
-        = alia_responsive_color_resolve(p, style->outline, interaction_status);
-    alia_srgba8 const dot_rgba
-        = alia_responsive_color_resolve(p, style->dot, interaction_status);
+    alia_srgba8 const outline_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->outline, interaction_status);
+    alia_srgba8 const dot_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->dot, interaction_status);
     alia_srgb8 const outline_srgb
         = alia_srgb8_make(outline_rgba.r, outline_rgba.g, outline_rgba.b);
     alia_srgb8 const dot_srgb
@@ -111,7 +112,7 @@ render_radio_button(
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_highlight_resolve(p, style->highlight));
+            alia_color_program_resolve(env, style->steps, style->highlight));
     }
 
     if (!is_disabled)
@@ -143,31 +144,44 @@ render_radio_button(
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_radio_button_style_generate(
-    alia_radio_button_style* out, alia_style_seeds const* seeds)
+    alia_radio_button_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_radio_button_style{
-        .outline = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_2, 0xff)),
-        .dot = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight
-        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
-        // Leaf is the ring, with a little room around it. The hover halo
-        // paints outside this box.
-        .layout_width = 28.f * s.scale,
-        .layout_height = 28.f * s.scale,
-        .ring_radius = 11.f * s.scale,
-        .dot_radius = 5.f * s.scale,
-        .highlight_radius = 18.f * s.scale,
-        .border_width = 2.f * s.scale,
-        .flare_radius = 18.f * s.scale,
-    };
+    *out = alia_radio_button_style{};
+
+    out->outline = emit_responsive(
+        emitter,
+        {.rest = sample(neutral),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
+    out->dot = emit_responsive(
+        emitter,
+        {.rest = sample(primary),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
+    out->highlight = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
+
+    // Leaf is the ring, with a little room around it. The hover halo
+    // paints outside this box.
+    out->layout_width = 28.f * s.scale;
+    out->layout_height = 28.f * s.scale;
+    out->ring_radius = 11.f * s.scale;
+    out->dot_radius = 5.f * s.scale;
+    out->highlight_radius = 18.f * s.scale;
+    out->border_width = 2.f * s.scale;
+    out->flare_radius = 18.f * s.scale;
+
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 alia_element_id

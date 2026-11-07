@@ -11,6 +11,7 @@
 #include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/kernel/flow/dispatch.h>
+#include <alia/ui/styling/descriptors_internal.h>
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/timer_internal.h>
 
@@ -109,7 +110,8 @@ alia_ui_system_init(
     ui->typefaces.push_back(
         alia_resolved_typeface{ALIA_TYPEFACE_ID_INVALID, nullptr, nullptr});
 
-    alia::style_catalog_init(ui->styles, ui);
+    alia::style_descriptors_init(ui->styling, true);
+    alia::style_catalog_init(ui->styling.styles, ui);
     alia_style_generate_defaults(ui, nullptr);
 
     return ui;
@@ -121,7 +123,7 @@ alia_ui_system_destroy(alia_ui_system* ui)
     if (!ui)
         return;
 
-    alia::style_catalog_release(ui->styles);
+    alia::style_catalog_release(ui->styling.styles);
     alia::release_kernel(ui->kernel);
     ui->~alia_ui_system();
 }
@@ -147,6 +149,8 @@ alia_ui_pool(alia_ui_system* ui, alia_ui_pool_name name)
             return ui->layout.placement_pool;
         case ALIA_UI_POOL_DRAW_COMMANDS:
             return ui->draw.command_pool;
+        case ALIA_UI_POOL_STYLES:
+            return ui->styling.styles.styles_pool;
     }
     alia_panic_info info = {
         .reason = ALIA_PANIC_API_MISUSE,

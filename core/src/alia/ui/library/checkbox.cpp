@@ -10,9 +10,11 @@
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/paint.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/ui/animation.h>
 #include <alia/ui/system/object.h>
 
@@ -91,7 +93,7 @@ render_checkbox(
     alia_interaction_status_t interaction_status,
     alia_checkbox_style const* style)
 {
-    alia_palette const* p = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
     alia_vec2f const center = checkbox_center(placement);
     alia_box const box = checkbox_box(ctx, placement, style);
 
@@ -99,10 +101,10 @@ render_checkbox(
         = (interaction_status & ALIA_INTERACTION_STATUS_DISABLED) != 0;
     alia_checkbox_state_style const* state_style
         = checked ? &style->checked : &style->unchecked;
-    alia_srgba8 const outline = alia_responsive_color_resolve(
-        p, state_style->outline, interaction_status);
-    alia_srgba8 const fill = alia_responsive_color_resolve(
-        p, state_style->fill, interaction_status);
+    alia_srgba8 const outline = alia_responsive_color_program_resolve(
+        env, style->steps, &state_style->outline, interaction_status);
+    alia_srgba8 const fill = alia_responsive_color_program_resolve(
+        env, style->steps, &state_style->fill, interaction_status);
 
     alia_draw_box(
         ctx,
@@ -115,8 +117,11 @@ render_checkbox(
 
     if (!disabled)
     {
-        alia_srgb8 const flare_srgb = alia_palette_srgb_at(
-            alia_palette_colors(p), style->highlight.index);
+        alia_srgba8 flare_rgba
+            = alia_color_program_resolve(env, style->steps, style->highlight);
+        flare_rgba.a = 255;
+        alia_srgb8 const flare_srgb
+            = alia_srgb8_make(flare_rgba.r, flare_rgba.g, flare_rgba.b);
         render_click_flares(
             ctx,
             ALIA_NESTED_BITPACK(data.bits, click_flare),
@@ -132,8 +137,8 @@ render_checkbox(
 
     if (checkmark_opacity > 0.f)
     {
-        alia_srgba8 checkmark_color = alia_responsive_color_resolve(
-            p, style->checkmark, interaction_status);
+        alia_srgba8 checkmark_color = alia_responsive_color_program_resolve(
+            env, style->steps, &style->checkmark, interaction_status);
         checkmark_color.a
             = uint8_t(float(checkmark_color.a) * checkmark_opacity);
         draw_checkbox_checkmark(ctx, box, checkmark_color, style);
@@ -148,13 +153,14 @@ render_checkbox(
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_highlight_resolve(p, style->highlight));
+            alia_color_program_resolve(env, style->steps, style->highlight));
     }
 }
 
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
@@ -162,48 +168,56 @@ void
 alia_checkbox_style_generate(
     alia_checkbox_style* out,
     alia_ui_system* ui,
-    alia_style_seeds const* seeds)
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_checkbox_style{
-        .unchecked =
-            {
-                .outline = alia_responsive_color_faded(ALIA_PALETTE_COLOR(
-                    foundation.structural.weaker_2, 0xff)),
-                .fill = alia_responsive_color_faded(
-                    ALIA_PALETTE_COLOR(foundation.background.base, 0x00)),
-            },
-        .checked =
-            {
-                .outline = alia_responsive_color_faded(
-                    ALIA_PALETTE_COLOR(primary.solid, 0xff)),
-                .fill = alia_responsive_color_faded(
-                    ALIA_PALETTE_COLOR(primary.solid, 0xff)),
-            },
+    *out = alia_checkbox_style{};
 
-        .checkmark = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.background.base, 0xff)),
+    out->unchecked.outline = emit_responsive(
+        emitter,
+        {.rest = sample(neutral),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
+    out->unchecked.fill
+        = emit_responsive(emitter, {.rest = sample(surface) | set_alpha(0.f)});
 
-        .highlight = ALIA_PALETTE_COLOR(
-            primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
+    out->checked.outline = emit_responsive(
+        emitter,
+        {.rest = sample(primary),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
+    out->checked.fill = emit_responsive(
+        emitter,
+        {.rest = sample(primary),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
 
-        // Leaf is the box, with a little room around it. The hover halo
-        // paints outside this box.
-        .layout_width = 28.f * s.scale,
-        .layout_height = 28.f * s.scale,
-        .box_size = 20.f * s.scale,
-        .box_corner_radius = 4.f * s.scale * s.roundness,
-        .border_width = 2.f * s.scale,
-        .checkmark_size = 14.f * s.scale,
-        .checkmark_font_index = 0,
-        .checkmark_codepoint = 0,
-        .highlight_radius = 21.f * s.scale,
-        .flare_radius = 21.f * s.scale,
-    };
+    out->checkmark = emit_responsive(
+        emitter,
+        {.rest = sample(surface),
+         .disabled = color_program_expr{}
+                   | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
 
-    // The empty fill stays empty. Fading it toward the page would paint a
-    // wash.
-    out->unchecked.fill.disabled = alia_color_op_none();
+    out->highlight
+        = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
+
+    // Leaf is the box, with a little room around it. The hover halo paints
+    // outside this box.
+    out->layout_width = 28.f * s.scale;
+    out->layout_height = 28.f * s.scale;
+    out->box_size = 20.f * s.scale;
+    out->box_corner_radius = 4.f * s.scale * s.roundness;
+    out->border_width = 2.f * s.scale;
+    out->checkmark_size = 14.f * s.scale;
+    out->checkmark_font_index = 0;
+    out->checkmark_codepoint = 0;
+    out->highlight_radius = 21.f * s.scale;
+    out->flare_radius = 21.f * s.scale;
+
+    out->steps = alia_color_program_emitter_steps(emitter);
 
     alia_ui_icon icon{};
     if (ui && alia_ui_icon_get(ui, ALIA_UI_ICON_CHECK, &icon))

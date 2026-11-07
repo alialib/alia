@@ -4,22 +4,28 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_separator_style_generate(
-    alia_separator_style* out, alia_style_seeds const* seeds)
+    alia_separator_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_separator_style{
-        .color = ALIA_PALETTE_COLOR(foundation.structural.base, 0xff),
-        .thickness = 2.f * s.scale,
-    };
+    *out = alia_separator_style{};
+    out->color = emit(emitter, sample(neutral));
+    out->thickness = 2.f * s.scale;
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 void
@@ -54,8 +60,8 @@ alia_separator(
     {
         alia_separator_style const* const style
             = alia_separator_style_active(ctx);
-        alia_srgba8 const color = alia_palette_color_resolve(
-            alia_palette_colors(alia_ctx_palette(ctx)), style->color);
+        alia_srgba8 const color = alia_color_program_resolve(
+            alia_ctx_style(ctx)->environment, style->steps, style->color);
         alia_draw_box(
             ctx,
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),

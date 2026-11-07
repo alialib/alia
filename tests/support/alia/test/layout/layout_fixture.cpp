@@ -151,12 +151,12 @@ wire_context(layout_fixture& fixture, bool refresh)
             .tick_count = 0,
         },
         .system = nullptr,
-        .style = {.spacing = fixture.spacing},
+        .style = {.spacing = fixture.spacing, .environment = nullptr},
         .geometry = fixture.geometry,
         .input = nullptr,
         .layout = &fixture.layout_context,
         .draw = nullptr,
-        .palette = nullptr,
+        .id = {},
     };
 }
 

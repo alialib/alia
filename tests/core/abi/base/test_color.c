@@ -245,6 +245,21 @@ color_tests(void)
         check_near_f(mid.h, 0.7f, eps);
     }
 
+    /* OKLCH overlay alpha: pure L coverage (no headroom policy) */
+    {
+        float const wide = alia_oklch_overlay_alpha(0.24f, 0.78f, 0.05f);
+        TEST_CHECK(wide > 0.f);
+        TEST_CHECK(wide < 40.f / 255.f);
+
+        /* Overshooting past fg_l clamps to opaque. */
+        check_near_f(
+            alia_oklch_overlay_alpha(0.60f, 0.64f, 0.05f), 1.f, eps);
+
+        /* Zero L delta yields no coverage. */
+        check_near_f(
+            alia_oklch_overlay_alpha(0.5f, 0.5f, 0.05f), 0.f, 0.f);
+    }
+
     /* sRGB8 lerp via OKLCH endpoints */
     {
         alia_srgb8 a = alia_srgb8_make(0xff, 0x00, 0x00);

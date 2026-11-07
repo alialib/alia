@@ -5,7 +5,8 @@
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry/api.h>
-#include <alia/abi/ui/styling/catalog.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
@@ -78,27 +79,33 @@ invoke_controller(ui_system& sys, event_traversal& events)
         .z_base = ALIA_DEFAULT_Z_BASE,
     };
 
-    ALIA_ASSERT(sys.styles.defaults && sys.styles.defaults_size > 0);
-    size_t const actives_bytes = alia::align_up(sys.styles.defaults_size);
+    ALIA_ASSERT(
+        sys.styling.styles.defaults && sys.styling.styles.defaults_size > 0);
+    size_t const actives_bytes
+        = alia::align_up(sys.styling.styles.defaults_size);
     void* active_styles = alia_arena_ptr(
         &ctx.kernel.scratch,
         alia_arena_alloc(&ctx.kernel.scratch, actives_bytes));
-    std::memcpy(active_styles, sys.styles.defaults, sys.styles.defaults_size);
+    std::memcpy(
+        active_styles,
+        sys.styling.styles.defaults,
+        sys.styling.styles.defaults_size);
 
     ctx.system = &sys;
     ctx.style.active_styles = active_styles;
     // No active font until something pushes one (see `alia_font_push`).
     // Using text before then is a programming error and asserts.
     ctx.style.text.font = nullptr;
-    // Resolve the default text color for the system palette.
-    ctx.style.text.color = alia_palette_color_resolve(
-        alia_palette_colors(&sys.palette),
-        ALIA_PALETTE_COLOR(foundation.text.base, 0xff));
-    alia_style_apply_seeds(&ctx.style, &sys.styles.seeds);
+    // Initialize text and focus colors from palette roles.
+    ctx.style.text.color = alia_palette_color_srgba(
+        &sys.styling.environment.palette, ALIA_STYLE_COLOR_TEXT);
+    ctx.style.focus.color = alia_palette_color_srgba(
+        &sys.styling.environment.palette, ALIA_STYLE_COLOR_FOCUS);
+    alia_style_apply_seeds(&ctx.style, &sys.styling.environment.seeds);
+    ctx.style.environment = &sys.styling.environment;
     ctx.input = &sys.input;
     ctx.layout = &layout;
     ctx.draw = draw;
-    ctx.palette = &sys.palette;
     ctx.id.metrics = alia_id_view_make_u64(sys.metrics_revision);
     ctx.id.paint = alia_id_view_make_u64(sys.paint_revision);
 

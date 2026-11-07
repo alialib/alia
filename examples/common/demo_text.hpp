@@ -1,6 +1,7 @@
 #pragma once
 
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/palette_generation.h>
 #include <alia/abi/ui/text.h>
 #include <alia/impl/context.hpp>
 #include <alia/shell/app.h>
@@ -32,12 +33,28 @@ demo_set_typefaces(
     size_t heading_font_index,
     float scale);
 
-static inline alia_palette_color
-demo_text_color(enum alia_palette_ramp_level level)
+// relative ink weight against the TEXT role (theme-relative strengthen/weaken)
+enum demo_ink_weight
 {
-    return alia_palette_color_foundation(
-        ALIA_PALETTE_FOUNDATION_RAMP_TEXT, level, 0xff);
-}
+    DEMO_INK_MUTED = 0,
+    DEMO_INK_BODY,
+    DEMO_INK_EMPHASIS,
+    DEMO_INK_STRONG,
+};
+
+// Resolve demo ink against the active palette.
+alia_srgba8
+demo_ink(alia::ui_context ctx, demo_ink_weight weight);
+
+// page / raised / accent-wash fills for demo panels (opaque sRGB)
+alia_srgb8
+demo_surface(alia::ui_context ctx);
+alia_srgb8
+demo_raised(alia::ui_context ctx);
+alia_srgb8
+demo_accent_wash(alia::ui_context ctx);
+alia_srgba8
+demo_on_accent_wash(alia::ui_context ctx);
 
 // Emit text with an already-resolved font (NULL => inherit the active font).
 void
@@ -45,5 +62,16 @@ demo_text(
     alia::ui_context ctx,
     char const* text,
     alia_resolved_font const* font,
-    alia_palette_color color,
+    alia_srgba8 color,
     alia::layout_flag_set flags = alia::NO_FLAGS);
+
+static inline void
+demo_text(
+    alia::ui_context ctx,
+    char const* text,
+    alia_resolved_font const* font,
+    demo_ink_weight weight,
+    alia::layout_flag_set flags = alia::NO_FLAGS)
+{
+    demo_text(ctx, text, font, demo_ink(ctx, weight), flags);
+}

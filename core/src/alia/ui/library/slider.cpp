@@ -10,8 +10,10 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
+#include <alia/ui/system/object.h>
 
 #include <cmath>
 #include <cstdint>
@@ -168,15 +170,15 @@ render_slider(
     double value,
     alia_interaction_status_t thumb_status)
 {
-    alia_palette const* p = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
     alia_vec2f const track_min = get_track_min(box, axis, ctx, s);
     alia_vec2f const track_size = get_track_size(box, axis, ctx, s);
     alia_box const track_box{track_min, track_size};
 
     float const track_radius = alia_px(ctx, s->track_thickness) * 0.5f;
-    alia_srgba8 const track_rgba
-        = alia_responsive_color_resolve(p, s->track_color, thumb_status);
+    alia_srgba8 const track_rgba = alia_responsive_color_program_resolve(
+        env, s->steps, &s->track_color, thumb_status);
 
     alia_draw_rounded_box(
         ctx,
@@ -201,16 +203,22 @@ render_slider(
             ctx,
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             fill_box,
-            alia_responsive_color_resolve(p, s->track_fill, thumb_status),
+            alia_responsive_color_program_resolve(
+                env, s->steps, &s->track_fill, thumb_status),
             track_radius);
     }
-    alia_srgba8 const thumb_rgba
-        = alia_responsive_color_resolve(p, s->thumb_color, thumb_status);
+    alia_srgba8 const thumb_rgba = alia_responsive_color_program_resolve(
+        env, s->steps, &s->thumb_color, thumb_status);
 
     float const thumb_r = alia_px(ctx, s->thumb_radius);
     float const drop = alia_px(ctx, 1.f);
     alia_srgba8 shadow = thumb_rgba;
-    shadow.a = p->glow_alpha;
+    shadow.a = (uint8_t) (alia_style_overlay_alpha(
+                              env,
+                              ALIA_STYLE_COLOR_TEXT,
+                              alia_style_var(env, ALIA_STYLE_VAR_GLOW_L))
+                              * 255.f
+                          + 0.5f);
     alia_draw_circle(
         ctx,
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
@@ -235,7 +243,7 @@ render_slider(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             thumb_center,
             alia_px(ctx, s->highlight_radius),
-            alia_palette_highlight_resolve(p, s->highlight));
+            alia_color_program_resolve(env, s->steps, s->highlight));
     }
 
     // TODO: Draw focus
@@ -251,29 +259,42 @@ render_slider(
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_slider_style_generate(
-    alia_slider_style* out, alia_style_seeds const* seeds)
+    alia_slider_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_slider_style{
-        .track_color = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_1, 0xff)),
-        .track_fill
-        = alia_responsive_color_faded(ALIA_PALETTE_COLOR(primary.solid, 0xff)),
-        .thumb_color = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight
-        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
-        .layout_width = 96.f * s.scale,
-        .layout_height = 32.f * s.scale,
-        .track_thickness = 6.f * s.scale,
-        .thumb_radius = 10.f * s.scale,
-        .highlight_radius = 16.f * s.scale,
-    };
+    *out = alia_slider_style{};
+
+    auto const disabled_fade
+        = color_program_expr{}
+        | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 0.08f);
+
+    out->track_color = emit_responsive(
+        emitter,
+        {.rest = sample(neutral) | weaken(0.1f), .disabled = disabled_fade});
+    out->track_fill = emit_responsive(
+        emitter, {.rest = sample(primary), .disabled = disabled_fade});
+    out->thumb_color = emit_responsive(
+        emitter, {.rest = sample(primary), .disabled = disabled_fade});
+    out->highlight
+        = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
+
+    out->layout_width = 96.f * s.scale;
+    out->layout_height = 32.f * s.scale;
+    out->track_thickness = 6.f * s.scale;
+    out->thumb_radius = 10.f * s.scale;
+    out->highlight_radius = 16.f * s.scale;
+
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 alia_element_id

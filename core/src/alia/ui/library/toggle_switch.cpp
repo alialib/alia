@@ -8,10 +8,12 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/api.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/ui/animation.h>
+#include <alia/ui/system/object.h>
 
 using namespace alia::operators;
 
@@ -51,7 +53,7 @@ render_toggle_switch(
     alia_interaction_status_t interaction_status,
     alia_toggle_switch_style const* style)
 {
-    alia_palette const* p = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
     alia_vec2f const toggle_switch_min
         = toggle_switch_content_origin(ctx, placement, style);
@@ -79,19 +81,19 @@ render_toggle_switch(
     float const dot_x_logical = alia_lerp(
         style->dot_center_x_off, style->dot_center_x_on, toggle_position);
 
-    alia_srgba8 const off_dot_rgba
-        = alia_responsive_color_resolve(p, style->off_dot, interaction_status);
-    alia_srgba8 const on_dot_rgba
-        = alia_responsive_color_resolve(p, style->on_dot, interaction_status);
+    alia_srgba8 const off_dot_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->off_dot, interaction_status);
+    alia_srgba8 const on_dot_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->on_dot, interaction_status);
     alia_srgb8 const dot_color = alia_lerp_srgb8_via_oklch(
         alia_srgb8_make(off_dot_rgba.r, off_dot_rgba.g, off_dot_rgba.b),
         alia_srgb8_make(on_dot_rgba.r, on_dot_rgba.g, on_dot_rgba.b),
         toggle_position);
 
-    alia_srgba8 const off_track_rgba = alia_responsive_color_resolve(
-        p, style->off_track, interaction_status);
-    alia_srgba8 const on_track_rgba = alia_responsive_color_resolve(
-        p, style->on_track, interaction_status);
+    alia_srgba8 const off_track_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->off_track, interaction_status);
+    alia_srgba8 const on_track_rgba = alia_responsive_color_program_resolve(
+        env, style->steps, &style->on_track, interaction_status);
     alia_srgb8 const track_color = alia_lerp_srgb8_via_oklch(
         alia_srgb8_make(off_track_rgba.r, off_track_rgba.g, off_track_rgba.b),
         alia_srgb8_make(on_track_rgba.r, on_track_rgba.g, on_track_rgba.b),
@@ -112,8 +114,14 @@ render_toggle_switch(
     alia_vec2f const dot_center{dot_center_x, dot_y};
 
     float const drop = alia_px(ctx, 1.f);
-    alia_srgba8 const shadow
-        = alia_srgba8_from_srgb8_alpha(dot_color, p->glow_alpha);
+    alia_srgba8 const shadow = alia_srgba8_from_srgb8_alpha(
+        dot_color,
+        (uint8_t) (alia_style_overlay_alpha(
+                       env,
+                       ALIA_STYLE_COLOR_TEXT,
+                       alia_style_var(env, ALIA_STYLE_VAR_GLOW_L))
+                       * 255.f
+                   + 0.5f));
     alia_draw_circle(
         ctx,
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
@@ -138,7 +146,7 @@ render_toggle_switch(
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             dot_center,
             alia_px(ctx, style->highlight_radius),
-            alia_palette_highlight_resolve(p, style->highlight));
+            alia_color_program_resolve(env, style->steps, style->highlight));
     }
 
     render_click_flares(
@@ -153,38 +161,54 @@ render_toggle_switch(
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_toggle_switch_style_generate(
-    alia_toggle_switch_style* out, alia_style_seeds const* seeds)
+    alia_toggle_switch_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_toggle_switch_style{
-        .off_track = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0xff)),
-        .on_track = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.weaker_3, 0xff)),
-        .off_dot = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(foundation.structural.stronger_2, 0xff)),
-        .on_dot = alia_responsive_color_faded(
-            ALIA_PALETTE_COLOR(primary.outline, 0xff)),
-        .highlight
-        = ALIA_PALETTE_COLOR(primary.outline, ALIA_HIGHLIGHT_WEIGHT_ONE),
-        // The knob is larger than the track and hangs past its ends.
-        .layout_width = 52.f * s.scale,
-        .layout_height = 30.f * s.scale,
-        .track_width = 26.f * s.scale,
-        .track_height = 12.f * s.scale,
-        .track_corner_radius_fraction = 0.5f * s.roundness,
-        .dot_center_x_off = 16.f * s.scale,
-        .dot_center_x_on = 39.f * s.scale,
-        .dot_radius_off = 10.f * s.scale,
-        .dot_radius_on = 11.f * s.scale,
-        .highlight_radius = 17.f * s.scale,
-        .flare_radius = 17.f * s.scale,
-    };
+    *out = alia_toggle_switch_style{};
+
+    auto const disabled_fade
+        = color_program_expr{}
+        | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f);
+
+    out->off_track = emit_responsive(
+        emitter,
+        {.rest = sample(neutral) | weaken(0.15f), .disabled = disabled_fade});
+    out->on_track = emit_responsive(
+        emitter,
+        {.rest = sample(neutral) | weaken(0.1f), .disabled = disabled_fade});
+    out->off_dot = emit_responsive(
+        emitter,
+        {.rest = sample(neutral) | strengthen(0.1f),
+         .disabled = disabled_fade});
+    out->on_dot = emit_responsive(
+        emitter, {.rest = sample(primary), .disabled = disabled_fade});
+    out->highlight
+        = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
+
+    // The knob is larger than the track and hangs past its ends.
+    out->layout_width = 52.f * s.scale;
+    out->layout_height = 30.f * s.scale;
+    out->track_width = 26.f * s.scale;
+    out->track_height = 12.f * s.scale;
+    out->track_corner_radius_fraction = 0.5f * s.roundness;
+    out->dot_center_x_off = 16.f * s.scale;
+    out->dot_center_x_on = 39.f * s.scale;
+    out->dot_radius_off = 10.f * s.scale;
+    out->dot_radius_on = 11.f * s.scale;
+    out->highlight_radius = 17.f * s.scale;
+    out->flare_radius = 17.f * s.scale;
+
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 alia_element_id

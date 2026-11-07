@@ -1,10 +1,15 @@
 #pragma once
 
 #include <alia/abi/base/allocator.h>
-#include <alia/abi/ui/styling/catalog.h>
+#include <alia/abi/base/memory.h>
+#include <alia/abi/ui/styling/color_program.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/style_catalog.h>
 
 #include <cstddef>
 #include <cstdint>
+
+typedef struct alia_ui_system alia_ui_system;
 
 namespace alia {
 
@@ -20,13 +25,17 @@ struct style_slot_info
 
 struct style_catalog
 {
-    alia_style_seeds seeds{};
     style_slot_info slots[ALIA_STYLE_SLOT_MAX]{};
     uint32_t slot_count = ALIA_STYLE_BUILTIN_COUNT;
     void* defaults = nullptr;
     size_t defaults_size = 0;
     size_t defaults_capacity = 0;
+    // durable color-program step block for default styles
+    alia_color_program_step* steps = nullptr;
+    uint16_t steps_count = 0;
     alia_general_allocator allocator{};
+    alia_memory_pool_id styles_pool = 0;
+    alia_ui_system* ui = nullptr;
 
     style_catalog() = default;
 

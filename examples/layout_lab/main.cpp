@@ -12,9 +12,10 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling/api.h>
-#include <alia/abi/ui/styling/catalog.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/palette_generation.h>
+#include <alia/abi/ui/styling/context_api.h>
+#include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
 #include <alia/base/color.hpp>
@@ -77,7 +78,7 @@ do_heading(ui_context ctx, char const* text)
         ctx,
         text,
         &demo_get_fonts().heading_18,
-        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
+        DEMO_INK_STRONG);
 }
 
 void
@@ -87,7 +88,7 @@ do_subheading(ui_context ctx, char const* text)
         ctx,
         text,
         &demo_get_fonts().heading_14,
-        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_1));
+        DEMO_INK_EMPHASIS);
 }
 
 void
@@ -201,17 +202,17 @@ do_content(ui_context ctx, layout_options layout = {})
                 ctx,
                 lorem_ipsum,
                 &demo_get_fonts().body_14,
-                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                DEMO_INK_BODY);
             demo_text(
                 ctx,
                 lorem_ipsum,
                 &demo_get_fonts().heading_14,
-                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                DEMO_INK_BODY);
             demo_text(
                 ctx,
                 lorem_ipsum,
                 &demo_get_fonts().body_14,
-                demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                DEMO_INK_BODY);
         });
         do_heading(ctx, "FLOW PANEL");
         {
@@ -228,12 +229,12 @@ do_content(ui_context ctx, layout_options layout = {})
                         ctx,
                         lorem_ipsum,
                         &demo_get_fonts().body_14,
-                        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                        DEMO_INK_BODY);
                     demo_text(
                         ctx,
                         lorem_ipsum,
                         &demo_get_fonts().body_14,
-                        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE));
+                        DEMO_INK_BODY);
                     flow(
                         ctx,
                         alia::line_gap(40.f) | alia::minimum_line_height(40.f),
@@ -245,27 +246,26 @@ do_content(ui_context ctx, layout_options layout = {})
                                 "These lines should be more spaced than the "
                                 "outer flow when the outer sliders are low.",
                                 &demo_get_fonts().body_14,
-                                demo_text_color(
-                                    ALIA_PALETTE_RAMP_LEVEL_WEAKER_1));
+                                DEMO_INK_MUTED);
                         });
                     do_flow_panel(
                         ctx,
                         0,
                         alia_edge_offsets_make_uniform(8.f),
-                        alia_ctx_palette(ctx)->colors.primary.subtle,
+                        demo_accent_wash(ctx),
                         [&]() {
-                            alia_palette_color const on_subtle
-                                = ALIA_PALETTE_COLOR(primary.on_subtle, 0xff);
+                            alia_srgba8 const on_wash
+                                = demo_on_accent_wash(ctx);
                             demo_text(
                                 ctx,
                                 "Panel text A.",
                                 &demo_get_fonts().body_14,
-                                on_subtle);
+                                on_wash);
                             demo_text(
                                 ctx,
                                 "Panel text B (gap from outer flow slider).",
                                 &demo_get_fonts().body_14,
-                                on_subtle);
+                                on_wash);
                         });
                 });
         }
@@ -280,7 +280,7 @@ the_demo(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->colors.foundation.background.stronger_2,
+                demo_raised(ctx),
                 FILL,
                 [&]() {
                     with_spacing(ctx, 6, [&] {
@@ -291,7 +291,7 @@ the_demo(ui_context ctx)
                 concrete_panel(
                     ctx,
                     0,
-                    alia_ctx_palette(ctx)->colors.foundation.background.base,
+                    demo_surface(ctx),
                     GROW,
                     [&]() {
                         column(ctx, GROW, [&]() {
@@ -371,12 +371,10 @@ main()
     static bool theme_initialized = false;
     if (!theme_initialized)
     {
-        alia_theme_accent accent;
-        alia_theme_accent_from_color(&accent, primary_colors[primary_index]);
-        alia_palette_conditions conditions
-            = alia_palette_conditions_default(!light_theme);
-        alia_palette_generate_from_accent(
-            &the_system->palette, &accent, &conditions, nullptr, nullptr);
+        alia_palette_recipe recipe = alia_palette_recipe_default();
+        alia_palette_recipe_seed_color(&recipe, primary_colors[primary_index]);
+        alia_palette_generate(
+            &the_system->styling.environment.palette, &recipe, !light_theme);
         alia_ui_paint_changed(the_system);
         alia_style_generate_defaults(the_system, nullptr);
         theme_initialized = true;

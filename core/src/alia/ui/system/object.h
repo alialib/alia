@@ -1,27 +1,24 @@
 #pragma once
 
-// #include <alia/core/system/internals.hpp>
-// #include <alia/core/timing/ticks.hpp>
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/kernel/routing.h>
+#include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/input/state.h>
 #include <alia/abi/ui/msdf.h>
-#include <alia/abi/ui/text.h>
-#include <alia/impl/context.hpp>
-#include <alia/impl/events.hpp>
-#include <alia/kernel/object.h>
-#include <alia/ui/layout/system.h>
-// #include <alia/system/os_interface.hpp>
-// #include <alia/system/window_interface.hpp>
-#include <alia/abi/ui/icons.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/host_window.h>
 #include <alia/abi/ui/system/renderer.h>
 #include <alia/abi/ui/system/work.h>
+#include <alia/abi/ui/text.h>
 #include <alia/abi/ui/trace.h>
+#include <alia/impl/context.hpp>
+#include <alia/impl/events.hpp>
+#include <alia/kernel/object.h>
 #include <alia/ui/drawing/system.h>
-#include <alia/ui/styling.h>
+#include <alia/ui/layout/system.h>
+#include <alia/ui/styling/style_system.h>
+
 
 #include <cstdint>
 #include <deque>
@@ -56,13 +53,12 @@ struct alia_ui_system
 
     alia_layout_system layout;
 
-    alia_palette palette;
+    alia::style_system styling;
+
     // incremented when sizing inputs such as DPI or magnification change
     uint64_t metrics_revision = 0;
     // incremented when paint inputs such as the palette change
     uint64_t paint_revision = 0;
-
-    alia::style_catalog styles;
 
     // core icons - These sepcify fonts and codepoints for icons that are
     // referenced by core components.

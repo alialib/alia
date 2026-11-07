@@ -16,10 +16,11 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/utilities.h>
-#include <alia/abi/ui/palette.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
 #include <alia/impl/events.hpp>
+#include <alia/impl/ui/styling/color_program.hpp>
 
 using namespace alia::operators;
 
@@ -310,7 +311,7 @@ draw_scrollbar(
     scroll_view_placement const& p,
     unsigned axis)
 {
-    alia_palette const* palette = alia_ctx_palette(ctx);
+    alia_style_environment const* env = alia_ctx_style(ctx)->environment;
     alia_box const sb = p.scrollbar_area[axis];
     alia_box const thumb = thumb_area(data, p, axis);
     alia_box const btn0 = button_area(data, p, axis, false);
@@ -319,7 +320,7 @@ draw_scrollbar(
         = alia_element_get_interaction_status(
             ctx, scroll_id(base_id, axis, 0), 0);
 
-    // Gutter scrollbars share BACKGROUND; primitive emission order stacks
+    // Gutter scrollbars share BACKGROUND. Primitive emission order stacks
     // track, thumb, buttons, then arrow glyphs within the plane.
     alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_BACKGROUND);
 
@@ -327,16 +328,16 @@ draw_scrollbar(
         ctx,
         z,
         sb,
-        alia_palette_color_resolve(
-            alia_palette_colors(palette), data.style.track_color),
+        alia_color_program_resolve(
+            env, data.style.steps, data.style.track_color),
         0.f);
 
     alia_draw_rounded_box(
         ctx,
         z,
         thumb,
-        alia_palette_color_resolve(
-            alia_palette_colors(palette), data.style.thumb_color),
+        alia_color_program_resolve(
+            env, data.style.steps, data.style.thumb_color),
         data.style.thumb_corner_radius);
 
     if ((thumb_status
@@ -347,20 +348,20 @@ draw_scrollbar(
             ctx,
             z,
             thumb,
-            alia_palette_color_resolve(
-                alia_palette_colors(palette), data.style.highlight),
+            alia_color_program_resolve(
+                env, data.style.steps, data.style.highlight),
             data.style.thumb_corner_radius);
     }
 
-    alia_srgba8 const button = alia_palette_color_resolve(
-        alia_palette_colors(palette), data.style.button_color);
+    alia_srgba8 const button = alia_color_program_resolve(
+        env, data.style.steps, data.style.button_color);
     alia_draw_rounded_box(ctx, z, btn0, button, 0.f);
     alia_draw_rounded_box(ctx, z, btn1, button, 0.f);
 
     float const rotation0 = axis == 0 ? 270.f : 0.f;
     float const rotation1 = axis == 0 ? 90.f : 180.f;
-    alia_srgba8 const glyph = alia_palette_color_resolve(
-        alia_palette_colors(palette), data.style.glyph_color);
+    alia_srgba8 const glyph = alia_color_program_resolve(
+        env, data.style.steps, data.style.glyph_color);
     alia_draw_equilateral_triangle(ctx, z, btn0, glyph, rotation0);
     alia_draw_equilateral_triangle(ctx, z, btn1, glyph, rotation1);
 }
@@ -667,30 +668,44 @@ struct scroll_view_scope
 } // namespace alia
 
 using namespace alia;
+using namespace alia::color;
 
 ALIA_EXTERN_C_BEGIN
 
 void
 alia_scrollbar_style_generate(
-    alia_scrollbar_style* out, alia_style_seeds const* seeds)
+    alia_scrollbar_style* out,
+    alia_style_seeds const* seeds,
+    alia_color_program_emitter* emitter)
 {
+    ALIA_ASSERT(out);
+    ALIA_ASSERT(emitter);
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
-    *out = alia_scrollbar_style{
-        .track_color = ALIA_PALETTE_COLOR(foundation.background.base, 0xff),
-        .thumb_color
-        = ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff),
-        .button_color
-        = ALIA_PALETTE_COLOR(foundation.background.stronger_2, 0xff),
-        .glyph_color
-        = ALIA_PALETTE_COLOR(foundation.background.stronger_4, 0xff),
-        .highlight = ALIA_PALETTE_COLOR(primary.subtle, 0x40),
-        .width = 15.f * s.scale,
-        .button_length = 0.f * s.scale,
-        .minimum_thumb_length = 20.f * s.scale,
-        .thumb_corner_radius = 0.f * s.scale * s.roundness,
-        .line_size = 72.f * s.scale,
-        .scroll_sensitivity = 1.f,
-    };
+    *out = alia_scrollbar_style{};
+
+    // Former foundation.background stronger_N steps as SURFACE↔TEXT fractions.
+    constexpr float thumb_strengthen = 0.2f;
+    constexpr float button_strengthen = 0.1f;
+
+    out->track_color = emit(emitter, sample(surface));
+    out->thumb_color = emit(
+        emitter, sample(surface) | strengthen(thumb_strengthen));
+    out->button_color = emit(
+        emitter, sample(surface) | strengthen(button_strengthen));
+    out->glyph_color = emit(
+        emitter, sample(surface) | strengthen(thumb_strengthen));
+    // Fixed coverage, not the theme highlight-weight path.
+    out->highlight = emit(
+        emitter, sample(primary) | set_alpha(0x40 / 255.f));
+
+    out->width = 15.f * s.scale;
+    out->button_length = 0.f * s.scale;
+    out->minimum_thumb_length = 20.f * s.scale;
+    out->thumb_corner_radius = 0.f * s.scale * s.roundness;
+    out->line_size = 72.f * s.scale;
+    out->scroll_sensitivity = 1.f;
+
+    out->steps = alia_color_program_emitter_steps(emitter);
 }
 
 void
@@ -815,7 +830,7 @@ void
 alia_scroll_view_end(alia_ui_context* ctx)
 {
     // `scroll_view_begin` pushes, in order: scroll_view_scope, then
-    // (non-refresh only) clip, then translation — all on
+    // (non-refresh only) clip, then translation, all on
     // `alia_ctx_stack(alia_ctx_kernel(ctx))`. Pops must be LIFO.
     if (is_refresh_event(*ctx))
     {

@@ -17,8 +17,9 @@
 #include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/library.h>
-#include <alia/abi/ui/palette.h>
-#include <alia/abi/ui/styling/api.h>
+#include <alia/abi/ui/styling/environment.h>
+#include <alia/abi/ui/styling/palette_generation.h>
+#include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
@@ -154,11 +155,11 @@ do_heading(ui_context ctx, char const* text)
         ctx,
         text,
         &demo_get_fonts().heading_18,
-        demo_text_color(ALIA_PALETTE_RAMP_LEVEL_STRONGER_2));
+        DEMO_INK_STRONG);
 }
 
 // Emit a slider with a single-line `label` to its left.
-// `layout` applies to the outer row; the slider grows to fill remaining space.
+// `layout` applies to the outer row. The slider grows to fill remaining space.
 template<binding_signal Signal, layout_like Layout = layout_options>
     requires std::convertible_to<typename Signal::value_type, double>
           && std::convertible_to<double, typename Signal::value_type>
@@ -217,7 +218,7 @@ do_theme_controls(ui_context ctx)
     concrete_panel(
         ctx,
         0,
-        alia_ctx_palette(ctx)->colors.foundation.background.stronger_1,
+        demo_raised(ctx),
         FILL,
         [&]() {
             edge_offsets(
@@ -240,7 +241,7 @@ do_theme_controls(ui_context ctx)
                             ctx,
                             " ",
                             &demo_get_fonts().body_14,
-                            demo_text_color(ALIA_PALETTE_RAMP_LEVEL_BASE),
+                            DEMO_INK_BODY,
                             CENTER_Y);
                         spacer(ctx, GROW);
                         with_spacing(ctx, 0, [&] {
@@ -306,23 +307,19 @@ shader_gallery_root(ui_context ctx)
 {
     if (the_theme_dirty_flag)
     {
-        alia_theme_accent accent;
-        alia_theme_accent_from_color(
-            &accent, the_seed_primaries[the_seed_index]);
-
-        alia_palette_conditions conditions
-            = alia_palette_conditions_default(!the_light_theme_flag);
-
-        alia_palette_expansion expansion = alia_palette_expansion_default();
-        expansion.foundation_step_l = 0.06f;
-        expansion.literal_policy = ALIA_PALETTE_LITERAL_HARMONIZE_TO_PRIMARY;
-
-        alia_palette_generate_from_accent(
-            &alia_ctx_system(ctx)->palette,
-            &accent,
-            &conditions,
-            nullptr,
-            &expansion);
+        alia_palette_recipe recipe = alia_palette_recipe_default();
+        alia_palette_recipe_seed_color(
+            &recipe, the_seed_primaries[the_seed_index]);
+        alia_palette* const palette
+            = &alia_ctx_system(ctx)->styling.environment.palette;
+        alia_palette_generate(palette, &recipe, !the_light_theme_flag);
+        // Slightly tighter well step than the default generator.
+        alia_oklch well = palette->colors[ALIA_STYLE_COLOR_WELL];
+        alia_oklch const surface = palette->colors[ALIA_STYLE_COLOR_SURFACE];
+        alia_oklch const text = palette->colors[ALIA_STYLE_COLOR_TEXT];
+        float const toward_text = text.l >= surface.l ? 1.f : -1.f;
+        well.l = surface.l + toward_text * 0.06f;
+        palette->colors[ALIA_STYLE_COLOR_WELL] = well;
         alia_ui_paint_changed(alia_ctx_system(ctx));
         the_theme_dirty_flag = false;
     }
@@ -334,7 +331,7 @@ shader_gallery_root(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->colors.foundation.background.base,
+                demo_surface(ctx),
                 FILL,
                 [&]() {
                     column(ctx, GROW, [&]() {
@@ -359,7 +356,7 @@ shader_gallery_root(ui_context ctx)
             concrete_panel(
                 ctx,
                 0,
-                alia_ctx_palette(ctx)->colors.foundation.background.base,
+                demo_surface(ctx),
                 GROW,
                 [&]() {
                     alia_do_shader(
@@ -417,7 +414,7 @@ main()
         .vsync = true,
     };
 
-    // Web host returns after scheduling RAF; keep storage for the page
+    // The web host returns after scheduling RAF. Keep storage for the page
     // lifetime.
     static alia_app app;
     alia_app_config const config = {

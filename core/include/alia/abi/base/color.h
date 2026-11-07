@@ -170,6 +170,14 @@ alia_apply_alpha_rgba(alia_rgba c, float a);
 alia_oklch
 alia_lerp_oklch(alia_oklch a, alia_oklch b, float t);
 
+// Return the coverage (0..1) of a paint at lightness `fg_l` that moves the
+// page (`bg_l`) by positive `step` toward that paint. The sign follows
+// `fg_l - bg_l`. Compositing at alpha `a` mixes linear luminance, and OKLab
+// lightness tracks the cube root of that, so the cube ratio is the alpha
+// that lands on `bg_l + step`.
+float
+alia_oklch_overlay_alpha(float bg_l, float fg_l, float step);
+
 // raw lerp - Just does the raw math in linear RGB space.
 alia_rgb
 alia_lerp_rgb_raw(alia_rgb a, alia_rgb b, float t);
