@@ -36,7 +36,8 @@ popup(ui_context ctx, alia_box anchor, alia_vec2f min_size, Content&& content)
     }
 
     ALIA_ASSERT(alia_ctx_system(ctx));
-    ALIA_ASSERT(alia_ctx_scratch(alia_ctx_kernel(ctx))->arena);
+    ALIA_ASSERT(
+        alia_bump_allocator_is_bound(alia_ctx_scratch(alia_ctx_kernel(ctx))));
 
     alia_vec2f const offset = alia_ctx_geometry(ctx)->offset;
     alia_box const anchor_surface = alia_box_translate(anchor, offset);

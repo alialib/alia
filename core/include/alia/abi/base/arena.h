@@ -49,6 +49,12 @@ alia_bump_allocator_bind(
     alloc->grow = grow;
 }
 
+static inline bool
+alia_bump_allocator_is_bound(alia_bump_allocator const* alloc)
+{
+    return alloc->base != NULL;
+}
+
 // Allocation gives offsets from the base, but these helpers can be used to
 // convert to/from pointers.
 

@@ -262,6 +262,7 @@ erase_value_id(kernel_context ctx, ValueId const& id)
     else
     {
         alia_bump_allocator* scratch = alia_ctx_scratch(ctx);
+        ALIA_ASSERT(alia_bump_allocator_is_bound(scratch));
         size_t const bytes = alia_min_aligned_size(sizeof(storage_type));
         size_t const align = alignof(storage_type) < ALIA_MIN_ALIGN
                                ? ALIA_MIN_ALIGN
