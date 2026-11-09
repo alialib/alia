@@ -55,13 +55,13 @@ color_tests(void)
     /* struct makers */
     {
         alia_srgb8 s = alia_srgb8_make(10, 20, 30);
-        check_srgb8_eq(s, (alia_srgb8){10, 20, 30});
+        check_srgb8_eq(s, (alia_srgb8) {10, 20, 30});
         alia_srgba8 sa = alia_srgba8_make(1, 2, 3, 4);
-        check_srgba8_eq(sa, (alia_srgba8){1, 2, 3, 4});
+        check_srgba8_eq(sa, (alia_srgba8) {1, 2, 3, 4});
         alia_rgb rgb = alia_rgb_make(0.25f, 0.5f, 0.75f);
-        check_near_rgb(rgb, (alia_rgb){0.25f, 0.5f, 0.75f}, 0.f);
+        check_near_rgb(rgb, (alia_rgb) {0.25f, 0.5f, 0.75f}, 0.f);
         alia_rgba rgba = alia_rgba_make(0.1f, 0.2f, 0.3f, 0.4f);
-        check_near_rgba(rgba, (alia_rgba){0.1f, 0.2f, 0.3f, 0.4f}, 0.f);
+        check_near_rgba(rgba, (alia_rgba) {0.1f, 0.2f, 0.3f, 0.4f}, 0.f);
         alia_oklab lab = alia_oklab_make(0.5f, 0.05f, -0.05f);
         check_near_f(lab.l, 0.5f, 0.f);
         check_near_f(lab.a, 0.05f, 0.f);
@@ -110,18 +110,18 @@ color_tests(void)
             alia_srgba8_from_srgb8_alpha(s, 0x42),
             alia_srgba8_make(0xab, 0xcd, 0xef, 0x42));
         check_srgba8_eq(
-            alia_srgba8_from_srgb8(s), alia_srgba8_make(0xab, 0xcd, 0xef, 0xff));
+            alia_srgba8_from_srgb8(s),
+            alia_srgba8_make(0xab, 0xcd, 0xef, 0xff));
         alia_rgb red = alia_rgb_make(1.f, 0.f, 0.f);
         check_near_rgba(
-            alia_rgba_from_rgb(red),
-            alia_rgba_make(1.f, 0.f, 0.f, 1.f),
-            0.f);
+            alia_rgba_from_rgb(red), alia_rgba_make(1.f, 0.f, 0.f, 1.f), 0.f);
     }
 
     /* hex */
     check_srgb8_eq(alia_srgb8_from_hex(NULL), alia_srgb8_make(0, 0, 0));
     check_srgb8_eq(alia_srgb8_from_hex("ff0000"), alia_srgb8_make(0xff, 0, 0));
-    check_srgb8_eq(alia_srgb8_from_hex("#00ff00"), alia_srgb8_make(0, 0xff, 0));
+    check_srgb8_eq(
+        alia_srgb8_from_hex("#00ff00"), alia_srgb8_make(0, 0xff, 0));
     check_srgb8_eq(alia_srgb8_from_hex("0000FF"), alia_srgb8_make(0, 0, 0xff));
 
     /* premultiplied alpha helpers */
@@ -175,7 +175,8 @@ color_tests(void)
 
     /* clip: in-gamut OKLab is unchanged */
     {
-        alia_oklab lab = alia_oklab_from_rgb(alia_rgb_make(0.35f, 0.5f, 0.65f));
+        alia_oklab lab
+            = alia_oklab_from_rgb(alia_rgb_make(0.35f, 0.5f, 0.65f));
         alia_oklab clipped = alia_oklab_clip_chroma_to_srgb(lab);
         check_near_f(clipped.l, lab.l, eps);
         check_near_f(clipped.a, lab.a, eps);
@@ -198,14 +199,14 @@ color_tests(void)
         check_srgb8_eq(from_lab, from_rgb);
     }
 
-    /* unclamped OKLCH clamps L and C to [0,1], then matches plain chain */
+    /* unclamped OKLCH clamps L/C to [0,1], then chroma-clips into sRGB */
     {
         alia_oklch extreme = alia_oklch_make(2.0f, 2.0f, 0.5f);
         alia_oklch clamped = alia_oklch_make(1.0f, 1.0f, 0.5f);
         alia_srgb8 via_unclamp = alia_srgb8_from_unclamped_oklch(extreme);
-        alia_srgb8 via_chain =
-            alia_srgb8_from_oklab(alia_oklab_from_oklch(clamped));
-        check_srgb8_eq(via_unclamp, via_chain);
+        alia_srgb8 via_clip = alia_srgb8_from_oklab(
+            alia_oklab_clip_chroma_to_srgb(alia_oklab_from_oklch(clamped)));
+        check_srgb8_eq(via_unclamp, via_clip);
     }
     {
         alia_oklch lch = alia_oklch_make(0.55f, 0.08f, 1.0f);
@@ -252,12 +253,10 @@ color_tests(void)
         TEST_CHECK(wide < 40.f / 255.f);
 
         /* Overshooting past fg_l clamps to opaque. */
-        check_near_f(
-            alia_oklch_overlay_alpha(0.60f, 0.64f, 0.05f), 1.f, eps);
+        check_near_f(alia_oklch_overlay_alpha(0.60f, 0.64f, 0.05f), 1.f, eps);
 
         /* Zero L delta yields no coverage. */
-        check_near_f(
-            alia_oklch_overlay_alpha(0.5f, 0.5f, 0.05f), 0.f, 0.f);
+        check_near_f(alia_oklch_overlay_alpha(0.5f, 0.5f, 0.05f), 0.f, 0.f);
     }
 
     /* sRGB8 lerp via OKLCH endpoints */
@@ -281,37 +280,37 @@ color_tests(void)
     /* relative luminance (linear RGB) */
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0x00, 0x00, 0x00})),
+            alia_rgb_from_srgb8((alia_srgb8) {0x00, 0x00, 0x00})),
         0.0000f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0xff, 0xff, 0xff})),
+            alia_rgb_from_srgb8((alia_srgb8) {0xff, 0xff, 0xff})),
         1.0000f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0xff, 0x00, 0x00})),
+            alia_rgb_from_srgb8((alia_srgb8) {0xff, 0x00, 0x00})),
         0.2126f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0x00, 0xff, 0x00})),
+            alia_rgb_from_srgb8((alia_srgb8) {0x00, 0xff, 0x00})),
         0.7152f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0x00, 0x00, 0xff})),
+            alia_rgb_from_srgb8((alia_srgb8) {0x00, 0x00, 0xff})),
         0.0722f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0x80, 0x80, 0x80})),
+            alia_rgb_from_srgb8((alia_srgb8) {0x80, 0x80, 0x80})),
         0.2159f,
         eps);
     check_near_f(
         alia_relative_luminance_rgb(
-            alia_rgb_from_srgb8((alia_srgb8){0xff, 0x80, 0x80})),
+            alia_rgb_from_srgb8((alia_srgb8) {0xff, 0x80, 0x80})),
         0.3826f,
         eps);
 

@@ -273,7 +273,9 @@ test_trim_retain(void)
     alia_memory_set_cap(memory, id, 1024u * 1024u);
 
     alia_bump_allocator bump = alia_memory_open_bump(memory, id);
-    (void) alia_arena_alloc(&bump, 64u * 1024u + 1u);
+    // Just past one commit page; size must still be a multiple of
+    // ALIA_MIN_ALIGN for alia_arena_alloc.
+    (void) alia_arena_alloc(&bump, ALIA_MIN_ALIGNED_SIZE(64u * 1024u + 1u));
     alia_memory_commit_bump(memory, id, &bump);
     alia_memory_trim(memory, id, ALIA_MEMORY_RETAIN_PEAK);
 
