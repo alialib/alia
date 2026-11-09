@@ -56,11 +56,15 @@ TEST_CASE("ref const view")
 
 TEST_CASE("string literal value")
 {
-    auto s = value("hello");
-    CHECK(read_signal(s) == std::string("hello"));
+    // Use one pointer for both the signal and the expected ID. Debug builds
+    // may not pool identical string literals, so a second "hello" token can
+    // have a different address.
+    char const* lit = "hello";
+    auto s = value(lit);
+    CHECK(read_signal(s) == std::string(lit));
     CHECK(
         (static_cast<untyped_signal_base const&>(s).value_id_erased()
-         == make_pointer_id("hello")));
+         == make_pointer_id(lit)));
 }
 
 TEST_CASE("signalize")

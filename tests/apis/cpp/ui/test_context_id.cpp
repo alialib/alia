@@ -47,8 +47,8 @@ test_free(void*, void* ptr, size_t, size_t)
 
 struct id_pass
 {
-    alignas(16) unsigned char scratch_mem[16 * 1024];
-    alignas(16) unsigned char stack_mem[16 * 1024];
+    alignas(ALIA_MAX_ALIGN) unsigned char scratch_mem[16 * 1024];
+    alignas(ALIA_MAX_ALIGN) unsigned char stack_mem[16 * 1024];
     alia_ui_context ctx{};
     alia_stack stack{};
 
