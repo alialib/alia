@@ -1,5 +1,6 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/impl/context.hpp>
+#include <alia/ui/regions.h>
 
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -23,11 +24,15 @@ alia_geometry_push_clip_box(alia_ui_context* ctx, alia_box box)
         .id = alia_ctx_geometry(ctx)->next_clip_id,
     };
     ++alia_ctx_geometry(ctx)->next_clip_id;
+    if (alia_ctx_regions(ctx))
+        alia::regions_push_clip(ctx, box);
 }
 
 void
 alia_geometry_pop_clip_box(alia_ui_context* ctx)
 {
+    if (alia_ctx_regions(ctx))
+        alia::regions_pop_clip(ctx);
     alia_clip_state& saved_clip
         = alia::stack_pop<alia_clip_state>(alia_ctx_kernel(ctx));
     alia_ctx_geometry(ctx)->clip = saved_clip;
@@ -40,11 +45,15 @@ alia_geometry_push_translation(alia_ui_context* ctx, alia_vec2f offset)
         = alia::stack_push<alia_vec2f>(alia_ctx_kernel(ctx));
     saved_offset = alia_ctx_geometry(ctx)->offset;
     alia_ctx_geometry(ctx)->offset += offset;
+    if (alia_ctx_regions(ctx))
+        alia::regions_push_translation(ctx, offset);
 }
 
 void
 alia_geometry_pop_translation(alia_ui_context* ctx)
 {
+    if (alia_ctx_regions(ctx))
+        alia::regions_pop_translation(ctx);
     alia_vec2f& saved_offset
         = alia::stack_pop<alia_vec2f>(alia_ctx_kernel(ctx));
     alia_ctx_geometry(ctx)->offset = saved_offset;

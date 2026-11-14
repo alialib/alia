@@ -8,7 +8,7 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/input/regions.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
@@ -345,14 +345,11 @@ alia_slider(
 
     switch (category)
     {
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
+            alia_region_flags_t const interaction_flags
+                = ALIA_REGION_MOUSE | ALIA_REGION_TOUCH_DRAG;
             alia_element_box_region(
-                ctx,
-                track_id,
-                &box,
-                ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
-                ALIA_CURSOR_DEFAULT);
+                ctx, track_id, &box, ALIA_Z_PLANE_CONTENT, interaction_flags);
             alia_box const thumb_box = get_thumb_region(
                 box, axis, ctx, style, minimum, maximum, current);
             alia_element_box_region(
@@ -360,8 +357,7 @@ alia_slider(
                 thumb_id,
                 &thumb_box,
                 ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
-                ALIA_CURSOR_DEFAULT);
+                interaction_flags);
             break;
         }
 

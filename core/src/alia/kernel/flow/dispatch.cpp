@@ -5,6 +5,7 @@
 #include <alia/abi/kernel/effect.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/geometry/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/impl/base/arena.hpp>
@@ -21,6 +22,7 @@ void
 invoke_controller(ui_system& sys, event_traversal& events)
 {
     bool const refresh = events.event->type == ALIA_EVENT_REFRESH;
+    bool const regions_pass = events.event->type == ALIA_EVENT_REGIONS;
     alia_memory_system* memory = &sys.kernel.memory;
 
     alia_layout_context layout = {};
@@ -35,6 +37,23 @@ invoke_controller(ui_system& sys, event_traversal& events)
     {
         layout.placement
             = alia_memory_open_bump(memory, sys.layout.placement_pool);
+    }
+
+    alia_regions_context regions = {};
+    alia_region* root_region = nullptr;
+    if (regions_pass)
+    {
+        regions.arena = alia_memory_open_bump(memory, sys.regions.pool);
+        // Set up the root as a clip node that covers the entire surface.
+        root_region = arena_alloc<alia_region>(regions.arena);
+        root_region->parent = nullptr;
+        root_region->next = nullptr;
+        root_region->first_child = nullptr;
+        root_region->kind = ALIA_REGION_KIND_CLIP;
+        root_region->clip
+            = {{0.f, 0.f}, alia_vec2i_to_vec2f(sys.surface_size)};
+        regions.current = root_region;
+        regions.next_child = &root_region->first_child;
     }
 
     alia_stack pass_stack
@@ -106,6 +125,7 @@ invoke_controller(ui_system& sys, event_traversal& events)
     ctx.input = &sys.input;
     ctx.layout = &layout;
     ctx.draw = draw;
+    ctx.regions = regions_pass ? &regions : nullptr;
     ctx.id.metrics = alia_id_view_make_u64(sys.metrics_revision);
     ctx.id.paint = alia_id_view_make_u64(sys.paint_revision);
 
@@ -132,6 +152,13 @@ invoke_controller(ui_system& sys, event_traversal& events)
     else
     {
         alia_memory_discard_bump(memory, sys.layout.placement_pool);
+    }
+
+    if (regions_pass)
+    {
+        alia_memory_commit_bump(memory, sys.regions.pool, &regions.arena);
+        alia_memory_trim(memory, sys.regions.pool, ALIA_MEMORY_RETAIN_USED);
+        sys.regions.root = root_region;
     }
 
     alia_memory_commit_bump(
@@ -163,7 +190,7 @@ route_event_(
     if (target)
     {
         event_routing_path path_node;
-        path_node.rest = traversal.path_to_target;
+        path_node.rest = event_path_to_target(traversal);
         path_node.node = target;
         traversal.path_to_target = &path_node;
         route_event_(sys, traversal, target->parent.get());

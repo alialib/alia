@@ -429,7 +429,7 @@ alia_text(
         auto const* frag = arena_alloc<text_placement_fragment>(*arena);
         switch (category)
         {
-            case ALIA_CATEGORY_SPATIAL:
+            case ALIA_CATEGORY_REGIONS:
                 // Plain text does not participate in mouse hit testing.
                 // Selectable/copyable text can opt in when that exists.
                 break;

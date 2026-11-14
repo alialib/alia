@@ -14,8 +14,8 @@
 #include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -386,7 +386,7 @@ do_scrollbar_pass(
 
     switch (get_event_category(*ctx))
     {
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
             alia_box thumb = thumb_area(data, p, axis);
             alia_box btn0 = button_area(data, p, axis, false);
             alia_box btn1 = button_area(data, p, axis, true);
@@ -397,36 +397,31 @@ do_scrollbar_pass(
                 thumb_id,
                 &thumb,
                 ALIA_Z_PLANE_BACKGROUND,
-                ALIA_HIT_TEST_MOUSE | ALIA_HIT_TEST_TOUCH_DRAG,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE | ALIA_REGION_TOUCH_DRAG);
             alia_element_box_region(
                 ctx,
                 btn0_id,
                 &btn0,
                 ALIA_Z_PLANE_BACKGROUND,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE);
             alia_element_box_region(
                 ctx,
                 btn1_id,
                 &btn1,
                 ALIA_Z_PLANE_BACKGROUND,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE);
             alia_element_box_region(
                 ctx,
                 page0_id,
                 &page0,
                 ALIA_Z_PLANE_BACKGROUND,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE);
             alia_element_box_region(
                 ctx,
                 page1_id,
                 &page1,
                 ALIA_Z_PLANE_BACKGROUND,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE);
             break;
         }
 
@@ -485,10 +480,10 @@ do_scrollbar_pass(
 }
 
 static void
-handle_make_widget_visible(
+handle_scroll_into_view(
     scroll_view_state& data,
     scroll_view_placement const& p,
-    alia_make_widget_visible const& e)
+    alia_scroll_into_view const& e)
 {
     alia_box const region = e.region;
     float const r_min[2] = {region.min.x, region.min.y};
@@ -683,20 +678,18 @@ alia_scrollbar_style_generate(
     alia_style_seeds const s = seeds ? *seeds : alia_style_seeds_default();
     *out = alia_scrollbar_style{};
 
-    // Former foundation.background stronger_N steps as SURFACE↔TEXT fractions.
     constexpr float thumb_strengthen = 0.2f;
     constexpr float button_strengthen = 0.1f;
 
     out->track_color = emit(emitter, sample(surface));
-    out->thumb_color = emit(
-        emitter, sample(surface) | strengthen(thumb_strengthen));
-    out->button_color = emit(
-        emitter, sample(surface) | strengthen(button_strengthen));
-    out->glyph_color = emit(
-        emitter, sample(surface) | strengthen(thumb_strengthen));
+    out->thumb_color
+        = emit(emitter, sample(surface) | strengthen(thumb_strengthen));
+    out->button_color
+        = emit(emitter, sample(surface) | strengthen(button_strengthen));
+    out->glyph_color
+        = emit(emitter, sample(surface) | strengthen(thumb_strengthen));
     // Fixed coverage, not the theme highlight-weight path.
-    out->highlight = emit(
-        emitter, sample(primary) | set_alpha(0x40 / 255.f));
+    out->highlight = emit(emitter, sample(primary) | set_alpha(0x40 / 255.f));
 
     out->width = 15.f * s.scale;
     out->button_length = 0.f * s.scale;
@@ -772,15 +765,14 @@ alia_scroll_view_begin(
             set_logical(*data, scope.placement, axis, data->bar[axis].logical);
     }
 
-    if (get_event_category(*ctx) == ALIA_CATEGORY_SPATIAL)
+    if (get_event_category(*ctx) == ALIA_CATEGORY_REGIONS)
     {
         alia_element_box_region(
             ctx,
             scope.id,
             &scope.placement.viewport_box,
             ALIA_Z_PLANE_CONTENT,
-            ALIA_HIT_TEST_SCROLL_INPUT,
-            ALIA_CURSOR_DEFAULT);
+            ALIA_REGION_SCROLL_INPUT);
     }
 
     if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)
@@ -821,9 +813,10 @@ alia_scroll_view_begin(
         do_scrollbar_pass(ctx, scope.id, *data, scope.placement, axis);
     }
 
+    alia_vec2f const content_offset{
+        -data->bar[0].smoothed, -data->bar[1].smoothed};
     alia_geometry_push_clip_box(ctx, scope.placement.viewport_box);
-    alia_geometry_push_translation(
-        ctx, {-data->bar[0].smoothed, -data->bar[1].smoothed});
+    alia_geometry_push_translation(ctx, content_offset);
 }
 
 void
@@ -849,11 +842,11 @@ alia_scroll_view_end(alia_ui_context* ctx)
     if (!scope.data)
         return;
 
-    if (get_event_type(*ctx) == ALIA_EVENT_MAKE_WIDGET_VISIBLE)
+    if (get_event_type(*ctx) == ALIA_EVENT_SCROLL_INTO_VIEW)
     {
-        auto const& e = as_make_widget_visible_event(*ctx);
+        auto const& e = as_scroll_into_view_event(*ctx);
         if (e.acknowledged)
-            handle_make_widget_visible(*scope.data, scope.placement, e);
+            handle_scroll_into_view(*scope.data, scope.placement, e);
     }
     else if (get_event_category(*ctx) == ALIA_CATEGORY_INPUT)
     {

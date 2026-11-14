@@ -1,8 +1,6 @@
 #include <alia/abi/ui/input/touch_gesture.h>
 
-#include <alia/abi/ui/events.h>
-#include <alia/impl/events.hpp>
-#include <alia/kernel/flow/dispatch.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/ui/system/object.h>
 #include <alia/ui/system/work_internal.h>
 
@@ -16,23 +14,13 @@ alia_ui_resolve_touch_gesture(alia_ui_system* ui, alia_vec2f position)
     ALIA_ASSERT(ui);
 
     run_layout_resolve(*ui);
+    rebuild_regions(*ui);
 
     ui->input.mouse_position = position;
     ui->input.mouse_inside_window = true;
 
-    alia_hit_target const none = {.id = ALIA_ELEMENT_ID_NONE, .z = 0};
-    alia_event hit_test_event = alia_make_touch_gesture_hit_test_event(
-        {.x = position.x,
-         .y = position.y,
-         .result = {
-             .pointer = none,
-             .scroll = none,
-             .touch_drag = none,
-         }});
-    dispatch_event(*ui, hit_test_event);
-
-    alia_touch_gesture_hit_test_result const& hit
-        = as_touch_gesture_hit_test_event(hit_test_event).result;
+    alia_touch_gesture_hit_test_result hit{};
+    alia_ui_touch_gesture_hit_test(ui, position.x, position.y, &hit);
 
     if (alia_element_id_is_valid(hit.touch_drag.id))
     {

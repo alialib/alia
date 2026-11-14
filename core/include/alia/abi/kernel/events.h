@@ -22,6 +22,17 @@ typedef struct alia_event
     uint32_t payload_size;
 } alia_event;
 
+// pass-local event routing state - C++ code casts `active_container` and
+// `path_to_target` to the typed pointers it needs.
+// Note that zero-initialization is required for this struct.
+typedef struct alia_event_traversal
+{
+    void* active_container;
+    bool targeted;
+    void* path_to_target;
+    alia_event* event;
+} alia_event_traversal;
+
 // kernel-level categories
 enum
 {

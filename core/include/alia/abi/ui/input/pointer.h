@@ -6,6 +6,8 @@
 #include <alia/abi/kernel/timing.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
+#include <alia/abi/ui/events.h>
+#include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/state.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -126,6 +128,63 @@ alia_element_detect_mouse_loss(alia_ui_context* ctx, alia_element_id id);
 bool
 alia_element_detect_scroll(
     alia_ui_context* ctx, alia_element_id id, alia_vec2f* out_delta);
+
+// why the system chose the draw event's cursor target
+typedef uint8_t alia_cursor_reason_t;
+
+enum
+{
+    ALIA_CURSOR_REASON_NONE = 0,
+    // pointer is over the element (no capture)
+    ALIA_CURSOR_REASON_HOT = 1,
+    // element has pointer capture
+    ALIA_CURSOR_REASON_CAPTURE = 2,
+};
+
+// Active DRAW event payload, or NULL when the current event is not DRAW.
+static inline alia_draw*
+alia_ctx_active_draw(alia_ui_context* ctx)
+{
+    alia_event* event = alia_ctx_events(alia_ctx_kernel(ctx))->event;
+    if (!event || event->type != ALIA_EVENT_DRAW)
+        return NULL;
+    return (alia_draw*) event->payload;
+}
+
+// Determine if the active draw event is asking for a cursor for `id`.
+static inline bool
+alia_element_is_cursor_target(alia_ui_context* ctx, alia_element_id id)
+{
+    alia_draw const* draw = alia_ctx_active_draw(ctx);
+    if (!draw)
+        return false;
+    return alia_element_id_equal(draw->cursor_target, id);
+}
+
+// Return the reason the current cursor target was chosen, or NONE outside
+// drawing / when there is no target.
+static inline alia_cursor_reason_t
+alia_element_cursor_reason(alia_ui_context* ctx)
+{
+    alia_draw const* draw = alia_ctx_active_draw(ctx);
+    if (!draw)
+        return ALIA_CURSOR_REASON_NONE;
+    return draw->cursor_reason;
+}
+
+// Set the draw event's cursor when `id` is the cursor target. Later calls
+// win, so wrappers can override after invoking a child.
+static inline void
+alia_element_set_cursor(
+    alia_ui_context* ctx, alia_element_id id, alia_cursor_t cursor)
+{
+    alia_draw* draw = alia_ctx_active_draw(ctx);
+    if (!draw)
+        return;
+    if (!alia_element_id_equal(draw->cursor_target, id))
+        return;
+    draw->cursor = cursor;
+}
 
 ALIA_EXTERN_C_END
 

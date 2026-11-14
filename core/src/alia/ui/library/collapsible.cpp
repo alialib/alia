@@ -5,7 +5,7 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/geometry/api.h>
-#include <alia/abi/ui/input/regions.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities.h>
 
@@ -177,7 +177,7 @@ alia_collapsible_begin(
     if (is_refresh_event(*ctx))
     {
         // TODO: When expansion > prev_expansion, request scroll-into-view from
-        // scroll parents (legacy make_widget_visible). Needs a coordinated
+        // scroll parents (scroll_into_view). Needs a coordinated
         // visibility-request path; not wired yet.
         (void) data->prev_expansion;
         data->prev_expansion = expansion;
@@ -202,25 +202,27 @@ alia_collapsible_begin(
         *alia_layout_placement_arena(ctx));
     scope.placement = *placement;
 
-    alia_element_box_region(
-        ctx,
-        scope.id,
-        &scope.placement.window,
-        ALIA_Z_PLANE_CONTENT,
-        ALIA_HIT_TEST_MOUSE,
-        ALIA_CURSOR_DEFAULT);
+    if (get_event_category(*ctx) == ALIA_CATEGORY_REGIONS)
+    {
+        alia_element_box_region(
+            ctx,
+            scope.id,
+            &scope.placement.window,
+            ALIA_Z_PLANE_CONTENT,
+            ALIA_REGION_MOUSE);
+    }
 
     bool const apply_geometry = expansion != 0.f && expansion != 1.f;
     if (apply_geometry)
     {
+        float const offset = scope.offset_factor * (1.f - expansion)
+                           * scope.placement.content_height;
+        alia_vec2f const content_offset{0.f, -offset};
         alia_geometry_push_clip_box(
             ctx,
             alia_box_translate(
                 scope.placement.window, alia_ctx_geometry(ctx)->offset));
-
-        float const offset = scope.offset_factor * (1.f - expansion)
-                           * scope.placement.content_height;
-        alia_geometry_push_translation(ctx, {0.f, -offset});
+        alia_geometry_push_translation(ctx, content_offset);
     }
 
     // TODO: We could combine all this stack data into a single structure

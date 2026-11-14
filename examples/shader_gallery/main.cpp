@@ -14,7 +14,6 @@
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/input/regions.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/library.h>
 #include <alia/abi/ui/styling/environment.h>

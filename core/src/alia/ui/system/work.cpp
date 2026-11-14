@@ -1,5 +1,6 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/layout/system.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/work.h>
 #include <alia/impl/events.hpp>
@@ -99,29 +100,23 @@ run_layout_resolve(ui_system& ui)
 }
 
 void
+rebuild_regions(ui_system& ui)
+{
+    alia_ui_rebuild_regions(&ui);
+}
+
+void
 update_hot_from_pointer(ui_system& ui)
 {
     if (ui.input.mouse_inside_window)
     {
-        alia_event event = alia_make_mouse_hit_test_event(
-            {.x = ui.input.mouse_position.x,
-             .y = ui.input.mouse_position.y,
-             .result = {
-                 .target = {.id = ALIA_ELEMENT_ID_NONE, .z = 0},
-                 .cursor = ALIA_CURSOR_DEFAULT,
-                 .region = {{0.f, 0.f}, {0.f, 0.f}},
-             }});
-        dispatch_event(ui, event);
-        if (alia_element_id_is_valid(
-                as_mouse_hit_test_event(event).result.target.id))
-        {
-            set_hot_element(
-                ui, as_mouse_hit_test_event(event).result.target.id);
-        }
+        alia_mouse_hit_test_result hit{};
+        alia_ui_mouse_hit_test(
+            &ui, ui.input.mouse_position.x, ui.input.mouse_position.y, &hit);
+        if (alia_element_id_is_valid(hit.target.id))
+            set_hot_element(ui, hit.target.id);
         else
-        {
             set_hot_element(ui, alia_element_id{});
-        }
     }
     else
     {
@@ -177,23 +172,14 @@ deliver_queued_event(ui_system& ui, alia_event& ev)
         }
 
         case ALIA_EVENT_SCROLL_INPUT: {
-            alia_event hit_test_event = alia_make_scroll_input_hit_test_event(
-                {.x = ui.input.mouse_position.x,
-                 .y = ui.input.mouse_position.y,
-                 .result = {
-                     .target = {.id = ALIA_ELEMENT_ID_NONE, .z = 0},
-                 }});
-            dispatch_event(ui, hit_test_event);
-            if (alia_element_id_is_valid(
-                    as_scroll_input_hit_test_event(hit_test_event)
-                        .result.target.id))
-            {
-                dispatch_targeted_event(
-                    ui,
-                    ev,
-                    as_scroll_input_hit_test_event(hit_test_event)
-                        .result.target.id);
-            }
+            alia_scroll_input_hit_test_result hit{};
+            alia_ui_scroll_input_hit_test(
+                &ui,
+                ui.input.mouse_position.x,
+                ui.input.mouse_position.y,
+                &hit);
+            if (alia_element_id_is_valid(hit.target.id))
+                dispatch_targeted_event(ui, ev, hit.target.id);
             break;
         }
 
@@ -243,6 +229,7 @@ drain_one_queued_event(ui_system& ui)
 
     apply_refresh_hook_policy(ui, ui.refresh_policy.before_input);
     run_layout_resolve(ui);
+    rebuild_regions(ui);
 
     apply_pointer_state_from_event(ui, ev);
     update_hot_from_pointer(ui);
@@ -272,6 +259,7 @@ finalize_update(ui_system& ui)
     if (evaluate_refresh_hook_policy(ui, ui.refresh_policy.before_draw))
         refresh_system(ui);
     run_layout_resolve(ui);
+    rebuild_regions(ui);
     update_hot_from_pointer(ui);
 }
 

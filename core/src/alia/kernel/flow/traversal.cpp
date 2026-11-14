@@ -22,8 +22,8 @@ mark_dirty_component(ui_context ctx)
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.
-    if (traversal.active_container != nullptr)
-        mark_dirty_component(*traversal.active_container);
+    if (event_active_container(traversal) != nullptr)
+        mark_dirty_component(*event_active_container(traversal));
 }
 
 void
@@ -44,17 +44,18 @@ mark_animating_component(ui_context ctx)
     // TODO: There should always be an active component container, but the
     // component container tree doesn't really exist yet. Once it does, this
     // could be removed or replaced with an assert.
-    if (traversal.active_container != nullptr)
-        mark_animating_component(*traversal.active_container);
+    if (event_active_container(traversal) != nullptr)
+        mark_animating_component(*event_active_container(traversal));
 }
 
 void
 mark_animating_component(alia_kernel_context& ctx)
 {
     if (alia_ctx_events(&ctx) == nullptr
-        || alia_ctx_events(&ctx)->active_container == nullptr)
+        || event_active_container(*alia_ctx_events(&ctx)) == nullptr)
         return;
-    mark_animating_component(*alia_ctx_events(&ctx)->active_container);
+    mark_animating_component(
+        *event_active_container(*alia_ctx_events(&ctx)));
 }
 
 // void

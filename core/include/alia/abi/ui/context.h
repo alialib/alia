@@ -13,6 +13,7 @@ typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_input_state alia_input_state;
 typedef struct alia_layout_context alia_layout_context;
 typedef struct alia_draw_context alia_draw_context;
+typedef struct alia_regions_context alia_regions_context;
 
 // metrics and paint IDs for one UI pass
 typedef struct alia_context_ids
@@ -42,6 +43,8 @@ typedef struct alia_ui_context
     alia_layout_context* layout;
     // NULL when this pass is not drawing
     alia_draw_context* draw;
+    // NULL when this is not a regions pass
+    alia_regions_context* regions;
     // context IDs for this pass
     alia_context_ids id;
 } alia_ui_context;
@@ -86,6 +89,12 @@ static inline alia_draw_context*
 alia_ctx_draw(alia_ui_context* ctx)
 {
     return ctx->draw;
+}
+
+static inline alia_regions_context*
+alia_ctx_regions(alia_ui_context* ctx)
+{
+    return ctx->regions;
 }
 
 ALIA_EXTERN_C_END

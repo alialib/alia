@@ -6,7 +6,7 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/input/regions.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
@@ -257,14 +257,9 @@ alia_toggle_switch(
 
     switch (category)
     {
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
             alia_element_box_region(
-                ctx,
-                id,
-                &box,
-                ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ctx, id, &box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
             break;
         }
 

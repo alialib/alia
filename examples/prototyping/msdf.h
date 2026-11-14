@@ -468,7 +468,7 @@ do_text(
             emission.next_ptr = &new_node->base.next_sibling;
             break;
         }
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
             auto& text_placement = msdf_consume_text_placement_header(ctx);
             for (int i = 0; i < text_placement.fragment_count; ++i)
             {
@@ -476,12 +476,7 @@ do_text(
                 alia_box box
                     = {.min = fragment.position, .size = fragment.size};
                 alia_element_box_region(
-                    ctx,
-                    id,
-                    &box,
-                    ALIA_Z_PLANE_CONTENT,
-                    ALIA_HIT_TEST_MOUSE,
-                    ALIA_CURSOR_DEFAULT);
+                    ctx, id, &box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
             }
             break;
         }

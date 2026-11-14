@@ -6,7 +6,7 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/input/regions.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/paint.h>
@@ -361,6 +361,8 @@ alia_button_begin(
                 break;
             }
             case ALIA_CATEGORY_DRAWING: {
+                if (!is_disabled)
+                    alia_element_set_cursor(ctx, id, ALIA_CURSOR_POINTER);
                 alia_style_environment const* env
                     = alia_ctx_style(ctx)->environment;
                 float const corner = alia_px(ctx, style->corner_radius);
@@ -410,16 +412,11 @@ alia_button_end(alia_ui_context* ctx)
     if (is_refresh_event(*ctx))
         return;
 
-    bool const is_disabled = (scope.flags & ALIA_BUTTON_DISABLED) != 0;
-
     // Register after children so the button owns the hit (last writer wins).
+    // Focus order stays on the INPUT path (`alia_element_add_to_focus_order`);
+    // honor ALIA_BUTTON_SKIP_FOCUS there when focus is wired.
     alia_element_box_region(
-        ctx,
-        scope.id,
-        &scope.box,
-        ALIA_Z_PLANE_CONTENT,
-        ALIA_HIT_TEST_MOUSE,
-        is_disabled ? ALIA_CURSOR_DEFAULT : ALIA_CURSOR_POINTER);
+        ctx, scope.id, &scope.box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
 }
 
 ALIA_EXTERN_C_END

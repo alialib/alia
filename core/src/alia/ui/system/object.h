@@ -17,8 +17,8 @@
 #include <alia/kernel/object.h>
 #include <alia/ui/drawing/system.h>
 #include <alia/ui/layout/system.h>
+#include <alia/ui/regions.h>
 #include <alia/ui/styling/style_system.h>
-
 
 #include <cstdint>
 #include <deque>
@@ -50,6 +50,9 @@ struct alia_ui_system
     // std::shared_ptr<window_interface> window;
 
     alia_input_state input;
+
+    // tree of interaction regions
+    alia::regions_state regions;
 
     alia_layout_system layout;
 

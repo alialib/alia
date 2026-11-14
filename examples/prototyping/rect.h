@@ -17,15 +17,10 @@ do_rect(
                 ctx, alia_layout_content_metrics_make(size), raw_code(flags));
             break;
         }
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
             alia_box box = alia_layout_consume_box(ctx);
             alia_element_box_region(
-                ctx,
-                id,
-                &box,
-                ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ctx, id, &box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
             break;
         }
         case ALIA_CATEGORY_DRAWING: {
@@ -74,7 +69,7 @@ do_rect_with_offset(
                 ctx, alia_layout_content_metrics_make(size), raw_code(flags));
             break;
         }
-        case ALIA_CATEGORY_SPATIAL: {
+        case ALIA_CATEGORY_REGIONS: {
             alia_box box = alia_layout_consume_box(ctx);
             // box_region(ctx, id, box);
             break;

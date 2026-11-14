@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_SYSTEM_HOST_WINDOW_H
 
 #include <alia/abi/prelude.h>
+#include <alia/abi/ui/input/constants.h>
 
 ALIA_EXTERN_C_BEGIN
 
@@ -13,6 +14,7 @@ typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_host_window_ops
 {
     void (*toggle_fullscreen)(void* user);
+    void (*set_cursor)(void* user, alia_cursor_t cursor);
     void* user;
 } alia_host_window_ops;
 

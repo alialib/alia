@@ -115,7 +115,7 @@ alia_do_shader(
 
     switch (category)
     {
-        case ALIA_CATEGORY_SPATIAL:
+        case ALIA_CATEGORY_REGIONS:
         case ALIA_CATEGORY_INPUT:
             break;
 

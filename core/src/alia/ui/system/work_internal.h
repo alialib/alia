@@ -23,6 +23,9 @@ void
 run_layout_resolve(ui_system& ui);
 
 void
+rebuild_regions(ui_system& ui);
+
+void
 update_hot_from_pointer(ui_system& ui);
 
 void

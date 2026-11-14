@@ -14,28 +14,28 @@ struct event_routing_path
 
 } // namespace alia
 
-extern "C" {
-
-struct alia_event_traversal
-{
-    alia::component_container_ptr* active_container = nullptr;
-    bool targeted;
-
-    alia::event_routing_path* path_to_target = nullptr;
-    alia_event* event = {};
-};
-
-} // extern "C"
-
 namespace alia {
 
 using event_traversal = alia_event_traversal;
+
+inline component_container_ptr*
+event_active_container(alia_event_traversal& traversal)
+{
+    return reinterpret_cast<component_container_ptr*>(
+        traversal.active_container);
+}
+
+inline event_routing_path*
+event_path_to_target(alia_event_traversal& traversal)
+{
+    return reinterpret_cast<event_routing_path*>(traversal.path_to_target);
+}
 
 template<class Context>
 component_container_ptr const
 get_active_component_container(Context ctx)
 {
-    return *alia_ctx_events(alia_ctx_kernel(ctx))->active_container;
+    return *event_active_container(*alia_ctx_events(alia_ctx_kernel(ctx)));
 }
 
 using component_identity = std::weak_ptr<component_container>;

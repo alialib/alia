@@ -27,10 +27,9 @@ typedef struct alia_ui_touch_gesture_resolution
     alia_element_id target;
 } alia_ui_touch_gesture_resolution;
 
-// Run `ALIA_EVENT_TOUCH_GESTURE_HIT_TEST` at `position` and pick a gesture.
+// Hit-test the region map at `position` and pick a gesture.
 // Resolves layout from the current surface size before hit testing. Drag
-// handles opt in via `ALIA_HIT_TEST_TOUCH_DRAG` on
-// `alia_element_box_region` with `ALIA_HIT_TEST_TOUCH_DRAG`.
+// handles opt in via `ALIA_REGION_TOUCH_DRAG` on  `alia_element_box_region`.
 alia_ui_touch_gesture_resolution
 alia_ui_resolve_touch_gesture(alia_ui_system* ui, alia_vec2f position);
 

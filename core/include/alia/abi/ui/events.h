@@ -18,7 +18,7 @@ ALIA_EXTERN_C_BEGIN
 enum
 {
     ALIA_CATEGORY_DRAWING = 3,
-    ALIA_CATEGORY_SPATIAL = 4,
+    ALIA_CATEGORY_REGIONS = 4,
 };
 
 enum
@@ -33,31 +33,8 @@ enum
     ALIA_KERNEL_EVENTS(X)                                                     \
     /* drawing */                                                             \
     X(0x30, DRAWING, NONE, DRAW, draw, alia_draw)                             \
-    /* spatial (geometry-aware routing) */                                    \
-    X(0x40,                                                                   \
-      SPATIAL,                                                                \
-      TARGETED,                                                               \
-      MAKE_WIDGET_VISIBLE,                                                    \
-      make_widget_visible,                                                    \
-      alia_make_widget_visible)                                               \
-    X(0x41,                                                                   \
-      SPATIAL,                                                                \
-      NONE,                                                                   \
-      MOUSE_HIT_TEST,                                                         \
-      mouse_hit_test,                                                         \
-      alia_mouse_hit_test)                                                    \
-    X(0x42,                                                                   \
-      SPATIAL,                                                                \
-      NONE,                                                                   \
-      SCROLL_INPUT_HIT_TEST,                                                  \
-      scroll_input_hit_test,                                                  \
-      alia_scroll_input_hit_test)                                             \
-    X(0x43,                                                                   \
-      SPATIAL,                                                                \
-      NONE,                                                                   \
-      TOUCH_GESTURE_HIT_TEST,                                                 \
-      touch_gesture_hit_test,                                                 \
-      alia_touch_gesture_hit_test)                                            \
+    /* regions */                                                             \
+    X(0x44, REGIONS, NONE, REGIONS, regions, alia_nil)                        \
     /* keyboard */                                                            \
     X(0x50, INPUT, TARGETED, TEXT_INPUT, text_input, alia_text_input)         \
     X(0x51,                                                                   \
@@ -104,9 +81,14 @@ enum
       MOUSE_HOVER,                                                            \
       mouse_hover,                                                            \
       alia_mouse_notification)                                                \
-    X(0x77, INPUT, TARGETED, CURSOR_QUERY, cursor_query, alia_cursor_query)   \
     /* scroll */                                                              \
-    X(0x80, INPUT, TARGETED, SCROLL_INPUT, scroll_input, alia_scroll_input)
+    X(0x80, INPUT, TARGETED, SCROLL_INPUT, scroll_input, alia_scroll_input)   \
+    X(0x81,                                                                   \
+      INPUT,                                                                  \
+      TARGETED,                                                               \
+      SCROLL_INTO_VIEW,                                                       \
+      scroll_into_view,                                                       \
+      alia_scroll_into_view)
 
 // These are the event-specific data structures that correspond to the event
 // types in the table above...
@@ -122,6 +104,14 @@ typedef struct alia_draw
 {
     // TODO: Not this.
     alia_draw_context* context;
+    // element that owns the mouse cursor for this pass - Set by the system
+    // before dispatch (hot or capture). Widgets answer via
+    // `alia_element_set_cursor` (see `alia/abi/ui/input/pointer.h`).
+    alia_element_id cursor_target;
+    // why `cursor_target` was chosen - See `alia_cursor_reason_t`.
+    uint8_t cursor_reason;
+    // filled during the draw walk; applied afterward
+    alia_cursor_t cursor;
 } alia_draw;
 
 typedef struct alia_nil
@@ -130,69 +120,11 @@ typedef struct alia_nil
     int dummy;
 } alia_nil;
 
-typedef struct alia_make_widget_visible
+typedef struct alia_scroll_into_view
 {
     bool acknowledged;
     alia_box region;
-} alia_make_widget_visible;
-
-// element under a point together with its absolute Z
-typedef struct alia_hit_target
-{
-    alia_element_id id;
-    alia_z_index z;
-} alia_hit_target;
-
-typedef struct alia_mouse_hit_test_result
-{
-    alia_hit_target target;
-    alia_cursor_t cursor;
-    // element bounds in surface coordinates (for tooltips, overlays, etc.)
-    alia_box region;
-} alia_mouse_hit_test_result;
-
-typedef struct alia_mouse_hit_test
-{
-    float x;
-    float y;
-    alia_mouse_hit_test_result result;
-} alia_mouse_hit_test;
-
-typedef struct alia_scroll_input_hit_test_result
-{
-    alia_hit_target target;
-} alia_scroll_input_hit_test_result;
-
-typedef struct alia_scroll_input_hit_test
-{
-    float x;
-    float y;
-    alia_scroll_input_hit_test_result result;
-} alia_scroll_input_hit_test;
-
-typedef struct alia_touch_gesture_hit_test_result
-{
-    // frontmost element under the point that accepts pointer interaction
-    alia_hit_target pointer;
-    // frontmost scroll-view (or similar) that can consume touch pan scrolling
-    alia_hit_target scroll;
-    // frontmost touch drag handle under the point (e.g. slider track,
-    // scrollbar thumb) - When set, touch pan scrolling should not preempt
-    // manipulation.
-    alia_hit_target touch_drag;
-} alia_touch_gesture_hit_test_result;
-
-typedef struct alia_touch_gesture_hit_test
-{
-    float x;
-    float y;
-    alia_touch_gesture_hit_test_result result;
-} alia_touch_gesture_hit_test;
-
-typedef struct alia_cursor_query
-{
-    alia_cursor_t cursor;
-} alia_cursor_query;
+} alia_scroll_into_view;
 
 typedef struct alia_text_input
 {

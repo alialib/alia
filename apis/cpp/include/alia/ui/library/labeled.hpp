@@ -1,7 +1,7 @@
 #pragma once
 
 #include <alia/abi/ui/input/constants.h>
-#include <alia/abi/ui/input/regions.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/text.h>
 #include <alia/impl/context.hpp>
@@ -44,8 +44,7 @@ labeled_bool_control(
                 id,
                 &row_box,
                 ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ALIA_REGION_MOUSE);
         });
     return id;
 }

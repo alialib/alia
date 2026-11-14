@@ -514,12 +514,7 @@ do_collapsible_demo(ui_context ctx)
                 CENTER_Y | pad({-alia_spacing_active(ctx), 0, 0, 0}));
 
             alia_element_box_region(
-                ctx,
-                id,
-                &box,
-                ALIA_Z_PLANE_CONTENT,
-                ALIA_HIT_TEST_MOUSE,
-                ALIA_CURSOR_DEFAULT);
+                ctx, id, &box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
         });
         grid_row(ctx, grid_handle, [&]() {
             spacer(ctx);

@@ -755,6 +755,55 @@ host_toggle_fullscreen_cb(void* user)
     host_toggle_fullscreen(static_cast<alia_win32_host*>(user));
 }
 
+void
+host_set_cursor_cb(void* user, alia_cursor_t cursor)
+{
+    (void) user;
+    if (cursor == ALIA_CURSOR_NONE)
+    {
+        SetCursor(nullptr);
+        return;
+    }
+    HCURSOR loaded = nullptr;
+    switch (cursor)
+    {
+        case ALIA_CURSOR_WAIT:
+            loaded = LoadCursor(nullptr, IDC_WAIT);
+            break;
+        case ALIA_CURSOR_CROSSHAIR:
+            loaded = LoadCursor(nullptr, IDC_CROSS);
+            break;
+        case ALIA_CURSOR_TEXT:
+            loaded = LoadCursor(nullptr, IDC_IBEAM);
+            break;
+        case ALIA_CURSOR_NOT_ALLOWED:
+            loaded = LoadCursor(nullptr, IDC_NO);
+            break;
+        case ALIA_CURSOR_POINTER:
+            loaded = LoadCursor(nullptr, IDC_HAND);
+            break;
+        case ALIA_CURSOR_MOVE:
+            loaded = LoadCursor(nullptr, IDC_SIZEALL);
+            break;
+        case ALIA_CURSOR_EW_RESIZE:
+            loaded = LoadCursor(nullptr, IDC_SIZEWE);
+            break;
+        case ALIA_CURSOR_NS_RESIZE:
+            loaded = LoadCursor(nullptr, IDC_SIZENS);
+            break;
+        case ALIA_CURSOR_NESW_RESIZE:
+            loaded = LoadCursor(nullptr, IDC_SIZENESW);
+            break;
+        case ALIA_CURSOR_NWSE_RESIZE:
+            loaded = LoadCursor(nullptr, IDC_SIZENWSE);
+            break;
+        default:
+            loaded = LoadCursor(nullptr, IDC_ARROW);
+            break;
+    }
+    SetCursor(loaded);
+}
+
 bool
 host_should_tick(alia_win32_host* host)
 {
@@ -1239,6 +1288,7 @@ alia_win32_host_run(
         alia_win32_host_install(host, config->ui);
         alia_host_window_ops const ops = {
             .toggle_fullscreen = host_toggle_fullscreen_cb,
+            .set_cursor = host_set_cursor_cb,
             .user = host,
         };
         alia_ui_system_set_host_window_ops(config->ui, &ops);

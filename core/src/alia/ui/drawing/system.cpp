@@ -6,6 +6,7 @@
 #include <alia/abi/ui/trace.h>
 
 #include <alia/abi/ui/events.h>
+#include <alia/abi/ui/input/pointer.h>
 #include <alia/impl/base/prelude.hpp>
 #include <alia/impl/events.hpp>
 #include <alia/kernel/flow/dispatch.h>
@@ -131,10 +132,38 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         .target_id = ALIA_DRAW_TARGET_PRIMARY,
     };
 
+    alia_cursor_t resolved_cursor = ALIA_CURSOR_DEFAULT;
     {
         alia::trace_pass_builder trace(*system, ALIA_TRACE_PASS_DRAW_RECORD);
-        auto draw_event = alia_make_draw_event({.context = &draw_context});
+        alia_draw draw_payload = {
+            .context = &draw_context,
+            .cursor_target = {},
+            .cursor_reason = ALIA_CURSOR_REASON_NONE,
+            .cursor = ALIA_CURSOR_DEFAULT,
+        };
+        if (alia_element_id_is_valid(system->input.element_with_capture))
+        {
+            draw_payload.cursor_target = system->input.element_with_capture;
+            draw_payload.cursor_reason = ALIA_CURSOR_REASON_CAPTURE;
+        }
+        else if (alia_element_id_is_valid(system->input.hot_element))
+        {
+            draw_payload.cursor_target = system->input.hot_element;
+            draw_payload.cursor_reason = ALIA_CURSOR_REASON_HOT;
+        }
+        auto draw_event = alia_make_draw_event(draw_payload);
         alia::dispatch_event(*system, draw_event);
+        resolved_cursor = alia::as_draw_event(draw_event).cursor;
+    }
+
+    if (system->input.current_cursor != resolved_cursor)
+    {
+        system->input.current_cursor = resolved_cursor;
+        if (system->host_window.set_cursor)
+        {
+            system->host_window.set_cursor(
+                system->host_window.user, resolved_cursor);
+        }
     }
 
     alia_memory_commit_bump(

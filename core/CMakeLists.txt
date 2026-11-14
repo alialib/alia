@@ -23,7 +23,7 @@ add_library(alia_core STATIC
     src/alia/ui/text/layout.cpp
     src/alia/ui/animation.cpp
     src/alia/ui/input/pointer.cpp
-    src/alia/ui/input/regions.cpp
+    src/alia/ui/regions.cpp
     src/alia/ui/input/touch_gesture.cpp
     src/alia/ui/input/elements.cpp
     src/alia/ui/input/keyboard.cpp

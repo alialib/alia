@@ -31,7 +31,7 @@ dispatch_targeted_event(
     // fail.
     if (auto target_container = target.lock())
     {
-        event_traversal traversal;
+        event_traversal traversal{};
         traversal.targeted = true;
         traversal.event = &event;
         route_event(sys, traversal, target_container.get());
@@ -41,7 +41,7 @@ dispatch_targeted_event(
 inline void
 dispatch_untargeted_event(ui_system& sys, alia_event& event)
 {
-    event_traversal traversal;
+    event_traversal traversal{};
     traversal.targeted = false;
     traversal.event = &event;
     route_event(sys, traversal, nullptr);

@@ -102,6 +102,10 @@ alia_ui_system_init(
 
     ui->draw.next_material_id = ALIA_BUILTIN_MATERIAL_COUNT;
 
+    ui->regions.pool = alia_memory_register_pool(
+        alia_kernel_memory(&ui->kernel), ALIA_MEMORY_POOL_BUMP, 0);
+    ui->regions.root = nullptr;
+
     ui->refresh_policy.before_input = ALIA_UI_REFRESH_ALWAYS;
     ui->refresh_policy.before_draw = ALIA_UI_REFRESH_ALWAYS;
 
