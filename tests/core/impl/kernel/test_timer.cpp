@@ -23,7 +23,7 @@ alia_element_id
 make_test_element_id(std::uintptr_t raw)
 {
     return alia_element_id{
-        .ptr = reinterpret_cast<void*>(raw), .generation = 0, .route = 0};
+        .ptr = reinterpret_cast<void*>(raw), .stamp = 0, .route = 0};
 }
 
 } // namespace

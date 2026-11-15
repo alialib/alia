@@ -91,6 +91,73 @@ typedef struct alia_substrate_usage_result
     enum alia_substrate_block_traversal_mode mode;
 } alia_substrate_usage_result;
 
+// alia_substrate_id is a compact substrate-keyed identity. It is valid for the
+// lifetime of a substrate use (across frames), but not across block
+// reincarnation. `stamp` combines a reincarnation counter in the high bits and
+// a sub-index in the low `ALIA_SUBSTRATE_ID_SUB_BITS`.
+enum
+{
+    ALIA_SUBSTRATE_ID_SUB_BITS = 8,
+    ALIA_SUBSTRATE_ID_SUB_MASK = (1u << ALIA_SUBSTRATE_ID_SUB_BITS) - 1u,
+    // Substrate reincarnation counters advance by this step so sub bits stay
+    // clear at mint time.
+    ALIA_SUBSTRATE_ID_GENERATION_STEP = 1u << ALIA_SUBSTRATE_ID_SUB_BITS,
+};
+
+typedef struct alia_substrate_id
+{
+    void* ptr;
+    // reincarnation counter with sub-index in the low bits
+    alia_generation_counter stamp;
+} alia_substrate_id;
+
+#define ALIA_SUBSTRATE_ID_NONE ALIA_BRACED_INIT(alia_substrate_id, NULL, 0)
+
+static inline bool
+alia_substrate_id_is_valid(alia_substrate_id id)
+{
+    return id.ptr != NULL;
+}
+
+static inline bool
+alia_substrate_id_equal(alia_substrate_id a, alia_substrate_id b)
+{
+    return a.ptr == b.ptr && a.stamp == b.stamp;
+}
+
+// Make a substrate ID with no sub-index from a usage result.
+static inline alia_substrate_id
+alia_make_substrate_id(alia_substrate_usage_result result)
+{
+    ALIA_ASSERT((result.generation & ALIA_SUBSTRATE_ID_SUB_MASK) == 0);
+    return ALIA_BRACED_INIT(alia_substrate_id, result.ptr, result.generation);
+}
+
+// Add a sub-index to a substrate ID that doesn't already have one.
+static inline alia_substrate_id
+alia_substrate_sub_id(alia_substrate_id base, uint8_t sub)
+{
+    ALIA_ASSERT((base.stamp & ALIA_SUBSTRATE_ID_SUB_MASK) == 0);
+    return ALIA_BRACED_INIT(
+        alia_substrate_id,
+        base.ptr,
+        base.stamp | (alia_generation_counter) sub);
+}
+
+// Extract the sub-index from a substrate ID.
+static inline uint8_t
+alia_substrate_id_sub(alia_substrate_id id)
+{
+    return (uint8_t) (id.stamp & ALIA_SUBSTRATE_ID_SUB_MASK);
+}
+
+// Extract the reincarnation counter from a substrate ID.
+static inline alia_generation_counter
+alia_substrate_id_generation(alia_substrate_id id)
+{
+    return id.stamp & ~((alia_generation_counter) ALIA_SUBSTRATE_ID_SUB_MASK);
+}
+
 // 'Use' memory from the current substrate block.
 //
 // The `mode` field in the result indicates how the memory should be treated:

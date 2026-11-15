@@ -259,7 +259,7 @@ page_area(
 static alia_element_id
 scroll_id(alia_element_id base, unsigned axis, unsigned slot)
 {
-    return alia_offset_id(base, 1 + axis * 8 + slot);
+    return alia_element_sub_id(base, (uint8_t) (1 + axis * 8 + slot));
 }
 
 static void

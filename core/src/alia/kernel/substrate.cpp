@@ -72,8 +72,10 @@ block_release(alia_substrate_system* system, alia_substrate_block* block)
         block,
         block->spec.size,
         block->spec.align);
-    ++system->current_generation;
-    ALIA_ASSERT(system->current_generation != 0);
+    system->current_generation += ALIA_SUBSTRATE_ID_GENERATION_STEP;
+    // Skip 0 so a wrapped counter is never confused with an unset ID field.
+    if (system->current_generation == 0)
+        system->current_generation = ALIA_SUBSTRATE_ID_GENERATION_STEP;
 }
 
 void

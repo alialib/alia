@@ -29,6 +29,8 @@ ids_tests(void);
 void
 effect_tests(void);
 void
+routing_tests(void);
+void
 animation_tests(void);
 
 void
@@ -54,6 +56,7 @@ TEST_LIST
        {"kernel/ids", ids_tests},
        {"kernel/effect", effect_tests},
        {"kernel/substrate", substrate_tests},
+       {"kernel/routing", routing_tests},
        {"kernel/animation", animation_tests},
        {"ui/layout/abi_headers", layout_abi_headers_tests},
        {"ui/layout/placement", placement_tests},

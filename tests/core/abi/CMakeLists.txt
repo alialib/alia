@@ -11,6 +11,7 @@ add_executable(test_core_c
     kernel/test_ids.c
     kernel/test_effect.c
     kernel/test_substrate.c
+    kernel/test_routing.c
     kernel/test_animation.c
     ui/layout/test_abi_headers.c
     ui/layout/test_placement.c

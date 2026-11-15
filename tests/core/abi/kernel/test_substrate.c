@@ -710,7 +710,8 @@ test_substrate_generations(void)
         = alia_test_substrate_fixture_root_anchor(t.fixture);
     alia_struct_spec spec = {.size = 1024u, .align = 16u};
 
-    for (int generation = 0; generation < 2; ++generation)
+    alia_generation_counter expected_generation = 0;
+    for (int i = 0; i < 2; ++i)
     {
         alia_test_substrate_fixture_reset_traversal(t.fixture, true);
         alia_stack_reset(&t.stack);
@@ -721,11 +722,13 @@ test_substrate_generations(void)
 
         TEST_ASSERT(use.ptr != NULL);
         TEST_CHECK(use.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT);
-        TEST_CHECK(use.generation == generation);
+        TEST_CHECK(use.generation == expected_generation);
+        TEST_CHECK((use.generation & ALIA_SUBSTRATE_ID_SUB_MASK) == 0);
 
         (void) alia_substrate_end_block(alia_ctx_kernel(&t.ctx));
 
         alia_test_substrate_fixture_cleanup_root_block(t.fixture);
+        expected_generation += ALIA_SUBSTRATE_ID_GENERATION_STEP;
     }
 
     substrate_fixture_destroy(&t);

@@ -65,7 +65,9 @@ struct alia_substrate_system
     alia_general_allocator allocator;
     alia_substrate_anchor root_anchor;
     alia_struct_spec root_block_spec;
-    // incremented whenever a block is freed (and thus might be reused)
+    // reincarnation counter - Advanced by `ALIA_SUBSTRATE_ID_GENERATION_STEP`
+    // whenever a block is freed (and thus might be reused). Low bits are
+    // reserved for substrate-ID sub-indices.
     alia_generation_counter current_generation;
     alia_substrate_key_table* key_table_registry;
 };

@@ -319,7 +319,7 @@ alia_slider(
     alia_element_id const base_id
         = alia_make_element_id(alia_ctx_kernel(ctx), result);
     alia_element_id const track_id = base_id;
-    alia_element_id const thumb_id = alia_offset_id(base_id, 1);
+    alia_element_id const thumb_id = alia_element_sub_id(base_id, 1);
 
     bool const is_disabled = ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
     double const current = ((value->flags & ALIA_SIGNAL_READABLE) != 0)
