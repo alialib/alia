@@ -158,33 +158,19 @@ TEST_CASE("layout separator content size is axis-relative")
         column(ctx, [&]() {
             row(ctx, [&]() {
                 // (length, breadth) = (20, 4) inside a row: 20 wide by 4 tall.
-                if (is_refresh_event(ctx))
-                {
-                    alia_separator(
-                        ctx,
-                        raw_code(AXIS_RELATIVE_SIZE),
-                        alia_vec2f_make(20.f, 4.f));
-                }
-                else
-                {
-                    (void) alia_layout_consume_box(ctx);
-                }
+                alia_separator(
+                    ctx,
+                    raw_code(AXIS_RELATIVE_SIZE),
+                    alia_vec2f_make(20.f, 4.f));
                 test_leaf(ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_row);
             });
             column(ctx, [&]() {
                 // (length, breadth) = (20, 4) inside a column: 4 wide by 20
                 // tall.
-                if (is_refresh_event(ctx))
-                {
-                    alia_separator(
-                        ctx,
-                        raw_code(AXIS_RELATIVE_SIZE),
-                        alia_vec2f_make(20.f, 4.f));
-                }
-                else
-                {
-                    (void) alia_layout_consume_box(ctx);
-                }
+                alia_separator(
+                    ctx,
+                    raw_code(AXIS_RELATIVE_SIZE),
+                    alia_vec2f_make(20.f, 4.f));
                 test_leaf(
                     ctx, alia_vec2f_make(10.f, 10.f), FLUSH, &after_column);
             });

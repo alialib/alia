@@ -25,9 +25,16 @@ namespace {
 size_t const stack_buffer_size = 64 * 1024;
 size_t const substrate_scratch_capacity = 16 * 1024;
 
-// Large enough for layout UI that uses a modest amount of substrate state
-// (e.g. detached handles). Pre-sized so tests avoid discovery re-traversal.
-alia_substrate_block_spec const root_block_spec
+// Initial spec for the root substrate block. A zero alignment means that the
+// block's memory and ID requirements are unknown, so the first refresh pass
+// runs in discovery mode.
+alia_substrate_block_spec const undiscovered_root_block_spec
+    = {.memory = {.size = 0u, .align = 0u}, .identity_count = 0};
+
+// Fallback spec for the root block when a spatial pass runs before any refresh
+// pass has discovered the real spec. It is large enough for layout UI that uses
+// a modest amount of substrate state but reserves no IDs.
+alia_substrate_block_spec const fallback_root_block_spec
     = {.memory = {.size = 4096u, .align = 16u}, .identity_count = 0};
 
 void*
@@ -85,7 +92,7 @@ struct layout_fixture
 
     alia_event_traversal event_traversal = {};
     alia_event refresh_event = {};
-    alia_event draw_event = {};
+    alia_event spatial_event = {};
 
     alia_layout_context layout_context = {};
     alia_ui_context context = {};
@@ -96,6 +103,10 @@ struct layout_fixture
     void* substrate_scratch_buffer = nullptr;
     alia_bump_allocator substrate_scratch{};
     bool substrate_ready = false;
+
+    // memoized spec of the root substrate block - This is updated by the
+    // discovery pass of the first refresh.
+    alia_substrate_block_spec root_block_spec = undiscovered_root_block_spec;
 };
 
 static void
@@ -109,9 +120,10 @@ wire_context(layout_fixture& fixture, bool refresh)
     }
     else
     {
-        fixture.draw_event
-            = alia_make_draw_event(alia_draw{.context = nullptr});
-        fixture.event_traversal.event = &fixture.draw_event;
+        // The spatial pass uses a regions event rather than a draw event so
+        // that widgets don't try to draw without a real drawing context.
+        fixture.spatial_event = alia_make_regions_event(alia_nil{});
+        fixture.event_traversal.event = &fixture.spatial_event;
     }
 
     fixture.layout_context.system = &fixture.layout;
@@ -168,13 +180,13 @@ run_with_substrate_root(
 {
     if (fixture.substrate_ready)
     {
-        alia_substrate_block_spec spec = root_block_spec;
         alia_substrate_begin_block(
             alia_ctx_kernel(&fixture.context),
             &fixture.substrate_system.root_anchor,
-            &spec);
+            &fixture.root_block_spec);
         fn(&fixture.context, user);
-        (void) alia_substrate_end_block(alia_ctx_kernel(&fixture.context));
+        fixture.root_block_spec
+            = alia_substrate_end_block(alia_ctx_kernel(&fixture.context));
     }
     else
     {
@@ -328,6 +340,19 @@ layout_fixture_run_refresh_impl(
         return;
 
     fixture->layout.root.first_child = nullptr;
+
+    // If the root block's spec hasn't been discovered yet, run a throwaway
+    // discovery pass first and discard everything it emitted.
+    if (fixture->substrate_ready
+        && alia_substrate_block_needs_discovery(&fixture->root_block_spec))
+    {
+        wire_context(*fixture, true);
+        run_with_substrate_root(*fixture, fn, user);
+        alia_memory_discard_bump(
+            &fixture->memory, fixture->layout.node_pool);
+        fixture->layout.root.first_child = nullptr;
+    }
+
     wire_context(*fixture, true);
     run_with_substrate_root(*fixture, fn, user);
     *fixture->layout_context.emission.next_ptr = nullptr;
@@ -353,6 +378,11 @@ layout_fixture_run_spatial_impl(
 {
     if (!fixture || !fn)
         return;
+
+    // Discovery is only possible during a refresh pass, so fall back to a fixed
+    // spec if no refresh pass has run yet.
+    if (alia_substrate_block_needs_discovery(&fixture->root_block_spec))
+        fixture->root_block_spec = fallback_root_block_spec;
 
     wire_context(*fixture, false);
     run_with_substrate_root(*fixture, fn, user);
