@@ -5,6 +5,7 @@
 #include <alia/abi/base/arena.h>
 #include <alia/abi/kernel/context.h>
 #include <alia/abi/kernel/ids.h>
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/prelude.h>
 
 // This file defines the data retrieval library used for associating mutable
@@ -79,84 +80,28 @@ enum alia_substrate_block_traversal_mode
     // allocated block.
     ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT = 1,
     // discovery mode - This is used to discover the shape of the graph.
-    // Specifically, when traversing a block, this is used to measure the total
-    // size of data used by nodes in the block.
+    // Specifically, when traversing a block, this is used to measure the
+    // memory layout and identity slot count of the block.
     ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY = 2,
 };
 
+// `alia_substrate_block_spec` is the memoized layout of a substrate block.
+// It combines the opaque memory layout with the number of identity slots the
+// block consumes from the instance ID pool.
+typedef struct alia_substrate_block_spec
+{
+    // contiguous memory layout of the block payload
+    alia_struct_spec memory;
+    // number of instance IDs owned by this block
+    uint32_t identity_count;
+} alia_substrate_block_spec;
+
 typedef struct alia_substrate_usage_result
 {
+    // pointer to the used memory
     void* ptr;
-    alia_generation_counter generation;
     enum alia_substrate_block_traversal_mode mode;
 } alia_substrate_usage_result;
-
-// alia_substrate_id is a compact substrate-keyed identity. It is valid for the
-// lifetime of a substrate use (across frames), but not across block
-// reincarnation. `stamp` combines a reincarnation counter in the high bits and
-// a sub-index in the low `ALIA_SUBSTRATE_ID_SUB_BITS`.
-enum
-{
-    ALIA_SUBSTRATE_ID_SUB_BITS = 8,
-    ALIA_SUBSTRATE_ID_SUB_MASK = (1u << ALIA_SUBSTRATE_ID_SUB_BITS) - 1u,
-    // Substrate reincarnation counters advance by this step so sub bits stay
-    // clear at mint time.
-    ALIA_SUBSTRATE_ID_GENERATION_STEP = 1u << ALIA_SUBSTRATE_ID_SUB_BITS,
-};
-
-typedef struct alia_substrate_id
-{
-    void* ptr;
-    // reincarnation counter with sub-index in the low bits
-    alia_generation_counter stamp;
-} alia_substrate_id;
-
-#define ALIA_SUBSTRATE_ID_NONE ALIA_BRACED_INIT(alia_substrate_id, NULL, 0)
-
-static inline bool
-alia_substrate_id_is_valid(alia_substrate_id id)
-{
-    return id.ptr != NULL;
-}
-
-static inline bool
-alia_substrate_id_equal(alia_substrate_id a, alia_substrate_id b)
-{
-    return a.ptr == b.ptr && a.stamp == b.stamp;
-}
-
-// Make a substrate ID with no sub-index from a usage result.
-static inline alia_substrate_id
-alia_make_substrate_id(alia_substrate_usage_result result)
-{
-    ALIA_ASSERT((result.generation & ALIA_SUBSTRATE_ID_SUB_MASK) == 0);
-    return ALIA_BRACED_INIT(alia_substrate_id, result.ptr, result.generation);
-}
-
-// Add a sub-index to a substrate ID that doesn't already have one.
-static inline alia_substrate_id
-alia_substrate_sub_id(alia_substrate_id base, uint8_t sub)
-{
-    ALIA_ASSERT((base.stamp & ALIA_SUBSTRATE_ID_SUB_MASK) == 0);
-    return ALIA_BRACED_INIT(
-        alia_substrate_id,
-        base.ptr,
-        base.stamp | (alia_generation_counter) sub);
-}
-
-// Extract the sub-index from a substrate ID.
-static inline uint8_t
-alia_substrate_id_sub(alia_substrate_id id)
-{
-    return (uint8_t) (id.stamp & ALIA_SUBSTRATE_ID_SUB_MASK);
-}
-
-// Extract the reincarnation counter from a substrate ID.
-static inline alia_generation_counter
-alia_substrate_id_generation(alia_substrate_id id)
-{
-    return id.stamp & ~((alia_generation_counter) ALIA_SUBSTRATE_ID_SUB_MASK);
-}
 
 // 'Use' memory from the current substrate block.
 //
@@ -173,6 +118,17 @@ alia_substrate_id_generation(alia_substrate_id id)
 alia_substrate_usage_result
 alia_substrate_use_memory(
     alia_kernel_context* ctx, size_t size, size_t alignment);
+
+// 'Use' a single instance ID (with no associated memory).
+alia_instance_id
+alia_substrate_use_id(alia_kernel_context* ctx);
+
+// 'Use' a contiguous range of `count` instance IDs.
+// The returned ID is the first in the range. The caller can index into the
+// range with `alia_instance_id_at`. Passing a count of `0` is allowed, but it
+// doesn't allocate any IDs and the returned ID shouldn't be used.
+alia_instance_id
+alia_substrate_use_id_range(alia_kernel_context* ctx, uint32_t count);
 
 typedef enum
 {
@@ -222,27 +178,27 @@ alia_substrate_deactivate_anchor(
     alia_substrate_system* system, alia_substrate_anchor* anchor);
 
 // Determine if a block needs to be discovered.
-// `spec` is the memoized memory layout specification of the block.
+// `spec` is the memoized block layout specification.
 inline bool
-alia_substrate_block_needs_discovery(alia_struct_spec* spec)
+alia_substrate_block_needs_discovery(alia_substrate_block_spec* spec)
 {
-    return spec->align == 0;
+    return spec->memory.align == 0;
 }
 
 // Begin the scope of a child substrate block.
-// `spec` is the memoized memory layout specification of the block.
+// `spec` is the memoized block layout specification.
 // If `alia_substrate_block_needs_discovery` returns true on the spec, the
 // traversal will enter discovery mode for the block.
 void
 alia_substrate_begin_block(
     alia_kernel_context* ctx,
     alia_substrate_anchor* anchor,
-    alia_struct_spec* spec);
+    alia_substrate_block_spec* spec);
 
 // End the scope of the current substrate block.
 // Returns the layout specification of the block. - If the block was in
 // discovery mode, this should be used to update the memoized spec value.
-alia_struct_spec
+alia_substrate_block_spec
 alia_substrate_end_block(alia_kernel_context* ctx);
 
 // Get the structural path to `object` as an ID view.
@@ -309,12 +265,12 @@ alia_substrate_begin_keyed_block(
     alia_kernel_context* ctx,
     alia_substrate_key_scope* scope,
     alia_id_view key,
-    alia_struct_spec* spec);
+    alia_substrate_block_spec* spec);
 
 // End a keyed block and return the layout specification of the block. - If the
 // block was in discovery mode, this should be used to update the memoized
 // spec value.
-alia_struct_spec
+alia_substrate_block_spec
 alia_substrate_end_keyed_block(alia_kernel_context* ctx);
 
 // Remove stale entries from a key table.

@@ -6,8 +6,8 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 
 #include <alia/impl/events.hpp>
@@ -57,7 +57,8 @@ render_node_expander(
     node_expander_data& data,
     bool expanded,
     alia_interaction_status_t interaction_status,
-    alia_node_expander_style const* style)
+    alia_node_expander_style const* style,
+    alia_instance_id base_id)
 {
     alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
@@ -83,6 +84,7 @@ render_node_expander(
 
     alia_draw_equilateral_triangle(
         ctx,
+        {base_id, 0},
         alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         triangle_box,
         triangle_rgba,
@@ -98,6 +100,7 @@ render_node_expander(
     {
         alia_draw_circle(
             ctx,
+            {base_id, 1},
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             center,
             alia_px(ctx, style->highlight_radius),
@@ -115,6 +118,7 @@ render_node_expander(
         interaction_status,
         center,
         flare_srgb,
+        base_id,
         alia_px(ctx, style->flare_radius));
 }
 
@@ -176,8 +180,7 @@ alia_node_expander(
         };
     }
 
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     bool const is_disabled = (expanded == nullptr)
                           || ((expanded->flags & ALIA_SIGNAL_WRITABLE) == 0);
@@ -241,7 +244,13 @@ alia_node_expander(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_node_expander(
-                ctx, box, *data, expanded_state, interaction_status, style);
+                ctx,
+                box,
+                *data,
+                expanded_state,
+                interaction_status,
+                style,
+                id.id);
             break;
         }
     }

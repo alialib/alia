@@ -1,6 +1,9 @@
 #pragma once
 
+#include <alia/abi/kernel/routing.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/input/elements.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/impl/context.hpp>
 #include <alia/impl/events.hpp>
@@ -19,6 +22,9 @@ do_flow_panel(
 {
     alia_layout_edge_offsets_begin(ctx, offsets, ALIA_PROVIDE_BOX);
 
+    alia_instance_id const base_id
+        = alia_element_use_id(alia_ctx_kernel(ctx)).id;
+
     if (!is_refresh_event(ctx))
     {
         alia_layout_box_array box_array = alia_layout_consume_box_array(ctx);
@@ -26,8 +32,7 @@ do_flow_panel(
         {
             for (int i = 0; i < box_array.count; ++i)
             {
-                alia_draw_box(
-                    ctx,
+                alia_draw_box(ctx, {base_id, (uint32_t) i},
                     z_index,
                     box_array.boxes[i],
                     {.fill_color = alia_srgba8_from_srgb8(color)});

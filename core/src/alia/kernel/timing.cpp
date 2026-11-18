@@ -62,8 +62,7 @@ alia_timer_use(alia_kernel_context* ctx)
 
     auto* state = static_cast<alia_timer_state*>(result.ptr);
 
-    // Initialize on first use (INIT / DISCOVERY). The timer state is POD, so
-    // simple assignment is sufficient.
+    // Initialize on first use.
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT
         || result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
     {
@@ -71,8 +70,8 @@ alia_timer_use(alia_kernel_context* ctx)
         state->expected_fire_time = 0;
     }
 
-    // A stable target identifier for matching the timer event.
-    state->target = static_cast<alia_element_id>(state);
+    // Reserve a target element ID for matching the timer event.
+    state->target = alia_element_use_id(ctx);
 
     return state;
 }

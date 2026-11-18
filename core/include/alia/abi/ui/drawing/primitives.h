@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_DRAWING_PRIMITIVES_H
 
 #include <alia/abi/base/color.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/system.h>
@@ -17,7 +18,6 @@ enum
     ALIA_PRIMITIVE_BOX = 0,
     ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE = 1,
     ALIA_PRIMITIVE_SQUIRCLE = 2,
-    ALIA_PRIMITIVE_MSDF_GLYPH = 3,
 
     ALIA_PRIMITIVE_TYPE_MASK = 255,
     // fill uses a gradient along `gradient_angle`
@@ -70,23 +70,17 @@ typedef struct alia_draw_squircle_payload
     alia_shape_style style;
 } alia_draw_squircle_payload;
 
-typedef struct alia_draw_msdf_glyph_payload
-{
-    float uv_rect[4];
-    float sdf_scale;
-} alia_draw_msdf_glyph_payload;
-
 typedef union alia_primitive_payload
 {
     alia_draw_box_payload box;
     alia_draw_equilateral_triangle_payload triangle;
     alia_draw_squircle_payload squircle;
-    alia_draw_msdf_glyph_payload msdf_glyph;
 } alia_primitive_payload;
 
 typedef struct alia_draw_primitive_command
 {
     alia_draw_command base;
+    // axis-aligned box in the command's frame space
     alia_box box;
     alia_primitive_type primitive_type;
     // general per-primitive color (usually the fill color)
@@ -142,6 +136,7 @@ alia_shape_style_from_box_paint(alia_box_paint paint)
 static inline alia_draw_primitive_command*
 alia_draw_shape_alloc(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_box box,
     alia_primitive_type primitive_type,
@@ -150,11 +145,12 @@ alia_draw_shape_alloc(
     alia_draw_primitive_command* command
         = (alia_draw_primitive_command*) alia_draw_command_alloc(
             ctx,
+            id,
             z_index,
             ALIA_PRIMITIVE_MATERIAL_ID,
             ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command)));
 
-    command->box = alia_box_translate(box, alia_ctx_geometry(ctx)->offset);
+    command->box = box;
     command->primitive_type = primitive_type;
     command->color = fill;
     return command;
@@ -163,12 +159,13 @@ alia_draw_shape_alloc(
 static inline void
 alia_draw_box(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_box box,
     alia_box_paint paint)
 {
     alia_draw_primitive_command* command = alia_draw_shape_alloc(
-        ctx, z_index, box, ALIA_PRIMITIVE_BOX, paint.fill_color);
+        ctx, id, z_index, box, ALIA_PRIMITIVE_BOX, paint.fill_color);
     command->payload.box.corner_radius = paint.corner_radius;
     command->payload.box.style = alia_shape_style_from_box_paint(paint);
 }
@@ -176,6 +173,7 @@ alia_draw_box(
 static inline void
 alia_draw_rounded_box(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_box box,
     alia_srgba8 color,
@@ -183,6 +181,7 @@ alia_draw_rounded_box(
 {
     alia_draw_box(
         ctx,
+        id,
         z_index,
         box,
         {.fill_color = color,
@@ -194,6 +193,7 @@ alia_draw_rounded_box(
 static inline void
 alia_draw_equilateral_triangle(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_box box,
     alia_srgba8 color,
@@ -201,7 +201,7 @@ alia_draw_equilateral_triangle(
     alia_shape_style style = alia_shape_style_solid())
 {
     alia_draw_primitive_command* command = alia_draw_shape_alloc(
-        ctx, z_index, box, ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE, color);
+        ctx, id, z_index, box, ALIA_PRIMITIVE_EQUILATERAL_TRIANGLE, color);
     command->payload.triangle.rotation_degrees = rotation_degrees;
     command->payload.triangle.style = style;
 }
@@ -209,6 +209,7 @@ alia_draw_equilateral_triangle(
 static inline void
 alia_draw_circle(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_vec2f center,
     float radius,
@@ -217,6 +218,7 @@ alia_draw_circle(
 {
     alia_draw_box(
         ctx,
+        id,
         z_index,
         alia_box{
             alia_vec2f_sub(center, alia_vec2f{radius, radius}),
@@ -231,6 +233,7 @@ alia_draw_circle(
 static inline void
 alia_draw_squircle(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_box box,
     float radius,
@@ -238,7 +241,7 @@ alia_draw_squircle(
     alia_shape_style style = alia_shape_style_solid())
 {
     alia_draw_primitive_command* command = alia_draw_shape_alloc(
-        ctx, z_index, box, ALIA_PRIMITIVE_SQUIRCLE, color);
+        ctx, id, z_index, box, ALIA_PRIMITIVE_SQUIRCLE, color);
     command->payload.squircle.radius = radius;
     command->payload.squircle.style = style;
 }

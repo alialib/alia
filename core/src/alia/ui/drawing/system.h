@@ -28,4 +28,9 @@ struct alia_draw_bucket_table
     std::vector<uint64_t> keys;
 };
 
+struct alia_draw_frame_table
+{
+    std::vector<alia_draw_frame> entries;
+};
+
 } // extern "C"

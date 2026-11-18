@@ -32,8 +32,10 @@ struct alia_substrate_block
 {
     // linked list of cleanup records for nodes in the block
     alia_substrate_cleanup_record* cleanup_records;
-    // the generation ID for this block - assigned at allocation time
-    alia_generation_counter generation;
+    // first instance ID owned by this block - This is assigned on INIT from
+    // the memoized identity count. Identity slot `i` within the block has ID
+    // `alia_instance_id_at(id_base, i)`. Discovery blocks leave this as NONE.
+    alia_instance_id id_base;
     // TODO: We should be able to squeeze this into 32 bits: 24 bits for the
     // size, 8 bits for the alignment (in powers of 2).
     alia_struct_spec spec;
@@ -64,11 +66,9 @@ struct alia_substrate_system
 {
     alia_general_allocator allocator;
     alia_substrate_anchor root_anchor;
-    alia_struct_spec root_block_spec;
-    // reincarnation counter - Advanced by `ALIA_SUBSTRATE_ID_GENERATION_STEP`
-    // whenever a block is freed (and thus might be reused). Low bits are
-    // reserved for substrate-ID sub-indices.
-    alia_generation_counter current_generation;
+    alia_substrate_block_spec root_block_spec;
+    // instance ID pool used by this system - This is owned by the kernel.
+    alia_instance_id_pool* instance_ids;
     alia_substrate_key_table* key_table_registry;
 };
 
@@ -80,10 +80,13 @@ struct alia_substrate_block_traversal_state
 
     // the spec for the block
     // In discovery mode, this is calculated as the traversal progresses.
-    alia_struct_spec spec;
+    alia_substrate_block_spec spec;
 
     // used for assigning memory in non-discovery passes
     size_t current_offset;
+
+    // next identity slot index within this block
+    uint32_t identity_index;
 
     // used for reconstructing the full path to nodes in this block
     alia_substrate_block_traversal_state* parent;
@@ -114,7 +117,9 @@ namespace alia {
 
 void
 substrate_system_init(
-    alia_substrate_system& system, alia_general_allocator allocator);
+    alia_substrate_system& system,
+    alia_general_allocator allocator,
+    alia_instance_id_pool* instance_ids);
 
 void
 substrate_system_destroy(alia_substrate_system& system);

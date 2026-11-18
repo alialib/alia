@@ -2,6 +2,7 @@
 
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
+#include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/protocol.h>
@@ -421,6 +422,10 @@ alia_text(
     // Non-refresh passes: replay the placement records the layout wrote (this
     // must happen on every pass to keep the placement arena walk in sync) and
     // act on them per category.
+    //
+    // Fragment/run draw identity is left for engines that emit a retention
+    // unit per range. MSDF currently expands to glyph leaves with
+    // `ALIA_DRAW_ID_NONE`, so pass none here.
     alia_bump_allocator* arena = alia_layout_placement_arena(ctx);
     auto const* header = arena_alloc<text_placement_header>(*arena);
     alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_CONTENT);
@@ -437,6 +442,7 @@ alia_text(
                 cache->engine->vtable->draw_block_range(
                     cache->engine,
                     ctx,
+                    ALIA_INSTANCE_ID_NONE,
                     z,
                     cache->block,
                     frag->byte_start,

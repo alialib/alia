@@ -1,3 +1,4 @@
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/kernel/substrate.h>
 
 #include <alia/abi/base/arena.h>
@@ -55,6 +56,7 @@ test_grow_fn(
 
 struct alia_test_substrate_fixture
 {
+    alia_instance_id_pool instance_ids{};
     alia_substrate_system system;
     alia_substrate_traversal traversal;
     uint32_t refresh_counter = 0;
@@ -93,7 +95,9 @@ alia_test_substrate_fixture_create(alia_general_allocator allocator)
         alia_grow_callback{.user = nullptr, .grow = test_grow_fn});
 
     // substrate system + traversal setup
-    alia::substrate_system_init(fixture->system, allocator);
+    alia_instance_id_pool_init(&fixture->instance_ids);
+    alia::substrate_system_init(
+        fixture->system, allocator, &fixture->instance_ids);
     alia::substrate_traversal_init(
         fixture->traversal,
         fixture->system,
@@ -140,6 +144,12 @@ alia_substrate_anchor*
 alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture)
 {
     return fixture ? &fixture->system.root_anchor : nullptr;
+}
+
+alia_instance_id_pool*
+alia_test_substrate_fixture_instance_ids(alia_test_substrate_fixture* fixture)
+{
+    return fixture ? &fixture->instance_ids : nullptr;
 }
 
 void

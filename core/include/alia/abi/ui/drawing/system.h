@@ -14,8 +14,10 @@ enum
     ALIA_PRIMITIVE_MATERIAL_ID = 0,
     // Composite a draw target texture into the current target.
     ALIA_DRAW_TARGET_MATERIAL_ID = 1,
+    // MSDF glyph quads
+    ALIA_MSDF_MATERIAL_ID = 2,
     // TODO: monospaced/variable-width debug text material IDs
-    ALIA_BUILTIN_MATERIAL_COUNT = 2,
+    ALIA_BUILTIN_MATERIAL_COUNT = 3,
 };
 
 // Allocate IDs for custom materials.
@@ -23,7 +25,9 @@ alia_draw_material_id
 alia_material_alloc_ids(alia_ui_system* system, uint32_t count);
 
 typedef void (*alia_material_draw_fn)(
-    void* user, alia_draw_bucket const* bucket);
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket);
 
 typedef struct alia_material_vtable
 {

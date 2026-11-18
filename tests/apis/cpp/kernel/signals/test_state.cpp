@@ -92,7 +92,8 @@ TEST_CASE("use_state persists across traversals")
 {
     substrate_fixture t;
 
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
 
     t.reset_traversal();
     alia_substrate_begin_block(alia_ctx_kernel(t.ctx), t.root_anchor(), &spec);

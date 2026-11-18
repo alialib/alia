@@ -266,7 +266,7 @@ style_catalog_generate_defaults(
         if (!slot.bound)
             continue;
         ALIA_ASSERT(slot.generator);
-        max_align = (std::max)(max_align, size_t{slot.align});
+        max_align = (std::max) (max_align, size_t{slot.align});
         offset = align_up(offset, slot.align);
         ALIA_ASSERT(offset <= UINT32_MAX);
         slot.offset = static_cast<uint32_t>(offset);
@@ -274,7 +274,7 @@ style_catalog_generate_defaults(
     }
     ALIA_ASSERT(offset <= UINT32_MAX);
     size_t const blob_size
-        = align_up(offset, (std::max)(max_align, size_t{ALIA_MIN_ALIGN}));
+        = align_up(offset, (std::max) (max_align, size_t{ALIA_MIN_ALIGN}));
 
     if (blob_size > catalog.defaults_capacity)
     {
@@ -329,9 +329,9 @@ style_catalog_generate_defaults(
         scratch_bytes / sizeof(alia_color_program_step));
     alia_color_program_step const* scratch_steps
         = scratch_bytes == 0
-              ? nullptr
-              : static_cast<alia_color_program_step const*>(
-                    alia_arena_ptr(&scratch, session.offset));
+            ? nullptr
+            : static_cast<alia_color_program_step const*>(
+                  alia_arena_ptr(&scratch, session.offset));
 
     // Phase 2: exact durable steps block in the styles pool.
     if (catalog.steps && catalog.allocator.free)
@@ -347,10 +347,9 @@ style_catalog_generate_defaults(
 
     if (scratch_count > 0)
     {
-        size_t const bytes
-            = sizeof(alia_color_program_step) * scratch_count;
-        catalog.steps = static_cast<alia_color_program_step*>(
-            catalog.allocator.alloc(
+        size_t const bytes = sizeof(alia_color_program_step) * scratch_count;
+        catalog.steps
+            = static_cast<alia_color_program_step*>(catalog.allocator.alloc(
                 catalog.allocator.user_data,
                 bytes,
                 alignof(alia_color_program_step)));

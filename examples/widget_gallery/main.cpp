@@ -9,8 +9,8 @@
 #include <alia/abi/base/geometry.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/styling/context_api.h>
-#include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/descriptors.h>
+#include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/palette_generation.h>
 #include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/abi/ui/system/api.h>
@@ -392,7 +392,9 @@ do_controls(
                  .hue = channel_value(sky),
                  .chroma = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY)},
                 [&] {
-                    button(ctx, "Sky", callback([sky] { gallery_snap_hue(sky); }));
+                    button(ctx, "Sky", callback([sky] {
+                               gallery_snap_hue(sky);
+                           }));
                 });
             with_button_variant(
                 ctx,
@@ -410,8 +412,9 @@ do_controls(
                  .hue = channel_value(teal),
                  .chroma = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY)},
                 [&] {
-                    button(
-                        ctx, "Teal", callback([teal] { gallery_snap_hue(teal); }));
+                    button(ctx, "Teal", callback([teal] {
+                               gallery_snap_hue(teal);
+                           }));
                 });
         });
     }
@@ -433,10 +436,9 @@ do_controls(
             gallery_load_float_defaults(!light_theme);
             gallery_paint_floats_changed();
         }),
-        {
-             .chrome = button_chrome::outline,
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
-             .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
+        {.chrome = button_chrome::outline,
+         .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
+         .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
 
     do_subheading(ctx, "Spacing");
     slider(ctx, spacing, 0.0, 24.0, 1.0, FILL);
@@ -619,17 +621,28 @@ do_button_demo(ui_context ctx)
     row(ctx, ALIGN_LEFT, [&]() {
         button(ctx, "Primary", actions::noop());
         button(
-            ctx, "Secondary", actions::noop(), {
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
+            ctx,
+            "Secondary",
+            actions::noop(),
+            {.hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)});
-        button(ctx, "Tertiary", actions::noop(), {
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
+        button(
+            ctx,
+            "Tertiary",
+            actions::noop(),
+            {.hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
-        button(ctx, "Neutral", actions::noop(), {
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
+        button(
+            ctx,
+            "Neutral",
+            actions::noop(),
+            {.hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
-        button(ctx, "Danger", actions::noop(), {
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
+        button(
+            ctx,
+            "Danger",
+            actions::noop(),
+            {.hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
     });
 
@@ -639,38 +652,29 @@ do_button_demo(ui_context ctx)
             ctx,
             "Match",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::match});
+            {.chrome = button_chrome::filled, .tone = color::tone::match});
         button(
             ctx,
             "Inverse",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::inverse});
+            {.chrome = button_chrome::filled, .tone = color::tone::inverse});
         button(
             ctx,
             "Dark",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::dark});
+            {.chrome = button_chrome::filled, .tone = color::tone::dark});
         button(
             ctx,
             "Light",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::light});
+            {.chrome = button_chrome::filled, .tone = color::tone::light});
     });
     row(ctx, ALIGN_LEFT, [&]() {
         button(
             ctx,
             "Neutral Dark",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
@@ -678,8 +682,7 @@ do_button_demo(ui_context ctx)
             ctx,
             "Neutral Light",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::light,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
@@ -687,8 +690,7 @@ do_button_demo(ui_context ctx)
             ctx,
             "Danger Dark",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
@@ -696,8 +698,7 @@ do_button_demo(ui_context ctx)
             ctx,
             "Tertiary Dark",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
@@ -705,8 +706,7 @@ do_button_demo(ui_context ctx)
             ctx,
             "Tertiary Light",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::light,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
@@ -723,24 +723,21 @@ do_button_demo(ui_context ctx)
             ctx,
             "Secondary",
             actions::noop(),
-            {
-             .chrome = button_chrome::outline,
+            {.chrome = button_chrome::outline,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)});
         button(
             ctx,
             "Neutral",
             actions::noop(),
-            {
-             .chrome = button_chrome::outline,
+            {.chrome = button_chrome::outline,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
         button(
             ctx,
             "Danger",
             actions::noop(),
-            {
-             .chrome = button_chrome::outline,
+            {.chrome = button_chrome::outline,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
     });
@@ -756,16 +753,14 @@ do_button_demo(ui_context ctx)
             ctx,
             "Danger",
             actions::noop(),
-            {
-             .chrome = button_chrome::gradient,
+            {.chrome = button_chrome::gradient,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
         button(
             ctx,
             "Tertiary Dark",
             actions::noop(),
-            {
-             .chrome = button_chrome::gradient,
+            {.chrome = button_chrome::gradient,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
@@ -797,24 +792,22 @@ do_button_demo(ui_context ctx)
     // Patch on top of an already-selected variant (opaque base).
     with_button_variant(
         ctx,
-        {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::inverse,
-             .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
-             .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)},
+        {.chrome = button_chrome::filled,
+         .tone = color::tone::inverse,
+         .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
+         .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)},
         [&] {
             with_patched_button_style(
                 ctx,
                 color::color_program_expr{} | color::match_hue(color::danger),
                 [&] { button(ctx, "Inverse + danger hue", actions::noop()); });
         });
-    with_button_variant(
-        ctx, {.chrome = button_chrome::outline}, [&] {
-            with_patched_button_style(
-                ctx,
-                color::color_program_expr{} | color::match_hue(color::danger),
-                [&] { button(ctx, "Outline + danger hue", actions::noop()); });
-        });
+    with_button_variant(ctx, {.chrome = button_chrome::outline}, [&] {
+        with_patched_button_style(
+            ctx,
+            color::color_program_expr{} | color::match_hue(color::danger),
+            [&] { button(ctx, "Outline + danger hue", actions::noop()); });
+    });
 }
 
 // Temporarily elevate the active palette toward TEXT for `content`.
@@ -850,9 +843,8 @@ do_elevation_demo(ui_context ctx)
                 ctx,
                 "Inverse",
                 actions::noop(),
-                {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::inverse});
+                {.chrome = button_chrome::filled,
+                 .tone = color::tone::inverse});
             checkbox(ctx, use_state(ctx, true), "On");
         });
     };
@@ -897,15 +889,12 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Info",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::inverse});
+            {.chrome = button_chrome::filled, .tone = color::tone::inverse});
         button(
             ctx,
             "Success",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::inverse,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)});
@@ -913,8 +902,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Warning",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
@@ -922,8 +910,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Danger",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::inverse,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
@@ -931,8 +918,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Neutral",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::dark,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});
@@ -944,15 +930,12 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Info",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
-             .tone = color::tone::match});
+            {.chrome = button_chrome::filled, .tone = color::tone::match});
         button(
             ctx,
             "Success",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::match,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_SECONDARY)});
@@ -960,8 +943,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Warning",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::match,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_TERTIARY)});
@@ -969,8 +951,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Danger",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::match,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_DANGER),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_DANGER)});
@@ -978,8 +959,7 @@ do_status_chip_demo(ui_context ctx)
             ctx,
             "Neutral",
             actions::noop(),
-            {
-             .chrome = button_chrome::filled,
+            {.chrome = button_chrome::filled,
              .tone = color::tone::match,
              .hue = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL),
              .chroma = channel_from_slot(ALIA_STYLE_COLOR_NEUTRAL)});

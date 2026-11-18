@@ -7,9 +7,9 @@
 #include <alia/abi/ui/icons.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/msdf.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/paint.h>
 #include <alia/impl/events.hpp>
@@ -91,7 +91,8 @@ render_checkbox(
     checkbox_data& data,
     bool checked,
     alia_interaction_status_t interaction_status,
-    alia_checkbox_style const* style)
+    alia_checkbox_style const* style,
+    alia_instance_id base_id)
 {
     alia_style_environment const* env = alia_ctx_style(ctx)->environment;
     alia_vec2f const center = checkbox_center(placement);
@@ -108,6 +109,7 @@ render_checkbox(
 
     alia_draw_box(
         ctx,
+        {base_id, 0},
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         box,
         {.fill_color = fill,
@@ -128,6 +130,7 @@ render_checkbox(
             interaction_status,
             center,
             flare_srgb,
+            base_id,
             alia_px(ctx, style->flare_radius));
     }
 
@@ -150,6 +153,7 @@ render_checkbox(
     {
         alia_draw_circle(
             ctx,
+            {base_id, 2},
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
@@ -243,8 +247,7 @@ alia_checkbox(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_checkbox_style const* const style = alia_checkbox_style_active(ctx);
 
@@ -300,7 +303,7 @@ alia_checkbox(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_checkbox(
-                ctx, box, *data, checked, interaction_status, style);
+                ctx, box, *data, checked, interaction_status, style, id.id);
             break;
         }
     }

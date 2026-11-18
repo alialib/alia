@@ -1,5 +1,6 @@
 #include <alia/abi/ui/library.h>
 
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
@@ -37,6 +38,8 @@ alia_separator(
     ALIA_ASSERT((layout_flags & ALIA_DEFAULT_CROSS_ALIGNMENT_MASK) == 0);
     layout_flags |= ALIA_DEFAULT_FILL_CROSS;
 
+    alia_instance_id const id = alia_substrate_use_id(alia_ctx_kernel(ctx));
+
     if (content_size.x <= 0.f || content_size.y <= 0.f)
     {
         float const thickness = alia_separator_style_active(ctx)->thickness;
@@ -64,6 +67,7 @@ alia_separator(
             alia_ctx_style(ctx)->environment, style->steps, style->color);
         alia_draw_box(
             ctx,
+            {id, 0},
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             box,
             {.fill_color = color,

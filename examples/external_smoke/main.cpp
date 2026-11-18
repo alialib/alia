@@ -78,8 +78,8 @@ emit_text(
 void
 the_ui(ui_context ctx)
 {
-    alia_srgba8 const ink
-        = alia_palette_color_srgba(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_TEXT);
+    alia_srgba8 const ink = alia_palette_color_srgba(
+        &alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_TEXT);
     column(ctx, GROW | pad(24), [&] {
         emit_text(ctx, "External nest smoke", &heading_font, ink);
 

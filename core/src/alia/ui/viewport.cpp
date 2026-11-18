@@ -57,8 +57,7 @@ alia_do_viewport(
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_viewport_style const* const effective_style
         = style != nullptr ? style : &default_viewport_style;
@@ -87,6 +86,7 @@ alia_do_viewport(
             alia_viewport_draw_command* command
                 = (alia_viewport_draw_command*) alia_draw_command_alloc(
                     ctx,
+                    {id.id, 0},
                     z_index,
                     material_id,
                     ALIA_MIN_ALIGNED_SIZE(sizeof(alia_viewport_draw_command)));

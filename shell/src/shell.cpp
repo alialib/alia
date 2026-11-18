@@ -2,6 +2,7 @@
 
 #include <alia/abi/base/geometry/vec2.h>
 #include <alia/abi/kernel/animation.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/system.h>
@@ -56,15 +57,14 @@ edge_offsets_is_zero(alia_edge_offsets offsets)
 }
 
 void
-shell_draw_foundation_underlay(alia_ui_context* ctx)
+shell_draw_foundation_underlay(alia_ui_context* ctx, alia_instance_id id)
 {
     alia_ui_system* ui = alia_ctx_system(ctx);
     alia_box const surface_box
         = {{0.f, 0.f}, alia_vec2i_to_vec2f(ui->surface_size)};
     alia_srgba8 const fill = alia_palette_color_srgba(
         &ui->styling.environment.palette, ALIA_STYLE_COLOR_SURFACE);
-    alia_draw_box(
-        ctx,
+    alia_draw_box(ctx, {id, 0},
         0,
         surface_box,
         {.fill_color = fill,
@@ -178,10 +178,12 @@ shell_controller(void* user_data, alia_ui_context* ctx)
 
     shell_advance_smooth_zoom(shell, ctx);
 
+    alia_instance_id const foundation_id
+        = alia_substrate_use_id(alia_ctx_kernel(ctx));
     if (get_event_type(*ctx) == ALIA_EVENT_DRAW
         && shell->config.draw_foundation_underlay)
     {
-        shell_draw_foundation_underlay(ctx);
+        shell_draw_foundation_underlay(ctx, foundation_id);
     }
 
     // Establish the root font so components (e.g. `alia_text`) have an active

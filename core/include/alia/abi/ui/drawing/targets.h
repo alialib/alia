@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_DRAWING_TARGETS_H
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
@@ -45,6 +46,7 @@ alia_draw_target_end(alia_ui_context* ctx);
 void
 alia_draw_target(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_draw_target_id source,
     alia_box dest,
@@ -54,6 +56,7 @@ typedef struct alia_draw_target_command
 {
     alia_draw_command base;
     alia_draw_target_id source;
+    // destination rect in the command's frame space
     alia_box dest;
     float opacity;
 } alia_draw_target_command;

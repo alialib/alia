@@ -2,6 +2,7 @@
 #define ALIA_ABI_UI_DRAWING_SHADER_H
 
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
@@ -61,7 +62,7 @@ alia_ui_register_shader(
 typedef struct alia_shader_draw_command
 {
     alia_draw_command base;
-    // allocated layout region in surface space (top-left origin)
+    // allocated layout region in the command's frame space
     alia_box region;
     uint16_t params_size;
     // points into the draw-pass arena; valid only during draw_bucket
@@ -72,6 +73,7 @@ typedef struct alia_shader_draw_command
 void
 alia_draw_shader(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_box region,

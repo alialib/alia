@@ -39,7 +39,8 @@ struct button_variant
     button_chrome chrome = button_chrome::filled;
     color::tone tone = color::tone::match;
     alia_style_channel_ref hue = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY);
-    alia_style_channel_ref chroma = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY);
+    alia_style_channel_ref chroma
+        = channel_from_slot(ALIA_STYLE_COLOR_PRIMARY);
 };
 
 namespace detail {

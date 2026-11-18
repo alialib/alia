@@ -6,8 +6,8 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
@@ -51,7 +51,8 @@ render_toggle_switch(
     toggle_switch_data& data,
     bool state,
     alia_interaction_status_t interaction_status,
-    alia_toggle_switch_style const* style)
+    alia_toggle_switch_style const* style,
+    alia_instance_id base_id)
 {
     alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
@@ -104,6 +105,7 @@ render_toggle_switch(
         toggle_switch_min.y + (layout_h - track_h) * 0.5f};
     alia_draw_rounded_box(
         ctx,
+        {base_id, 0},
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         alia_box{track_min, alia_vec2f{track_w, track_h}},
         alia_srgba8_from_srgb8(track_color),
@@ -124,6 +126,7 @@ render_toggle_switch(
                    + 0.5f));
     alia_draw_circle(
         ctx,
+        {base_id, 1},
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         alia_vec2f{dot_center.x + drop, dot_center.y + drop},
         dot_radius,
@@ -132,6 +135,7 @@ render_toggle_switch(
 
     alia_draw_circle(
         ctx,
+        {base_id, 2},
         alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         dot_center,
         dot_radius,
@@ -143,6 +147,7 @@ render_toggle_switch(
     {
         alia_draw_circle(
             ctx,
+            {base_id, 3},
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             dot_center,
             alia_px(ctx, style->highlight_radius),
@@ -155,6 +160,7 @@ render_toggle_switch(
         interaction_status,
         dot_center,
         dot_color,
+        base_id,
         alia_px(ctx, style->flare_radius));
 }
 
@@ -230,8 +236,7 @@ alia_toggle_switch(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_toggle_switch_style const* const style
         = alia_toggle_switch_style_active(ctx);
@@ -297,7 +302,7 @@ alia_toggle_switch(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_toggle_switch(
-                ctx, box, *data, selected, interaction_status, style);
+                ctx, box, *data, selected, interaction_status, style, id.id);
 
             break;
         }

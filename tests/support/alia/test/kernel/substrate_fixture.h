@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 
@@ -29,6 +30,11 @@ alia_test_substrate_fixture_system(alia_test_substrate_fixture* fixture);
 alia_substrate_anchor*
 alia_test_substrate_fixture_root_anchor(alia_test_substrate_fixture* fixture);
 
+// instance ID pool used by this fixture's substrate system
+alia_instance_id_pool*
+alia_test_substrate_fixture_instance_ids(
+    alia_test_substrate_fixture* fixture);
+
 // Discovery mode requires a refresh event on the context; wire one from the
 // fixture into `ctx` before calling `alia_substrate_begin_block` with a
 // spec that needs discovery.
@@ -42,7 +48,6 @@ alia_test_substrate_fixture_reset_traversal(
     alia_test_substrate_fixture* fixture, bool allow_prediction_updates);
 
 // Cleanup the root block and run all registered destructors for it.
-// This also increments the substrate system generation counter.
 void
 alia_test_substrate_fixture_cleanup_root_block(
     alia_test_substrate_fixture* fixture);

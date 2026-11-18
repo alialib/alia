@@ -8,69 +8,56 @@
 
 ALIA_EXTERN_C_BEGIN
 
-typedef uint32_t alia_route_node_id;
+typedef uint16_t alia_route_node_id;
 
-// interactive element identity - This combines a stable substrate ID with a
-// route node for targeted event delivery.
+// interactive element identity - This pairs an instance ID with a route node
+// for targeted event delivery. Multiple interactive parts of a widget take
+// separate instance IDs (see `alia_substrate_use_id` /
+// `alia_substrate_use_id_range`).
 typedef struct alia_element_id
 {
-    void* ptr;
-    alia_generation_counter stamp;
+    alia_instance_id id;
     alia_route_node_id route;
 } alia_element_id;
 
-#define ALIA_ELEMENT_ID_NONE ((alia_element_id) NULL)
-
-static inline alia_substrate_id
-alia_element_substrate_id(alia_element_id id)
-{
-    return ALIA_BRACED_INIT(alia_substrate_id, id.ptr, id.stamp);
-}
+#define ALIA_ELEMENT_ID_NONE                                                  \
+    ALIA_BRACED_INIT(alia_element_id, ALIA_INSTANCE_ID_NONE, 0)
 
 static inline alia_element_id
-alia_element_from_substrate_id(
-    alia_substrate_id substrate, alia_route_node_id route)
+alia_element_id_make(alia_instance_id id, alia_route_node_id route)
 {
-    return ALIA_BRACED_INIT(
-        alia_element_id, substrate.ptr, substrate.stamp, route);
-}
-
-// Add a sub-index to an element ID that doesn't already have one.
-static inline alia_element_id
-alia_element_sub_id(alia_element_id base, uint8_t sub)
-{
-    return alia_element_from_substrate_id(
-        alia_substrate_sub_id(alia_element_substrate_id(base), sub),
-        base.route);
-}
-
-static inline uint8_t
-alia_element_id_sub(alia_element_id id)
-{
-    return alia_substrate_id_sub(alia_element_substrate_id(id));
+    return ALIA_BRACED_INIT(alia_element_id, id, route);
 }
 
 static inline bool
 alia_element_id_is_valid(alia_element_id id)
 {
-    return id.ptr != NULL;
+    return alia_instance_id_is_valid(id.id);
 }
 
 static inline bool
 alia_element_id_equal(alia_element_id a, alia_element_id b)
 {
-    return a.ptr == b.ptr && a.stamp == b.stamp && a.route == b.route;
+    return alia_instance_id_equal(a.id, b.id) && a.route == b.route;
 }
 
 ALIA_DEFINE_EQUALITY_OPERATOR(alia_element_id);
 
+// Attach the current route from `ctx` to an already-owned instance ID.
 static inline alia_element_id
-alia_make_element_id(
-    alia_kernel_context* ctx, alia_substrate_usage_result result)
+alia_element_id_here(alia_kernel_context* ctx, alia_instance_id id)
 {
     // TODO: Get the route node ID from the context.
     (void) ctx;
-    return alia_element_from_substrate_id(alia_make_substrate_id(result), 0);
+    return alia_element_id_make(id, 0);
+}
+
+// Use a substrate instance ID and wrap it as an element ID for the current
+// route.
+static inline alia_element_id
+alia_element_use_id(alia_kernel_context* ctx)
+{
+    return alia_element_id_here(ctx, alia_substrate_use_id(ctx));
 }
 
 ALIA_EXTERN_C_END

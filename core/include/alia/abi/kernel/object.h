@@ -2,6 +2,7 @@
 #define ALIA_ABI_KERNEL_OBJECT_H
 
 #include <alia/abi/base/memory.h>
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/prelude.h>
 
 ALIA_EXTERN_C_BEGIN
@@ -26,6 +27,10 @@ alia_kernel_destroy(alia_kernel* kernel);
 // Mark `kernel` as needing a refresh pass.
 void
 alia_kernel_mark_dirty(alia_kernel* kernel);
+
+// Get the instance ID pool owned by `kernel`.
+alia_instance_id_pool*
+alia_kernel_instance_ids(alia_kernel* kernel);
 
 ALIA_EXTERN_C_END
 

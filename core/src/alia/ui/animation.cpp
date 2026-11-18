@@ -2,6 +2,7 @@
 
 #include <alia/abi/kernel/animation.h>
 #include <alia/abi/ui/context.h>
+#include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/styling/environment.h>
@@ -58,8 +59,11 @@ render_click_flares(
     alia_interaction_status_t state,
     alia_vec2f position,
     alia_srgb8 color,
+    alia_instance_id id,
     float radius)
 {
+    uint32_t const first_sub = alia_draw_id_animation_sub_base(bits.offset);
+
     alia_style_environment const* const env = alia_ctx_style(ctx)->environment;
     // Peak flare coverage is the highlight overlay baseline times FLARE_PEAK.
     float const peak
@@ -69,6 +73,9 @@ render_click_flares(
               alia_style_var(env, ALIA_STYLE_VAR_HIGHLIGHT_L))
         * alia_style_var(env, ALIA_STYLE_VAR_FLARE_PEAK);
 
+    // Within the animation band for `bits.offset`, click flares use [0, 8),
+    // press-and-hold flares use [8, 16), and active accumulation uses
+    // index 16.
     // TODO: Don't hardcode the maximum number of flares.
     alia_nanosecond_count flare_ticks_left[8];
     {
@@ -94,6 +101,7 @@ render_click_flares(
                 0.00001));
             alia_draw_circle(
                 ctx,
+                {id, first_sub + i},
                 alia_z(ctx, ALIA_Z_PLANE_EFFECT),
                 position,
                 radius * radius_scale_factor,
@@ -114,6 +122,7 @@ render_click_flares(
             float intensity = float(ticks_left) / float(milliseconds(200));
             alia_draw_circle(
                 ctx,
+                {id, first_sub + 8u + i},
                 alia_z(ctx, ALIA_Z_PLANE_EFFECT),
                 position,
                 radius,
@@ -136,6 +145,7 @@ render_click_flares(
             alia_animation_curve{0.2, 0, 1, 1}, scale_factor, 0.00001);
         alia_draw_circle(
             ctx,
+            {id, first_sub + 16u},
             alia_z(ctx, ALIA_Z_PLANE_EFFECT),
             position,
             scale_factor * radius,

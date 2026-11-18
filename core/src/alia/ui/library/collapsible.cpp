@@ -5,9 +5,9 @@
 #include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/geometry/api.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
 #include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/regions.h>
 
 #include <alia/impl/base/arena.hpp>
 #include <alia/impl/base/stack.hpp>
@@ -159,7 +159,7 @@ alia_collapsible_begin(
 
     scope.data = data;
     scope.offset_factor = offset_factor;
-    scope.id = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    scope.id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_animated_transition const* transition_eff
         = transition != nullptr ? transition : &default_collapsible_transition;

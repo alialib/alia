@@ -72,10 +72,6 @@ block_release(alia_substrate_system* system, alia_substrate_block* block)
         block,
         block->spec.size,
         block->spec.align);
-    system->current_generation += ALIA_SUBSTRATE_ID_GENERATION_STEP;
-    // Skip 0 so a wrapped counter is never confused with an unset ID field.
-    if (system->current_generation == 0)
-        system->current_generation = ALIA_SUBSTRATE_ID_GENERATION_STEP;
 }
 
 void
@@ -101,10 +97,46 @@ anchor_cleanup(
 alia_substrate_block*
 init_block(alia_kernel_context* ctx, void* ptr, alia_struct_spec spec)
 {
+    (void) ctx;
     return new (ptr) alia_substrate_block{
         .cleanup_records = nullptr,
-        .generation = alia_ctx_substrate(ctx)->system->current_generation,
+        .id_base = ALIA_INSTANCE_ID_NONE,
         .spec = spec};
+}
+
+// temporary ID base for discovery passes
+static alia_instance_id const discovery_id_base
+    = ALIA_BRACED_INIT(alia_instance_id, 1);
+
+static alia_instance_id
+block_id_base(alia_substrate_block_traversal_state const& block)
+{
+    return alia_instance_id_is_valid(block.block->id_base)
+             ? block.block->id_base
+             : discovery_id_base;
+}
+
+static alia_instance_id
+take_identity_slot(alia_substrate_block_traversal_state& block)
+{
+    uint32_t const index = block.identity_index++;
+    ALIA_ASSERT(
+        block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY
+        || index < block.spec.identity_count);
+    return alia_instance_id_at(block_id_base(block), index);
+}
+
+static alia_instance_id
+take_identity_range(
+    alia_substrate_block_traversal_state& block, uint32_t count)
+{
+    ALIA_ASSERT(
+        block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY
+        || block.identity_index + count <= block.spec.identity_count);
+    alia_instance_id const base
+        = alia_instance_id_at(block_id_base(block), block.identity_index);
+    block.identity_index += count;
+    return base;
 }
 
 void
@@ -406,10 +438,14 @@ namespace alia {
 
 void
 substrate_system_init(
-    alia_substrate_system& system, alia_general_allocator allocator)
+    alia_substrate_system& system,
+    alia_general_allocator allocator,
+    alia_instance_id_pool* instance_ids)
 {
+    ALIA_ASSERT(instance_ids);
     memset(&system, 0, sizeof(system));
     system.allocator = allocator;
+    system.instance_ids = instance_ids;
 }
 
 void
@@ -484,11 +520,9 @@ alia_substrate_use_memory(
     switch (traversal.block.mode)
     {
         case ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY: {
-            traversal.block.spec.size
-                = alia::align_offset(traversal.block.spec.size, alignment)
-                + size;
-            traversal.block.spec.align
-                = std::max(alignment, traversal.block.spec.align);
+            alia_struct_spec& memory = traversal.block.spec.memory;
+            memory.size = alia::align_offset(memory.size, alignment) + size;
+            memory.align = std::max(alignment, memory.align);
             size_t arena_alignment
                 = (std::max) (alignment, size_t(ALIA_MIN_ALIGN));
             size_t arena_size = alia::align_offset(size, arena_alignment);
@@ -497,7 +531,6 @@ alia_substrate_use_memory(
                     &traversal.scratch,
                     alia_arena_alloc_aligned(
                         &traversal.scratch, arena_size, arena_alignment)),
-                traversal.block.block->generation,
                 ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY};
         }
         case ALIA_SUBSTRATE_BLOCK_TRAVERSAL_NORMAL:
@@ -509,10 +542,23 @@ alia_substrate_use_memory(
             return {
                 reinterpret_cast<std::uint8_t*>(traversal.block.block)
                     + aligned_offset,
-                traversal.block.block->generation,
                 traversal.block.mode};
         }
     }
+}
+
+alia_instance_id
+alia_substrate_use_id(alia_kernel_context* ctx)
+{
+    auto& traversal = *alia_ctx_substrate(ctx);
+    return take_identity_slot(traversal.block);
+}
+
+alia_instance_id
+alia_substrate_use_id_range(alia_kernel_context* ctx, uint32_t count)
+{
+    auto& traversal = *alia_ctx_substrate(ctx);
+    return take_identity_range(traversal.block, count);
 }
 
 alia_substrate_usage_result
@@ -578,14 +624,14 @@ alia_substrate_deactivate_anchor(
 }
 
 // Begin the scope of a child substrate block.
-// `spec` is the memoized memory layout specification of the block.
+// `spec` is the memoized block layout specification.
 // If `alia_substrate_block_needs_discovery` returns true on the spec, the
 // traversal will enter discovery mode for the block.
 void
 alia_substrate_begin_block(
     alia_kernel_context* ctx,
     alia_substrate_anchor* anchor,
-    alia_struct_spec* spec)
+    alia_substrate_block_spec* spec)
 {
     auto& parent_scope
         = alia::stack_push<alia_substrate_block_traversal_state>(ctx);
@@ -595,6 +641,7 @@ alia_substrate_begin_block(
     traversal.block.parent = &parent_scope;
     traversal.block.offset_in_parent = parent_scope.current_offset;
     traversal.block.current_offset = sizeof(alia_substrate_block);
+    traversal.block.identity_index = 0;
 
     if (alia_substrate_block_needs_discovery(spec))
     {
@@ -610,8 +657,10 @@ alia_substrate_begin_block(
                     alignof(alia_substrate_block))),
             {0, 0});
         traversal.block.spec
-            = {.size = sizeof(alia_substrate_block),
-               .align = alignof(alia_substrate_block)};
+            = {.memory
+               = {.size = sizeof(alia_substrate_block),
+                  .align = alignof(alia_substrate_block)},
+               .identity_count = 0};
         traversal.block.mode = ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY;
     }
     else
@@ -623,9 +672,18 @@ alia_substrate_begin_block(
                 ctx,
                 traversal.system->allocator.alloc(
                     traversal.system->allocator.user_data,
-                    spec->size,
-                    spec->align),
-                *spec);
+                    spec->memory.size,
+                    spec->memory.align),
+                spec->memory);
+            // Allocate this block's full ID range up-front using the memoized
+            // count discovered on a prior pass. A zero count leaves `id_base`
+            // as `ALIA_INSTANCE_ID_NONE`.
+            if (spec->identity_count != 0)
+            {
+                ALIA_ASSERT(traversal.system->instance_ids);
+                anchor->block->id_base = alia_instance_id_alloc_range(
+                    traversal.system->instance_ids, spec->identity_count);
+            }
             traversal.block.mode = ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT;
         }
         else
@@ -639,21 +697,24 @@ alia_substrate_begin_block(
 // End the scope of the current substrate block.
 // Returns the layout specification of the block. - If the block was in
 // discovery mode, this should be used to update the memoized spec value.
-alia_struct_spec
+alia_substrate_block_spec
 alia_substrate_end_block(alia_kernel_context* ctx)
 {
-    if (alia_ctx_substrate(ctx)->block.mode
-        == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
+    auto& traversal = *alia_ctx_substrate(ctx);
+    if (traversal.block.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_DISCOVERY)
     {
         invoke_cleanup_records(
-            alia_ctx_substrate(ctx)->system,
-            alia_ctx_substrate(ctx)->block.block,
-            ALIA_SUBSTRATE_DESTROY);
+            traversal.system, traversal.block.block, ALIA_SUBSTRATE_DESTROY);
+        traversal.block.spec.identity_count = traversal.block.identity_index;
     }
+    // On non-discovery passes, the identity index should have been advanced to
+    // the end of the ID range.
+    ALIA_ASSERT(
+        traversal.block.identity_index == traversal.block.spec.identity_count);
     auto& parent_scope
         = alia::stack_pop<alia_substrate_block_traversal_state>(ctx);
-    auto& traversal = *alia_ctx_substrate(ctx);
-    alia_struct_spec const completed_block_spec = traversal.block.spec;
+    alia_substrate_block_spec const completed_block_spec
+        = traversal.block.spec;
     traversal.block = parent_scope;
     return completed_block_spec;
 }
@@ -671,7 +732,7 @@ alia_substrate_path_for_object(alia_kernel_context* ctx, void* object)
     ALIA_ASSERT(block.block);
     auto* block_base
         = static_cast<std::uint8_t*>(static_cast<void*>(block.block));
-    auto* block_end = block_base + block.spec.size;
+    auto* block_end = block_base + block.spec.memory.size;
     auto* object_ptr = static_cast<std::uint8_t*>(object);
     ALIA_ASSERT(object_ptr >= block_base && object_ptr < block_end);
 
@@ -737,14 +798,14 @@ alia_substrate_begin_keyed_block(
     alia_kernel_context* ctx,
     alia_substrate_key_scope* scope,
     alia_id_view key,
-    alia_struct_spec* spec)
+    alia_substrate_block_spec* spec)
 {
     ALIA_ASSERT(ctx && scope && scope->table);
     alia_substrate_key_entry* entry = resolve_key_entry(ctx, scope, key);
     alia_substrate_begin_block(ctx, &entry->anchor, spec);
 }
 
-alia_struct_spec
+alia_substrate_block_spec
 alia_substrate_end_keyed_block(alia_kernel_context* ctx)
 {
     return alia_substrate_end_block(ctx);

@@ -108,7 +108,7 @@ struct collapse_pass
 {
     alia_test_substrate_fixture* fixture = nullptr;
     id_pass pass;
-    alia_struct_spec root_spec{};
+    alia_substrate_block_spec root_spec{};
 
     collapse_pass()
     {

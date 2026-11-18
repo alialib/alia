@@ -16,9 +16,9 @@
 #include <alia/abi/ui/input/pointer.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/library.h>
+#include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/palette_generation.h>
-#include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/input_processing.h>
 #include <alia/base/color.hpp>
@@ -150,11 +150,7 @@ with_spacing(ui_context ctx, float spacing, Content&& content)
 void
 do_heading(ui_context ctx, char const* text)
 {
-    demo_text(
-        ctx,
-        text,
-        &demo_get_fonts().heading_18,
-        DEMO_INK_STRONG);
+    demo_text(ctx, text, &demo_get_fonts().heading_18, DEMO_INK_STRONG);
 }
 
 // Emit a slider with a single-line `label` to its left.
@@ -214,52 +210,45 @@ control_checkbox_b(ui_context ctx, char const* label, bool* value)
 void
 do_theme_controls(ui_context ctx)
 {
-    concrete_panel(
-        ctx,
-        0,
-        demo_raised(ctx),
-        FILL,
-        [&]() {
-            edge_offsets(
-                ctx,
-                {.left = 12, .right = 12, .top = 12, .bottom = 12},
-                [&]() {
-                    row(ctx, [&]() {
-                        with_spacing(ctx, 6, [&] {
-                            toggle_switch(
-                                ctx,
-                                lambda_binding(
-                                    [] { return the_light_theme_flag; },
-                                    [](bool value) {
-                                        the_light_theme_flag = value;
-                                        the_theme_dirty_flag = true;
-                                    }),
-                                "Light");
-                        });
-                        demo_text(
+    concrete_panel(ctx, 0, demo_raised(ctx), FILL, [&]() {
+        edge_offsets(
+            ctx, {.left = 12, .right = 12, .top = 12, .bottom = 12}, [&]() {
+                row(ctx, [&]() {
+                    with_spacing(ctx, 6, [&] {
+                        toggle_switch(
                             ctx,
-                            " ",
-                            &demo_get_fonts().body_14,
-                            DEMO_INK_BODY,
-                            CENTER_Y);
-                        spacer(ctx, GROW);
-                        with_spacing(ctx, 0, [&] {
-                            auto seed = lambda_binding(
-                                [] { return the_seed_index; },
-                                [](int value) {
-                                    the_seed_index = value;
+                            lambda_binding(
+                                [] { return the_light_theme_flag; },
+                                [](bool value) {
+                                    the_light_theme_flag = value;
                                     the_theme_dirty_flag = true;
-                                });
-                            char const* labels[] = {"Blue", "Violet", "Red"};
-                            for (int i = 0; i < 3; ++i)
-                            {
-                                radio_button(ctx, seed, i, labels[i]);
-                                spacer(ctx, width(15.f));
-                            }
-                        });
+                                }),
+                            "Light");
+                    });
+                    demo_text(
+                        ctx,
+                        " ",
+                        &demo_get_fonts().body_14,
+                        DEMO_INK_BODY,
+                        CENTER_Y);
+                    spacer(ctx, GROW);
+                    with_spacing(ctx, 0, [&] {
+                        auto seed = lambda_binding(
+                            [] { return the_seed_index; },
+                            [](int value) {
+                                the_seed_index = value;
+                                the_theme_dirty_flag = true;
+                            });
+                        char const* labels[] = {"Blue", "Violet", "Red"};
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            radio_button(ctx, seed, i, labels[i]);
+                            spacer(ctx, width(15.f));
+                        }
                     });
                 });
-        });
+            });
+    });
 }
 
 void
@@ -327,46 +316,33 @@ shader_gallery_root(ui_context ctx)
 
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
-            concrete_panel(
-                ctx,
-                0,
-                demo_surface(ctx),
-                FILL,
-                [&]() {
-                    column(ctx, GROW, [&]() {
-                        scroll_view(ctx, SCROLL_VIEW_Y, GROW, [&]() {
-                            edge_offsets(
-                                ctx,
-                                {.left = 20,
-                                 .right = 20,
-                                 .top = 20,
-                                 .bottom = 20},
-                                [&]() {
-                                    with_spacing(ctx, 6, [&] {
-                                        column(ctx, [&]() {
-                                            do_notargs_controls(ctx);
-                                        });
+            concrete_panel(ctx, 0, demo_surface(ctx), FILL, [&]() {
+                column(ctx, GROW, [&]() {
+                    scroll_view(ctx, SCROLL_VIEW_Y, GROW, [&]() {
+                        edge_offsets(
+                            ctx,
+                            {.left = 20, .right = 20, .top = 20, .bottom = 20},
+                            [&]() {
+                                with_spacing(ctx, 6, [&] {
+                                    column(ctx, [&]() {
+                                        do_notargs_controls(ctx);
                                     });
                                 });
-                        });
-                        do_theme_controls(ctx);
+                            });
                     });
+                    do_theme_controls(ctx);
                 });
-            concrete_panel(
-                ctx,
-                0,
-                demo_surface(ctx),
-                GROW,
-                [&]() {
-                    alia_do_shader(
-                        ctx,
-                        0,
-                        the_notargs_shader_id,
-                        &shader_params,
-                        sizeof(shader_params),
-                        ALIA_GROW | ALIA_FILL,
-                        alia_vec2f_make(100.f, 100.f));
-                });
+            });
+            concrete_panel(ctx, 0, demo_surface(ctx), GROW, [&]() {
+                alia_do_shader(
+                    ctx,
+                    0,
+                    the_notargs_shader_id,
+                    &shader_params,
+                    sizeof(shader_params),
+                    ALIA_GROW | ALIA_FILL,
+                    alia_vec2f_make(100.f, 100.f));
+            });
         });
     });
 }

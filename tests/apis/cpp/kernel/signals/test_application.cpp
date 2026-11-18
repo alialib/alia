@@ -18,7 +18,7 @@ using namespace alia::test;
 namespace {
 
 void
-begin_refresh_block(substrate_fixture& t, alia_struct_spec& spec)
+begin_refresh_block(substrate_fixture& t, alia_substrate_block_spec& spec)
 {
     alia_test_substrate_fixture_prepare_refresh_event(t.fixture, t.ctx);
     t.reset_traversal();
@@ -105,7 +105,8 @@ TEST_CASE("lazy_bidirectional_apply with empty arg")
 TEST_CASE("apply caches across refreshes")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
     int calls = 0;
     auto f = [&calls](int x, int y) {
         ++calls;
@@ -147,7 +148,8 @@ TEST_CASE("apply caches across refreshes")
 TEST_CASE("apply with empty argument")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
     int calls = 0;
     auto f = [&calls](int x) {
         ++calls;
@@ -168,7 +170,8 @@ TEST_CASE("apply with empty argument")
 TEST_CASE("apply recomputes after destructive move")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
     int calls = 0;
     auto f = [&calls](int x) {
         ++calls;
@@ -201,7 +204,8 @@ TEST_CASE("apply recomputes after destructive move")
 TEST_CASE("apply feeds by-value args via read_into and refs via read")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
 
     int reads = 0;
     int read_intos = 0;
@@ -234,7 +238,8 @@ TEST_CASE("apply feeds by-value args via read_into and refs via read")
 TEST_CASE("lift")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
     auto add = lift([](int a, int b) { return a + b; });
 
     begin_refresh_block(t, spec);
@@ -250,7 +255,8 @@ TEST_CASE("lift")
 TEST_CASE("apply with use_state input")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
     int calls = 0;
     auto f = [&calls](int x) {
         ++calls;
@@ -285,7 +291,8 @@ TEST_CASE("apply with use_state input")
 TEST_CASE("apply with id_view value ID")
 {
     substrate_fixture t;
-    alia_struct_spec spec = {.size = 2048u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 2048u, .align = 16u}, .identity_count = 0};
     int calls = 0;
     auto f = [&calls](int x) {
         ++calls;

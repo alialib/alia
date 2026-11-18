@@ -7,6 +7,7 @@
 #include <alia/abi/ui/drawing/shader.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/drawing/targets.h>
+#include <alia/abi/ui/msdf.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/memory.h>
 #include <alia/abi/ui/system/renderer.h>
@@ -414,6 +415,13 @@ struct primitive_instance
     float data_b[4];
 };
 #pragma pack(pop)
+
+// instance-type tag for MSDF glyphs in the combined analytic/MSDF shader -
+// Keep this in sync with the HLSL branch on `primitive_type & 255 == 3`.
+enum
+{
+    k_instance_type_msdf_glyph = 3
+};
 
 struct constants_cb
 {
@@ -1003,7 +1011,10 @@ struct blit_cb_data
 };
 
 void
-render_draw_target_command_list(void* user, alia_draw_bucket const* bucket)
+render_draw_target_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
 {
     auto* renderer = static_cast<alia_d3d11_renderer*>(user);
     if (!bucket || bucket->count == 0 || !bucket->clip_rect)
@@ -1078,12 +1089,14 @@ render_draw_target_command_list(void* user, alia_draw_bucket const* bucket)
         if (!source || !source->srv)
             continue;
 
+        alia_box const dest
+            = alia_draw_resolve_command_box(exec, cmd, blit->dest);
         blit_cb_data cb{};
         std::memcpy(cb.projection, ortho, sizeof(ortho));
-        cb.dest_min[0] = blit->dest.min.x;
-        cb.dest_min[1] = blit->dest.min.y;
-        cb.dest_size[0] = blit->dest.size.x;
-        cb.dest_size[1] = blit->dest.size.y;
+        cb.dest_min[0] = dest.min.x;
+        cb.dest_min[1] = dest.min.y;
+        cb.dest_size[0] = dest.size.x;
+        cb.dest_size[1] = dest.size.y;
         cb.opacity = blit->opacity;
 
         D3D11_MAPPED_SUBRESOURCE mapped{};
@@ -1102,7 +1115,10 @@ render_draw_target_command_list(void* user, alia_draw_bucket const* bucket)
 }
 
 void
-render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
+render_primitive_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
 {
     auto* renderer = static_cast<alia_d3d11_renderer*>(user);
     if (!bucket || bucket->count == 0 || !bucket->clip_rect)
@@ -1201,8 +1217,7 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                 inst.primitive_type |= ALIA_PRIMITIVE_FLAG_GRADIENT_BORDER;
             }
             inst.data_b[1]
-                = style.gradient_angle * degrees_to_radians
-                + rotation_radians;
+                = style.gradient_angle * degrees_to_radians + rotation_radians;
         }
         else
         {
@@ -1215,12 +1230,14 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
     {
         auto const* primitive
             = alia::downcast<alia_draw_primitive_command>(cmd);
+        alia_box const box
+            = alia_draw_resolve_command_box(exec, cmd, primitive->box);
 
         primitive_instance& inst = instances[written++];
-        inst.min[0] = primitive->box.min.x;
-        inst.min[1] = primitive->box.min.y;
-        inst.size[0] = primitive->box.size.x;
-        inst.size[1] = primitive->box.size.y;
+        inst.min[0] = box.min.x;
+        inst.min[1] = box.min.y;
+        inst.size[0] = box.size.x;
+        inst.size[1] = box.size.y;
         inst.color[0] = primitive->color.r;
         inst.color[1] = primitive->color.g;
         inst.color[2] = primitive->color.b;
@@ -1254,17 +1271,159 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                     primitive->payload.squircle.radius,
                     0.f);
                 break;
-            case ALIA_PRIMITIVE_MSDF_GLYPH:
-                inst.data_a[0] = primitive->payload.msdf_glyph.uv_rect[0];
-                inst.data_a[1] = primitive->payload.msdf_glyph.uv_rect[1];
-                inst.data_a[2] = primitive->payload.msdf_glyph.uv_rect[2];
-                inst.data_a[3] = primitive->payload.msdf_glyph.uv_rect[3];
-                inst.data_b[0] = primitive->payload.msdf_glyph.sdf_scale;
-                break;
             default:
                 --written;
                 break;
         }
+    }
+
+    auto finish_instances = [&]() {
+        alia_memory_commit_bump(
+            memory, renderer->rect_instance_pool, &rect_alloc);
+        alia_memory_trim(
+            memory, renderer->rect_instance_pool, ALIA_MEMORY_RETAIN_PEAK);
+    };
+
+    if (written == 0)
+    {
+        finish_instances();
+        return;
+    }
+
+    if (!ensure_instance_capacity(renderer, written))
+    {
+        finish_instances();
+        return;
+    }
+
+    if (FAILED(ctx->Map(
+            renderer->instance_vb, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        finish_instances();
+        return;
+    }
+    std::memcpy(mapped.pData, instances, sizeof(primitive_instance) * written);
+    ctx->Unmap(renderer->instance_vb, 0);
+    finish_instances();
+
+    UINT strides[2] = {sizeof(float) * 2, sizeof(primitive_instance)};
+    UINT offsets[2] = {0, 0};
+    ID3D11Buffer* buffers[2] = {renderer->quad_vb, renderer->instance_vb};
+    ctx->IASetVertexBuffers(0, 2, buffers, strides, offsets);
+    ctx->IASetInputLayout(renderer->layout);
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    ctx->VSSetShader(renderer->vs, nullptr, 0);
+    ctx->PSSetShader(renderer->ps, nullptr, 0);
+    ctx->VSSetConstantBuffers(0, 1, &renderer->constants);
+    if (renderer->msdf_srv && renderer->msdf_sampler)
+    {
+        ctx->PSSetShaderResources(0, 1, &renderer->msdf_srv);
+        ctx->PSSetSamplers(0, 1, &renderer->msdf_sampler);
+    }
+    ctx->OMSetBlendState(renderer->blend, nullptr, 0xffffffff);
+    ctx->RSSetState(renderer->rasterizer);
+    ctx->OMSetDepthStencilState(renderer->depth, 0);
+    ctx->DrawInstanced(4, written, 0, 0);
+
+    ID3D11ShaderResourceView* null_srv = nullptr;
+    ctx->PSSetShaderResources(0, 1, &null_srv);
+}
+
+void
+render_msdf_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
+{
+    auto* renderer = static_cast<alia_d3d11_renderer*>(user);
+    if (!bucket || bucket->count == 0 || !bucket->clip_rect)
+        return;
+
+    alia_box const* clip = bucket->clip_rect;
+    if (clip->size.x <= 0.f || clip->size.y <= 0.f)
+        return;
+
+    ID3D11DeviceContext* ctx = renderer->context;
+
+    D3D11_VIEWPORT vp{};
+    vp.TopLeftX = clip->min.x;
+    vp.TopLeftY = clip->min.y;
+    vp.Width = clip->size.x;
+    vp.Height = clip->size.y;
+    vp.MinDepth = 0.f;
+    vp.MaxDepth = 1.f;
+    ctx->RSSetViewports(1, &vp);
+
+    D3D11_RECT scissor{
+        LONG(clip->min.x),
+        LONG(clip->min.y),
+        LONG(clip->min.x + clip->size.x),
+        LONG(clip->min.y + clip->size.y)};
+    ctx->RSSetScissorRects(1, &scissor);
+
+    float l = clip->min.x;
+    float r = clip->min.x + clip->size.x;
+    float t = clip->min.y;
+    float b = clip->min.y + clip->size.y;
+    float n = -1.f;
+    float f = 1.f;
+    constants_cb cb{};
+    float ortho[16] = {
+        2.f / (r - l),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        2.f / (t - b),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        -2.f / (f - n),
+        0.f,
+        -(r + l) / (r - l),
+        -(t + b) / (t - b),
+        -(f + n) / (f - n),
+        1.f};
+    std::memcpy(cb.projection, ortho, sizeof(ortho));
+
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (FAILED(ctx->Map(
+            renderer->constants, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+        return;
+    std::memcpy(mapped.pData, &cb, sizeof(cb));
+    ctx->Unmap(renderer->constants, 0);
+
+    alia_memory_system* memory = alia_ui_memory(renderer->system);
+    alia_bump_allocator rect_alloc
+        = alia_memory_open_bump(memory, renderer->rect_instance_pool);
+    auto* instances = alia::arena_alloc_array<primitive_instance>(
+        rect_alloc, bucket->count);
+
+    UINT written = 0;
+    for (auto const* cmd = bucket->head; cmd; cmd = cmd->next)
+    {
+        auto const* glyph = alia::downcast<alia_draw_msdf_glyph_command>(cmd);
+        alia_box const box
+            = alia_draw_resolve_command_box(exec, cmd, glyph->box);
+
+        primitive_instance& inst = instances[written++];
+        inst.min[0] = box.min.x;
+        inst.min[1] = box.min.y;
+        inst.size[0] = box.size.x;
+        inst.size[1] = box.size.y;
+        inst.color[0] = glyph->color.r;
+        inst.color[1] = glyph->color.g;
+        inst.color[2] = glyph->color.b;
+        inst.color[3] = glyph->color.a;
+        inst.primitive_type = k_instance_type_msdf_glyph;
+        std::memset(inst.data_a, 0, sizeof(inst.data_a));
+        std::memset(inst.data_b, 0, sizeof(inst.data_b));
+        inst.data_a[0] = glyph->uv_rect[0];
+        inst.data_a[1] = glyph->uv_rect[1];
+        inst.data_a[2] = glyph->uv_rect[2];
+        inst.data_a[3] = glyph->uv_rect[3];
+        inst.data_b[0] = glyph->sdf_scale;
     }
 
     auto finish_instances = [&]() {
@@ -1425,7 +1584,10 @@ ensure_user_shader_pipeline(alia_d3d11_renderer* renderer)
 }
 
 void
-render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
+render_user_shader_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
 {
     auto* slot = static_cast<d3d11_user_shader_slot*>(user);
     if (!slot || !slot->renderer || !bucket || bucket->count == 0
@@ -1472,7 +1634,8 @@ render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
     {
         auto const* shader_cmd = alia::downcast<alia_shader_draw_command>(cmd);
 
-        alia_box const& r = shader_cmd->region;
+        alia_box const r
+            = alia_draw_resolve_command_box(exec, cmd, shader_cmd->region);
         if (r.size.x <= 0.f || r.size.y <= 0.f)
             continue;
 
@@ -1636,6 +1799,11 @@ alia_d3d11_renderer_attach(
         ui,
         ALIA_DRAW_TARGET_MATERIAL_ID,
         alia_material_vtable{.draw_bucket = render_draw_target_command_list},
+        renderer);
+    alia_material_register(
+        ui,
+        ALIA_MSDF_MATERIAL_ID,
+        alia_material_vtable{.draw_bucket = render_msdf_command_list},
         renderer);
 
     alia_renderer_ops const ops = {

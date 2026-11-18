@@ -6,8 +6,8 @@
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/paint.h>
 #include <alia/abi/ui/text.h>
@@ -290,10 +290,7 @@ alia_button_begin(
     alia_button_flags_t flags,
     alia_layout_flags_t layout_flags)
 {
-    alia_substrate_usage_result const usage
-        = alia_substrate_use_memory(alia_ctx_kernel(ctx), 1, 1);
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), usage);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_button_style const* const style = alia_button_style_active(ctx);
     bool const is_disabled = (flags & ALIA_BUTTON_DISABLED) != 0;
@@ -376,6 +373,7 @@ alia_button_begin(
                         alia_ctx_geometry(ctx)->scale);
                 alia_draw_box(
                     ctx,
+                    {id.id, 0},
                     z,
                     scope.box,
                     {.fill_color = paint.fill,

@@ -6,8 +6,8 @@
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/kernel/animation.hpp>
@@ -42,7 +42,9 @@ draw_radio_button_ring(
     alia_vec2f center,
     float radius_px,
     float border_width_px,
-    alia_srgb8 border_color)
+    alia_srgb8 border_color,
+    alia_instance_id id,
+    uint32_t sub_id)
 {
     float const d = radius_px * 2.f;
     alia_box const ring_box{
@@ -57,7 +59,12 @@ draw_radio_button_ring(
         .border_color = alia_srgba8_from_srgb8(border_color),
     };
 
-    alia_draw_box(ctx, alia_z(ctx, ALIA_Z_PLANE_BACKGROUND), ring_box, paint);
+    alia_draw_box(
+        ctx,
+        {id, sub_id},
+        alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
+        ring_box,
+        paint);
 }
 
 static void
@@ -67,7 +74,8 @@ render_radio_button(
     radio_button_data& data,
     bool selected,
     alia_interaction_status_t interaction_status,
-    alia_radio_button_style const* style)
+    alia_radio_button_style const* style,
+    alia_instance_id base_id)
 {
     alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
@@ -109,6 +117,7 @@ render_radio_button(
     {
         alia_draw_circle(
             ctx,
+            {base_id, 0},
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             center,
             alia_px(ctx, style->highlight_radius),
@@ -123,17 +132,19 @@ render_radio_button(
             interaction_status,
             center,
             dot_srgb,
+            base_id,
             alia_px(ctx, style->flare_radius));
     }
 
     draw_radio_button_ring(
-        ctx, center, ring_radius_px, border_width_px, ring_srgb);
+        ctx, center, ring_radius_px, border_width_px, ring_srgb, base_id, 1);
 
     float const dot_radius_px = dot_radius_max_px * smoothed_state;
     if (dot_radius_px > 0.f)
     {
         alia_draw_circle(
             ctx,
+            {base_id, 2},
             alia_z(ctx, ALIA_Z_PLANE_CONTENT),
             center,
             dot_radius_px,
@@ -169,7 +180,8 @@ alia_radio_button_style_generate(
         {.rest = sample(primary),
          .disabled = color_program_expr{}
                    | fade_var(surface, ALIA_STYLE_VAR_DISABLED_FADE, 1.f)});
-    out->highlight = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
+    out->highlight
+        = emit(emitter, highlight_var(primary, ALIA_STYLE_VAR_HIGHLIGHT_L));
 
     // Leaf is the ring, with a little room around it. The hover halo
     // paints outside this box.
@@ -202,8 +214,7 @@ alia_radio_button(
             .keyboard_click_state_ = {0},
         };
     }
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_radio_button_style const* const style
         = alia_radio_button_style_active(ctx);
@@ -273,7 +284,7 @@ alia_radio_button(
                                ? ALIA_INTERACTION_STATUS_ACTIVE
                                : 0));
             render_radio_button(
-                ctx, box, *data, selected, interaction_status, style);
+                ctx, box, *data, selected, interaction_status, style, id.id);
             break;
         }
     }

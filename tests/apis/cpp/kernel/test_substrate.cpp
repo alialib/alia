@@ -14,7 +14,9 @@ using namespace alia::test;
 template<class Content>
 void
 traverse_until_complete(
-    substrate_fixture& t, alia_struct_spec& root_spec, Content&& content)
+    substrate_fixture& t,
+    alia_substrate_block_spec& root_spec,
+    Content&& content)
 {
     for (;;)
     {
@@ -34,7 +36,8 @@ TEST_CASE("use_object persists across traversals")
 {
     substrate_fixture t;
 
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
 
     struct counted
     {
@@ -70,7 +73,8 @@ TEST_CASE("use_memory persists across traversals")
 {
     substrate_fixture t;
 
-    alia_struct_spec spec = {.size = 1024u, .align = 16u};
+    alia_substrate_block_spec spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
 
     t.reset_traversal();
     alia_substrate_begin_block(alia_ctx_kernel(t.ctx), t.root_anchor(), &spec);
@@ -98,8 +102,10 @@ TEST_CASE("use_object clear_cache is a no-op without the member")
 {
     substrate_fixture t;
 
-    alia_struct_spec root_spec = {.size = 1024u, .align = 16u};
-    alia_struct_spec child_spec = {.size = 256u, .align = 16u};
+    alia_substrate_block_spec root_spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
+    alia_substrate_block_spec child_spec
+        = {.memory = {.size = 256u, .align = 16u}, .identity_count = 0};
 
     struct persist_only
     {
@@ -145,8 +151,10 @@ TEST_CASE("use_object clear_cache runs the member")
 {
     substrate_fixture t;
 
-    alia_struct_spec root_spec = {.size = 1024u, .align = 16u};
-    alia_struct_spec child_spec = {.size = 256u, .align = 16u};
+    alia_substrate_block_spec root_spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
+    alia_substrate_block_spec child_spec
+        = {.memory = {.size = 256u, .align = 16u}, .identity_count = 0};
 
     struct with_cache
     {
@@ -200,8 +208,10 @@ TEST_CASE("use_cache recreates after deactivate")
 {
     substrate_fixture t;
 
-    alia_struct_spec root_spec = {.size = 1024u, .align = 16u};
-    alia_struct_spec child_spec = {.size = 256u, .align = 16u};
+    alia_substrate_block_spec root_spec
+        = {.memory = {.size = 1024u, .align = 16u}, .identity_count = 0};
+    alia_substrate_block_spec child_spec
+        = {.memory = {.size = 256u, .align = 16u}, .identity_count = 0};
 
     struct cached_value
     {
@@ -264,7 +274,8 @@ TEST_CASE("alia_if/alia_else preserves persist and clears cache")
 {
     substrate_fixture t;
 
-    alia_struct_spec root_spec = {.size = 2048u, .align = 16u};
+    alia_substrate_block_spec root_spec
+        = {.memory = {.size = 2048u, .align = 16u}, .identity_count = 0};
 
     struct with_cache
     {
@@ -361,7 +372,8 @@ TEST_CASE("alia_if/alia_else_if/alia_else share one chain")
 {
     substrate_fixture t;
 
-    alia_struct_spec root_spec = {.size = 2048u, .align = 16u};
+    alia_substrate_block_spec root_spec
+        = {.memory = {.size = 2048u, .align = 16u}, .identity_count = 0};
 
     int visited = -1;
     int branch_value = -1;

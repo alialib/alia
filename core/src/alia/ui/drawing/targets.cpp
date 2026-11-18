@@ -17,6 +17,7 @@ struct draw_target_scope
     alia_draw_target_id target_id;
     alia_vec2f offset;
     alia_clip_state clip;
+    alia_frame_id frame;
 };
 
 struct draw_target_slot
@@ -113,6 +114,7 @@ alia_draw_target_begin(
         .target_id = alia_ctx_draw(ctx)->target_id,
         .offset = alia_ctx_geometry(ctx)->offset,
         .clip = alia_ctx_geometry(ctx)->clip,
+        .frame = alia_ctx_draw(ctx)->current_frame,
     };
 
     alia_box* clip_pointer
@@ -121,6 +123,7 @@ alia_draw_target_begin(
 
     alia_ctx_draw(ctx)->target_id = target;
     alia_ctx_geometry(ctx)->offset = {0.f, 0.f};
+    alia_draw_begin_root_frame(ctx);
     alia_ctx_geometry(ctx)->clip = {
         .box = *clip_pointer,
         .pointer = clip_pointer,
@@ -139,11 +142,13 @@ alia_draw_target_end(alia_ui_context* ctx)
     alia_ctx_draw(ctx)->target_id = saved.target_id;
     alia_ctx_geometry(ctx)->offset = saved.offset;
     alia_ctx_geometry(ctx)->clip = saved.clip;
+    alia_draw_restore_frame(ctx, saved.frame);
 }
 
 void
 alia_draw_target(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_draw_target_id source,
     alia_box dest,
@@ -156,11 +161,12 @@ alia_draw_target(
 
     auto* command = (alia_draw_target_command*) alia_draw_command_alloc(
         ctx,
+        id,
         z_index,
         ALIA_DRAW_TARGET_MATERIAL_ID,
         ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_target_command)));
     command->source = source;
-    command->dest = alia_box_translate(dest, alia_ctx_geometry(ctx)->offset);
+    command->dest = dest;
     command->opacity = opacity;
 }
 

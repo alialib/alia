@@ -3,6 +3,7 @@
 
 #include <alia/impl/base/prelude.hpp>
 
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/ui/input/elements.h>
 #include <alia/impl/kernel/animation.hpp>
 
@@ -30,6 +31,7 @@ render_click_flares(
     alia_interaction_status_t state,
     alia_vec2f position,
     alia_srgb8 color,
+    alia_instance_id id,
     float radius = 32);
 
 } // namespace alia

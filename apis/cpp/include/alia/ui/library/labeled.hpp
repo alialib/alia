@@ -40,11 +40,7 @@ labeled_bool_control(
             alia_layout_edge_offsets_end(ctx);
 
             alia_element_box_region(
-                ctx,
-                id,
-                &row_box,
-                ALIA_Z_PLANE_CONTENT,
-                ALIA_REGION_MOUSE);
+                ctx, id, &row_box, ALIA_Z_PLANE_CONTENT, ALIA_REGION_MOUSE);
         });
     return id;
 }

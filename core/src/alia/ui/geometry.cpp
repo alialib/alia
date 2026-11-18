@@ -1,3 +1,4 @@
+#include <alia/abi/ui/drawing/commands.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/impl/context.hpp>
 #include <alia/ui/regions.h>
@@ -45,6 +46,7 @@ alia_geometry_push_translation(alia_ui_context* ctx, alia_vec2f offset)
         = alia::stack_push<alia_vec2f>(alia_ctx_kernel(ctx));
     saved_offset = alia_ctx_geometry(ctx)->offset;
     alia_ctx_geometry(ctx)->offset += offset;
+    alia_draw_push_frame(ctx, offset);
     if (alia_ctx_regions(ctx))
         alia::regions_push_translation(ctx, offset);
 }
@@ -54,6 +56,7 @@ alia_geometry_pop_translation(alia_ui_context* ctx)
 {
     if (alia_ctx_regions(ctx))
         alia::regions_pop_translation(ctx);
+    alia_draw_pop_frame(ctx);
     alia_vec2f& saved_offset
         = alia::stack_pop<alia_vec2f>(alia_ctx_kernel(ctx));
     alia_ctx_geometry(ctx)->offset = saved_offset;

@@ -140,10 +140,13 @@ struct alia_text_engine_vtable
         alia_text_segment* out);
 
     // Draw the glyphs covering `[byte_start, byte_end)` with the baseline
-    // starting at `baseline_origin`.
+    // starting at `baseline_origin`. The `id` argument is the caller's
+    // fragment/run identity when the engine emits a retention unit for that
+    // range. Engines that only emit non-retained glyph leaves may ignore it.
     void (*draw_block_range)(
         alia_text_engine* engine,
         alia_ui_context* ctx,
+        alia_instance_id id,
         alia_z_index z_index,
         alia_text_block* block,
         size_t byte_start,

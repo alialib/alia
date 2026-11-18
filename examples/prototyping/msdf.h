@@ -448,8 +448,7 @@ do_text(
     size_t font_index = 0)
 {
     bool result = false;
-    // TODO: Should this have its own ID?
-    alia_element_id id = alia_element_get_identity(ctx);
+    alia_element_id id = alia_element_use_id(alia_ctx_kernel(ctx));
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {

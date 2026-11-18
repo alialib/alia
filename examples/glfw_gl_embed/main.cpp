@@ -7,6 +7,7 @@
 #include <alia/abi/base/memory.h>
 #include <alia/abi/base/object.h>
 #include <alia/abi/kernel/effect.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/system.h>
 #include <alia/abi/ui/events.h>
@@ -78,16 +79,21 @@ teardown_stock_text()
 void
 embed_controller(void* /*user*/, alia_ui_context* ctx)
 {
+    alia_instance_id const base_id
+        = alia_substrate_use_id(alia_ctx_kernel(ctx));
+
     if (alia_ctx_events(alia_ctx_kernel(ctx))
         && alia_ctx_events(alia_ctx_kernel(ctx))->event
         && alia_ctx_events(alia_ctx_kernel(ctx))->event->type
                == ALIA_EVENT_DRAW)
     {
         alia_vec2i const size = alia_ui_surface_get_size(alia_ctx_system(ctx));
-        alia_srgba8 const bg = alia_srgba8_from_srgb8(
-            alia_palette_color_srgb(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_SURFACE));
+        alia_srgba8 const bg = alia_srgba8_from_srgb8(alia_palette_color_srgb(
+            &alia_ctx_style(ctx)->environment->palette,
+            ALIA_STYLE_COLOR_SURFACE));
         alia_draw_box(
             ctx,
+            {base_id, 0},
             0,
             {{0.f, 0.f}, {float(size.x), float(size.y)}},
             {.fill_color = bg,
@@ -98,8 +104,10 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
         if (g_text_engine)
         {
             char const* const label = "Hello GLFW+GL";
-            alia_srgba8 const text_color = alia_srgba8_from_srgb8(
-                alia_palette_color_srgb(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_TEXT));
+            alia_srgba8 const text_color
+                = alia_srgba8_from_srgb8(alia_palette_color_srgb(
+                    &alia_ctx_style(ctx)->environment->palette,
+                    ALIA_STYLE_COLOR_TEXT));
             alia_msdf_draw_text(
                 g_text_engine,
                 ctx,
@@ -114,6 +122,7 @@ embed_controller(void* /*user*/, alia_ui_context* ctx)
 
         alia_draw_rounded_box(
             ctx,
+            {base_id, 2},
             1,
             {{40.f, 120.f}, {280.f, 120.f}},
             {uint8_t(70 + g_value * 185),
@@ -207,7 +216,8 @@ main()
     {
         alia_palette_recipe recipe = alia_palette_recipe_default();
         alia_palette_recipe_seed_color(&recipe, {70, 140, 255});
-        alia_palette_generate(&g_ui->styling.environment.palette, &recipe, true);
+        alia_palette_generate(
+            &g_ui->styling.environment.palette, &recipe, true);
         alia_ui_paint_changed(g_ui);
     }
 

@@ -8,7 +8,7 @@ do_rect(
     alia_srgb8 color,
     layout_flag_set flags)
 {
-    alia_element_id id = alia_element_get_identity(ctx);
+    alia_element_id id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     switch (get_event_category(ctx))
     {
@@ -35,12 +35,12 @@ do_rect(
             {
                 color = {0xff, 0x00, 0xff};
             }
-            alia_draw_squircle(
-                ctx,
+            alia_draw_squircle(ctx, {id.id, 0},
                 z_index,
                 box,
                 box.size.x / 2,
-                alia_srgba8_from_srgb8(color));
+                alia_srgba8_from_srgb8(color)
+            );
             break;
         }
         case ALIA_CATEGORY_INPUT: {
@@ -62,6 +62,8 @@ do_rect_with_offset(
     layout_flag_set flags,
     alia_vec2f offset)
 {
+    alia_element_id id = alia_element_use_id(alia_ctx_kernel(ctx));
+
     switch (get_event_category(ctx))
     {
         case ALIA_CATEGORY_REFRESH: {
@@ -76,8 +78,12 @@ do_rect_with_offset(
         }
         case ALIA_CATEGORY_DRAWING: {
             alia_box box = alia_layout_consume_box(ctx);
-            alia_draw_rounded_box(
-                ctx, z_index, box, alia_srgba8_from_srgb8(color), 0.0f);
+            alia_draw_rounded_box(ctx, {id.id, 0},
+                z_index,
+                box,
+                alia_srgba8_from_srgb8(color),
+                0.0f
+            );
             break;
         }
         case ALIA_CATEGORY_INPUT: {

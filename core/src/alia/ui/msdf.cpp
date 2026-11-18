@@ -59,6 +59,9 @@ require_glyph(msdf_font_data const& font, uint32_t unicode)
     return glyph;
 }
 
+// Glyph quads are rasterizer leaves, not retention units, so they carry
+// `ALIA_DRAW_ID_NONE`. Fragment/run identity belongs with a higher-level
+// command when one exists.
 static inline void
 emit_glyph_draw_command(
     alia_ui_context* ctx,
@@ -76,21 +79,19 @@ emit_glyph_draw_command(
     box.size.x = (glyph.plane_right - glyph.plane_left) * scale;
     box.size.y = (glyph.plane_top - glyph.plane_bottom) * scale;
 
-    auto* command = reinterpret_cast<alia_draw_primitive_command*>(
+    auto* command = reinterpret_cast<alia_draw_msdf_glyph_command*>(
         alia_draw_command_alloc(
             ctx,
+            {ALIA_INSTANCE_ID_NONE, 0},
             z_index,
-            ALIA_PRIMITIVE_MATERIAL_ID,
-            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_primitive_command))));
+            ALIA_MSDF_MATERIAL_ID,
+            ALIA_MIN_ALIGNED_SIZE(sizeof(alia_draw_msdf_glyph_command))));
 
     command->box = box;
-    command->primitive_type = ALIA_PRIMITIVE_MSDF_GLYPH;
     command->color = color;
     std::memcpy(
-        command->payload.msdf_glyph.uv_rect,
-        cached_glyph.uv_rect,
-        sizeof(cached_glyph.uv_rect));
-    command->payload.msdf_glyph.sdf_scale = sdf_scale;
+        command->uv_rect, cached_glyph.uv_rect, sizeof(cached_glyph.uv_rect));
+    command->sdf_scale = sdf_scale;
 }
 
 float
@@ -263,6 +264,7 @@ void
 msdf_engine_draw_block_range(
     alia_text_engine* engine,
     alia_ui_context* ctx,
+    alia_instance_id id,
     alia_z_index z_index,
     alia_text_block* block_opaque,
     size_t byte_start,
@@ -271,18 +273,20 @@ msdf_engine_draw_block_range(
     alia_srgba8 color,
     alia_text_direction direction)
 {
-    // MSDF is LTR-only; direction is ignored.
+    // MSDF is LTR-only, so direction is ignored. Glyph commands use
+    // `ALIA_DRAW_ID_NONE`, so the caller's fragment ID is unused here.
     (void) direction;
+    (void) id;
     auto const& eng = *reinterpret_cast<alia_msdf_text_engine*>(engine);
     auto const& block = *reinterpret_cast<msdf_text_block*>(block_opaque);
     msdf_font_data const& font = *block.font;
     alia_msdf_atlas_description const& atlas = eng.atlas;
     float const scale = block.font_size;
 
-    // `baseline_origin` is the pen position on the baseline; glyph planes are
-    // measured from the baseline, so no ascender offset is added here.
-    alia_vec2f cursor
-        = alia_vec2f_add(baseline_origin, alia_ctx_geometry(ctx)->offset);
+    // `baseline_origin` is the pen position on the baseline in the current
+    // frame's local space. Glyph planes are measured from the baseline, so no
+    // ascender offset is added here.
+    alia_vec2f cursor = baseline_origin;
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
 
     char const* text = block.text.data();
@@ -574,8 +578,7 @@ alia_msdf_draw_text(
     alia_msdf_atlas_description const& atlas = fonts->atlas;
 
     alia_vec2f cursor = alia_vec2f_add(
-        alia_vec2f_add(position, alia_ctx_geometry(ctx)->offset),
-        alia_vec2f{0, font.metrics.ascender * scale});
+        position, alia_vec2f{0, font.metrics.ascender * scale});
 
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
 
@@ -623,8 +626,7 @@ alia_msdf_draw_codepoint(
         = font.glyph_cache.at(static_cast<int>(codepoint));
 
     alia_vec2f cursor = alia_vec2f_add(
-        alia_vec2f_add(position, alia_ctx_geometry(ctx)->offset),
-        alia_vec2f{0, font.metrics.ascender * scale});
+        position, alia_vec2f{0, font.metrics.ascender * scale});
     float const sdf_scale = scale * atlas.distance_range / atlas.font_size;
 
     emit_glyph_draw_command(

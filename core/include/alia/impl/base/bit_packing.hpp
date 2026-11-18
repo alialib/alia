@@ -71,7 +71,7 @@ struct bitref
 {
     constexpr static unsigned width = Tag::width;
     uint32_t& storage;
-    unsigned index;
+    uint8_t index;
 
     operator alia_bitref() const
     {
@@ -108,7 +108,8 @@ struct bitpack_ref
 {
     using layout_t = Layout;
     uint32_t& bits;
-    unsigned offset;
+    // bit offset of this nested pack within `bits`
+    uint8_t offset;
 
     operator alia_bitref() const
     {
@@ -137,18 +138,21 @@ struct bitpack
 
 // helper function to adjust the offset of a `bitpack_ref` member
 template<class Layout>
-unsigned
-adjust_offset(bitpack_ref<Layout> const& pack, unsigned offset)
+uint8_t
+adjust_offset(bitpack_ref<Layout> const& pack, size_t offset)
 {
-    return pack.offset + offset;
+    size_t const sum = size_t(pack.offset) + offset;
+    ALIA_ASSERT(sum < 32);
+    return uint8_t(sum);
 }
 
 // (noop) helper function to adjust the offset of a `bitpack` member
 template<class Layout>
-unsigned
-adjust_offset(bitpack<Layout> const&, unsigned offset)
+uint8_t
+adjust_offset(bitpack<Layout> const&, size_t offset)
 {
-    return offset;
+    ALIA_ASSERT(offset < 32);
+    return uint8_t(offset);
 }
 
 #define ALIA_BITREF(pack, member)                                             \

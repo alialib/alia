@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/kernel/object.h>
 #include <alia/abi/kernel/routing.h>
 #include <alia/base/memory.h>
@@ -38,6 +39,9 @@ struct alia_kernel
 
     // pool table for this component tree
     alia_memory_system memory;
+
+    // instance ID mint for this kernel
+    alia_instance_id_pool instance_ids;
 
     // persistent substrate graph
     alia_substrate_system substrate;

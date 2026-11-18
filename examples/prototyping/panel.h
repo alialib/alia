@@ -1,5 +1,9 @@
 #pragma once
 
+#include <alia/abi/kernel/routing.h>
+#include <alia/abi/ui/drawing/primitives.h>
+#include <alia/abi/ui/input/elements.h>
+
 template<class Content>
 void
 concrete_panel(
@@ -10,11 +14,17 @@ concrete_panel(
     Content&& content)
 {
     alia_box panel_box;
+    alia_instance_id const id
+        = alia_element_use_id(alia_ctx_kernel(ctx)).id;
     column(ctx, provide_box(panel_box), flags, [&]() {
         if (get_event_type(ctx) == ALIA_EVENT_DRAW)
         {
-            alia_draw_rounded_box(
-                ctx, z_index, panel_box, alia_srgba8_from_srgb8(color), 0.0f);
+            alia_draw_rounded_box(ctx, {id, 0},
+                z_index,
+                panel_box,
+                alia_srgba8_from_srgb8(color),
+                0.0f
+            );
         }
 
         std::forward<Content>(content)();

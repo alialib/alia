@@ -1,5 +1,6 @@
 #include <alia/kernel/object.h>
 
+#include <alia/abi/kernel/instance_ids.h>
 #include <alia/abi/kernel/memory.h>
 #include <alia/abi/panic.h>
 #include <alia/base/memory.h>
@@ -22,9 +23,11 @@ init_kernel(alia_kernel& kernel, alia_memory_ops memory_ops)
     kernel.substrate_storage_pool = alia_memory_register_pool(
         &kernel.memory, ALIA_MEMORY_POOL_GENERAL, 0);
 
+    alia_instance_id_pool_init(&kernel.instance_ids);
+
     alia_general_allocator allocator = alia_memory_bind_general(
         &kernel.memory, kernel.substrate_storage_pool);
-    substrate_system_init(kernel.substrate, allocator);
+    substrate_system_init(kernel.substrate, allocator, &kernel.instance_ids);
 
     kernel.dirty = true;
 }
@@ -103,6 +106,13 @@ alia_kernel_mark_dirty(alia_kernel* kernel)
 {
     ALIA_ASSERT(kernel);
     kernel->dirty = true;
+}
+
+alia_instance_id_pool*
+alia_kernel_instance_ids(alia_kernel* kernel)
+{
+    ALIA_ASSERT(kernel);
+    return &kernel->instance_ids;
 }
 
 } // extern "C"

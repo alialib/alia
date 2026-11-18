@@ -3,8 +3,7 @@
 #include <alia/abi/ui/styling/color_program.h>
 #include <alia/abi/ui/styling/environment.h>
 
-namespace alia {
-namespace color {
+namespace alia { namespace color {
 
 // short aliases for core palette colors
 inline constexpr alia_style_color_slot surface = ALIA_STYLE_COLOR_SURFACE;
@@ -83,7 +82,8 @@ emit_cap_overlay_step(color_program_expr& e)
 
 // Add `delta` onto TOS channel (GET, IMMEDIATE, ADD, SET).
 inline void
-emit_add_channel(color_program_expr& e, alia_color_channel channel, float delta)
+emit_add_channel(
+    color_program_expr& e, alia_color_channel channel, float delta)
 {
     emit_get(e, channel);
     emit_immediate(e, delta);
@@ -134,7 +134,9 @@ emit_scale_channel_float(
 // Copy channel from `ref` onto TOS (LOAD, GET, DROP, SET).
 inline void
 emit_match_channel(
-    color_program_expr& e, alia_style_color_slot ref, alia_color_channel channel)
+    color_program_expr& e,
+    alia_style_color_slot ref,
+    alia_color_channel channel)
 {
     emit_load_color(e, ref);
     emit_get(e, channel);
@@ -355,7 +357,8 @@ struct add_lightness_delta_op
 };
 
 inline add_lightness_delta_op
-add_lightness_delta(alia_style_color_slot from, alia_style_color_slot to, float t)
+add_lightness_delta(
+    alia_style_color_slot from, alia_style_color_slot to, float t)
 {
     return {from, to, t};
 }
@@ -683,11 +686,7 @@ ensure_contrast_against_white(
     alia_color_contrast_constraint constraint)
 {
     return {
-        0,
-        ratio,
-        direction,
-        constraint,
-        ALIA_COLOR_CONTRAST_AGAINST_WHITE};
+        0, ratio, direction, constraint, ALIA_COLOR_CONTRAST_AGAINST_WHITE};
 }
 
 inline ensure_contrast_op
@@ -697,11 +696,7 @@ ensure_contrast_against_black(
     alia_color_contrast_constraint constraint)
 {
     return {
-        0,
-        ratio,
-        direction,
-        constraint,
-        ALIA_COLOR_CONTRAST_AGAINST_BLACK};
+        0, ratio, direction, constraint, ALIA_COLOR_CONTRAST_AGAINST_BLACK};
 }
 
 struct set_alpha_op
@@ -852,16 +847,14 @@ operator|(color_program_expr e, lighten_op op)
 inline color_program_expr
 operator|(color_program_expr e, add_lightness_delta_op op)
 {
-    emit_channel_delta(
-        e, op.from, op.to, ALIA_COLOR_CHANNEL_L, op.t);
+    emit_channel_delta(e, op.from, op.to, ALIA_COLOR_CHANNEL_L, op.t);
     return e;
 }
 
 inline color_program_expr
 operator|(color_program_expr e, add_chroma_delta_op op)
 {
-    emit_channel_delta(
-        e, op.from, op.to, ALIA_COLOR_CHANNEL_C, op.t);
+    emit_channel_delta(e, op.from, op.to, ALIA_COLOR_CHANNEL_C, op.t);
     return e;
 }
 
@@ -869,8 +862,7 @@ inline color_program_expr
 operator|(color_program_expr e, add_hue_delta_op op)
 {
     // Shortest arc is not preserved with raw subtract - acceptable for now.
-    emit_channel_delta(
-        e, op.from, op.to, ALIA_COLOR_CHANNEL_H, op.t);
+    emit_channel_delta(e, op.from, op.to, ALIA_COLOR_CHANNEL_H, op.t);
     return e;
 }
 
@@ -935,9 +927,7 @@ inline color_program_expr
 operator|(color_program_expr e, set_h_op op)
 {
     emit_set_channel_immediate(
-        e,
-        ALIA_COLOR_CHANNEL_H,
-        alia_color_program_deg_to_rad(op.h_degrees));
+        e, ALIA_COLOR_CHANNEL_H, alia_color_program_deg_to_rad(op.h_degrees));
     return e;
 }
 
@@ -1257,5 +1247,4 @@ emit_responsive_append_rest(
     return out;
 }
 
-} // namespace color
-} // namespace alia
+}} // namespace alia::color

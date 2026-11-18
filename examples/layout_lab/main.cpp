@@ -6,15 +6,16 @@
 
 #include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/drawing/primitives.h>
 #include <alia/abi/ui/drawing/targets.h>
 #include <alia/abi/ui/events.h>
 #include <alia/abi/ui/geometry/api.h>
 #include <alia/abi/ui/layout/system.h>
 #include <alia/abi/ui/layout/utilities.h>
+#include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/abi/ui/styling/palette_generation.h>
-#include <alia/abi/ui/styling/context_api.h>
 #include <alia/abi/ui/styling/style_catalog.h>
 #include <alia/abi/ui/system/api.h>
 #include <alia/abi/ui/system/tracer.h>
@@ -74,21 +75,13 @@ with_spacing(ui_context ctx, float spacing, Content&& content)
 void
 do_heading(ui_context ctx, char const* text)
 {
-    demo_text(
-        ctx,
-        text,
-        &demo_get_fonts().heading_18,
-        DEMO_INK_STRONG);
+    demo_text(ctx, text, &demo_get_fonts().heading_18, DEMO_INK_STRONG);
 }
 
 void
 do_subheading(ui_context ctx, char const* text)
 {
-    demo_text(
-        ctx,
-        text,
-        &demo_get_fonts().heading_14,
-        DEMO_INK_EMPHASIS);
+    demo_text(ctx, text, &demo_get_fonts().heading_14, DEMO_INK_EMPHASIS);
 }
 
 void
@@ -99,6 +92,9 @@ do_draw_target_demo(ui_context ctx)
     static alia_draw_target_id target = ALIA_DRAW_TARGET_PRIMARY;
     if (target == ALIA_DRAW_TARGET_PRIMARY && alia_ctx_system(ctx))
         target = alia_draw_target_create(alia_ctx_system(ctx));
+
+    alia_instance_id const base_id
+        = alia_substrate_use_id(alia_ctx_kernel(ctx));
 
     alia_vec2f const size{160.f, 96.f};
     if (get_event_category(ctx) == ALIA_CATEGORY_REFRESH)
@@ -116,22 +112,28 @@ do_draw_target_demo(ui_context ctx)
     if (target == ALIA_DRAW_TARGET_PRIMARY)
     {
         alia_draw_rounded_box(
-            ctx, 0, box, alia_srgba8{220, 40, 40, 255}, 12.f);
+            ctx, {base_id, 0}, 0, box, alia_srgba8{220, 40, 40, 255}, 12.f);
         return;
     }
 
     alia_draw_target_begin(ctx, target, box.size);
     alia_draw_rounded_box(
-        ctx, 0, {{0.f, 0.f}, box.size}, alia_srgba8{40, 40, 255, 255}, 12.f);
+        ctx,
+        {base_id, 1},
+        0,
+        {{0.f, 0.f}, box.size},
+        alia_srgba8{40, 40, 255, 255},
+        12.f);
     alia_draw_rounded_box(
         ctx,
+        {base_id, 2},
         1,
         {{20.f, 20.f}, {box.size.x - 40.f, box.size.y - 40.f}},
         alia_srgba8{255, 255, 255, 220},
         8.f);
     alia_draw_target_end(ctx);
 
-    alia_draw_target(ctx, 2, target, box, 0.85f);
+    alia_draw_target(ctx, {base_id, 3}, 2, target, box, 0.85f);
 }
 
 void
@@ -199,20 +201,11 @@ do_content(ui_context ctx, layout_options layout = {})
         do_heading(ctx, "TEXT");
         flow(ctx, FILL, [&]() {
             demo_text(
-                ctx,
-                lorem_ipsum,
-                &demo_get_fonts().body_14,
-                DEMO_INK_BODY);
+                ctx, lorem_ipsum, &demo_get_fonts().body_14, DEMO_INK_BODY);
             demo_text(
-                ctx,
-                lorem_ipsum,
-                &demo_get_fonts().heading_14,
-                DEMO_INK_BODY);
+                ctx, lorem_ipsum, &demo_get_fonts().heading_14, DEMO_INK_BODY);
             demo_text(
-                ctx,
-                lorem_ipsum,
-                &demo_get_fonts().body_14,
-                DEMO_INK_BODY);
+                ctx, lorem_ipsum, &demo_get_fonts().body_14, DEMO_INK_BODY);
         });
         do_heading(ctx, "FLOW PANEL");
         {
@@ -277,32 +270,22 @@ the_demo(ui_context ctx)
 {
     with_spacing(ctx, 0, [&] {
         row(ctx, [&]() {
-            concrete_panel(
-                ctx,
-                0,
-                demo_raised(ctx),
-                FILL,
-                [&]() {
-                    with_spacing(ctx, 6, [&] {
-                        column(ctx, pad(40), [&]() { do_controls(ctx); });
-                    });
+            concrete_panel(ctx, 0, demo_raised(ctx), FILL, [&]() {
+                with_spacing(ctx, 6, [&] {
+                    column(ctx, pad(40), [&]() { do_controls(ctx); });
                 });
+            });
             with_spacing(ctx, demo_spacing, [&] {
-                concrete_panel(
-                    ctx,
-                    0,
-                    demo_surface(ctx),
-                    GROW,
-                    [&]() {
-                        column(ctx, GROW, [&]() {
-                            scroll_view(ctx, GROW, [&]() {
-                                alia_geometry_push_scale(
-                                    ctx, content_magnification);
-                                do_content(ctx, pad(40));
-                                alia_geometry_pop_scale(ctx);
-                            });
+                concrete_panel(ctx, 0, demo_surface(ctx), GROW, [&]() {
+                    column(ctx, GROW, [&]() {
+                        scroll_view(ctx, GROW, [&]() {
+                            alia_geometry_push_scale(
+                                ctx, content_magnification);
+                            do_content(ctx, pad(40));
+                            alia_geometry_pop_scale(ctx);
                         });
                     });
+                });
             });
         });
     });

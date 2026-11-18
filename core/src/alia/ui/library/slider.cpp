@@ -8,8 +8,8 @@
 #include <alia/abi/ui/input/constants.h>
 #include <alia/abi/ui/input/keyboard.h>
 #include <alia/abi/ui/input/pointer.h>
-#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/layout/api.h>
+#include <alia/abi/ui/regions.h>
 #include <alia/abi/ui/styling/environment.h>
 #include <alia/impl/events.hpp>
 #include <alia/impl/ui/styling/color_program.hpp>
@@ -19,11 +19,6 @@
 #include <cstdint>
 
 namespace alia {
-
-struct slider_data
-{
-    uint32_t reserved;
-};
 
 static inline float
 left_pad(alia_ui_context* ctx, alia_slider_style const* s)
@@ -168,7 +163,8 @@ render_slider(
     double minimum,
     double maximum,
     double value,
-    alia_interaction_status_t thumb_status)
+    alia_interaction_status_t thumb_status,
+    alia_instance_id base_id)
 {
     alia_style_environment const* env = alia_ctx_style(ctx)->environment;
 
@@ -182,6 +178,7 @@ render_slider(
 
     alia_draw_rounded_box(
         ctx,
+        {base_id, 0},
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         track_box,
         track_rgba,
@@ -201,6 +198,7 @@ render_slider(
             fill_box.size.y = fill_len;
         alia_draw_rounded_box(
             ctx,
+            {base_id, 1},
             alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
             fill_box,
             alia_responsive_color_program_resolve(
@@ -221,6 +219,7 @@ render_slider(
                           + 0.5f);
     alia_draw_circle(
         ctx,
+        {base_id, 2},
         alia_z(ctx, ALIA_Z_PLANE_BACKGROUND),
         alia_vec2f{thumb_center.x + drop, thumb_center.y + drop},
         thumb_r,
@@ -229,6 +228,7 @@ render_slider(
 
     alia_draw_circle(
         ctx,
+        {base_id, 3},
         alia_z(ctx, ALIA_Z_PLANE_CONTENT),
         thumb_center,
         thumb_r,
@@ -240,6 +240,7 @@ render_slider(
     {
         alia_draw_circle(
             ctx,
+            {base_id, 4},
             alia_z(ctx, ALIA_Z_PLANE_ACCENT),
             thumb_center,
             alia_px(ctx, s->highlight_radius),
@@ -309,17 +310,13 @@ alia_slider(
 {
     ALIA_ASSERT(value);
 
-    alia_substrate_usage_result result = alia_substrate_use_memory(
-        alia_ctx_kernel(ctx), sizeof(slider_data), alignof(slider_data));
-    slider_data* data = reinterpret_cast<slider_data*>(result.ptr);
-    if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
-    {
-        new (data) slider_data{.reserved = 0};
-    }
-    alia_element_id const base_id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
-    alia_element_id const track_id = base_id;
-    alia_element_id const thumb_id = alia_element_sub_id(base_id, 1);
+    alia_instance_id const ids
+        = alia_substrate_use_id_range(alia_ctx_kernel(ctx), 2);
+    alia_element_id const track_id
+        = alia_element_id_here(alia_ctx_kernel(ctx), ids);
+    alia_element_id const thumb_id = alia_element_id_here(
+        alia_ctx_kernel(ctx), alia_instance_id_at(ids, 1));
+    alia_element_id const base_id = track_id;
 
     bool const is_disabled = ((value->flags & ALIA_SIGNAL_WRITABLE) == 0);
     double const current = ((value->flags & ALIA_SIGNAL_READABLE) != 0)
@@ -471,12 +468,12 @@ alia_slider(
                 minimum,
                 maximum,
                 current,
-                thumb_status);
+                thumb_status,
+                base_id.id);
             break;
         }
     }
 
-    (void) data;
     return base_id;
 }
 

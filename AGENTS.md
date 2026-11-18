@@ -15,6 +15,8 @@ The project is not currently concerned with ABI or API stability. The goal is
 to break/improve things now while it is still in an intentionally unstable
 state.
 
+Prefer cleaner solutions and APIs over legacy/convenience.
+
 The source tree is layered as **base** / **kernel** / **ui**. See the Source
 Layout section of the README.
 

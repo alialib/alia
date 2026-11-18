@@ -124,12 +124,21 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         .buckets = {},
         .keys = {},
     };
+    alia_draw_frame_table frame_table{};
+    frame_table.entries.push_back(
+        alia_draw_frame{
+            .parent = ALIA_FRAME_ID_NONE,
+            .translation = {0.f, 0.f},
+            .absolute = {0.f, 0.f},
+        });
 
     alia_memory_system* memory = alia_ui_memory(system);
     alia_draw_context draw_context = {
         .buckets = &bucket_table,
+        .frames = &frame_table,
         .arena = alia_memory_open_bump(memory, system->draw.command_pool),
         .target_id = ALIA_DRAW_TARGET_PRIMARY,
+        .current_frame = 0,
     };
 
     alia_cursor_t resolved_cursor = ALIA_CURSOR_DEFAULT;
@@ -170,6 +179,11 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
         memory, system->draw.command_pool, &draw_context.arena);
     alia_memory_trim(
         memory, system->draw.command_pool, ALIA_MEMORY_RETAIN_PEAK);
+
+    alia_draw_execution_context const execution_context = {
+        .frames = frame_table.entries.data(),
+        .frame_count = static_cast<uint16_t>(frame_table.entries.size()),
+    };
 
     std::unordered_set<alia_draw_target_id> targets;
     targets.insert(ALIA_DRAW_TARGET_PRIMARY);
@@ -232,7 +246,8 @@ alia_ui_execute_draw_pass(alia_ui_system* system)
                     = material_from_key(key);
                 alia_draw_material* material
                     = &system->draw.materials[material_id];
-                material->vtable.draw_bucket(material->user, bucket);
+                material->vtable.draw_bucket(
+                    material->user, &execution_context, bucket);
             }
         }
 

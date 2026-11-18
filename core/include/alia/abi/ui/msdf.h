@@ -1,7 +1,9 @@
 #ifndef ALIA_ABI_UI_MSDF_H
 #define ALIA_ABI_UI_MSDF_H
 
+#include <alia/abi/base/color.h>
 #include <alia/abi/base/geometry.h>
+#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/prelude.h>
 #include <alia/abi/ui/context.h>
 #include <alia/abi/ui/drawing/commands.h>
@@ -12,6 +14,17 @@ ALIA_EXTERN_C_BEGIN
 
 typedef struct alia_ui_system alia_ui_system;
 typedef struct alia_msdf_text_engine alia_msdf_text_engine;
+
+// MSDF glyph quad recorded during the draw pass
+typedef struct alia_draw_msdf_glyph_command
+{
+    alia_draw_command base;
+    // glyph quad in the command's frame space
+    alia_box box;
+    alia_srgba8 color;
+    float uv_rect[4];
+    float sdf_scale;
+} alia_draw_msdf_glyph_command;
 
 typedef struct alia_msdf_font_metrics
 {
@@ -100,9 +113,7 @@ alia_msdf_atlas_rle_decompress(
 
 void
 alia_msdf_decompress_atlas_rle(
-    alia_msdf_atlas_rle const* atlas_rle,
-    uint8_t* out_rgb,
-    size_t out_size);
+    alia_msdf_atlas_rle const* atlas_rle, uint8_t* out_rgb, size_t out_size);
 
 void
 alia_ui_bind_msdf_text_engine(
@@ -156,6 +167,9 @@ alia_msdf_break_text(
     float width,
     bool force_break);
 
+// Emit per-glyph draw commands with `ALIA_DRAW_ID_NONE`.
+// Note that glyph quads aren't considered retention units, so there is no
+// instance ID associated with them.
 void
 alia_msdf_draw_text(
     alia_msdf_text_engine* fonts,

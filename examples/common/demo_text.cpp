@@ -132,7 +132,8 @@ demo_ink(alia::ui_context ctx, demo_ink_weight weight)
 alia_srgb8
 demo_surface(alia::ui_context ctx)
 {
-    return alia_palette_color_srgb(&alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_SURFACE);
+    return alia_palette_color_srgb(
+        &alia_ctx_style(ctx)->environment->palette, ALIA_STYLE_COLOR_SURFACE);
 }
 
 alia_srgb8
@@ -140,7 +141,8 @@ demo_raised(alia::ui_context ctx)
 {
     // One WELL-step of elevation toward text (matches default well offset).
     alia_palette elevated;
-    alia_palette_elevate(&elevated, &alia_ctx_style(ctx)->environment->palette, 0.075f);
+    alia_palette_elevate(
+        &elevated, &alia_ctx_style(ctx)->environment->palette, 0.075f);
     return alia_palette_color_srgb(&elevated, ALIA_STYLE_COLOR_SURFACE);
 }
 

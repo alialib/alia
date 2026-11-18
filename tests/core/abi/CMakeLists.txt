@@ -9,10 +9,12 @@ add_executable(test_core_c
     base/geometry/test_edge_offsets.c
     base/geometry/test_vec2.c
     kernel/test_ids.c
+    kernel/test_instance_ids.c
     kernel/test_effect.c
     kernel/test_substrate.c
     kernel/test_routing.c
     kernel/test_animation.c
+    ui/drawing/test_draw_ids.c
     ui/layout/test_abi_headers.c
     ui/layout/test_placement.c
     ui/layout/test_line.c

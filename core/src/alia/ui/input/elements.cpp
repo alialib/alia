@@ -1,6 +1,5 @@
 #include <alia/abi/ui/input/elements.h>
 
-#include <alia/abi/kernel/substrate.h>
 #include <alia/abi/ui/input/pointer.h>
 
 using namespace alia;
@@ -40,14 +39,6 @@ alia_element_get_interaction_status(
     // }
 
     return status;
-}
-
-alia_element_id
-alia_element_get_identity(alia_ui_context* ctx)
-{
-    return alia_make_element_id(
-        alia_ctx_kernel(ctx),
-        alia_substrate_use_memory(alia_ctx_kernel(ctx), 1, 1));
 }
 
 } // extern "C"

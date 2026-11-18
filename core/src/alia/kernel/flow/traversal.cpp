@@ -54,8 +54,7 @@ mark_animating_component(alia_kernel_context& ctx)
     if (alia_ctx_events(&ctx) == nullptr
         || event_active_container(*alia_ctx_events(&ctx)) == nullptr)
         return;
-    mark_animating_component(
-        *event_active_container(*alia_ctx_events(&ctx)));
+    mark_animating_component(*event_active_container(*alia_ctx_events(&ctx)));
 }
 
 // void

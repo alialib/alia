@@ -27,7 +27,8 @@ size_t const substrate_scratch_capacity = 16 * 1024;
 
 // Large enough for layout UI that uses a modest amount of substrate state
 // (e.g. detached handles). Pre-sized so tests avoid discovery re-traversal.
-alia_struct_spec const root_block_spec = {.size = 4096u, .align = 16u};
+alia_substrate_block_spec const root_block_spec
+    = {.memory = {.size = 4096u, .align = 16u}, .identity_count = 0};
 
 void*
 aligned_alloc_portable(size_t align, size_t size)
@@ -89,6 +90,7 @@ struct layout_fixture
     alia_layout_context layout_context = {};
     alia_ui_context context = {};
 
+    alia_instance_id_pool instance_ids{};
     alia_substrate_system substrate_system{};
     alia_substrate_traversal substrate_traversal{};
     void* substrate_scratch_buffer = nullptr;
@@ -166,7 +168,7 @@ run_with_substrate_root(
 {
     if (fixture.substrate_ready)
     {
-        alia_struct_spec spec = root_block_spec;
+        alia_substrate_block_spec spec = root_block_spec;
         alia_substrate_begin_block(
             alia_ctx_kernel(&fixture.context),
             &fixture.substrate_system.root_anchor,
@@ -224,7 +226,9 @@ layout_fixture_create()
         = {.alloc = substrate_alloc,
            .free = substrate_free,
            .user_data = nullptr};
-    alia::substrate_system_init(fixture->substrate_system, allocator);
+    alia_instance_id_pool_init(&fixture->instance_ids);
+    alia::substrate_system_init(
+        fixture->substrate_system, allocator, &fixture->instance_ids);
     alia::substrate_traversal_init(
         fixture->substrate_traversal,
         fixture->substrate_system,

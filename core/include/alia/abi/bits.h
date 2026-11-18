@@ -8,7 +8,8 @@ ALIA_EXTERN_C_BEGIN
 typedef struct alia_bitref
 {
     uint32_t* storage;
-    unsigned offset;
+    // bit offset within `storage`
+    uint8_t offset;
 } alia_bitref;
 
 static inline bool

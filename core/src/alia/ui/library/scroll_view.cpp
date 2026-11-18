@@ -256,10 +256,19 @@ page_area(
     return area;
 }
 
+// Return the element ID for one part of a scrollbar. The parts for both axes
+// are carved from a single ID range starting at `scrollbar_base`.
 static alia_element_id
-scroll_id(alia_element_id base, unsigned axis, unsigned slot)
+scrollbar_part_id(
+    alia_ui_context* ctx,
+    alia_instance_id scrollbar_base,
+    unsigned axis,
+    unsigned slot)
 {
-    return alia_element_sub_id(base, (uint8_t) (1 + axis * 8 + slot));
+    ALIA_ASSERT(axis < 2 && slot < 5);
+    return alia_element_id_here(
+        alia_ctx_kernel(ctx),
+        alia_instance_id_at(scrollbar_base, axis * 5 + slot));
 }
 
 static void
@@ -307,6 +316,7 @@ static void
 draw_scrollbar(
     alia_ui_context* ctx,
     alia_element_id base_id,
+    alia_instance_id scrollbar_base,
     scroll_view_state& data,
     scroll_view_placement const& p,
     unsigned axis)
@@ -318,14 +328,18 @@ draw_scrollbar(
     alia_box const btn1 = button_area(data, p, axis, true);
     alia_interaction_status_t const thumb_status
         = alia_element_get_interaction_status(
-            ctx, scroll_id(base_id, axis, 0), 0);
+            ctx, scrollbar_part_id(ctx, scrollbar_base, axis, 0), 0);
 
     // Gutter scrollbars share BACKGROUND. Primitive emission order stacks
     // track, thumb, buttons, then arrow glyphs within the plane.
     alia_z_index const z = alia_z(ctx, ALIA_Z_PLANE_BACKGROUND);
 
+    alia_instance_id const draw_base = base_id.id;
+    uint32_t const draw_sub0 = 64u + axis * 8u;
+
     alia_draw_rounded_box(
         ctx,
+        {draw_base, draw_sub0 + 0},
         z,
         sb,
         alia_color_program_resolve(
@@ -334,6 +348,7 @@ draw_scrollbar(
 
     alia_draw_rounded_box(
         ctx,
+        {draw_base, draw_sub0 + 1},
         z,
         thumb,
         alia_color_program_resolve(
@@ -346,6 +361,7 @@ draw_scrollbar(
     {
         alia_draw_rounded_box(
             ctx,
+            {draw_base, draw_sub0 + 2},
             z,
             thumb,
             alia_color_program_resolve(
@@ -355,21 +371,26 @@ draw_scrollbar(
 
     alia_srgba8 const button = alia_color_program_resolve(
         env, data.style.steps, data.style.button_color);
-    alia_draw_rounded_box(ctx, z, btn0, button, 0.f);
-    alia_draw_rounded_box(ctx, z, btn1, button, 0.f);
+    alia_draw_rounded_box(
+        ctx, {draw_base, draw_sub0 + 3}, z, btn0, button, 0.f);
+    alia_draw_rounded_box(
+        ctx, {draw_base, draw_sub0 + 4}, z, btn1, button, 0.f);
 
     float const rotation0 = axis == 0 ? 270.f : 0.f;
     float const rotation1 = axis == 0 ? 90.f : 180.f;
     alia_srgba8 const glyph = alia_color_program_resolve(
         env, data.style.steps, data.style.glyph_color);
-    alia_draw_equilateral_triangle(ctx, z, btn0, glyph, rotation0);
-    alia_draw_equilateral_triangle(ctx, z, btn1, glyph, rotation1);
+    alia_draw_equilateral_triangle(
+        ctx, {draw_base, draw_sub0 + 5}, z, btn0, glyph, rotation0);
+    alia_draw_equilateral_triangle(
+        ctx, {draw_base, draw_sub0 + 6}, z, btn1, glyph, rotation1);
 }
 
 static void
 do_scrollbar_pass(
     alia_ui_context* ctx,
     alia_element_id base_id,
+    alia_instance_id scrollbar_base,
     scroll_view_state& data,
     scroll_view_placement const& p,
     unsigned axis)
@@ -378,11 +399,16 @@ do_scrollbar_pass(
         return;
 
     auto& bar = data.bar[axis];
-    alia_element_id const thumb_id = scroll_id(base_id, axis, 0);
-    alia_element_id const btn0_id = scroll_id(base_id, axis, 1);
-    alia_element_id const btn1_id = scroll_id(base_id, axis, 2);
-    alia_element_id const page0_id = scroll_id(base_id, axis, 3);
-    alia_element_id const page1_id = scroll_id(base_id, axis, 4);
+    alia_element_id const thumb_id
+        = scrollbar_part_id(ctx, scrollbar_base, axis, 0);
+    alia_element_id const btn0_id
+        = scrollbar_part_id(ctx, scrollbar_base, axis, 1);
+    alia_element_id const btn1_id
+        = scrollbar_part_id(ctx, scrollbar_base, axis, 2);
+    alia_element_id const page0_id
+        = scrollbar_part_id(ctx, scrollbar_base, axis, 3);
+    alia_element_id const page1_id
+        = scrollbar_part_id(ctx, scrollbar_base, axis, 4);
 
     switch (get_event_category(*ctx))
     {
@@ -471,7 +497,7 @@ do_scrollbar_pass(
             if (!alia_element_is_drag_in_progress(
                     ctx, thumb_id, ALIA_BUTTON_LEFT))
                 bar.physical = logical_to_physical(data, p, axis, bar.logical);
-            draw_scrollbar(ctx, base_id, data, p, axis);
+            draw_scrollbar(ctx, base_id, scrollbar_base, data, p, axis);
             break;
 
         default:
@@ -719,7 +745,10 @@ alia_scroll_view_begin(
         new (data) scroll_view_state;
     }
     scope.data = data;
-    scope.id = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    scope.id = alia_element_use_id(alia_ctx_kernel(ctx));
+    // Reserve the IDs for both axes' scrollbar parts.
+    alia_instance_id const scrollbar_base
+        = alia_substrate_use_id_range(alia_ctx_kernel(ctx), 10);
 
     static alia_scroll_view_flags_t const scroll_axes
         = ALIA_SCROLL_VIEW_X | ALIA_SCROLL_VIEW_Y;
@@ -810,7 +839,8 @@ alia_scroll_view_begin(
 
     for (unsigned axis = 0; axis != 2; ++axis)
     {
-        do_scrollbar_pass(ctx, scope.id, *data, scope.placement, axis);
+        do_scrollbar_pass(
+            ctx, scope.id, scrollbar_base, *data, scope.placement, axis);
     }
 
     alia_vec2f const content_offset{

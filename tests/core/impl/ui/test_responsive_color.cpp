@@ -6,7 +6,6 @@
 #include <alia/impl/ui/styling/color_program.hpp>
 #include <alia/ui/styling/descriptors_internal.h>
 
-
 #include <doctest/doctest.h>
 
 #include <cstring>

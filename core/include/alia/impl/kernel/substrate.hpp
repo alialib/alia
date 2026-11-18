@@ -9,10 +9,10 @@
 namespace alia {
 
 template<typename Tag>
-inline alia_struct_spec*
+inline alia_substrate_block_spec*
 get_memoized_block_spec()
 {
-    static alia_struct_spec value = {0, 0};
+    static alia_substrate_block_spec value{};
     return &value;
 }
 
@@ -97,10 +97,12 @@ struct if_block
 struct scoped_conditional_block
 {
     alia_ui_context* ctx_ = nullptr;
-    alia_struct_spec* spec_ = nullptr;
+    alia_substrate_block_spec* spec_ = nullptr;
 
     scoped_conditional_block(
-        ui_context ctx, alia_substrate_anchor* anchor, alia_struct_spec* spec)
+        ui_context ctx,
+        alia_substrate_anchor* anchor,
+        alia_substrate_block_spec* spec)
         : ctx_(ctx), spec_(spec)
     {
         alia_substrate_begin_block(alia_ctx_kernel(ctx_), anchor, spec_);
@@ -217,7 +219,7 @@ key_scope(ui_context ctx, alia_substrate_key_table* table, Content&& content)
 
 // Run `content` inside a keyed substrate block for `key`.
 // The block's memoized layout spec is keyed by the type of `content`, so each
-// call site (typically a unique lambda type) gets its own discovered size.
+// call site (typically a unique lambda type) gets its own discovered layout.
 template<class Content>
 void
 keyed_block(
@@ -226,7 +228,7 @@ keyed_block(
     alia_id_view key,
     Content&& content)
 {
-    alia_struct_spec* spec = get_memoized_block_spec<Content>();
+    alia_substrate_block_spec* spec = get_memoized_block_spec<Content>();
     alia_substrate_begin_keyed_block(alia_ctx_kernel(ctx), scope, key, spec);
     std::forward<Content>(content)();
     *spec = alia_substrate_end_keyed_block(alia_ctx_kernel(ctx));

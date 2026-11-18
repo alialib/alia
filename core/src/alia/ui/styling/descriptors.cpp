@@ -127,8 +127,7 @@ style_descriptors_init(style_system& styling, bool dark)
             == ALIA_STYLE_COLOR_CORE_COUNT,
         "core color desc count");
 
-    std::memcpy(
-        styling.var_descs, core_var_descs, sizeof(core_var_descs));
+    std::memcpy(styling.var_descs, core_var_descs, sizeof(core_var_descs));
     styling.var_desc_count = ALIA_STYLE_VAR_CORE_COUNT;
 
     std::memcpy(
@@ -136,10 +135,7 @@ style_descriptors_init(style_system& styling, bool dark)
     styling.color_desc_count = ALIA_STYLE_COLOR_CORE_COUNT;
 
     apply_var_descs(
-        &styling.environment,
-        dark,
-        styling.var_descs,
-        styling.var_desc_count);
+        &styling.environment, dark, styling.var_descs, styling.var_desc_count);
 }
 
 } // namespace alia

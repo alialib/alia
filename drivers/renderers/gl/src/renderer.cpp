@@ -312,7 +312,7 @@ vec4 sample_primitive(vec2 p)
             float d = sd_squircle(local_p, v_data_a.x);
             return shade_shape(d);
         }
-        // ALIA_PRIMITIVE_MSDF_GLYPH
+        // MSDF glyph branch (`k_instance_type_msdf_glyph`)
         case 3:
         {
             vec3 msd = texture(u_msdf, v_uv_msdf).rgb;
@@ -340,6 +340,13 @@ struct primitive_instance
     int primitive_type;
     float data_a[4];
     float data_b[4];
+};
+
+// instance-type tag for MSDF glyphs in the combined analytic/MSDF shader -
+// Keep this in sync with the GLSL `case 3` branch.
+enum
+{
+    k_instance_type_msdf_glyph = 3
 };
 
 void
@@ -679,7 +686,10 @@ renderer_init_gpu(alia_ui_system* system, alia_gl_renderer* renderer)
 }
 
 void
-render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
+render_primitive_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
 {
     alia_gl_renderer* renderer = static_cast<alia_gl_renderer*>(user);
     if (bucket->count == 0)
@@ -775,8 +785,7 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                     |= ALIA_PRIMITIVE_FLAG_GRADIENT_BORDER;
             }
             instance->data_b[1]
-                = style.gradient_angle * degrees_to_radians
-                + rotation_radians;
+                = style.gradient_angle * degrees_to_radians + rotation_radians;
         }
         else
         {
@@ -790,8 +799,10 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
         {
             auto const* primitive_cmd
                 = alia::downcast<alia_draw_primitive_command>(cmd);
-            instance->min = primitive_cmd->box.min;
-            instance->size = primitive_cmd->box.size;
+            alia_box const box
+                = alia_draw_resolve_command_box(exec, cmd, primitive_cmd->box);
+            instance->min = box.min;
+            instance->size = box.size;
             instance->color = primitive_cmd->color;
             instance->primitive_type = int(
                 primitive_cmd->primitive_type & ALIA_PRIMITIVE_TYPE_MASK);
@@ -825,19 +836,8 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
                         primitive_cmd->payload.squircle.radius,
                         0.f);
                     break;
-                case ALIA_PRIMITIVE_MSDF_GLYPH: {
-                    instance->data_a[0]
-                        = primitive_cmd->payload.msdf_glyph.uv_rect[0];
-                    instance->data_a[1]
-                        = primitive_cmd->payload.msdf_glyph.uv_rect[1];
-                    instance->data_a[2]
-                        = primitive_cmd->payload.msdf_glyph.uv_rect[2];
-                    instance->data_a[3]
-                        = primitive_cmd->payload.msdf_glyph.uv_rect[3];
-                    instance->data_b[0]
-                        = primitive_cmd->payload.msdf_glyph.sdf_scale;
+                default:
                     break;
-                }
             }
             ++instance;
         }
@@ -865,6 +865,124 @@ render_primitive_command_list(void* user, alia_draw_bucket const* bucket)
 
     glBindVertexArray(renderer->vao);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, boxes.count);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+void
+render_msdf_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
+{
+    alia_gl_renderer* renderer = static_cast<alia_gl_renderer*>(user);
+    if (bucket->count == 0)
+        return;
+
+    alia_box const* clip_rect = bucket->clip_rect;
+
+    alia_vec2f const surface_size
+        = alia_vec2i_to_vec2f(alia_ui_surface_get_size(renderer->system));
+
+    check_gl_errors();
+
+    glViewport(
+        clip_rect->min.x,
+        surface_size.y - (clip_rect->min.y + clip_rect->size.y),
+        clip_rect->size.x,
+        clip_rect->size.y);
+
+    check_gl_errors();
+
+    float l = clip_rect->min.x;
+    float r = clip_rect->min.x + clip_rect->size.x;
+    float t = (float) clip_rect->min.y;
+    float b = clip_rect->min.y + clip_rect->size.y;
+    float n = -1.f;
+    float f = 1.f;
+
+    float ortho[16] = {
+        2.f / (r - l),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        2.f / (t - b),
+        0.f,
+        0.f,
+        0.f,
+        0.f,
+        -2.f / (f - n),
+        0.f,
+        -(r + l) / (r - l),
+        -(t + b) / (t - b),
+        -(f + n) / (f - n),
+        1.f};
+
+    glUseProgram(renderer->primitive_shader_program);
+    check_gl_errors();
+    glUniformMatrix4fv(
+        renderer->primitive_matrix_location, 1, GL_FALSE, ortho);
+    check_gl_errors();
+
+    alia_memory_system* memory = alia_ui_memory(renderer->system);
+    alia_bump_allocator rect_alloc
+        = alia_memory_open_bump(memory, renderer->rect_instance_pool);
+    primitive_instance* primitive_instances
+        = alia::arena_alloc_array<primitive_instance>(
+            rect_alloc, bucket->count);
+
+    {
+        primitive_instance* instance = primitive_instances;
+        for (auto const* cmd = bucket->head; cmd; cmd = cmd->next)
+        {
+            auto const* glyph
+                = alia::downcast<alia_draw_msdf_glyph_command>(cmd);
+            alia_box const box
+                = alia_draw_resolve_command_box(exec, cmd, glyph->box);
+            instance->min = box.min;
+            instance->size = box.size;
+            instance->color = glyph->color;
+            instance->primitive_type = k_instance_type_msdf_glyph;
+            std::memset(instance->data_a, 0, sizeof(instance->data_a));
+            std::memset(instance->data_b, 0, sizeof(instance->data_b));
+            instance->data_a[0] = glyph->uv_rect[0];
+            instance->data_a[1] = glyph->uv_rect[1];
+            instance->data_a[2] = glyph->uv_rect[2];
+            instance->data_a[3] = glyph->uv_rect[3];
+            instance->data_b[0] = glyph->sdf_scale;
+            ++instance;
+        }
+    }
+
+    if (renderer->msdf_atlas_texture != 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, renderer->msdf_atlas_texture);
+        glUniform1i(renderer->msdf_sampler_location, 0);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->instance_vbo);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        sizeof(primitive_instance) * bucket->count,
+        primitive_instances,
+        GL_STREAM_DRAW);
+
+    alia_memory_commit_bump(memory, renderer->rect_instance_pool, &rect_alloc);
+    alia_memory_trim(
+        memory, renderer->rect_instance_pool, ALIA_MEMORY_RETAIN_PEAK);
+
+    check_gl_errors();
+
+    glBindVertexArray(renderer->vao);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, bucket->count);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -982,7 +1100,10 @@ bind_user_shader_uniform_blocks(
 }
 
 void
-render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
+render_user_shader_command_list(
+    void* user,
+    alia_draw_execution_context const* exec,
+    alia_draw_bucket const* bucket)
 {
     auto* slot = static_cast<gl_user_shader_slot*>(user);
     if (!slot || !slot->renderer || !bucket || bucket->count == 0)
@@ -1006,7 +1127,8 @@ render_user_shader_command_list(void* user, alia_draw_bucket const* bucket)
         auto const* shader_cmd
             = alia::downcast<alia_shader_draw_command>(walk);
 
-        alia_box const& r = shader_cmd->region;
+        alia_box const r
+            = alia_draw_resolve_command_box(exec, walk, shader_cmd->region);
         if (r.size.x <= 0.f || r.size.y <= 0.f)
             continue;
 
@@ -1186,6 +1308,13 @@ alia_gl_renderer_attach(alia_gl_renderer* renderer, alia_ui_system* ui)
         ALIA_PRIMITIVE_MATERIAL_ID,
         alia_material_vtable{
             .draw_bucket = render_primitive_command_list,
+        },
+        renderer);
+    alia_material_register(
+        ui,
+        ALIA_MSDF_MATERIAL_ID,
+        alia_material_vtable{
+            .draw_bucket = render_msdf_command_list,
         },
         renderer);
     renderer_setup_blend();

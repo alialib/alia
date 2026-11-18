@@ -46,6 +46,7 @@ alia_ui_register_shader(
 void
 alia_draw_shader(
     alia_ui_context* ctx,
+    alia_draw_id id,
     alia_z_index z_index,
     alia_draw_material_id material_id,
     alia_box region,
@@ -60,12 +61,12 @@ alia_draw_shader(
     alia_shader_draw_command* command
         = (alia_shader_draw_command*) alia_draw_command_alloc(
             ctx,
+            id,
             z_index,
             material_id,
             ALIA_MIN_ALIGNED_SIZE(sizeof(alia_shader_draw_command)));
 
-    command->region
-        = alia_box_translate(region, alia_ctx_geometry(ctx)->offset);
+    command->region = region;
     command->params_size = (uint16_t) params_size;
     command->params = nullptr;
 
@@ -97,8 +98,7 @@ alia_do_shader(
     if (result.mode == ALIA_SUBSTRATE_BLOCK_TRAVERSAL_INIT)
         data->reserved = 0;
 
-    alia_element_id const id
-        = alia_make_element_id(alia_ctx_kernel(ctx), result);
+    alia_element_id const id = alia_element_use_id(alia_ctx_kernel(ctx));
 
     alia_event_category const category = get_event_category(*ctx);
     if (category == ALIA_CATEGORY_REFRESH)
@@ -123,6 +123,7 @@ alia_do_shader(
             alia_shader_draw_command* command
                 = (alia_shader_draw_command*) alia_draw_command_alloc(
                     ctx,
+                    {id.id, 0},
                     z_index,
                     material_id,
                     ALIA_MIN_ALIGNED_SIZE(sizeof(alia_shader_draw_command)));
